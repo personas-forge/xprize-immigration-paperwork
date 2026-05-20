@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Semantic design tokens ──────────────────────────────────────────────
+   Immigration Concierge brand: restrained teal — feels like a real firm,
+   not enterprise gray. Components consume token classes (bg-surface,
+   text-muted, border-border, text-accent) that map to these variables.   */
+:root {
+  --background: #f6faf9;
+  --surface: #ffffff;
+  --surface-muted: #f1f5f4;
+  --border: #e2ebe9;
+  --border-strong: #cfdedb;
+  --foreground: #1c1917;
+  --muted: #6b7c79;
+
+  --accent: #0f766e;
+  --accent-soft: #f0fdfa;
+  --accent-foreground: #ffffff;
+
+  --success: #047857;
+  --success-soft: #ecfdf5;
+  --warning: #b45309;
+  --warning-soft: #fffbeb;
+  --danger: #be123c;
+  --danger-soft: #fff1f2;
+
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+  --radius-pill: 9999px;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
