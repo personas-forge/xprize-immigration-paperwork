@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 /* ── Semantic design tokens ──────────────────────────────────────────────
    Immigration Concierge brand: restrained teal — feels like a real firm,
