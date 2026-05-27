@@ -19,7 +19,7 @@ A US O-1 visa is gated by paperwork that costs $8,000–$15,000 in attorney fees
 
 ## What's in this repo
 
-A Next.js 14 application scaffold with a finalized design direction:
+A Next.js 16 application scaffold with a finalized design direction:
 
 - **Design system** — semantic CSS-variable tokens, a shared UI primitive kit, feature-module architecture
 - **Three routes** — a marketing landing, a brand landing, and the working product dashboard
@@ -37,11 +37,11 @@ The dashboard, data and integrations are mocked — this is the design-and-archi
 
 ## Tech stack
 
-- **Framework:** Next.js 14 (App Router) · TypeScript (strict) · Tailwind CSS
+- **Framework:** Next.js 16 (App Router) · React 19 · TypeScript 6 (strict) · Tailwind CSS 4
 - **AI:** Google Gemini 1.5 Pro (long-context petition drafting) · Document AI (evidence parsing)
 - **Integrations:** Vapi / Retell (voice intake) · DocuSign (attorney sign-off) · Stripe (milestone billing)
 - **Cloud:** Google Cloud Run · Firestore · Cloud Storage (CMEK-encrypted evidence vault)
-- **Tooling:** ESLint 9 flat config · `tsc` strict typecheck
+- **Tooling:** ESLint 10 flat config · `tsc` strict typecheck
 
 ## Getting started
 
