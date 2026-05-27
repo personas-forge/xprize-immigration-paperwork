@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { QUALIFYING_THRESHOLD, summarizeCriteria } from "./criteria";
+import { QUALIFYING_THRESHOLD, statusTone, summarizeCriteria } from "./criteria";
 import { criteria } from "./data";
 import { type Criterion } from "./types";
 
@@ -59,4 +59,49 @@ test("robust against data-shape drift: non-array and unknown statuses", () => {
   assert.equal(s.qualifying, 1, "only the exact 'Met' counts");
   assert.equal(s.partial, 0);
   assert.equal(s.total, 1, "malformed rows excluded from total");
+});
+
+// --- ADR 0002: row tone must be status-safe and counts derived from data ---
+
+test("statusTone: current case-file rows render their established tones (no regression)", () => {
+  // Pins the rendering preserved by ADR 0002 for the live dataset.
+  for (const c of criteria) {
+    const expected = c.status === "Partial" ? "warning" : "success";
+    assert.equal(statusTone(c.status), expected, `${c.name} (${c.status})`);
+  }
+  // 8 criteria, 7 success + 1 warning — matches the summary (7 qualifying · 1 partial).
+  const tones = criteria.map((c) => statusTone(c.status));
+  assert.equal(tones.filter((t) => t === "success").length, 7);
+  assert.equal(tones.filter((t) => t === "warning").length, 1);
+  assert.equal(tones.filter((t) => t === "neutral").length, 0);
+});
+
+test("statusTone: unknown/absent status is never 'success' (must not paint unscored rows green)", () => {
+  assert.equal(statusTone("Unknown"), "neutral");
+  assert.equal(statusTone("met"), "neutral", "wrong casing is not a known status");
+  assert.equal(statusTone(undefined), "neutral");
+  assert.equal(statusTone(null), "neutral");
+  assert.equal(statusTone(""), "neutral");
+  // The core ADR 0002 invariant: a row the summary would exclude must not look "met".
+  assert.notEqual(statusTone("Unknown"), "success");
+});
+
+test("statusTone: agrees with summarizeCriteria — only rows it tones success/warning are counted", () => {
+  const rows: { status: string }[] = [
+    { status: "Met" },
+    { status: "Strong" },
+    { status: "Partial" },
+    { status: "Unknown" }, // unscored: neutral tone AND excluded from total
+  ];
+  const counted = rows.filter((r) => statusTone(r.status) !== "neutral").length;
+  const s = summarizeCriteria(rows as Criterion[]);
+  assert.equal(counted, s.total, "non-neutral rows equal the evaluated total");
+  assert.equal(s.total, 3);
+});
+
+test("table read-out tracks data length and threshold constant, not hardcoded 8/3", () => {
+  // The denominator the header renders is criteria.length, not a literal 8.
+  assert.equal(criteria.length, summarizeCriteria(criteria).total);
+  // Threshold text is sourced from the constant.
+  assert.equal(QUALIFYING_THRESHOLD, 3);
 });

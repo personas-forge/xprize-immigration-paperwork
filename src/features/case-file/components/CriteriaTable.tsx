@@ -1,11 +1,6 @@
 import { Badge, Card, CardHeader } from "@/components/ui";
-import { summarizeCriteria } from "../criteria";
+import { QUALIFYING_THRESHOLD, statusTone, summarizeCriteria } from "../criteria";
 import { criteria } from "../data";
-import { type CriterionStatus } from "../types";
-
-function toneFor(status: CriterionStatus) {
-  return status === "Partial" ? "warning" : "success";
-}
 
 export function CriteriaTable() {
   const summary = summarizeCriteria(criteria);
@@ -15,10 +10,10 @@ export function CriteriaTable() {
       <CardHeader className="bg-accent-soft">
         <div>
           <div className="text-sm font-semibold text-foreground">
-            O-1A Criteria · {summary.total} of 8 evaluated
+            O-1A Criteria · {summary.total} of {criteria.length} evaluated
           </div>
           <div className="text-xs text-muted">
-            Need 3 to qualify. AI-scored from CV + evidence vault.
+            Need {QUALIFYING_THRESHOLD} to qualify. AI-scored from CV + evidence vault.
           </div>
         </div>
         <Badge tone={summary.meetsThreshold ? "success" : "warning"}>
@@ -40,7 +35,7 @@ export function CriteriaTable() {
             <tr key={c.id} className="border-t border-border hover:bg-accent-soft/40">
               <td className="px-5 py-3 font-medium text-foreground">{c.name}</td>
               <td className="px-5 py-3">
-                <Badge tone={toneFor(c.status)}>{c.status}</Badge>
+                <Badge tone={statusTone(c.status)}>{c.status}</Badge>
               </td>
               <td className="px-5 py-3 text-muted">{c.evidence}</td>
               <td className="px-5 py-3 text-right font-mono text-xs text-muted">

@@ -1,3 +1,4 @@
+import { type BadgeTone } from "@/components/ui";
 import { type Criterion, type CriterionStatus } from "./types";
 
 /**
@@ -10,6 +11,22 @@ const QUALIFYING_STATUSES: ReadonlySet<CriterionStatus> = new Set([
   "Met",
   "Strong",
 ]);
+
+/**
+ * Map a criterion status to the badge tone the criteria table renders.
+ *
+ * Status-safe by design (ADR 0002): the value is AI-sourced (Document AI /
+ * Gemini scoring), so this guards at runtime rather than trusting the
+ * CriterionStatus type. "Met"/"Strong" → success, "Partial" → warning, and
+ * anything unknown or absent → neutral. An unscored criterion must NOT render
+ * green — that would let the table paint a row "met" while summarizeCriteria
+ * excludes it, making the table and summary disagree on eligibility.
+ */
+export function statusTone(status: unknown): BadgeTone {
+  if (status === "Partial") return "warning";
+  if (QUALIFYING_STATUSES.has(status as CriterionStatus)) return "success";
+  return "neutral";
+}
 
 export interface CriteriaSummary {
   /** Number of criteria evaluated (input rows that are well-formed). */
