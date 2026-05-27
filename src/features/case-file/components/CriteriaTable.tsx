@@ -1,4 +1,5 @@
 import { Badge, Card, CardHeader } from "@/components/ui";
+import { summarizeCriteria } from "../criteria";
 import { criteria } from "../data";
 import { type CriterionStatus } from "../types";
 
@@ -7,20 +8,22 @@ function toneFor(status: CriterionStatus) {
 }
 
 export function CriteriaTable() {
-  const met = criteria.filter((c) => c.status !== "Partial").length;
+  const summary = summarizeCriteria(criteria);
 
   return (
     <Card className="overflow-hidden">
       <CardHeader className="bg-accent-soft">
         <div>
           <div className="text-sm font-semibold text-foreground">
-            O-1A Criteria · {criteria.length} of 8 evaluated
+            O-1A Criteria · {summary.total} of 8 evaluated
           </div>
           <div className="text-xs text-muted">
             Need 3 to qualify. AI-scored from CV + evidence vault.
           </div>
         </div>
-        <Badge tone="success">{met} strong · 1 partial</Badge>
+        <Badge tone={summary.meetsThreshold ? "success" : "warning"}>
+          {summary.qualifying} strong · {summary.partial} partial
+        </Badge>
       </CardHeader>
 
       <table className="w-full text-sm">
