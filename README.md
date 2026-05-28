@@ -1,47 +1,99 @@
-# xprize-immigration-paperwork · Meridian
+# Immigration Concierge — Atelier of Arrival
 
 > AI-drafted, attorney-signed O-1 visa petitions at one-third the cost.
 
-XPrize hackathon entry · 90-day MVP scaffold · built with Gemini on Google Cloud.
+A Next.js 16 app and design scaffold for an immigration concierge: Gemini drafts
+the templated parts of an O-1 petition (qualification, evidence indexing,
+petition letter, I-129), a licensed U.S. immigration attorney reviews and signs
+it, and the petition goes to USCIS — for $2,500 flat instead of the $8K–$15K a
+firm normally charges. Hackathon-stage scaffold: the UI, brand system, and case
+file are real; AI, billing, and filing integrations are mocked.
+
+> **Legal:** This application is licensed software operated by a licensed
+> attorney's firm. It is **not legal advice** and **not a DIY filing tool**.
+> Every petition is reviewed and signed by a U.S. immigration attorney who is
+> on record with USCIS. Unauthorized practice of law (UPL) is the central
+> compliance risk — see [`docs/CHECKLIST.md`](docs/CHECKLIST.md). No USCIS
+> endorsement is claimed or implied.
 
 ---
 
-## Overview
+## Features
 
-A US O-1 visa is gated by paperwork that costs $8,000–$15,000 in attorney fees. The work is highly templated. **Meridian** lets Gemini do every templated step — qualification, evidence gathering, petition drafting, exhibit indexing — while a licensed immigration attorney provides the legal judgment, signature, and USCIS filing. One flat fee: $2,500.
-
-- **Customer:** O-1A applicants in tech — founders, engineers, researchers
-- **Wedge:** dominate O-1A first, then O-1B, EB-1A, H-1B
-- **Pricing:** $2,500 O-1A flat (vs. $8–12K market) · USCIS fees passed through at cost
-- **Trial:** free qualification check; first revision free
-
-> **Legal:** the product is operated by a licensed attorney's firm; the app is licensed software to that firm. Unauthorized practice of law (UPL) is the central risk — see [`docs/CHECKLIST.md`](docs/CHECKLIST.md).
-
-## What's in this repo
-
-A Next.js 16 application scaffold with a finalized design direction:
-
-- **Design system** — semantic CSS-variable tokens, a shared UI primitive kit, feature-module architecture
-- **Three routes** — a marketing landing, a brand landing, and the working product dashboard
-- **`/docs`** — the 12-week build backlog and pre-launch + compliance checklist
-
-The dashboard, data and integrations are mocked — this is the design-and-architecture foundation a 12-week build starts from.
-
-## Routes
-
-| Route | Purpose |
-| --- | --- |
-| `/` | Marketing landing page |
-| `/landing-claude` | Brand landing — "The petition" (official-document concept) |
-| `/dashboard` | The product — **Case file**: O-1A criteria audit, tasks, petition draft, with a light/dark theme toggle |
+- **Petition stepper demo** on the landing page — five stages (Intake →
+  Drafting → Attorney Review → Filed → Approved), each a circular guilloché
+  rosette. The active stage receives a gold-leaf rubber stamp that animates in
+  via Motion's `stampIn` variant; reduced-motion is respected.
+- **Engraved-document marketing site** — hero with a watermarked I-129
+  certificate vignette, three-promise strip, four-step process band, schedule
+  of fees, closing seal.
+- **Working case file dashboard** — O-1A criteria audit table, evidence list,
+  task panel, petition draft preview, all themable.
+- **Parchment ↔ ink theme toggle** — a sun/moon button in the header swaps the
+  whole site between a daylight parchment desk and an after-hours notary's
+  office. Choice persists in `localStorage`; a pre-paint inline script prevents
+  FOUC; hydration-safe via `useSyncExternalStore` + `suppressHydrationWarning`.
+- **Pricing and FAQ pages** — three tiers as document bands; eight FAQ entries
+  styled as petition records (USCIS form compatibility, RFE handling, refund
+  policy, data security, etc.).
+- **PWA-ready** — full icon set, web app manifest, OG card, themed status bar.
+- **Accessibility** — skip-to-content link, focus-visible rings, `aria-current`
+  on the stepper, reduced-motion across every animation.
 
 ## Tech stack
 
-- **Framework:** Next.js 16 (App Router) · React 19 · TypeScript 6 (strict) · Tailwind CSS 4
-- **AI:** Google Gemini 1.5 Pro (long-context petition drafting) · Document AI (evidence parsing)
-- **Integrations:** Vapi / Retell (voice intake) · DocuSign (attorney sign-off) · Stripe (milestone billing)
-- **Cloud:** Google Cloud Run · Firestore · Cloud Storage (CMEK-encrypted evidence vault)
-- **Tooling:** ESLint 10 flat config · `tsc` strict typecheck
+- **Framework:** Next.js 16 (App Router) · React 19 · TypeScript 6 (strict)
+- **Styling:** Tailwind CSS 4 (`@tailwindcss/postcss` pipeline) · semantic CSS
+  variables in `src/app/globals.css`
+- **Motion:** Framer Motion 12 with a single shared easing curve (`easeArrival`)
+  and reusable `fadeUp`, `staggerParent`, `stampIn` variants
+- **AI (planned wiring):** `@google/generative-ai` 0.24 — Gemini 1.5 Pro for
+  long-context petition drafting and Document AI for evidence parsing
+- **Tooling:** ESLint 10 flat config · `tsc --noEmit` strict typecheck · `tsx`
+  + Node's built-in test runner
+
+## Visual identity — Atelier of Arrival
+
+A well-made paper petition on a clean desk. Engraved, calm, slightly old-world
+— the visual answer to a category usually drawn in startup gradients.
+
+- **Palette:** parchment `#f3ead6`, midnight ink `#0d1f2d`, gold-leaf `#b8893a`,
+  bordeaux `#7d2a2e` (the wax-seal accent).
+- **Type:** **Fraunces** (display, opsz/SOFT/WONK axes for an engraved feel),
+  **Newsreader** (body — a literary text serif for long-form calm), **IBM Plex
+  Mono** (case numbers, microprint, exhibit IDs).
+- **Signature motifs:**
+  - Inline-SVG **guilloché rosettes** — the parametric Lissajous security
+    pattern used on banknotes and passports, drawn at runtime by
+    `components/brand/Guilloche.tsx`, watermarked into page corners, hero
+    vignettes, and each stage of the petition stepper.
+  - **Perforated tear-here rules** between sections (`.perforation` utility).
+  - **Tilted rubber-stamp ornaments** ("Approved", "Bar-licensed", "Most
+    chosen") via `<Stamp>`, with slight rotations to feel hand-pressed.
+  - **Monogram seal with rim tick-marks** via `<Seal>` for mastheads and
+    closing flourishes.
+  - **Chapter marks** — Roman numerals + a hairline rule, used to open each
+    page section like a printed broadsheet.
+
+## Theme
+
+Two skins of the same identity:
+
+- **Parchment** (default) — daylight desk.
+- **Ink** — after-hours notary's office.
+
+How it works: a sun/moon button in the header toggles
+`document.documentElement.dataset.theme` between `""` and `"ink"`. CSS in
+`globals.css` re-skins the entire token set under `[data-theme="ink"]`. The
+choice is persisted to `localStorage.atelier-theme`. A pre-paint inline script
+in `app/layout.tsx` applies the saved choice **before first paint** to prevent
+FOUC. The toggle component subscribes to a custom `atelier-theme` event via
+`useSyncExternalStore` so multiple toggles stay in sync; `<html>` carries
+`suppressHydrationWarning` to keep SSR clean.
+
+The dashboard additionally ships its own `ThemeScope` (parchment + an ink-style
+variant in `features/dashboard/themes.ts`) that swaps the token set at the
+component scope.
 
 ## Getting started
 
@@ -49,45 +101,139 @@ The dashboard, data and integrations are mocked — this is the design-and-archi
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in API keys (none required to run the UI)
+cp .env.example .env.local   # nothing required to run the UI
 npm run dev                  # http://localhost:3000
 ```
+
+After upgrading from 0.1.x: `rm -rf node_modules && npm install` — see
+[`CHANGELOG.md`](CHANGELOG.md) for the 0.2.0 platform migration notes
+(Next 14 → 16, React 18 → 19, Tailwind 3 → 4, TS 5 → 6, ESLint 9 → 10).
 
 ## Scripts
 
 | Script | Action |
 | --- | --- |
-| `npm run dev` | Start the dev server |
+| `npm run dev` | Next.js dev server |
 | `npm run build` | Production build |
 | `npm run start` | Serve the production build |
-| `npm run lint` | ESLint |
-| `npm run typecheck` | `tsc --noEmit` |
+| `npm run lint` | ESLint flat config |
+| `npm run typecheck` | `tsc --noEmit` (strict) |
+| `npm run test` | `tsx --test "src/**/*.test.ts"` (Node test runner) |
+
+## Routes
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Marketing landing — hero, petition stepper demo, promises, process, pricing, closing seal |
+| `/pricing` | Schedule of fees — three petition tiers as perforated document bands |
+| `/faq` | Eight petition-styled FAQ entries (form compatibility, RFE, refunds, security) |
+| `/landing-claude` | Alternate masthead — narrow editorial column, printed-pamphlet treatment |
+| `/dashboard` | The case file — O-1A criteria audit, tasks, petition draft preview |
 
 ## Project structure
 
 ```
 src/
-├── app/                  # Next.js routes (/, /landing-claude, /dashboard)
-├── components/           # App shell + shared UI kit (components/ui)
+├── app/
+│   ├── layout.tsx           # Fraunces/Newsreader/Plex Mono, metadata, pre-paint theme script
+│   ├── globals.css          # design tokens, [data-theme="ink"], utilities
+│   ├── page.tsx             # marketing landing
+│   ├── pricing/page.tsx
+│   ├── faq/page.tsx
+│   ├── landing-claude/page.tsx
+│   └── dashboard/page.tsx
+├── components/
+│   ├── brand/               # Guilloche, Seal, Stamp, ChapterMark, Wordmark, PageFrame
+│   ├── ui/                  # Badge, Button, Card, SectionHeader, StatCard
+│   ├── Motion.tsx           # Rise / Stagger / HoverCard wrappers
+│   ├── PetitionStepper.tsx  # 5-stage rosette stepper with stamp-in animation
+│   ├── FaqEntry.tsx         # client-only <details> animator
+│   ├── DashboardTopBar.tsx
+│   └── ThemeToggle.tsx      # parchment ↔ ink toggle + themeInitScript
 ├── features/
-│   ├── case-file/        # The dashboard feature module
-│   └── dashboard/        # ThemeScope + light/dark themes + DashboardView
-└── lib/                  # cn(), formatters
-docs/                     # BACKLOG.md, CHECKLIST.md
+│   ├── case-file/           # criteria.ts, summarizeCriteria + tests, types, data, components/
+│   └── dashboard/           # DashboardView, ThemeScope, themes.ts
+└── lib/
+    ├── cn.ts                # classname joiner
+    ├── format.ts            # number/date formatters
+    └── motion.ts            # easeArrival, fadeUp, staggerParent, stampIn
+docs/
+├── BACKLOG.md               # 12-week hackathon build plan
+├── CHECKLIST.md             # pre-launch + UPL/compliance gates
+├── backlog-brainstorm.{md,json}
+└── adr/                     # architectural decision records
+public/
+├── brand/                   # logo.png, hero-bg.png
+├── icons/                   # 16/32/48/96/192/512 + apple-touch-icon
+├── manifest.webmanifest
+└── og.png
 ```
 
-## Design system
+## Brand assets
 
-Semantic design tokens (`bg-surface`, `text-accent`, …) as CSS variables in `src/app/globals.css`. The dashboard ships a light and a dark theme — `ThemeScope` swaps the token set at runtime, so the whole surface re-themes from one object.
+| Path | Purpose |
+| --- | --- |
+| `public/brand/logo.png` | Header monogram (28×28 in the masthead) |
+| `public/brand/hero-bg.png` | Watermark image behind the hero, low-opacity, mix-blend-multiply |
+| `public/og.png` | 1200×630 OpenGraph / Twitter share card |
+| `public/icons/icon-{16,32,48,96,192,512}.png` | Favicons + maskable PWA icons |
+| `public/icons/apple-touch-icon.png` | 180×180 iOS home-screen icon |
+| `public/manifest.webmanifest` | PWA manifest — parchment background, ink theme color |
+
+## Accessibility
+
+- Skip-to-content link visible on focus (`<a href="#main">` in `layout.tsx`).
+- Focus-visible rings on every interactive element, tinted with `--accent`.
+- The petition stepper marks the active stage with `aria-current="step"` and
+  exposes per-stage jump buttons labelled `"Jump to stage N: {name}"`.
+- All decorative SVG (guilloché, perforations, stamps) is `aria-hidden`.
+- Animations gate on `useReducedMotion()` and respect `prefers-reduced-motion`.
+- `<html lang="en">` with `suppressHydrationWarning` for the theme attribute.
+
+## Environment variables
+
+Copy `.env.example` → `.env.local`. None are required to render the UI; all
+integration code is currently stubbed.
+
+| Group | Vars |
+| --- | --- |
+| Gemini / Vertex AI | `GEMINI_API_KEY`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_APPLICATION_CREDENTIALS`, `GEMINI_MODEL` |
+| Document AI | `DOCAI_PROCESSOR_ID`, `DOCAI_LOCATION` |
+| Voice intake | `VAPI_API_KEY`, `RETELL_API_KEY` |
+| Billing | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY` |
+| E-sign | `DOCUSIGN_INTEGRATION_KEY`, `DOCUSIGN_USER_ID` |
+| App | `DATABASE_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_ATTORNEY_FIRM_NAME`, `NEXT_PUBLIC_ATTORNEY_BAR_STATE` |
+| Deploy (optional) | `NEXT_PUBLIC_SITE_URL`, `VERCEL_URL` (used to resolve `metadataBase` for OG cards) |
+
+## Testing
+
+```bash
+npm run test         # tsx + Node's built-in test runner
+npm run typecheck    # tsc --noEmit (strict)
+npm run lint         # ESLint flat config
+```
+
+The first unit tests cover `features/case-file/criteria.ts`
+(`summarizeCriteria`, which aggregates O-1A status rows against a qualifying
+threshold of 3). Add new tests as `*.test.ts` alongside the module they cover.
+
+## Building & deployment
+
+```bash
+npm run build && npm run start
+```
+
+The app is designed for **Google Cloud Run** with Firestore and CMEK-encrypted
+Cloud Storage for the evidence vault. It also runs unmodified on Vercel —
+`VERCEL_URL` is honored when resolving `metadataBase` for OG share cards. Set
+`NEXT_PUBLIC_SITE_URL` to your canonical origin in production.
 
 ## Documentation
 
-- [`docs/BACKLOG.md`](docs/BACKLOG.md) — 12-week hackathon build plan
-- [`docs/CHECKLIST.md`](docs/CHECKLIST.md) — pre-launch checklist with UPL / compliance gates
-
-## Deployment
-
-Designed for **Google Cloud Run** with Firestore and CMEK-encrypted Cloud Storage for the evidence vault.
+- [`CHANGELOG.md`](CHANGELOG.md) — Keep-a-Changelog format, SemVer (pre-1.0)
+- [`docs/BACKLOG.md`](docs/BACKLOG.md) — 12-week build plan
+- [`docs/CHECKLIST.md`](docs/CHECKLIST.md) — pre-launch + UPL/compliance gates
+- [`docs/adr/`](docs/adr) — architectural decision records
 
 ## License
 
