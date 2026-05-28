@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Newsreader, IBM_Plex_Mono } from "next/font/google";
+import { themeInitScript } from "@/components/ThemeToggle";
 import "./globals.css";
 
 // — Typography ────────────────────────────────────────────────────────────
@@ -35,11 +36,14 @@ const siteTitle =
 const siteDescription =
   "$2,500 flat for an O-1A petition. AI assembles, attorney signs, USCIS files.";
 
+// Canonical production URL — Phase 3 set this so OG cards, sitemaps, and any
+// relative metadata URL resolve to the right origin even in build sandboxes
+// where NEXT_PUBLIC_SITE_URL isn't injected.
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
   (process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000");
+    : "https://immigration-paperwork.app");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -101,8 +105,28 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${fraunces.variable} ${newsreader.variable} ${plexMono.variable}`}
+      suppressHydrationWarning
     >
-      <body>{children}</body>
+      <head>
+        {/* Theme pre-paint — set data-theme="ink" before first paint when
+            the user previously chose it, so the page never flashes light. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
+      </head>
+      <body>
+        {/* Skip-to-content link — only visible while focused, lets keyboard
+            users bypass the masthead and jump straight to <main id="main"> */}
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-control focus:bg-foreground focus:px-4 focus:py-2 focus:font-mono focus:text-[12px] focus:uppercase focus:tracking-document focus:text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+        >
+          Skip to content
+        </a>
+        {/* Skip-link target — `id="main"` on a structural wrapper so the
+            inner page's <header>/<section> tree keeps its document outline. */}
+        <div id="main">{children}</div>
+      </body>
     </html>
   );
 }

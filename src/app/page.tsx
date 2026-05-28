@@ -7,6 +7,9 @@ import {
   ChapterMark,
   Guilloche,
 } from "@/components/brand";
+import { Rise, Stagger, HoverCard } from "@/components/Motion";
+import { PetitionStepper } from "@/components/PetitionStepper";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 // Marketing landing — "The Petition". The page is composed as if the
 // product itself were a formal document: an opening seal, ruled chapter
@@ -19,6 +22,7 @@ export default function Page() {
       <SiteHeader />
 
       <Hero />
+      <PetitionStepper />
       <Promises />
       <Process />
       <Pricing />
@@ -47,15 +51,17 @@ function SiteHeader() {
           <Wordmark context="Petition Atelier · est. 2026" />
         </div>
         <nav className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-document text-muted-strong">
-          <a href="#how" className="ink-link">How it works</a>
-          <a href="#pricing" className="ink-link">Schedule of fees</a>
-          <Link href="/dashboard" className="ink-link">Live case file</Link>
+          <a href="#how" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">How it works</a>
+          <Link href="/pricing" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">Pricing</Link>
+          <Link href="/faq" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">FAQ</Link>
+          <Link href="/dashboard" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">Live case file</Link>
           <a
             href="#start"
-            className="rounded-control border border-foreground bg-foreground px-4 py-2 text-background transition-[background-color] hover:bg-foreground-soft"
+            className="rounded-control border border-foreground bg-foreground px-4 py-2 text-background transition-[background-color] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
           >
             Free qualification
           </a>
+          <ThemeToggle />
         </nav>
       </div>
       <div className="perforation mx-8 h-px" aria-hidden />
@@ -124,14 +130,14 @@ function Hero() {
           >
             <a
               href="#start"
-              className="inline-flex items-center gap-2 rounded-control bg-foreground px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px]"
+              className="inline-flex items-center gap-2 rounded-control bg-foreground px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
             >
               Take the 5-min qualification
               <span aria-hidden>→</span>
             </a>
             <a
               href="/docs/BACKLOG.md"
-              className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-transparent px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-foreground hover:border-foreground"
+              className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-transparent px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-foreground hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
             >
               Read the 12-week build plan
             </a>
@@ -224,18 +230,20 @@ function Promises() {
   ];
   return (
     <section className="relative border-y border-border bg-surface/60 guilloche">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-x-12 gap-y-10 px-8 py-20 md:grid-cols-3">
+      <Stagger className="mx-auto grid max-w-6xl grid-cols-1 gap-x-12 gap-y-10 px-8 py-20 md:grid-cols-3">
         {items.map((b) => (
-          <article key={b.t}>
-            <span className="display block text-2xl italic text-accent-dark">{b.n}</span>
-            <div className="mt-2 h-px w-10 bg-accent-dark/60" />
-            <h3 className="display mt-4 text-3xl">{b.t}</h3>
-            <p className="mt-3 font-sans text-[15px] leading-relaxed text-muted-strong">
-              {b.b}
-            </p>
-          </article>
+          <Rise key={b.t}>
+            <article>
+              <span className="display block text-2xl italic text-accent-dark">{b.n}</span>
+              <div className="mt-2 h-px w-10 bg-accent-dark/60" />
+              <h3 className="display mt-4 text-3xl">{b.t}</h3>
+              <p className="mt-3 font-sans text-[15px] leading-relaxed text-muted-strong">
+                {b.b}
+              </p>
+            </article>
+          </Rise>
         ))}
-      </div>
+      </Stagger>
     </section>
   );
 }
@@ -252,15 +260,21 @@ function Process() {
 
   return (
     <section id="how" className="mx-auto max-w-6xl px-8 py-28">
-      <ChapterMark numeral="II" label="How the petition is built" />
-      <h2 className="display mt-5 max-w-3xl text-[clamp(2.2rem,5.6vw,3.8rem)]">
-        From your inbox to <em>USCIS</em>, in four hand-checked passes.
-      </h2>
+      <Rise>
+        <ChapterMark numeral="II" label="How the petition is built" />
+        <h2 className="display mt-5 max-w-3xl text-[clamp(2.2rem,5.6vw,3.8rem)]">
+          From your inbox to <em>USCIS</em>, in four hand-checked passes.
+        </h2>
+      </Rise>
 
-      <ol className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-card border border-border bg-border-strong sm:grid-cols-2 lg:grid-cols-4">
+      <Stagger
+        className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-card border border-border bg-border-strong sm:grid-cols-2 lg:grid-cols-4"
+        role="list"
+      >
         {steps.map(([n, t, b], i) => (
-          <li
+          <Rise
             key={t}
+            role="listitem"
             className="group relative flex flex-col bg-surface p-6 transition-[background-color] duration-300 hover:bg-accent-soft/40"
           >
             <div className="flex items-baseline justify-between">
@@ -273,9 +287,9 @@ function Process() {
             <p className="mt-2 font-sans text-[14px] leading-relaxed text-muted-strong">
               {b}
             </p>
-          </li>
+          </Rise>
         ))}
-      </ol>
+      </Stagger>
     </section>
   );
 }
@@ -286,50 +300,61 @@ function Pricing() {
   return (
     <section id="pricing" className="relative border-t border-border bg-background-tint/60">
       <div className="mx-auto max-w-6xl px-8 py-24">
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <ChapterMark numeral="III" label="Schedule of fees" />
-            <h2 className="display mt-5 max-w-3xl text-[clamp(2.2rem,5.6vw,3.8rem)]">
-              Flat. <em>Honest.</em> No hours billed.
-            </h2>
+        <Rise>
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <ChapterMark numeral="III" label="Schedule of fees" />
+              <h2 className="display mt-5 max-w-3xl text-[clamp(2.2rem,5.6vw,3.8rem)]">
+                Flat. <em>Honest.</em> No hours billed.
+              </h2>
+              <p className="mt-4 font-sans text-[15px] italic text-muted-strong">
+                See the <Link href="/pricing" className="ink-link">full schedule of fees →</Link>
+              </p>
+            </div>
+            <Stamp label="Bar-licensed" meta="On record · USCIS" tone="seal" rotate={4} />
           </div>
-          <Stamp label="Bar-licensed" meta="On record · USCIS" tone="seal" rotate={4} />
-        </div>
+        </Rise>
 
-        <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
-          <Plan
-            title="O-1A"
-            price="$2,500"
-            sub="Extraordinary ability · sciences, business, athletics"
-            lines={[
-              "Voice intake + evidence vault",
-              "Full petition + I-129 drafted",
-              "Attorney sign-off + e-filing",
-              "RFE drafting included",
-            ]}
-            highlight
-          />
-          <Plan
-            title="O-1B"
-            price="$3,500"
-            sub="Extraordinary achievement · arts"
-            lines={[
-              "Stronger evidence curation",
-              "Industry expert letter drafts",
-              "Everything in O-1A",
-            ]}
-          />
-          <Plan
-            title="EB-1A"
-            price="$4,500"
-            sub="Green-card self-petition"
-            lines={[
-              "12-month engagement",
-              "RFE & motion handling",
-              "Adjustment-of-status support",
-            ]}
-          />
-        </div>
+        <Stagger className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
+          <Rise>
+            <Plan
+              title="O-1A"
+              price="$2,500"
+              sub="Extraordinary ability · sciences, business, athletics"
+              lines={[
+                "Voice intake + evidence vault",
+                "Full petition + I-129 drafted",
+                "Attorney sign-off + e-filing",
+                "RFE drafting included",
+              ]}
+              highlight
+            />
+          </Rise>
+          <Rise>
+            <Plan
+              title="O-1B"
+              price="$3,500"
+              sub="Extraordinary achievement · arts"
+              lines={[
+                "Stronger evidence curation",
+                "Industry expert letter drafts",
+                "Everything in O-1A",
+              ]}
+            />
+          </Rise>
+          <Rise>
+            <Plan
+              title="EB-1A"
+              price="$4,500"
+              sub="Green-card self-petition"
+              lines={[
+                "12-month engagement",
+                "RFE & motion handling",
+                "Adjustment-of-status support",
+              ]}
+            />
+          </Rise>
+        </Stagger>
         <p className="microprint mt-10" style={{ color: "var(--muted-strong)" }}>
           USCIS premium processing fee ($2,805) passthrough at cost. Free
           qualification call. Attorney on record from day&nbsp;1.
@@ -347,29 +372,31 @@ function Closing() {
       id="start"
       className="relative mx-auto max-w-6xl px-8 py-28 text-center"
     >
-      <div className="relative inline-block">
-        <h2 className="display text-[clamp(2.4rem,7vw,5rem)]">
-          Find out if you qualify — <em>today,</em> for free.
-        </h2>
-      </div>
-      <p className="mx-auto mt-6 max-w-xl font-sans text-[16px] leading-relaxed text-muted-strong">
-        If the answer is no, you pay nothing and you&apos;ll know exactly what
-        would change it.
-      </p>
-      <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-        <a
-          href="#start"
-          className="rounded-control bg-seal px-8 py-4 font-mono text-[12px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[2px]"
-        >
-          Begin qualification
-        </a>
-        <Link
-          href="/dashboard"
-          className="rounded-control border border-border-strong px-8 py-4 font-mono text-[12px] uppercase tracking-document text-foreground hover:border-foreground"
-        >
-          See the case file
-        </Link>
-      </div>
+      <Rise>
+        <div className="relative inline-block">
+          <h2 className="display text-[clamp(2.4rem,7vw,5rem)]">
+            Find out if you qualify — <em>today,</em> for free.
+          </h2>
+        </div>
+        <p className="mx-auto mt-6 max-w-xl font-sans text-[16px] leading-relaxed text-muted-strong">
+          If the answer is no, you pay nothing and you&apos;ll know exactly what
+          would change it.
+        </p>
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+          <a
+            href="#start"
+            className="rounded-control bg-seal px-8 py-4 font-mono text-[12px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+          >
+            Begin qualification
+          </a>
+          <Link
+            href="/dashboard"
+            className="rounded-control border border-border-strong px-8 py-4 font-mono text-[12px] uppercase tracking-document text-foreground hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+          >
+            See the case file
+          </Link>
+        </div>
+      </Rise>
     </section>
   );
 }
@@ -415,8 +442,8 @@ function Plan({
   highlight?: boolean;
 }) {
   return (
-    <article
-      className={`lift relative flex flex-col rounded-card border bg-surface p-6 ${
+    <HoverCard
+      className={`relative flex flex-col rounded-card border bg-surface p-6 ${
         highlight ? "border-accent/50 shadow-leaf" : "border-border"
       }`}
     >
@@ -446,6 +473,6 @@ function Plan({
           </li>
         ))}
       </ul>
-    </article>
+    </HoverCard>
   );
 }
