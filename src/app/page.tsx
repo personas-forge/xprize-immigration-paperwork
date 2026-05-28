@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   PageFrame,
@@ -34,7 +35,17 @@ function SiteHeader() {
   return (
     <header className="relative">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-6">
-        <Wordmark context="Petition Atelier · est. 2026" />
+        <div className="flex items-center gap-3">
+          <Image
+            src="/brand/logo.png"
+            alt="immigration-paperwork"
+            width={28}
+            height={28}
+            className="h-7 w-7 rounded-full"
+            priority
+          />
+          <Wordmark context="Petition Atelier · est. 2026" />
+        </div>
         <nav className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-document text-muted-strong">
           <a href="#how" className="ink-link">How it works</a>
           <a href="#pricing" className="ink-link">Schedule of fees</a>
@@ -57,6 +68,14 @@ function SiteHeader() {
 function Hero() {
   return (
     <section className="relative">
+      <Image
+        src="/brand/hero-bg.png"
+        alt=""
+        aria-hidden
+        width={1536}
+        height={1024}
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 mx-auto h-auto max-w-5xl opacity-[0.10] mix-blend-multiply"
+      />
       <div className="mx-auto grid max-w-6xl grid-cols-12 gap-8 px-8 pb-28 pt-20">
         <div className="col-span-12 lg:col-span-8">
           <div
