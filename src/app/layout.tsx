@@ -1,5 +1,34 @@
 import type { Metadata } from "next";
+import { Fraunces, Newsreader, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+
+// — Typography ────────────────────────────────────────────────────────────
+// Fraunces: an opsz-variable serif with high contrast and characterful
+// italics — chosen for display so headlines feel engraved rather than typed.
+// Newsreader: a literary text serif at body size; warm, low-contrast,
+// designed for long-form reading (the perfect tone for an immigration
+// concierge who has to explain things calmly).
+// IBM Plex Mono: case numbers, exhibit IDs, microprint — official feel.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  axes: ["opsz", "SOFT", "WONK"],
+  style: ["normal", "italic"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-newsreader",
+  display: "swap",
+});
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-plex-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Immigration Concierge — AI-drafted, attorney-signed O-1 petitions",
@@ -13,15 +42,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html
+      lang="en"
+      className={`${fraunces.variable} ${newsreader.variable} ${plexMono.variable}`}
+    >
       <body>{children}</body>
     </html>
   );

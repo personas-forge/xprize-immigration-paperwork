@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import {
+  PageFrame,
+  Wordmark,
+  Seal,
+  Guilloche,
+  ChapterMark,
+  Stamp,
+} from "@/components/brand";
 
 export const metadata: Metadata = {
   title: "Immigration Concierge — extraordinary ability, on the record",
@@ -7,75 +15,79 @@ export const metadata: Metadata = {
     "AI-drafted, attorney-signed O-1 visa petitions at one-third the cost. $2,500 flat.",
 };
 
-// Brand landing — "The petition". The page is styled as an official
-// document: ruled margins, Roman-numeral sections, a monogram seal, serif
-// display type. Calm, precise, premium.
+// Alt landing — narrow editorial column. The page is composed as a printed
+// pamphlet: a centered seal masthead, italic display headlines, ruled
+// chapter marks, a perforated tear-line every section, and a closing seal.
 
 export default function LandingClaude() {
   return (
-    <main className="min-h-screen bg-[#f5f9f8] text-teal-950">
+    <PageFrame>
       <div className="mx-auto max-w-3xl px-6">
         {/* masthead */}
-        <header className="flex items-center justify-between border-b border-teal-900/15 py-6">
-          <div className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-full border border-teal-800 text-sm text-teal-800">
-              ✦
-            </span>
-            <div className="leading-tight">
-              <div className="font-display text-lg">Meridian</div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-teal-700">
-                Immigration Concierge
-              </div>
-            </div>
-          </div>
+        <header className="flex items-center justify-between py-8">
+          <Wordmark context="Atelier of Arrival · 2026" size={34} />
           <Link
             href="/dashboard"
-            className="font-mono text-xs uppercase tracking-widest text-teal-700 underline-offset-4 hover:underline"
+            className="ink-link microprint"
+            style={{ color: "var(--muted-strong)" }}
           >
             View a live case →
           </Link>
         </header>
 
+        <div className="perforation h-px" aria-hidden />
+
         {/* hero */}
-        <section className="border-b border-teal-900/15 py-16 text-center">
-          <div className="font-mono text-xs uppercase tracking-[0.3em] text-teal-600">
+        <section className="py-20 text-center">
+          <div className="microprint" style={{ color: "var(--accent-dark)" }}>
             Form I-129 · Classification O-1A
           </div>
-          <h1 className="mt-6 font-display text-6xl italic leading-[1.05] sm:text-7xl">
+          <h1
+            data-animate="ink-rise"
+            className="display mt-6 text-[clamp(2.6rem,9vw,5.4rem)]"
+          >
             Extraordinary
             <br />
-            ability, on the record.
+            <em>ability,</em> on the record.
           </h1>
-          <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-teal-900/75">
+          <p
+            data-animate="ink-rise"
+            style={{ "--delay": "180ms" } as React.CSSProperties}
+            className="mx-auto mt-8 max-w-xl font-sans text-[16.5px] leading-relaxed text-muted-strong"
+          >
             The visa petition a firm bills $8,000–$15,000 to assemble — drafted
             by AI from your CV, citations and press, then reviewed and signed
-            by a licensed immigration attorney. One flat fee: $2,500.
+            by a licensed immigration attorney. One flat fee:&nbsp;$2,500.
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <div
+            data-animate="ink-rise"
+            style={{ "--delay": "360ms" } as React.CSSProperties}
+            className="mt-10 flex flex-wrap items-center justify-center gap-3"
+          >
             <a
               href="#criteria"
-              className="rounded-sm bg-teal-800 px-6 py-3 text-sm font-semibold tracking-wide text-white"
+              className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-background hover:bg-foreground-soft"
             >
               Take the free qualification
             </a>
             <Link
               href="/dashboard"
-              className="rounded-sm border border-teal-800/40 px-6 py-3 text-sm font-semibold tracking-wide text-teal-900"
+              className="rounded-control border border-border-strong px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-foreground hover:border-foreground"
             >
               See the case file
             </Link>
           </div>
         </section>
 
+        <div className="perforation h-px" aria-hidden />
+
         {/* criteria */}
-        <section id="criteria" className="border-b border-teal-900/15 py-14">
-          <div className="font-mono text-xs uppercase tracking-[0.25em] text-teal-600">
-            § I — The eight criteria
-          </div>
-          <h2 className="mt-3 font-display text-3xl">
-            The statute asks for three. Most of our candidates meet seven.
+        <section id="criteria" className="py-16">
+          <ChapterMark numeral="I" label="The eight criteria" />
+          <h2 className="display mt-4 text-3xl">
+            The statute asks for three. <em>Most of our candidates meet seven.</em>
           </h2>
-          <div className="mt-7 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+          <div className="mt-8 grid gap-x-8 gap-y-3 sm:grid-cols-2">
             {[
               "Nationally recognized awards",
               "Membership in selective associations",
@@ -88,37 +100,39 @@ export default function LandingClaude() {
             ].map((c, i) => (
               <div
                 key={c}
-                className="flex items-baseline gap-3 border-b border-dashed border-teal-900/15 pb-3"
+                className="flex items-baseline gap-3 border-b border-dotted border-rule pb-3"
               >
-                <span className="font-mono text-xs text-teal-600">
+                <span className="doc-number text-[11px] text-muted">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <span className="flex-1 text-[15px] leading-snug">{c}</span>
-                <span className="text-teal-700">✓</span>
+                <span className="flex-1 font-sans text-[14.5px] leading-snug">
+                  {c}
+                </span>
+                <span className="text-success">✓</span>
               </div>
             ))}
           </div>
         </section>
 
+        <div className="perforation h-px" aria-hidden />
+
         {/* process */}
-        <section className="border-b border-teal-900/15 py-14">
-          <div className="font-mono text-xs uppercase tracking-[0.25em] text-teal-600">
-            § II — How the petition is built
-          </div>
-          <ol className="mt-6 space-y-6">
+        <section className="py-16">
+          <ChapterMark numeral="II" label="How the petition is built" />
+          <ol className="mt-8 space-y-7">
             {[
               ["I", "Qualify", "A five-minute self-check, then a 45-minute voice interview. Free. We tell you yes, no, or maybe — honestly."],
               ["II", "Assemble", "Upload your CV. AI gathers press, citations and GitHub, then drafts the petition letter, I-129 and 28 exhibits."],
               ["III", "Sign", "Your attorney of record reviews every word, edits where judgment is needed, and signs."],
               ["IV", "File", "E-filed with premium processing. RFE responses are pre-drafted and included at no charge."],
             ].map(([num, title, body]) => (
-              <li key={num} className="flex gap-5">
-                <span className="font-display text-4xl italic text-teal-700">
+              <li key={num} className="flex gap-6">
+                <span className="display w-12 shrink-0 text-5xl italic text-accent-dark">
                   {num}
                 </span>
-                <div className="border-l border-teal-900/15 pl-5">
-                  <div className="font-display text-2xl">{title}</div>
-                  <p className="mt-1 text-[15px] leading-relaxed text-teal-900/75">
+                <div className="border-l border-rule pl-6">
+                  <h3 className="display text-2xl">{title}</h3>
+                  <p className="mt-1.5 font-sans text-[15px] leading-relaxed text-muted-strong">
                     {body}
                   </p>
                 </div>
@@ -127,19 +141,22 @@ export default function LandingClaude() {
           </ol>
         </section>
 
+        <div className="perforation h-px" aria-hidden />
+
         {/* assurance */}
-        <section className="border-b border-teal-900/15 py-14">
-          <div className="grid gap-6 sm:grid-cols-3">
+        <section className="py-16">
+          <div className="grid gap-8 sm:grid-cols-3">
             {[
               ["$2,500", "Flat fee — no billable hours, ever. USCIS fees passed through at cost."],
               ["21 days", "Median time from intake to a filing-ready petition."],
               ["Attorney", "of record on every case. AI gathers and drafts; the lawyer judges and signs."],
             ].map(([big, small]) => (
               <div key={big} className="text-center">
-                <div className="font-display text-4xl italic text-teal-800">
+                <div className="display text-4xl italic text-accent-dark">
                   {big}
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-teal-900/70">
+                <div className="mx-auto mt-2 h-px w-8 bg-accent-dark/50" />
+                <p className="mt-3 font-sans text-[13.5px] leading-relaxed text-muted-strong">
                   {small}
                 </p>
               </div>
@@ -147,30 +164,45 @@ export default function LandingClaude() {
           </div>
         </section>
 
+        <div className="perforation h-px" aria-hidden />
+
         {/* close */}
-        <section className="py-16 text-center">
-          <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border-2 border-teal-800 font-display text-xl italic text-teal-800">
-            M
+        <section className="py-20 text-center">
+          <div
+            data-animate="seal"
+            className="mx-auto mb-8 inline-block text-accent-dark"
+          >
+            <Seal size={84} />
           </div>
-          <h2 className="font-display text-4xl italic">
-            Find out if you qualify — today, for free.
+          <h2 className="display text-[clamp(2rem,6vw,3.6rem)]">
+            Find out if you qualify — <em>today,</em> for free.
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-teal-900/70">
+          <p className="mx-auto mt-5 max-w-md font-sans text-[15.5px] leading-relaxed text-muted-strong">
             If the answer is no, you pay nothing and you&apos;ll know exactly
             what would change it.
           </p>
-          <a
-            href="#criteria"
-            className="mt-7 inline-block rounded-sm bg-teal-800 px-7 py-3 text-sm font-semibold tracking-wide text-white"
-          >
-            Begin qualification
-          </a>
+          <div className="mt-9 flex items-center justify-center gap-4">
+            <a
+              href="#criteria"
+              className="rounded-control bg-seal px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-background shadow-seal hover:bg-[color:var(--accent-dark)]"
+            >
+              Begin qualification
+            </a>
+            <Stamp label="Notarized" meta="On file" tone="indigo" rotate={5} />
+          </div>
         </section>
 
-        <footer className="border-t border-teal-900/15 py-7 text-center font-mono text-[11px] uppercase tracking-widest text-teal-700">
-          Meridian Immigration Concierge · attorney-owned · 2026
+        <div className="perforation h-px" aria-hidden />
+
+        <footer className="py-8 text-center">
+          <div className="microprint" style={{ color: "var(--muted-strong)" }}>
+            Immigration Concierge · attorney-owned · 2026
+          </div>
+          <div className="mt-2 inline-flex items-center gap-2 text-accent-dark opacity-60">
+            <Guilloche size={28} rings={4} />
+          </div>
         </footer>
       </div>
-    </main>
+    </PageFrame>
   );
 }

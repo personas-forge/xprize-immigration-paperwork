@@ -7,13 +7,16 @@ export function CriteriaTable() {
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="bg-accent-soft">
+      <CardHeader className="bg-surface-muted/60">
         <div>
-          <div className="text-sm font-semibold text-foreground">
-            O-1A Criteria · {summary.total} of {criteria.length} evaluated
+          <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+            § II — O-1A Criteria
           </div>
-          <div className="text-xs text-muted">
-            Need {QUALIFYING_THRESHOLD} to qualify. AI-scored from CV + evidence vault.
+          <div className="display mt-1 text-[18px]">
+            {summary.total} of {criteria.length} evaluated
+            <span className="font-sans text-[13px] italic text-muted-strong">
+              {" "}— need {QUALIFYING_THRESHOLD} to qualify, AI-scored from CV + evidence vault.
+            </span>
           </div>
         </div>
         <Badge tone={summary.meetsThreshold ? "success" : "warning"}>
@@ -22,23 +25,37 @@ export function CriteriaTable() {
       </CardHeader>
 
       <table className="w-full text-sm">
-        <thead className="bg-surface-muted text-left text-[11px] uppercase tracking-wider text-muted">
+        <thead className="bg-background-tint/40 text-left">
           <tr>
-            <th className="px-5 py-2 font-semibold">Criterion</th>
-            <th className="px-5 py-2 font-semibold">Status</th>
-            <th className="px-5 py-2 font-semibold">Evidence</th>
-            <th className="px-5 py-2 text-right font-semibold">Exhibits</th>
+            <th className="px-5 py-3 microprint font-medium">Criterion</th>
+            <th className="px-5 py-3 microprint font-medium">Status</th>
+            <th className="px-5 py-3 microprint font-medium">Evidence</th>
+            <th className="px-5 py-3 microprint text-right font-medium">Ex.</th>
           </tr>
         </thead>
         <tbody>
-          {criteria.map((c) => (
-            <tr key={c.id} className="border-t border-border hover:bg-accent-soft/40">
-              <td className="px-5 py-3 font-medium text-foreground">{c.name}</td>
-              <td className="px-5 py-3">
+          {criteria.map((c, i) => (
+            <tr
+              key={c.id}
+              className="border-t border-dotted border-rule transition-[background-color] duration-200 hover:bg-accent-soft/35"
+            >
+              <td className="px-5 py-3.5">
+                <div className="flex items-baseline gap-3">
+                  <span className="doc-number text-[10px] text-muted">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="font-sans text-[14.5px] text-foreground">
+                    {c.name}
+                  </span>
+                </div>
+              </td>
+              <td className="px-5 py-3.5">
                 <Badge tone={statusTone(c.status)}>{c.status}</Badge>
               </td>
-              <td className="px-5 py-3 text-muted">{c.evidence}</td>
-              <td className="px-5 py-3 text-right font-mono text-xs text-muted">
+              <td className="px-5 py-3.5 font-sans text-[13.5px] italic text-muted-strong">
+                {c.evidence}
+              </td>
+              <td className="px-5 py-3.5 text-right doc-number text-[11px] text-muted">
                 {c.exhibit}
               </td>
             </tr>

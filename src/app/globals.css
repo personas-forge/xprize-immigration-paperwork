@@ -1,33 +1,88 @@
 @import "tailwindcss";
 @config "../../tailwind.config.ts";
 
-/* ── Semantic design tokens ──────────────────────────────────────────────
-   Immigration Concierge brand: restrained teal — feels like a real firm,
-   not enterprise gray. Components consume token classes (bg-surface,
-   text-muted, border-border, text-accent) that map to these variables.   */
+/* ── Immigration Concierge · v2 — "Atelier of Arrival" ─────────────────────
+   A visual identity inspired by central-bank security printing, passport
+   engravings, and editorial typography. The product feels like a well-made
+   document on a clean desk: parchment ground, ink lines, gold-leaf accents,
+   one bordeaux seal. Tokens drive everything; components reference tokens
+   (bg-surface, text-accent, etc.) so the system re-skins from one place.   */
 :root {
-  --background: #f6faf9;
-  --surface: #ffffff;
-  --surface-muted: #f1f5f4;
-  --border: #e2ebe9;
-  --border-strong: #cfdedb;
-  --foreground: #1c1917;
-  --muted: #6b7c79;
+  /* — Ground & ink — */
+  --background: #f3ead6;        /* warm parchment */
+  --background-tint: #ece1c4;   /* deckled-edge shadow */
+  --surface: #fbf6e7;           /* vellum card */
+  --surface-muted: #ede2c2;     /* unwatermarked margin */
+  --surface-elevated: #ffffff;  /* white-on-white slip */
+  --border: rgba(13, 31, 45, 0.12);
+  --border-strong: rgba(13, 31, 45, 0.22);
+  --rule: rgba(13, 31, 45, 0.18);
 
-  --accent: #0f766e;
-  --accent-soft: #f0fdfa;
-  --accent-foreground: #ffffff;
+  --foreground: #0d1f2d;        /* midnight ink */
+  --foreground-soft: #1f3445;
+  --muted: #6b5d3e;             /* aged-paper script */
+  --muted-strong: #4d4029;
 
-  --success: #047857;
-  --success-soft: #ecfdf5;
-  --warning: #b45309;
-  --warning-soft: #fffbeb;
-  --danger: #be123c;
-  --danger-soft: #fff1f2;
+  /* — Brand accent spectrum — */
+  --accent: #b8893a;            /* gold-leaf, used sparingly */
+  --accent-dark: #8e6829;
+  --accent-soft: #f4e6c2;
+  --accent-foreground: #1a1206;
 
-  --radius-control: 0.5rem;
-  --radius-card: 0.75rem;
+  --seal: #7d2a2e;              /* bordeaux notary seal */
+  --seal-soft: #ecd3cf;
+  --indigo: #3a4d6b;            /* official stamp blue */
+  --indigo-soft: #d8dde6;
+
+  --success: #4e6b3c;           /* moss approval */
+  --success-soft: #e6ead4;
+  --warning: #a06410;           /* tan caution */
+  --warning-soft: #f4e2c0;
+  --danger: #7d2a2e;            /* same as seal */
+  --danger-soft: #ecd3cf;
+
+  /* — Geometry — */
+  --radius-control: 2px;        /* rectilinear, document-like */
+  --radius-card: 4px;
   --radius-pill: 9999px;
+
+  /* — Typographic rhythm — */
+  --tracking-document: 0.32em;
+  --leading-doc: 1.65;
+}
+
+/* Dark theme — "after-hours notary": ink-on-ink, embossed gold accents.  */
+[data-theme="ink"] {
+  --background: #0c1a25;
+  --background-tint: #08131c;
+  --surface: #122535;
+  --surface-muted: #0e1e2a;
+  --surface-elevated: #1a3245;
+  --border: rgba(243, 234, 214, 0.10);
+  --border-strong: rgba(243, 234, 214, 0.20);
+  --rule: rgba(243, 234, 214, 0.16);
+
+  --foreground: #f3ead6;
+  --foreground-soft: #ddd0ac;
+  --muted: #95876a;
+  --muted-strong: #b7a988;
+
+  --accent: #d4a554;
+  --accent-dark: #b8893a;
+  --accent-soft: rgba(212, 165, 84, 0.14);
+  --accent-foreground: #0c1a25;
+
+  --seal: #c75b60;
+  --seal-soft: rgba(199, 91, 96, 0.14);
+  --indigo: #8b9fc1;
+  --indigo-soft: rgba(139, 159, 193, 0.14);
+
+  --success: #9fc080;
+  --success-soft: rgba(159, 192, 128, 0.14);
+  --warning: #d99947;
+  --warning-soft: rgba(217, 153, 71, 0.14);
+  --danger: #d96b6f;
+  --danger-soft: rgba(217, 107, 111, 0.14);
 }
 
 html,
@@ -38,7 +93,226 @@ body {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  font-feature-settings: "ss01", "ss02", "kern", "liga";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 16.5px;
+  line-height: var(--leading-doc);
+}
+
+/* ── Signature motif: guilloché ground ────────────────────────────────────
+   The faint engraved pattern you see on banknotes & passports — produced
+   here as layered radial + conic gradients tinted by foreground ink. Sits
+   at ~3% opacity on the page background so it feels watermarked, never
+   decorative. Pointer-events-none; aria-hidden.                            */
+.guilloche {
+  position: relative;
+  isolation: isolate;
+}
+.guilloche::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(
+      circle at 25% 30%,
+      transparent 0,
+      transparent 0.6px,
+      currentColor 0.6px,
+      currentColor 1px,
+      transparent 1px,
+      transparent 24px
+    ),
+    radial-gradient(
+      circle at 75% 70%,
+      transparent 0,
+      transparent 0.6px,
+      currentColor 0.6px,
+      currentColor 1px,
+      transparent 1px,
+      transparent 36px
+    );
+  background-size: 96px 96px, 144px 144px;
+  color: var(--foreground);
+  opacity: 0.045;
+  mix-blend-mode: multiply;
+}
+[data-theme="ink"] .guilloche::before {
+  mix-blend-mode: screen;
+  opacity: 0.06;
+}
+
+/* ── Perforation rule — the "tear-here" dotted line that frames sections. */
+.perforation {
+  background-image: linear-gradient(
+    to right,
+    var(--rule) 0,
+    var(--rule) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  background-size: 12px 1px;
+  background-repeat: repeat-x;
+  background-position: 0 50%;
+}
+
+.perforation-y {
+  background-image: linear-gradient(
+    to bottom,
+    var(--rule) 0,
+    var(--rule) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  background-size: 1px 12px;
+  background-repeat: repeat-y;
+  background-position: 50% 0;
+}
+
+/* ── Double-rule (the engraved frame around official documents) ───────── */
+.double-rule {
+  box-shadow:
+    inset 0 0 0 1px var(--border-strong),
+    inset 0 0 0 3px var(--background),
+    inset 0 0 0 4px var(--border);
+}
+
+/* ── Microprint label — the tiny security text on passports ────────────── */
+.microprint {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: var(--tracking-document);
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ── Document number — monospace tabular figure for case codes ────────── */
+.doc-number {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+/* ── Display headline — Fraunces with optical sizing & soft drop ─────── */
+.display {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-optical-sizing: auto;
+  font-weight: 380;
+  letter-spacing: -0.022em;
+  line-height: 0.98;
+}
+.display em {
+  font-style: italic;
+  font-weight: 320;
+  color: var(--accent-dark);
+}
+[data-theme="ink"] .display em { color: var(--accent); }
+
+/* ── Inline initial — a small dropped initial for editorial paragraphs ── */
+.initial::first-letter {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 500;
+  font-size: 3.4em;
+  line-height: 0.85;
+  float: left;
+  margin: 0.08em 0.12em 0 -0.04em;
+  color: var(--accent-dark);
+  font-feature-settings: "ss01";
+}
+
+/* ── Scrollbar, selection, focus ── */
+::selection {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+/* ── Animations — only opacity & transform, all gated on reduced-motion */
+@keyframes inkRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes sealPress {
+  0%   { opacity: 0; transform: scale(1.18) rotate(-6deg); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes ribbonSlide {
+  from { transform: translateX(-18px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes underlineGrow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-animate="ink-rise"] {
+    opacity: 0;
+    animation: inkRise 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: var(--delay, 0ms);
+  }
+  [data-animate="seal"] {
+    opacity: 0;
+    animation: sealPress 900ms cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
+    animation-delay: var(--delay, 0ms);
+  }
+  [data-animate="ribbon"] {
+    opacity: 0;
+    animation: ribbonSlide 600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: var(--delay, 0ms);
+  }
+  [data-animate="underline"] {
+    transform-origin: left center;
+    animation: underlineGrow 800ms cubic-bezier(0.22, 1, 0.36, 1) 250ms forwards;
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Card hover — transform+border only (GPU compositable) ─────────── */
+.lift {
+  will-change: transform;
+  transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lift:hover { transform: translateY(-3px); }
+
+/* ── Link underline — the slow grow on hover ──────────────────────── */
+.ink-link {
+  position: relative;
+  color: var(--foreground);
+  transition: color 200ms ease;
+}
+.ink-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ink-link:hover { color: var(--accent-dark); }
+.ink-link:hover::after {
+  transform: scaleX(1);
+  transform-origin: left center;
 }

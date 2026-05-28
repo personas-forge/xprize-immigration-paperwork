@@ -4,6 +4,7 @@ import { cn } from "@/lib/cn";
 type SectionHeaderProps = {
   title: string;
   subtitle?: string;
+  eyebrow?: string;
   actions?: ReactNode;
   className?: string;
 };
@@ -11,6 +12,7 @@ type SectionHeaderProps = {
 export function SectionHeader({
   title,
   subtitle,
+  eyebrow,
   actions,
   className,
 }: SectionHeaderProps) {
@@ -18,15 +20,22 @@ export function SectionHeader({
     <div
       className={cn(
         "flex flex-wrap items-end justify-between gap-3",
-        className
+        className,
       )}
     >
-      <div>
-        <h2 className="font-display text-3xl leading-tight text-foreground">
+      <div className="max-w-3xl">
+        {eyebrow ? (
+          <div className="microprint mb-2" style={{ color: "var(--accent-dark)" }}>
+            {eyebrow}
+          </div>
+        ) : null}
+        <h2 className="display text-[clamp(2rem,5vw,3.4rem)] text-foreground">
           {title}
         </h2>
         {subtitle ? (
-          <p className="mt-1 max-w-2xl text-sm text-muted">{subtitle}</p>
+          <p className="mt-3 max-w-2xl font-sans text-[15.5px] leading-relaxed text-muted-strong">
+            {subtitle}
+          </p>
         ) : null}
       </div>
       {actions ? <div className="flex items-center gap-2">{actions}</div> : null}

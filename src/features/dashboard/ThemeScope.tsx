@@ -1,4 +1,5 @@
 import { type CSSProperties, type ReactNode } from "react";
+import { PageFrame } from "@/components/brand/PageFrame";
 
 // A theme is a set of design-token CSS-variable overrides. Applying it to a
 // wrapper re-themes everything inside: every token utility class the app uses
@@ -14,11 +15,8 @@ export function ThemeScope({
   children: ReactNode;
 }) {
   return (
-    <div
-      style={theme as CSSProperties}
-      className="min-h-screen bg-background text-foreground"
-    >
-      {children}
+    <div style={theme as CSSProperties} className="min-h-screen">
+      <PageFrame>{children}</PageFrame>
     </div>
   );
 }

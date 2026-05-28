@@ -4,10 +4,10 @@ import { Card } from "./Card";
 export type StatTone = "neutral" | "up" | "down" | "accent";
 
 const deltaClass: Record<StatTone, string> = {
-  neutral: "text-muted",
+  neutral: "text-muted-strong",
   up: "text-success",
   down: "text-danger",
-  accent: "text-accent",
+  accent: "text-accent-dark",
 };
 
 type StatCardProps = {
@@ -28,20 +28,20 @@ export function StatCard({
   className,
 }: StatCardProps) {
   return (
-    <Card className={cn("p-5", className)}>
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-        {label}
-      </div>
+    <Card className={cn("p-5 lift", className)}>
+      <div className="microprint">{label}</div>
       <div
         className={cn(
-          "mt-2 text-2xl tabular-nums text-foreground",
-          mono && "font-mono"
+          "mt-3 text-[2rem] leading-none text-foreground",
+          mono ? "doc-number" : "display",
         )}
       >
         {value}
       </div>
       {delta ? (
-        <div className={cn("mt-1 text-xs", deltaClass[tone])}>{delta}</div>
+        <div className={cn("mt-2 font-mono text-[11px] uppercase tracking-document", deltaClass[tone])}>
+          {delta}
+        </div>
       ) : null}
     </Card>
   );

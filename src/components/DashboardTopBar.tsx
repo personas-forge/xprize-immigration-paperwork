@@ -1,39 +1,38 @@
-import Link from "next/link";
 import { type ReactNode } from "react";
+import { Wordmark } from "./brand/Wordmark";
 
 type DashboardTopBarProps = {
-  glyph: string;
+  glyph: string; // accepted for API compat; unused (Wordmark draws the seal)
   product: string;
   context: string;
   actions?: ReactNode;
 };
 
-// Thin app chrome shared by every dashboard route. Kept presentational so it
-// can move into a shared layout once more routes exist.
+// Document-style app chrome: an engraved seal lockup on the left, the case
+// reference set in monospace on the right, perforated baseline rule under
+// the bar — every dashboard page sits on this masthead.
 export function DashboardTopBar({
-  glyph,
-  product,
+  product: _product,
   context,
   actions,
 }: DashboardTopBarProps) {
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur">
-      <div className="flex items-center justify-between px-8 py-3">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="grid h-8 w-8 place-items-center rounded-control bg-foreground text-sm text-background"
-            aria-label={product}
-          >
-            {glyph}
-          </Link>
-          <div>
-            <div className="text-sm font-semibold text-foreground">{product}</div>
-            <div className="text-[11px] text-muted">{context}</div>
+    <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur">
+      <div className="flex items-center justify-between gap-6 px-8 py-4">
+        <Wordmark context="Petition Atelier" size={32} />
+
+        <div className="hidden flex-1 items-center justify-center md:flex">
+          <div className="inline-flex items-baseline gap-3 rounded-control border border-border-strong bg-surface-muted/60 px-4 py-1.5">
+            <span className="microprint" style={{ color: "var(--muted)" }}>
+              Active file
+            </span>
+            <span className="doc-number text-[12px] text-foreground">{context}</span>
           </div>
         </div>
+
         {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
       </div>
+      <div className="perforation mx-8 h-px" aria-hidden />
     </header>
   );
 }

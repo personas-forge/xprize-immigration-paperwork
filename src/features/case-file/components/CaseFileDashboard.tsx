@@ -1,58 +1,71 @@
 import { Badge, Button, Card, CardBody } from "@/components/ui";
+import { Stamp, ChapterMark, Seal } from "@/components/brand";
 import { caseFacts } from "../data";
 import { CriteriaTable } from "./CriteriaTable";
 import { PetitionDraftCard, TasksCard } from "./SidePanels";
 
 export function CaseFileDashboard() {
   return (
-    <div className="px-8 py-8">
-      <div className="mx-auto max-w-7xl space-y-5">
-        <Card>
-          <CardBody className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-accent">
-                <span
-                  aria-hidden
-                  className="grid h-5 w-5 place-items-center rounded-pill bg-accent-soft text-[10px] ring-1 ring-accent/20"
-                >
-                  ✦
-                </span>
-                Petitioner · Case O1-241
+    <div className="px-8 py-10">
+      <div className="mx-auto max-w-7xl space-y-8">
+        <ChapterMark numeral="I" label="Petitioner of record" />
+
+        {/* Masthead — the case-file header card */}
+        <Card className="relative overflow-hidden">
+          <CardBody className="grid grid-cols-12 gap-6">
+            <div className="col-span-12 lg:col-span-6">
+              <div className="flex items-center gap-3 text-accent-dark">
+                <Seal size={36} />
+                <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+                  File №&nbsp;<span className="doc-number">O1-241</span> · Petitioner
+                </div>
               </div>
-              <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
-                Dr. Anya Krishnan
-              </div>
-              <div className="text-sm text-muted">
-                Senior Research Engineer · India → US (O-1A)
+
+              <h1 className="display mt-5 text-[clamp(2rem,4.2vw,3rem)]">
+                Dr. <em>Anya</em> Krishnan
+              </h1>
+              <p className="font-sans text-[15px] italic text-muted-strong">
+                Senior Research Engineer · India → United States · O-1A
+              </p>
+
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <Button variant="primary">Open petition letter</Button>
+                <Button variant="secondary">Voice intake transcript</Button>
               </div>
             </div>
-            <div className="flex items-center gap-6">
+
+            <div className="col-span-12 grid grid-cols-3 gap-px overflow-hidden rounded-card border border-border bg-border lg:col-span-6">
               {caseFacts.map((fact) => (
-                <div key={fact.label} className="text-right">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">
-                    {fact.label}
-                  </div>
-                  <div className="text-sm font-medium text-foreground">
+                <div
+                  key={fact.label}
+                  className="bg-surface px-4 py-4"
+                >
+                  <div className="microprint">{fact.label}</div>
+                  <div className="mt-2 doc-number text-[14px] text-foreground">
                     {fact.value}
                   </div>
                 </div>
               ))}
-              <Button variant="primary">Open petition letter</Button>
             </div>
           </CardBody>
+
+          {/* Status stamp pinned to the corner — the visual hero of the card */}
+          <div className="pointer-events-none absolute right-6 top-6 hidden lg:block">
+            <Stamp label="Drafting" meta="Phase III of IV" tone="seal" rotate={6} />
+          </div>
         </Card>
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="lg:col-span-8">
             <CriteriaTable />
           </div>
-          <div className="space-y-5 lg:col-span-4">
+          <div className="space-y-6 lg:col-span-4">
             <TasksCard />
             <PetitionDraftCard />
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-muted">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge tone="success">92% approval likelihood</Badge>
           <Badge tone="neutral">$2,500 flat fee</Badge>
           <Badge tone="neutral">USCIS premium $2,805 passthrough</Badge>
