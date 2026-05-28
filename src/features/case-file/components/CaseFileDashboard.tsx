@@ -1,10 +1,28 @@
-import { Badge, Button, Card, CardBody } from "@/components/ui";
+"use client";
+
+import { useEffect, useState } from "react";
+import { Badge, Button, Card, CardBody, Skeleton } from "@/components/ui";
 import { Stamp, ChapterMark, Seal } from "@/components/brand";
-import { caseFacts } from "../data";
+import { FieldGuidancePanel } from "@/features/guidance";
+import { getCaseFacts } from "@/lib/data";
+import { type CaseFact } from "../types";
+import { CaseList } from "./CaseList";
 import { CriteriaTable } from "./CriteriaTable";
 import { PetitionDraftCard, TasksCard } from "./SidePanels";
 
 export function CaseFileDashboard() {
+  const [caseFacts, setCaseFacts] = useState<readonly CaseFact[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    getCaseFacts().then((facts) => {
+      if (active) setCaseFacts(facts);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <div className="px-8 py-10">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -35,17 +53,21 @@ export function CaseFileDashboard() {
             </div>
 
             <div className="col-span-12 grid grid-cols-3 gap-px overflow-hidden rounded-card border border-border bg-border lg:col-span-6">
-              {caseFacts.map((fact) => (
-                <div
-                  key={fact.label}
-                  className="bg-surface px-4 py-4"
-                >
-                  <div className="microprint">{fact.label}</div>
-                  <div className="mt-2 doc-number text-[14px] text-foreground">
-                    {fact.value}
-                  </div>
-                </div>
-              ))}
+              {caseFacts === null
+                ? Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="bg-surface px-4 py-4">
+                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="mt-2 h-4 w-24" />
+                    </div>
+                  ))
+                : caseFacts.map((fact) => (
+                    <div key={fact.label} className="bg-surface px-4 py-4">
+                      <div className="microprint">{fact.label}</div>
+                      <div className="mt-2 doc-number text-[14px] text-foreground">
+                        {fact.value}
+                      </div>
+                    </div>
+                  ))}
             </div>
           </CardBody>
 
@@ -56,14 +78,17 @@ export function CaseFileDashboard() {
         </Card>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <div className="lg:col-span-8">
+          <div className="lg:col-span-8 space-y-6">
             <CriteriaTable />
+            <FieldGuidancePanel />
           </div>
           <div className="space-y-6 lg:col-span-4">
             <TasksCard />
             <PetitionDraftCard />
           </div>
         </div>
+
+        <CaseList />
 
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone="success">92% approval likelihood</Badge>

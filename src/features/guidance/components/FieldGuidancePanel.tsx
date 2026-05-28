@@ -1,0 +1,213 @@
+"use client";
+
+import { useEffect, useId, useState } from "react";
+import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
+import { getForms } from "@/lib/data";
+import { type UscisForm } from "@/features/case-file/types";
+import { type GuidanceResponse } from "../guidance";
+import { DisclaimerStamp } from "./DisclaimerStamp";
+
+// — Field-guidance panel ─────────────────────────────────────────────────────
+// Pick a USCIS form + field, describe the situation, and request INFORMATIONAL
+// guidance from /api/guidance. The not-legal-advice disclaimer is rendered as a
+// prominent bordeaux stamp on every result — it cannot be dismissed and is the
+// product's UPL safeguard. Handles loading, error, and empty states.
+
+type Status = "idle" | "loading" | "done" | "error";
+
+export function FieldGuidancePanel() {
+  const [forms, setForms] = useState<readonly UscisForm[] | null>(null);
+  const [formId, setFormId] = useState("");
+  const [fieldLabel, setFieldLabel] = useState("");
+  const [situation, setSituation] = useState("");
+  const [status, setStatus] = useState<Status>("idle");
+  const [result, setResult] = useState<GuidanceResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fieldSelectId = useId();
+  const formSelectId = useId();
+  const situationId = useId();
+
+  // Load the form catalog through the data layer (mock today, API later).
+  useEffect(() => {
+    let active = true;
+    getForms().then((list) => {
+      if (!active) return;
+      setForms(list);
+      const first = list[0];
+      if (first) {
+        setFormId(first.number);
+        setFieldLabel(first.commonFields[0] ?? "");
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const activeForm = forms?.find((f) => f.number === formId) ?? null;
+
+  function onFormChange(nextNumber: string) {
+    setFormId(nextNumber);
+    const next = forms?.find((f) => f.number === nextNumber) ?? null;
+    setFieldLabel(next?.commonFields[0] ?? "");
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!formId || !fieldLabel || situation.trim() === "") {
+      setError("Pick a form and field, then describe your situation.");
+      setStatus("error");
+      return;
+    }
+    setStatus("loading");
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch("/api/guidance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formId, fieldLabel, situation }),
+      });
+      const data = (await res.json()) as GuidanceResponse | { error: string };
+      if (!res.ok || "error" in data) {
+        setError("error" in data ? data.error : "Could not generate guidance.");
+        setStatus("error");
+        return;
+      }
+      setResult(data);
+      setStatus("done");
+    } catch {
+      setError("Network error — please try again.");
+      setStatus("error");
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+          § V — Field guidance · informational
+        </div>
+        <Badge tone="accent">AI-assisted</Badge>
+      </CardHeader>
+      <CardBody className="space-y-5">
+        {forms === null ? (
+          <GuidanceFormSkeleton />
+        ) : (
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="microprint">USCIS form</span>
+                <select
+                  id={formSelectId}
+                  value={formId}
+                  onChange={(e) => onFormChange(e.target.value)}
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                >
+                  {forms.map((f) => (
+                    <option key={f.id} value={f.number}>
+                      {f.number} — {f.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="microprint">Field</span>
+                <select
+                  id={fieldSelectId}
+                  value={fieldLabel}
+                  onChange={(e) => setFieldLabel(e.target.value)}
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                >
+                  {(activeForm?.commonFields ?? []).map((field) => (
+                    <option key={field} value={field}>
+                      {field}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <label className="block">
+              <span className="microprint">Describe your situation</span>
+              <textarea
+                id={situationId}
+                value={situation}
+                onChange={(e) => setSituation(e.target.value)}
+                rows={3}
+                placeholder="e.g. I'm an O-1A researcher with 6 papers and a granted patent…"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+              />
+            </label>
+
+            <div className="flex items-center gap-3">
+              <Button type="submit" variant="primary" disabled={status === "loading"}>
+                {status === "loading" ? "Generating…" : "Get field guidance"}
+              </Button>
+              <span className="microprint" style={{ color: "var(--muted)" }}>
+                Informational only
+              </span>
+            </div>
+          </form>
+        )}
+
+        {status === "loading" ? <GuidanceResultSkeleton /> : null}
+
+        {status === "error" && error ? (
+          <div
+            role="alert"
+            className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[13px] text-danger"
+          >
+            {error}
+          </div>
+        ) : null}
+
+        {status === "done" && result ? (
+          <div className="space-y-3">
+            {/* Disclaimer renders FIRST and prominently — never optional. */}
+            <DisclaimerStamp text={result.disclaimer} />
+            <div className="relative rounded-control border border-accent/30 bg-surface px-5 py-4">
+              <div className="absolute inset-x-0 top-0 perforation h-px" aria-hidden />
+              <div className="mb-2 flex items-center justify-between">
+                <span className="microprint" style={{ color: "var(--accent-dark)" }}>
+                  {formId} · {fieldLabel}
+                </span>
+                <Badge tone={result.source === "gemini" ? "accent" : "neutral"}>
+                  {result.source === "gemini" ? "Gemini" : "Template"}
+                </Badge>
+              </div>
+              <p className="font-sans text-[14px] leading-[1.7] text-foreground-soft">
+                {result.guidance}
+              </p>
+              <div className="absolute inset-x-0 bottom-0 perforation h-px" aria-hidden />
+            </div>
+          </div>
+        ) : null}
+      </CardBody>
+    </Card>
+  );
+}
+
+function GuidanceFormSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Skeleton className="h-10" />
+        <Skeleton className="h-10" />
+      </div>
+      <Skeleton className="h-20" />
+      <Skeleton className="h-9 w-44" />
+    </div>
+  );
+}
+
+function GuidanceResultSkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-14" />
+      <Skeleton className="h-24" />
+    </div>
+  );
+}

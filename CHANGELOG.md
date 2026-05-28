@@ -8,6 +8,32 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+### Added
+
+- **Data-layer abstraction (`src/lib/data/`).** Typed async accessors
+  (`cases.ts`, `forms.ts`, `documents.ts`) form one swappable boundary over the
+  mock fixtures; consumers import from `@/lib/data` instead of reaching into
+  feature data files. Behavior is identical (mock today, DB/API later).
+- **Real Gemini USCIS form-field guidance.** New Node-runtime route
+  `src/app/api/guidance/route.ts` returns `{ guidance, disclaimer, source }`.
+  With no `GEMINI_API_KEY` it returns deterministic templated guidance (the
+  default, secret-free path); with a key it calls `gemini-3.5-flash` using a
+  prompt that mandates general informational guidance only — never legal advice
+  — and attorney review. A new **Field guidance** panel on the dashboard wires
+  it up with loading/error states. The not-legal-advice / attorney-of-record
+  disclaimer renders as a prominent bordeaux stamp on **every** AI output and
+  is part of the response contract (`buildGuidanceResponse`).
+- **Case portfolio list.** Search + filter (visa classification, case status) +
+  sort over the case portfolio, with CSV export, a print-friendly view, and
+  empty/loading/error states. Filters persist to `localStorage`.
+- **Shared `Skeleton` primitive** and route-level `loading.tsx` / `error.tsx`
+  for the dashboard segment.
+
+### Changed
+
+- Case-file dashboard components (`CriteriaTable`, `SidePanels`,
+  `CaseFileDashboard`) now read through the data layer with loading skeletons.
+
 ### Docs
 
 - Rewrote README to reflect current capabilities and structure.
