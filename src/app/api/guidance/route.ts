@@ -1,12 +1,15 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
+  DISCLAIMER,
   buildGuidancePrompt,
   buildGuidanceResponse,
   mockGuidance,
   parseGuidanceRequest,
   type GuidanceResponse,
 } from "@/features/guidance/guidance";
+import { chargeForOperation } from "@/lib/tokens/guard";
 
 // USCIS form-field guidance endpoint.
 //
@@ -39,6 +42,28 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
   const req = parsed.value;
 
+  // Token economy (Procedure 2): debit one "light" token up front, before any
+  // model work. The guard is a free pass when auth/DB/TOKENS_BYPASS aren't
+  // configured, so the keyless/mock build keeps working unmetered.
+  const requestId = randomUUID();
+  const charged = await chargeForOperation("guidance", requestId);
+  if (!charged.ok) {
+    if (charged.reason === "unauthenticated") {
+      return NextResponse.json({ error: "Sign in to use guidance." }, { status: 401 });
+    }
+    // 402: out of tokens. Echo cost/balance for the paywall, and keep the
+    // not-legal-advice disclaimer present on this path too (UPL safeguard).
+    return NextResponse.json(
+      {
+        error: "insufficient_tokens",
+        cost: charged.cost,
+        balance: charged.balance,
+        disclaimer: DISCLAIMER,
+      },
+      { status: 402 },
+    );
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
 
   // No key → templated informational fallback. Build stays fully secret-free.
@@ -61,7 +86,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     const payload: GuidanceResponse = buildGuidanceResponse(guidance, "gemini");
     return NextResponse.json(payload);
   } catch {
-    // Model/network failure must still return safe, disclaimed guidance.
+    // Model/network failure must still return safe, disclaimed guidance — and
+    // we refund the token since the user never got a model-generated answer.
+    await charged.reclaim();
     const payload: GuidanceResponse = buildGuidanceResponse(
       mockGuidance(req),
       "mock",

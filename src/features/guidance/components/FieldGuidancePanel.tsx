@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { getForms } from "@/lib/data";
 import { type UscisForm } from "@/features/case-file/types";
-import { type GuidanceResponse } from "../guidance";
+import { DISCLAIMER, type GuidanceResponse } from "../guidance";
 import { DisclaimerStamp } from "./DisclaimerStamp";
 
 // — Field-guidance panel ─────────────────────────────────────────────────────
@@ -13,7 +14,7 @@ import { DisclaimerStamp } from "./DisclaimerStamp";
 // prominent bordeaux stamp on every result — it cannot be dismissed and is the
 // product's UPL safeguard. Handles loading, error, and empty states.
 
-type Status = "idle" | "loading" | "done" | "error";
+type Status = "idle" | "loading" | "done" | "error" | "paywall";
 
 export function FieldGuidancePanel() {
   const [forms, setForms] = useState<readonly UscisForm[] | null>(null);
@@ -69,6 +70,12 @@ export function FieldGuidancePanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ formId, fieldLabel, situation }),
       });
+      // 402 → out of tokens. Show the paywall CTA (→ /billing) instead of a
+      // generic error. The not-legal-advice disclaimer still renders here.
+      if (res.status === 402) {
+        setStatus("paywall");
+        return;
+      }
       const data = (await res.json()) as GuidanceResponse | { error: string };
       if (!res.ok || "error" in data) {
         setError("error" in data ? data.error : "Could not generate guidance.");
@@ -161,6 +168,34 @@ export function FieldGuidancePanel() {
             className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[13px] text-danger"
           >
             {error}
+          </div>
+        ) : null}
+
+        {status === "paywall" ? (
+          <div className="space-y-3">
+            {/* The UPL disclaimer stays visible even on the out-of-tokens path. */}
+            <DisclaimerStamp text={DISCLAIMER} />
+            <div
+              role="alert"
+              className="flex flex-col gap-3 rounded-control border-2 border-double border-seal/50 bg-seal-soft/40 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <div className="microprint" style={{ color: "var(--seal)" }}>
+                  Out of tokens
+                </div>
+                <p className="mt-1 font-sans text-[13.5px] leading-snug text-foreground-soft">
+                  You&apos;ve used your token balance. Buy more to keep
+                  generating informational field guidance.
+                </p>
+              </div>
+              <Link
+                href="/billing"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[12px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
+              >
+                Buy more
+                <span aria-hidden>→</span>
+              </Link>
+            </div>
           </div>
         ) : null}
 

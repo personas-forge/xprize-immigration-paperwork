@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth/session";
 import { upsertProfileWithConsent } from "@/lib/auth/db";
 import { CONSENT_VERSION } from "@/lib/supabase/config";
+import { grantSignupTokens } from "@/lib/tokens/ledger";
+import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
 
 export type ConsentState = { error?: string };
 
@@ -40,6 +42,11 @@ export async function submitConsent(
     ip,
     userAgent: h.get("user-agent"),
   });
+
+  // One-time free token grant for the new account (idempotent per user, and a
+  // no-op when the DB isn't configured). Lets the user try AI guidance right
+  // away before topping up via the /billing bundles.
+  await grantSignupTokens(user.id, FREE_SIGNUP_GRANT);
 
   redirect("/dashboard");
 }

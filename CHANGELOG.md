@@ -10,6 +10,27 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ### Added
 
+- **Token economy & Polar paywall (Library Procedure 2).** Replaces the
+  subscription/fee-schedule pricing with a prepaid token economy on the existing
+  `app_immigration` ledger (no DDL). New accounts receive a one-time
+  `FREE_SIGNUP_GRANT` (granted in `welcome/actions.ts` after consent). The
+  `/api/guidance` AI route now debits **one token** per answer up front
+  (`OPERATIONS = { guidance: "light" }`, charge-then-reclaim: the token is
+  refunded if the model call throws); insufficient balance returns **HTTP 402**
+  and unauthenticated **401**. The not-legal-advice / attorney-of-record
+  disclaimer is preserved on every path, including the 402 body and the in-panel
+  paywall. A re-skinned `/billing` page shows the balance, four token bundles
+  (Buy → `/api/checkout` → Polar), and a contact-only Enterprise band; the old
+  `/pricing` route now redirects to `/billing` (no dead subscription copy). A
+  header balance pill (both parchment and ink themes; `∞` on dev bypass /
+  unconfigured) links to `/billing`, and the guidance panel surfaces an
+  "Out of tokens — buy more" CTA on a 402. New server-only modules
+  `lib/tokens/{economy,ledger,guard}.ts` and `lib/polar/client.ts`, plus
+  `/api/checkout`, `/api/polar/webhook`, and a gated dev-only
+  `/api/dev/grant-tokens`. Everything degrades gracefully: with no
+  `DATABASE_URL`/Polar config (or `TOKENS_BYPASS=1`) the guard free-passes so
+  keyless builds and the AI mock fallback keep working unmetered. Added
+  `@polar-sh/sdk`; Polar/`TOKENS_BYPASS` keys added (empty) to `.env.example`.
 - **Supabase Google OAuth, content gating & first-auth consent (Library
   Procedure 1).** "Continue with Google" via Supabase Auth (`@supabase/ssr`),
   cookie-based sessions refreshed in `src/middleware.ts`, and a two-layer gate:
