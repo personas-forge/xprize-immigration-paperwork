@@ -10,6 +10,21 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ### Added
 
+- **Supabase Google OAuth, content gating & first-auth consent (Library
+  Procedure 1).** "Continue with Google" via Supabase Auth (`@supabase/ssr`),
+  cookie-based sessions refreshed in `src/middleware.ts`, and a two-layer gate:
+  edge middleware checks the session for `PROTECTED_PREFIXES = ["/dashboard"]`
+  (marketing pages `/`, `/pricing`, `/faq`, `/landing-claude` stay public),
+  while `src/app/dashboard/layout.tsx` enforces onboarding via
+  `requireOnboardedUser()`. First sign-in routes to `/welcome`, where the
+  re-skinned `ConsentForm` records required Terms + Privacy consent (marketing
+  optional) into this app's private `app_immigration` schema over a direct `pg`
+  connection. `/login` and the consent form are re-skinned to the Atelier of
+  Arrival identity (parchment/ink, gold-leaf, guilloché, perforated rule,
+  rubber-stamp) and keep the not-legal-advice / attorney-of-record disclaimer
+  visible at sign-up. Everything gates on `isAuthConfigured()`, so the app
+  still builds and runs with no secrets. A "Sign in" link was added to the
+  marketing header.
 - **Data-layer abstraction (`src/lib/data/`).** Typed async accessors
   (`cases.ts`, `forms.ts`, `documents.ts`) form one swappable boundary over the
   mock fixtures; consumers import from `@/lib/data` instead of reaching into
@@ -17,7 +32,7 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 - **Real Gemini USCIS form-field guidance.** New Node-runtime route
   `src/app/api/guidance/route.ts` returns `{ guidance, disclaimer, source }`.
   With no `GEMINI_API_KEY` it returns deterministic templated guidance (the
-  default, secret-free path); with a key it calls `gemini-3.5-flash` using a
+  default, secret-free path); with a key it calls `gemini-3-flash-preview` using a
   prompt that mandates general informational guidance only — never legal advice
   — and attorney review. A new **Field guidance** panel on the dashboard wires
   it up with loading/error states. The not-legal-advice / attorney-of-record
@@ -31,6 +46,8 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ### Changed
 
+- **Gemini model `gemini-3.5-flash` → `gemini-3-flash-preview`** in the
+  `/api/guidance` route and `GEMINI_MODEL` in `.env.example`.
 - Case-file dashboard components (`CriteriaTable`, `SidePanels`,
   `CaseFileDashboard`) now read through the data layer with loading skeletons.
 
