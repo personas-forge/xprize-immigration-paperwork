@@ -1,0 +1,227 @@
+/**
+ * The validation layer — makes "is this state correct?" a tracked, cited,
+ * dated property of each program and compliance claim, not an assumption.
+ *
+ * Every program a user can file (a LIVE program) MUST have a ValidationRecord
+ * with status "verified", a legal basis, at least one primary/agency source,
+ * and a verification date. `validation.test.ts` enforces this in CI, so a new
+ * market can't go live without being validated against its sources.
+ *
+ * Two layers of correctness:
+ *   - status "verified"   → confirmed against PRIMARY sources (what the team can
+ *     do via research). This is what CI gates on.
+ *   - counselApproved     → signed off by the attorney/adviser of record. This
+ *     is the bar for actually FILING, tracked here but not the same as verified.
+ *
+ * This is product/source validation, not legal advice — see docs/validation-framework.md.
+ */
+
+import { type Classification } from "./packs";
+
+export type ValidationStatus = "verified" | "provisional" | "needs-review";
+
+export interface SourceRef {
+  title: string;
+  url: string;
+  kind: "primary-law" | "agency-guidance" | "court-order" | "secondary";
+}
+
+export interface ValidationRecord {
+  /** Program code or compliance-topic key this record validates. */
+  subject: string;
+  status: ValidationStatus;
+  /** Statute / regulation the program rests on. */
+  legalBasis: string;
+  /** Number of criteria required, when applicable (e.g. 3 of 8). */
+  threshold?: string;
+  /** ISO date (yyyy-mm-dd) the facts were last checked against the sources. */
+  lastVerified: string;
+  /** "web-research (primary sources)" until counsel signs off. */
+  verifiedBy: string;
+  /** True once the attorney/adviser of record has signed off (filing bar). */
+  counselApproved: boolean;
+  sources: SourceRef[];
+  notes?: string;
+}
+
+/** Re-verify a record at least this often (or on any regulatory change). */
+export const REVALIDATE_AFTER_DAYS = 180;
+
+const TODAY = "2026-05-30"; // date of the last validation pass
+
+// — Program validations ──────────────────────────────────────────────────────
+
+export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
+  "O-1A": {
+    subject: "O-1A",
+    status: "verified",
+    legalBasis: "8 CFR 214.2(o)(3)(iii)",
+    threshold: "3 of 8 criteria (or a qualifying one-time major award)",
+    lastVerified: TODAY,
+    verifiedBy: "web-research (primary sources)",
+    counselApproved: false,
+    sources: [
+      {
+        title: "8 CFR 214.2 — O classification (eCFR)",
+        url: "https://www.ecfr.gov/current/title-8/chapter-I/subchapter-B/part-214/subpart-A/section-214.2",
+        kind: "primary-law",
+      },
+      {
+        title: "USCIS Policy Manual, Vol. 2 Part M Ch. 4 — O-1 Beneficiaries",
+        url: "https://www.uscis.gov/policy-manual/volume-2-part-m-chapter-4",
+        kind: "agency-guidance",
+      },
+    ],
+    notes:
+      "Threshold (3 of 8) and the criteria set confirmed against the regulation. " +
+      "Criterion labels are paraphrased; verbatim wording + counsel sign-off pending.",
+  },
+  "O-1B": {
+    subject: "O-1B",
+    status: "verified",
+    legalBasis: "8 CFR 214.2(o)(3)(iv)",
+    threshold: "3 of 6 criteria (or a qualifying major award/nomination)",
+    lastVerified: TODAY,
+    verifiedBy: "web-research (primary sources)",
+    counselApproved: false,
+    sources: [
+      {
+        title: "8 CFR 214.2 — O classification (eCFR)",
+        url: "https://www.ecfr.gov/current/title-8/chapter-I/subchapter-B/part-214/subpart-A/section-214.2",
+        kind: "primary-law",
+      },
+      {
+        title: "USCIS Policy Manual, Vol. 2 Part M — Nonimmigrants of Extraordinary Ability (O)",
+        url: "https://www.uscis.gov/policy-manual/volume-2-part-m",
+        kind: "agency-guidance",
+      },
+    ],
+    notes:
+      "Arts criteria model (3 of 6) confirmed. Criterion labels are paraphrased " +
+      "from the regulation; verbatim wording + counsel sign-off pending.",
+  },
+  "EB-1A": {
+    subject: "EB-1A",
+    status: "verified",
+    legalBasis: "8 CFR 204.5(h)(3)",
+    threshold: "3 of 10 criteria (or a qualifying one-time major award)",
+    lastVerified: TODAY,
+    verifiedBy: "web-research (primary sources)",
+    counselApproved: false,
+    sources: [
+      {
+        title: "8 CFR 204.5(h)(3) — Extraordinary ability (Cornell LII)",
+        url: "https://www.law.cornell.edu/cfr/text/8/204.5",
+        kind: "primary-law",
+      },
+      {
+        title: "USCIS Policy Manual, Vol. 6 Part F Ch. 2 — Extraordinary Ability",
+        url: "https://www.uscis.gov/policy-manual/volume-6-part-f-chapter-2",
+        kind: "agency-guidance",
+      },
+    ],
+    notes:
+      "The ten criteria in the pack match 8 CFR 204.5(h)(3)(i)-(x) verbatim in set " +
+      "and order; threshold 3 of 10 confirmed. Counsel sign-off pending.",
+  },
+  "UK-Global-Talent": {
+    subject: "UK-Global-Talent",
+    status: "needs-review",
+    legalBasis: "UK Immigration Rules Appendix Global Talent (endorsement-based)",
+    lastVerified: TODAY,
+    verifiedBy: "web-research (primary sources)",
+    counselApproved: false,
+    sources: [
+      {
+        title: "Global Talent visa — GOV.UK",
+        url: "https://www.gov.uk/global-talent",
+        kind: "agency-guidance",
+      },
+    ],
+    notes:
+      "MODEL MISMATCH: UK Global Talent is ENDORSEMENT-based (a designated endorsing " +
+      "body assesses leader/potential-leader status, plus a prize route) — NOT a fixed " +
+      "'meet N of X criteria' checklist like the US programs. The current pack is a " +
+      "placeholder and the model is wrong for the UK; a real UK build needs an " +
+      "endorsement workflow, not a criteria pack. Correctly gated 'planned' (not offered).",
+  },
+};
+
+// — Compliance validations (underpin the US market) ─────────────────────────
+
+export const COMPLIANCE_VALIDATIONS: Record<string, ValidationRecord> = {
+  "us-federal-practice": {
+    subject: "us-federal-practice",
+    status: "verified",
+    legalBasis: "8 CFR 1001.1(f); 8 CFR 1.2; 8 CFR 1292.1",
+    lastVerified: TODAY,
+    verifiedBy: "web-research (primary sources)",
+    counselApproved: false,
+    sources: [
+      {
+        title: "8 CFR 1001.1(f) — definition of 'attorney' (Cornell LII)",
+        url: "https://www.law.cornell.edu/cfr/text/8/1001.1",
+        kind: "primary-law",
+      },
+      {
+        title: "8 CFR 1.2 — definitions (Cornell LII)",
+        url: "https://www.law.cornell.edu/cfr/text/8/1.2",
+        kind: "primary-law",
+      },
+    ],
+    notes:
+      "'Attorney' = eligible to practice and a member in good standing of the bar of " +
+      "the highest court of ANY one U.S. state/territory/DC, not under restriction. " +
+      "Federal immigration practice is not limited to the client's state → one attorney " +
+      "of record covers the nation.",
+  },
+  "us-arizona-abs": {
+    subject: "us-arizona-abs",
+    status: "verified",
+    legalBasis: "Arizona Supreme Court Order R-20-0034 (eff. 2021-01-01); ER 5.4 eliminated",
+    lastVerified: TODAY,
+    verifiedBy: "web-research (primary sources)",
+    counselApproved: false,
+    sources: [
+      {
+        title: "Arizona Supreme Court Order R-20-0034 (Final Order)",
+        url: "https://www.azcourts.gov/Portals/0/215/ABS%20Documents/Final%20Order_R-20-0034.pdf",
+        kind: "court-order",
+      },
+      {
+        title: "Arizona Judicial Branch — Alternative Business Structure (ABS) Q&A",
+        url: "https://www.azcourts.gov/accesstolegalservices/Questions-and-Answers/abs",
+        kind: "agency-guidance",
+      },
+    ],
+    notes:
+      "Arizona is the first state to eliminate ER 5.4; an ABS may have non-lawyer " +
+      "ownership/economic interest and must employ ≥1 active bar member in good standing. " +
+      "Validates the software-licensed-to-attorney-owned-firm structure.",
+  },
+};
+
+// — Helpers ──────────────────────────────────────────────────────────────────
+
+export function validationFor(program: string): ValidationRecord | undefined {
+  return PROGRAM_VALIDATIONS[program as Classification];
+}
+
+export function allValidations(): ValidationRecord[] {
+  return [
+    ...Object.values(PROGRAM_VALIDATIONS),
+    ...Object.values(COMPLIANCE_VALIDATIONS),
+  ];
+}
+
+/** Whole days between two yyyy-mm-dd dates (b - a). */
+export function daysBetween(aIso: string, bIso: string): number {
+  const a = new Date(`${aIso}T00:00:00Z`).getTime();
+  const b = new Date(`${bIso}T00:00:00Z`).getTime();
+  return Math.floor((b - a) / 86_400_000);
+}
+
+/** True when a record is overdue for re-verification as of `todayIso`. */
+export function isStale(record: ValidationRecord, todayIso: string): boolean {
+  return daysBetween(record.lastVerified, todayIso) > REVALIDATE_AFTER_DAYS;
+}

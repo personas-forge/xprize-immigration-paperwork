@@ -32,3 +32,15 @@ export {
   type Jurisdiction,
   type JurisdictionCode,
 } from "./jurisdictions";
+export {
+  PROGRAM_VALIDATIONS,
+  COMPLIANCE_VALIDATIONS,
+  REVALIDATE_AFTER_DAYS,
+  validationFor,
+  allValidations,
+  isStale,
+  daysBetween,
+  type SourceRef,
+  type ValidationRecord,
+  type ValidationStatus,
+} from "./validation";
