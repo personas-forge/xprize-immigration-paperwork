@@ -63,6 +63,21 @@ export interface UscisForm {
   commonFields: string[];
 }
 
+/**
+ * A trimmed, client-safe summary of a persisted case (the DB-backed cases a
+ * user creates via the qualification flow). Plain data — safe to pass from a
+ * server component into the client dashboard without importing the server-only
+ * data layer.
+ */
+export interface SavedCaseSummary {
+  id: string;
+  fileNumber: string;
+  petitioner: string;
+  classification: string;
+  status: string;
+  approvalLikelihood: number;
+}
+
 export type DocumentStatus = "Received" | "Pending" | "Needs review";
 
 /** A document/exhibit in the evidence vault. */

@@ -1,16 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge, Button, Card, CardBody, Skeleton } from "@/components/ui";
+import Link from "next/link";
+import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { Stamp, ChapterMark, Seal } from "@/components/brand";
 import { FieldGuidancePanel } from "@/features/guidance";
 import { getCaseFacts } from "@/lib/data";
-import { type CaseFact } from "../types";
+import { type CaseFact, type SavedCaseSummary } from "../types";
 import { CaseList } from "./CaseList";
 import { CriteriaTable } from "./CriteriaTable";
 import { PetitionDraftCard, TasksCard } from "./SidePanels";
 
-export function CaseFileDashboard() {
+export function CaseFileDashboard({
+  cases = [],
+}: {
+  cases?: readonly SavedCaseSummary[];
+}) {
   const [caseFacts, setCaseFacts] = useState<readonly CaseFact[] | null>(null);
 
   useEffect(() => {
@@ -27,6 +32,11 @@ export function CaseFileDashboard() {
     <div className="px-8 py-10">
       <div className="mx-auto max-w-7xl space-y-8">
         <ChapterMark numeral="I" label="Petitioner of record" />
+
+        {/* The user's real, persisted cases (from the qualification flow). Only
+            rendered when there are any — the keyless demo shows just the mock
+            case file below. */}
+        {cases.length > 0 ? <YourCasesCard cases={cases} /> : null}
 
         {/* Masthead — the case-file header card */}
         <Card className="relative overflow-hidden">
@@ -97,5 +107,44 @@ export function CaseFileDashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+// — Your cases — real, DB-backed cases the user created via /qualify ──────────
+function YourCasesCard({ cases }: { cases: readonly SavedCaseSummary[] }) {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="bg-surface-muted/60">
+        <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+          § — Your cases
+        </div>
+        <Badge tone="accent">{cases.length} on file</Badge>
+      </CardHeader>
+      <ul>
+        {cases.map((c) => (
+          <li key={c.id} className="border-t border-dotted border-rule first:border-t-0">
+            <Link
+              href={`/dashboard/cases/${c.id}`}
+              className="flex items-center justify-between gap-4 px-5 py-3.5 transition-[background-color] duration-200 hover:bg-accent-soft/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            >
+              <div className="flex items-baseline gap-3">
+                <span className="doc-number text-[11px] text-muted">{c.fileNumber}</span>
+                <span className="font-sans text-[14.5px] text-foreground">{c.petitioner}</span>
+                <span className="microprint" style={{ color: "var(--muted)" }}>
+                  {c.classification}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge tone="neutral">{c.status}</Badge>
+                <span className="doc-number text-[12px] text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                  {c.approvalLikelihood}%
+                </span>
+                <span aria-hidden className="text-accent-dark">→</span>
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }

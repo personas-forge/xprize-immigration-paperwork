@@ -56,12 +56,12 @@ function SiteHeader() {
           <Link href="/faq" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">FAQ</Link>
           <Link href="/dashboard" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">Live case file</Link>
           <Link href="/login" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">Sign in</Link>
-          <a
-            href="#start"
+          <Link
+            href="/qualify"
             className="rounded-control border border-foreground bg-foreground px-4 py-2 text-background transition-[background-color] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
           >
             Free qualification
-          </a>
+          </Link>
           <ThemeToggle />
         </nav>
       </div>
@@ -129,13 +129,13 @@ function Hero() {
             className="mt-10 flex flex-wrap items-center gap-4"
             style={{ "--delay": "520ms" } as React.CSSProperties}
           >
-            <a
-              href="#start"
+            <Link
+              href="/qualify"
               className="inline-flex items-center gap-2 rounded-control bg-foreground px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
             >
               Take the 5-min qualification
               <span aria-hidden>→</span>
-            </a>
+            </Link>
             <a
               href="/docs/BACKLOG.md"
               className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-transparent px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-foreground hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
@@ -384,12 +384,12 @@ function Closing() {
           would change it.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-          <a
-            href="#start"
+          <Link
+            href="/qualify"
             className="rounded-control bg-seal px-8 py-4 font-mono text-[12px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
           >
             Begin qualification
-          </a>
+          </Link>
           <Link
             href="/dashboard"
             className="rounded-control border border-border-strong px-8 py-4 font-mono text-[12px] uppercase tracking-document text-foreground hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"

@@ -18,13 +18,31 @@ test("costOf: this app's `guidance` op is light = 1 token", () => {
   assert.equal(costOf("guidance"), OP_COST.light);
 });
 
+test("costOf: `qualify` is medium and `draft` is the xl premium tier", () => {
+  assert.equal(costOf("qualify"), OP_COST.medium);
+  assert.equal(costOf("draft"), OP_COST.xl);
+});
+
+test("costOf: regenerating one `draft_section` is the heavy tier", () => {
+  assert.equal(costOf("draft_section"), OP_COST.heavy);
+});
+
+test("costOf: an `rfe` response is the heavy tier", () => {
+  assert.equal(costOf("rfe"), OP_COST.heavy);
+});
+
+test("costOf: evidence `categorize` is the light tier", () => {
+  assert.equal(costOf("categorize"), OP_COST.light);
+});
+
 test("costOf: unknown operations default to the light tier (never free/throw)", () => {
   assert.equal(costOf("totally-unknown-op"), OP_COST.light);
 });
 
-test("OP_COST weighting stays light < medium < heavy", () => {
+test("OP_COST weighting stays light < medium < heavy < xl", () => {
   assert.ok(OP_COST.light < OP_COST.medium);
   assert.ok(OP_COST.medium < OP_COST.heavy);
+  assert.ok(OP_COST.heavy < OP_COST.xl);
 });
 
 // — Bundle lookup ────────────────────────────────────────────────────────────

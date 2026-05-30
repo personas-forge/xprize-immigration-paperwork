@@ -17,11 +17,13 @@ export interface GuidanceRequest {
   situation: string;
 }
 
+import { type ModelSource } from "@/lib/llm/label";
+
 export interface GuidanceResponse {
   guidance: string;
   disclaimer: string;
-  /** "mock" when templated (no API key); "gemini" when model-generated. */
-  source: "mock" | "gemini";
+  /** "mock" (template) or the engine that generated it ("gemini" | "claude"). */
+  source: ModelSource;
 }
 
 /**

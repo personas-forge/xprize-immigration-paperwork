@@ -6,6 +6,7 @@ import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/component
 import { getForms } from "@/lib/data";
 import { type UscisForm } from "@/features/case-file/types";
 import { DISCLAIMER, type GuidanceResponse } from "../guidance";
+import { isModelSource, sourceLabel } from "@/lib/llm/label";
 import { DisclaimerStamp } from "./DisclaimerStamp";
 
 // — Field-guidance panel ─────────────────────────────────────────────────────
@@ -209,8 +210,8 @@ export function FieldGuidancePanel() {
                 <span className="microprint" style={{ color: "var(--accent-dark)" }}>
                   {formId} · {fieldLabel}
                 </span>
-                <Badge tone={result.source === "gemini" ? "accent" : "neutral"}>
-                  {result.source === "gemini" ? "Gemini" : "Template"}
+                <Badge tone={isModelSource(result.source) ? "accent" : "neutral"}>
+                  {sourceLabel(result.source)}
                 </Badge>
               </div>
               <p className="font-sans text-[14px] leading-[1.7] text-foreground-soft">

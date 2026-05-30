@@ -1,15 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
   DISCLAIMER,
   buildGuidancePrompt,
   buildGuidanceResponse,
   mockGuidance,
   parseGuidanceRequest,
-  type GuidanceResponse,
 } from "@/features/guidance/guidance";
 import { chargeForOperation } from "@/lib/tokens/guard";
+import { getLlm } from "@/lib/llm/client";
 
 // USCIS form-field guidance endpoint.
 //
@@ -64,35 +63,24 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const llm = getLlm();
 
-  // No key → templated informational fallback. Build stays fully secret-free.
-  if (!apiKey) {
-    const payload: GuidanceResponse = buildGuidanceResponse(
-      mockGuidance(req),
-      "mock",
-    );
-    return NextResponse.json(payload);
+  // No engine → templated informational fallback. Build stays secret-free.
+  if (!llm) {
+    return NextResponse.json(buildGuidanceResponse(mockGuidance(req), "mock"));
   }
 
-  // Key present → call Gemini with the not-legal-advice prompt.
+  // Engine present → generate with the not-legal-advice prompt.
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-    const result = await model.generateContent(buildGuidancePrompt(req));
-    const text = result.response.text();
-
+    const text = await llm.generate(buildGuidancePrompt(req), { tier: "fast" });
     const guidance = text.trim() || mockGuidance(req);
-    const payload: GuidanceResponse = buildGuidanceResponse(guidance, "gemini");
-    return NextResponse.json(payload);
+    return NextResponse.json(buildGuidanceResponse(guidance, llm.name));
   } catch {
     // Model/network failure must still return safe, disclaimed guidance — and
     // we refund the token since the user never got a model-generated answer.
     await charged.reclaim();
-    const payload: GuidanceResponse = buildGuidanceResponse(
-      mockGuidance(req),
-      "mock",
-    );
-    return NextResponse.json(payload, { status: 200 });
+    return NextResponse.json(buildGuidanceResponse(mockGuidance(req), "mock"), {
+      status: 200,
+    });
   }
 }
