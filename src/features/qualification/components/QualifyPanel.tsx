@@ -125,7 +125,10 @@ export function QualifyPanel() {
               return v ? (
                 <p className="microprint" style={{ color: "var(--muted)" }}>
                   Criteria per {v.legalBasis}
-                  {v.threshold ? ` · ${v.threshold}` : ""} · last reviewed {v.lastVerified}
+                  {v.threshold ? ` · ${v.threshold}` : ""} · last reviewed {v.lastVerified} ·{" "}
+                  <Link href="/validation" className="ink-link">
+                    validation &amp; sources
+                  </Link>
                 </p>
               ) : null;
             })()}
