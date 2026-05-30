@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "npx --no-install tsx --test \"src/**/*.test.ts\"",
+    "validate:freshness": "npx --no-install tsx scripts/check-validation-freshness.ts",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:install": "playwright install chromium"

@@ -225,3 +225,26 @@ export function daysBetween(aIso: string, bIso: string): number {
 export function isStale(record: ValidationRecord, todayIso: string): boolean {
   return daysBetween(record.lastVerified, todayIso) > REVALIDATE_AFTER_DAYS;
 }
+
+/** Warn this many days before a record is due, so re-verification can be planned. */
+export const REVERIFY_WARN_DAYS = 30;
+
+export type FreshnessLevel = "fresh" | "due-soon" | "stale";
+
+export interface Freshness {
+  /** Days until re-verification is due (negative = overdue). */
+  daysLeft: number;
+  level: FreshnessLevel;
+  /** yyyy-mm-dd the record is due for re-verification. */
+  dueBy: string;
+}
+
+/** Classify a record's freshness as of `todayIso`. */
+export function freshnessOf(record: ValidationRecord, todayIso: string): Freshness {
+  const elapsed = daysBetween(record.lastVerified, todayIso);
+  const daysLeft = REVALIDATE_AFTER_DAYS - elapsed;
+  const level: FreshnessLevel =
+    daysLeft < 0 ? "stale" : daysLeft <= REVERIFY_WARN_DAYS ? "due-soon" : "fresh";
+  const due = new Date(`${record.lastVerified}T00:00:00Z`).getTime() + REVALIDATE_AFTER_DAYS * 86_400_000;
+  return { daysLeft, level, dueBy: new Date(due).toISOString().slice(0, 10) };
+}
