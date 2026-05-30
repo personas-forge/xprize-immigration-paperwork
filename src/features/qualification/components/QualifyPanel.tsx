@@ -6,6 +6,7 @@ import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/component
 import { DISCLAIMER, type QualifyResult } from "../qualification";
 import { VISA_PACKS, type Classification } from "../packs";
 import { jurisdictionFor, livePrograms } from "../jurisdictions";
+import { validationFor } from "../validation";
 
 // Only programs whose jurisdiction is live are offered (US today).
 const PROGRAMS = livePrograms();
@@ -119,6 +120,15 @@ export function QualifyPanel() {
             <p className="microprint" style={{ color: "var(--muted)" }}>
               Jurisdiction: {jurisdictionFor(classification).label}
             </p>
+            {(() => {
+              const v = validationFor(classification);
+              return v ? (
+                <p className="microprint" style={{ color: "var(--muted)" }}>
+                  Criteria per {v.legalBasis}
+                  {v.threshold ? ` · ${v.threshold}` : ""} · last reviewed {v.lastVerified}
+                </p>
+              ) : null;
+            })()}
 
             <label className="block">
               <span className="microprint">
