@@ -8,8 +8,9 @@ export const FREE_SIGNUP_GRANT = 150; // granted once, at first onboarding
 // Per-operation cost, weighted to reflect real compute cost.
 export const OP_COST = {
   light: 1, // short output: categorize, review reply, form-field guidance
-  medium: 3, // structured/medium: match score, bill analysis
-  heavy: 5, // long generation: demand letter, grant narrative
+  medium: 3, // structured/medium: O-1A qualification screening, match score
+  heavy: 5, // long generation: cover letter, RFE response section
+  xl: 12, // 1M-context full petition-letter drafting — the premium op
 } as const;
 export type OpTier = keyof typeof OP_COST;
 
@@ -18,6 +19,16 @@ export type OpTier = keyof typeof OP_COST;
 export const OPERATIONS: Record<string, OpTier> = {
   // USCIS form-field guidance — a short informational answer (1 token).
   guidance: "light",
+  // Evidence categorization — classify a document into a criterion (1 token).
+  categorize: "light",
+  // O-1A qualification screening — structured 8-criterion assessment (3 tokens).
+  qualify: "medium",
+  // Full petition-letter draft — long-context generation (12 tokens).
+  draft: "xl",
+  // Regenerate a single petition-letter section (5 tokens).
+  draft_section: "heavy",
+  // Draft a response to a USCIS Request for Evidence (5 tokens).
+  rfe: "heavy",
 };
 
 export function costOf(operation: string): number {
