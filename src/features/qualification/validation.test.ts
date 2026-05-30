@@ -7,8 +7,10 @@ import {
   COMPLIANCE_VALIDATIONS,
   PROGRAM_VALIDATIONS,
   REVALIDATE_AFTER_DAYS,
+  REVERIFY_WARN_DAYS,
   allValidations,
   daysBetween,
+  freshnessOf,
   isStale,
   validationFor,
   type ValidationRecord,
@@ -88,6 +90,22 @@ test("daysBetween / isStale compute against a fixed reference date", () => {
 
 test("no validation record is dated in an impossible format", () => {
   for (const r of allValidations()) assert.match(r.lastVerified, DATE_RE);
+});
+
+test("freshnessOf classifies fresh / due-soon / stale and reports the due date", () => {
+  const rec = PROGRAM_VALIDATIONS["O-1A"];
+  // On the verification day: fully fresh, daysLeft == the window.
+  const onDay = freshnessOf(rec, rec.lastVerified);
+  assert.equal(onDay.level, "fresh");
+  assert.equal(onDay.daysLeft, REVALIDATE_AFTER_DAYS);
+  assert.match(onDay.dueBy, DATE_RE);
+  // Inside the warn window → due-soon.
+  const soon = addDays(rec.lastVerified, REVALIDATE_AFTER_DAYS - Math.floor(REVERIFY_WARN_DAYS / 2));
+  assert.equal(freshnessOf(rec, soon).level, "due-soon");
+  // Past the window → stale, daysLeft negative.
+  const over = freshnessOf(rec, addDays(rec.lastVerified, REVALIDATE_AFTER_DAYS + 5));
+  assert.equal(over.level, "stale");
+  assert.equal(over.daysLeft, -5);
 });
 
 function addDays(iso: string, days: number): string {

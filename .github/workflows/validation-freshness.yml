@@ -1,0 +1,67 @@
+name: Validation freshness
+
+# Weekly check that no validation record has gone stale (overdue for re-
+# verification past REVALIDATE_AFTER_DAYS). When any record is stale or due soon,
+# this opens — or updates — a single tracking issue from the report, so re-
+# validation gets prompted automatically. When everything is fresh again, it
+# closes the issue. Run on demand from the Actions tab (workflow_dispatch).
+
+on:
+  schedule:
+    - cron: "0 9 * * 1" # Mondays, 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  freshness:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Check validation freshness
+        id: check
+        run: |
+          set +e
+          npx --no-install tsx scripts/check-validation-freshness.ts > report.md
+          CODE=$?
+          set -e
+          cat report.md
+          if [ "$CODE" -ne 0 ]; then
+            echo "needs=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update the tracking issue
+        if: steps.check.outputs.needs == 'true'
+        run: |
+          gh label create validation-freshness \
+            --color FBCA04 \
+            --description "Validation records overdue for re-verification" \
+            --force
+          EXISTING=$(gh issue list --label validation-freshness --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue edit "$EXISTING" --body-file report.md
+          else
+            gh issue create \
+              --title "Validation records need re-verification" \
+              --label validation-freshness \
+              --body-file report.md
+          fi
+
+      - name: Close the tracking issue when everything is fresh
+        if: steps.check.outputs.needs == 'false'
+        run: |
+          for n in $(gh issue list --label validation-freshness --state open --json number --jq '.[].number'); do
+            gh issue close "$n" --comment "All validation records are fresh again. Closing."
+          done
