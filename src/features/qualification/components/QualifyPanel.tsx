@@ -4,7 +4,11 @@ import { useId, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { DISCLAIMER, type QualifyResult } from "../qualification";
-import { CLASSIFICATIONS, VISA_PACKS, type Classification } from "../packs";
+import { VISA_PACKS, type Classification } from "../packs";
+import { jurisdictionFor, livePrograms } from "../jurisdictions";
+
+// Only programs whose jurisdiction is live are offered (US today).
+const PROGRAMS = livePrograms();
 import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
 import { DraftStudio } from "@/features/drafting/components/DraftStudio";
 import { CriteriaReport } from "./CriteriaReport";
@@ -103,7 +107,7 @@ export function QualifyPanel() {
                   onChange={(e) => setClassification(e.target.value as Classification)}
                   className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                 >
-                  {CLASSIFICATIONS.map((c) => (
+                  {PROGRAMS.map((c) => (
                     <option key={c} value={c}>
                       {c} — {VISA_PACKS[c].label}
                     </option>
@@ -111,6 +115,10 @@ export function QualifyPanel() {
                 </select>
               </label>
             </div>
+
+            <p className="microprint" style={{ color: "var(--muted)" }}>
+              Jurisdiction: {jurisdictionFor(classification).label}
+            </p>
 
             <label className="block">
               <span className="microprint">

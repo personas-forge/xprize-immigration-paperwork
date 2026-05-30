@@ -11,7 +11,9 @@
  * the criterion names. Pure, dependency-free, unit-testable.
  */
 
-export type Classification = "O-1A" | "O-1B" | "EB-1A";
+// A visa program code. Programs belong to a jurisdiction — see jurisdictions.ts,
+// which is the source of truth for which programs are live vs. planned.
+export type Classification = "O-1A" | "O-1B" | "EB-1A" | "UK-Global-Talent";
 
 export interface PackCriterion {
   name: string;
@@ -161,9 +163,54 @@ export const VISA_PACKS: Record<Classification, VisaPack> = {
       },
     ],
   },
+  // UK Global Talent — PROVISIONAL criteria for the planned UK market. The real
+  // endorsement criteria depend on the endorsing body and must be confirmed by
+  // UK counsel before this program goes live (see jurisdictions.ts, status:planned).
+  "UK-Global-Talent": {
+    classification: "UK-Global-Talent",
+    label: "Global Talent — digital technology, research & arts (provisional)",
+    threshold: 2,
+    criteria: [
+      {
+        name: "Innovation track record",
+        match: /\b(innovat|novel|invention|patent|breakthrough|pioneer|founded|built)\b/i,
+        evidence: "Mentions an innovation, invention, or product built.",
+        gap: "Describe innovations you led and their impact.",
+      },
+      {
+        name: "Recognition beyond your field",
+        match: /\b(recogni[sz]ed|acclaim|influential|thought leader|keynote|invited speaker|press)\b/i,
+        evidence: "Mentions recognition beyond your immediate occupation.",
+        gap: "Gather evidence of recognition beyond your day-to-day role.",
+      },
+      {
+        name: "Significant contributions",
+        match: /\b(contribut|impact|led|delivered|scaled|grew|launched|open ?source)\b/i,
+        evidence: "Mentions significant technical, commercial, or academic contributions.",
+        gap: "Document significant contributions and their outcomes.",
+      },
+      {
+        name: "Awards & honours",
+        match: /\b(award|prize|honou?r|fellowship|grant)\b/i,
+        evidence: "Mentions awards, honours, or competitive grants.",
+        gap: "List awards, honours, or competitive grants received.",
+      },
+      {
+        name: "Academic or technical publications",
+        match: /\b(paper|publication|published|journal|conference|cited|patent|arxiv)\b/i,
+        evidence: "Mentions publications or technical writing.",
+        gap: "List publications, talks, or technical writing.",
+      },
+    ],
+  },
 };
 
-export const CLASSIFICATIONS: readonly Classification[] = ["O-1A", "O-1B", "EB-1A"];
+export const CLASSIFICATIONS: readonly Classification[] = [
+  "O-1A",
+  "O-1B",
+  "EB-1A",
+  "UK-Global-Talent",
+];
 
 export function isClassification(value: unknown): value is Classification {
   return typeof value === "string" && (CLASSIFICATIONS as readonly string[]).includes(value);

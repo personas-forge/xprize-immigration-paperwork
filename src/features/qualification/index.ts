@@ -23,3 +23,12 @@ export {
   type PackCriterion,
   type VisaPack,
 } from "./packs";
+export {
+  JURISDICTIONS,
+  jurisdictionFor,
+  liveJurisdictions,
+  livePrograms,
+  isLiveProgram,
+  type Jurisdiction,
+  type JurisdictionCode,
+} from "./jurisdictions";

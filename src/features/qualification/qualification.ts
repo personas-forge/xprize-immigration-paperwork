@@ -18,12 +18,8 @@
 
 import { DISCLAIMER } from "@/features/guidance/guidance";
 import { type ModelSource } from "@/lib/llm/label";
-import {
-  type Classification,
-  isClassification,
-  packFor,
-  criteriaNames,
-} from "./packs";
+import { type Classification, packFor, criteriaNames } from "./packs";
+import { isLiveProgram } from "./jurisdictions";
 
 export { DISCLAIMER };
 
@@ -109,7 +105,8 @@ export function parseQualifyRequest(
     typeof rawName === "string" && rawName.trim() !== ""
       ? rawName.trim().slice(0, MAX_NAME)
       : "Applicant";
-  const classification: Classification = isClassification(record.classification)
+  // Only LIVE programs are accepted; planned jurisdictions are gated off here.
+  const classification: Classification = isLiveProgram(record.classification)
     ? record.classification
     : "O-1A";
 

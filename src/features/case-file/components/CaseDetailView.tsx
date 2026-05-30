@@ -14,6 +14,7 @@ import { RfeStudio } from "@/features/rfe/components/RfeStudio";
 import { EvidenceVault, type DocumentView } from "@/features/evidence/components/EvidenceVault";
 import { RoadmapStepper } from "./RoadmapStepper";
 import { type ModelSource } from "@/lib/llm/label";
+import { jurisdictionFor } from "@/features/qualification";
 import { statusTone } from "../criteria";
 
 // — Case detail view ──────────────────────────────────────────────────────────
@@ -70,6 +71,7 @@ export function CaseDetailView({
   rfeInitialSource: ModelSource;
 }) {
   const [dark, setDark] = useState(false);
+  const jurisdiction = jurisdictionFor(classification);
 
   return (
     <ThemeScope theme={dark ? ink : parchment}>
@@ -111,7 +113,7 @@ export function CaseDetailView({
                   {petitioner}
                 </h1>
                 <p className="font-sans text-[15px] italic text-muted-strong">
-                  {classification} · qualification on record
+                  {jurisdiction.label} · {classification}
                 </p>
               </div>
 
