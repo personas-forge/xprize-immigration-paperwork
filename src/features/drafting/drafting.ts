@@ -18,6 +18,7 @@
 
 import { DISCLAIMER } from "@/features/guidance/guidance";
 import { type ModelSource } from "@/lib/llm/label";
+import { extractJson } from "@/lib/llm/json";
 
 export { DISCLAIMER };
 
@@ -130,7 +131,7 @@ function criteriaLines(req: DraftRequest): string[] {
  */
 export function buildDraftPrompt(req: DraftRequest): string {
   return [
-    "You are drafting a U.S. O-1A (extraordinary ability) petition letter as work",
+    `You are drafting a U.S. ${req.classification} immigration petition letter as work`,
     "product for a licensed immigration attorney of record to review, edit, and sign.",
     "",
     "STRICT RULES — follow all of them:",
@@ -139,6 +140,9 @@ export function buildDraftPrompt(req: DraftRequest): string {
     "   If a detail is not provided, argue generally without fabricating it.",
     "2. This is a DRAFT for attorney review — never legal advice, never final.",
     "3. Formal, professional tone suitable for a USCIS filing.",
+    "4. Do NOT cite case law or court decisions (no named cases or reporter",
+    "   citations). Citing the governing statute or regulation is fine; the",
+    "   attorney of record will add any case-law authorities.",
     "",
     `Beneficiary: ${req.petitioner}`,
     `Classification: ${req.classification}`,
@@ -159,9 +163,10 @@ export function buildSectionPrompt(req: DraftRequest, focus: string): string {
     (c) => c.name.toLowerCase() === focus.toLowerCase(),
   );
   return [
-    "You are revising ONE section of an O-1A petition letter, as work product for",
+    `You are revising ONE section of a ${req.classification} petition letter, as work product for`,
     "an attorney of record to review and sign.",
     "Use ONLY the provided facts; do not invent specifics. Formal tone. This is a draft, not legal advice.",
+    "Do not cite case law or court decisions; the attorney of record will add legal authorities.",
     "",
     `Beneficiary: ${req.petitioner}`,
     `Classification: ${req.classification}`,
@@ -175,21 +180,6 @@ export function buildSectionPrompt(req: DraftRequest, focus: string): string {
 }
 
 // — Response parsing ─────────────────────────────────────────────────────────
-
-/** Pull the first JSON object out of a model response (tolerates ```json fences
- *  and surrounding prose). Returns null when nothing parseable is found. */
-function extractJson(text: string): unknown {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) return null;
-  try {
-    return JSON.parse(candidate.slice(start, end + 1));
-  } catch {
-    return null;
-  }
-}
 
 function toSection(value: unknown): DraftSection | null {
   if (!value || typeof value !== "object") return null;

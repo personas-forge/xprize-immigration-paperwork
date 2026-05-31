@@ -1,0 +1,54 @@
+{
+  "_comment": "Composite indexes for this app's Firestore collections. The core (profiles/consents/token_accounts/token_ledger) needs NONE — all core lookups are single-doc by deterministic id. The domain queries that pair an equality filter with an orderBy require a composite index. Deploy with: firebase deploy --only firestore:indexes  (or gcloud firestore indexes composite create ...).",
+  "indexes": [
+    {
+      "collectionGroup": "immigration_cases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "user_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "immigration_petition_drafts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "case_id", "order": "ASCENDING" },
+        { "fieldPath": "version", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "immigration_rfe_responses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "case_id", "order": "ASCENDING" },
+        { "fieldPath": "version", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "immigration_case_reviews",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "case_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "immigration_cases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "immigration_case_documents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "case_id", "order": "ASCENDING" },
+        { "fieldPath": "ord", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

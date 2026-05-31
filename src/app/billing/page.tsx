@@ -5,7 +5,8 @@ import { Rise } from "@/components/Motion";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { getUser } from "@/lib/auth/session";
 import { getBalance } from "@/lib/tokens/ledger";
-import { isAuthConfigured } from "@/lib/supabase/config";
+import { isFirebaseConfigured } from "@/lib/firebase/config";
+import { isDevAuth } from "@/lib/auth/devAuth";
 import { BUNDLES, ENTERPRISE_CONTACT, FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
 import { BundleGrid } from "./BundleGrid";
 
@@ -27,7 +28,7 @@ export const dynamic = "force-dynamic";
 // configured the balance reads "∞" (the guard gives a free, unmetered pass).
 
 export default async function BillingPage() {
-  const user = isAuthConfigured() ? await getUser() : null;
+  const user = isFirebaseConfigured() || isDevAuth() ? await getUser() : null;
   // "∞" when the token economy isn't enforced (no auth/DB → guard free-passes).
   const balance =
     user && process.env.DATABASE_URL ? await getBalance(user.id) : null;

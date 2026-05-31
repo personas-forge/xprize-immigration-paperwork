@@ -1,22 +1,33 @@
 import "server-only";
 
 import { getUser } from "@/lib/auth/session";
-import { isAuthConfigured } from "@/lib/supabase/config";
+import { isFirebaseConfigured } from "@/lib/firebase/config";
+import { isDevAuth } from "@/lib/auth/devAuth";
+import { isStoreConfigured } from "@/lib/db/config";
 import { charge, reclaim } from "./ledger";
-import { costOf, isMeteringBypassed } from "./economy";
+import { costOf } from "./economy";
 
 export type ChargeResult =
   | { ok: true; cost: number; balance: number; reclaim: () => Promise<unknown> }
   | { ok: false; reason: "unauthenticated" }
   | { ok: false; reason: "insufficient"; cost: number; balance: number };
 
+const FREE_PASS: ChargeResult = {
+  ok: true,
+  cost: 0,
+  balance: Number.POSITIVE_INFINITY,
+  reclaim: async () => {},
+};
+
 /**
  * Call at the top of an AI route. Debits upfront (charge-then-reclaim), so a
  * caller who can't pay never reaches the model. On success returns a
  * `reclaim()` to call if the downstream operation throws.
  *
- * Graceful degradation: if auth/DB isn't configured (keyless build/dev), this
- * returns a free pass so the mock paths keep working with no paywall.
+ * Graceful degradation: TOKENS_BYPASS=1 (dev), or no store / no auth provider
+ * configured (keyless build/dev) → a free, unmetered pass so the mock paths keep
+ * working with no paywall. Metering engages once a Store (Firestore/PGlite) and
+ * an auth provider (Firebase / dev-auth) are both configured.
  */
 export async function chargeForOperation(
   operation: string,
@@ -24,10 +35,13 @@ export async function chargeForOperation(
 ): Promise<ChargeResult> {
   // Dev/test bypass — run AI paths unmetered (no balance required, no debit).
   // Set TOKENS_BYPASS=1 in .env.local for mass LLM testing without Polar.
-  // Unconfigured auth/DB also falls through to a free pass (keyless builds/dev).
-  if (isMeteringBypassed() || !isAuthConfigured()) {
-    return { ok: true, cost: 0, balance: Number.POSITIVE_INFINITY, reclaim: async () => {} };
-  }
+  if (process.env.TOKENS_BYPASS === "1") return FREE_PASS;
+
+  const canMeter = isStoreConfigured();
+  const canIdentify = isFirebaseConfigured() || isDevAuth();
+
+  // No persistent store or no auth provider → keyless free pass.
+  if (!canMeter || !canIdentify) return FREE_PASS;
 
   const user = await getUser();
   if (!user) return { ok: false, reason: "unauthenticated" };

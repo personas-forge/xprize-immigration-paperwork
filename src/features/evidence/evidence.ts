@@ -20,6 +20,7 @@
 
 import { DISCLAIMER } from "@/features/guidance/guidance";
 import { type ModelSource } from "@/lib/llm/label";
+import { extractJson } from "@/lib/llm/json";
 import { O1A_CRITERIA, criteriaNames, packFor } from "@/features/qualification";
 
 export { DISCLAIMER, O1A_CRITERIA, criteriaNames };
@@ -124,19 +125,6 @@ export function parseCategorizeResponse(
         .slice(0, MAX_FACTS)
     : [];
   return { criterion: coerceBucket(obj.criterion, classification), facts };
-}
-
-function extractJson(text: string): unknown {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) return null;
-  try {
-    return JSON.parse(candidate.slice(start, end + 1));
-  } catch {
-    return null;
-  }
 }
 
 const FACT_SPLIT = /(?<=[.!?])\s+/;

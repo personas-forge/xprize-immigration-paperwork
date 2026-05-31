@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
+import { CitationNote } from "@/features/guidance/components/CitationNote";
 import { DISCLAIMER, type DraftSection } from "@/features/drafting";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 
@@ -210,6 +211,7 @@ export function DraftStudio({
         {status === "done" ? (
           <div className="space-y-4">
             <DisclaimerStamp text={DISCLAIMER} />
+            <CitationNote />
             {sections.map((s, i) => (
               <div
                 key={s.heading + i}

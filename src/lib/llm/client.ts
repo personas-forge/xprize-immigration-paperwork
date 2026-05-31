@@ -21,6 +21,7 @@ import "server-only";
 
 import { spawn } from "node:child_process";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { LightTrack } from "@/lib/lighttrack";
 import {
   claudeBin,
   claudeModel,
@@ -36,6 +37,9 @@ export interface GenerateOptions {
   json?: boolean;
   /** Model tier — "fast" (default) or "long" for full-letter generation. */
   tier?: LlmTier;
+  /** Sampling temperature (Gemini only). Use 0 for deterministic structured ops
+   *  like screening/categorization. The Claude CLI path has no temperature knob. */
+  temperature?: number;
 }
 
 export interface Llm {
@@ -58,18 +62,25 @@ export function getLlm(opts: { requiresImages?: boolean } = {}): Llm | null {
   return null;
 }
 
+// LightTrack observability (fire-and-forget; LIGHTTRACK_URL from env, default localhost:8787).
+const lt = new LightTrack({ project: "immigration-paperwork", source: "gemini" });
+
 function geminiClient(): Llm {
   return {
     name: "gemini",
     async generate(prompt, options = {}) {
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+      const modelName = geminiModelFor(options.tier ?? "fast");
       const model = genAI.getGenerativeModel({
-        model: geminiModelFor(options.tier ?? "fast"),
-        ...(options.json
-          ? { generationConfig: { responseMimeType: "application/json" } }
-          : {}),
+        model: modelName,
+        generationConfig: {
+          ...(options.json ? { responseMimeType: "application/json" } : {}),
+          ...(typeof options.temperature === "number" ? { temperature: options.temperature } : {}),
+        },
       });
+      const startedAt = Date.now();
       const r = await model.generateContent(prompt);
+      lt.trackGemini(r.response, modelName, { latencyMs: Date.now() - startedAt });
       return r.response.text();
     },
   };
@@ -80,8 +91,21 @@ function claudeClient(): Llm {
     name: "claude",
     // The CLI model is fixed by config; `json` is driven by the prompt and the
     // tolerant parsers, so options aren't needed on this path.
-    generate(prompt) {
-      return runClaudeCli(prompt);
+    async generate(prompt) {
+      // Text-mode CLI gives no token usage; track the call + latency + model only.
+      const startedAt = Date.now();
+      try {
+        const out = await runClaudeCli(prompt);
+        lt.track("anthropic", claudeModel(), { latencyMs: Date.now() - startedAt });
+        return out;
+      } catch (err) {
+        lt.track("anthropic", claudeModel(), {
+          latencyMs: Date.now() - startedAt,
+          status: "error",
+          error: String(err),
+        });
+        throw err;
+      }
     },
   };
 }

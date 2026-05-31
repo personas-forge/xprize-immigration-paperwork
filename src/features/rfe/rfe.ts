@@ -18,6 +18,7 @@
 import { DISCLAIMER } from "@/features/guidance/guidance";
 import { type DraftSection } from "@/features/drafting";
 import { type ModelSource } from "@/lib/llm/label";
+import { extractJson } from "@/lib/llm/json";
 
 export { DISCLAIMER };
 export type { DraftSection as RfeSection };
@@ -113,7 +114,7 @@ function criteriaLines(req: RfeRequest): string[] {
 export function buildRfePrompt(req: RfeRequest): string {
   return [
     "You are drafting a response to a U.S. CIS Request for Evidence (RFE) for an",
-    "O-1A petition, as work product for the attorney of record to review and sign.",
+    `${req.classification} petition, as work product for the attorney of record to review and sign.`,
     "",
     "STRICT RULES — follow all of them:",
     "1. Address the specific points the RFE raises. Use ONLY the facts provided",
@@ -121,6 +122,9 @@ export function buildRfePrompt(req: RfeRequest): string {
     "   documents, exhibits, or facts that were not provided.",
     "2. This is a DRAFT for attorney review — never legal advice, never final.",
     "3. Formal, professional tone suitable for a USCIS filing.",
+    "4. Do NOT cite case law or court decisions (no named cases or reporter",
+    "   citations). Citing the governing statute or regulation is fine; the",
+    "   attorney of record will add any case-law authorities.",
     "",
     `Beneficiary: ${req.petitioner}`,
     `Classification: ${req.classification}`,
@@ -136,19 +140,6 @@ export function buildRfePrompt(req: RfeRequest): string {
     "addressing each issue the RFE raises (reinforcing the relevant criteria with",
     "the evidence on record), and a closing. Return the JSON now.",
   ].join("\n");
-}
-
-function extractJson(text: string): unknown {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) return null;
-  try {
-    return JSON.parse(candidate.slice(start, end + 1));
-  } catch {
-    return null;
-  }
 }
 
 function toSection(value: unknown): DraftSection | null {
