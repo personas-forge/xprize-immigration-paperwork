@@ -2,32 +2,50 @@
 
 // Sign-in — "The Visa Window". Re-skinned to the Atelier of Arrival identity:
 // parchment/ink ground, gold-leaf accents, a guilloché rosette, a perforated
-// rule and a rubber-stamp seal. Load-bearing logic is unchanged: the Google
-// OAuth handler (with the `next` redirect param) and the isAuthConfigured()
-// notice. Renders correctly in BOTH the parchment and ink themes — every colour
-// is a semantic token, so the [data-theme="ink"] overrides apply automatically.
+// rule and a rubber-stamp seal. Load-bearing logic: the Firebase popup Google
+// sign-in handler and the "not yet configured" notice. Renders correctly in
+// BOTH the parchment and ink themes — every colour is a semantic token, so the
+// [data-theme="ink"] overrides apply automatically.
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { isAuthConfigured } from "@/lib/supabase/config";
+import Link from "next/link";
+import { signInWithPopup } from "firebase/auth";
+import { isDevAuth } from "@/lib/auth/devAuth";
+import { authProvider } from "@/lib/auth/provider";
+import { firebaseAuth, googleProvider } from "@/lib/firebase/client";
 import { PageFrame, Guilloche, Stamp, ChapterMark } from "@/components/brand";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function LoginPage() {
   const [busy, setBusy] = useState(false);
-  const configured = isAuthConfigured();
+  const [error, setError] = useState("");
+  const devAuth = isDevAuth();
+  const provider = authProvider();
 
-  async function signInWithGoogle() {
+  // Firebase / Identity Platform: popup sign-in → ID token → server session
+  // cookie (POST /api/auth/session) → onboarding gate.
+  async function signInWithGoogleFirebase() {
     setBusy(true);
-    const supabase = createClient();
-    const next =
-      new URLSearchParams(window.location.search).get("next") ?? "/dashboard";
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-      },
-    });
+    setError("");
+    try {
+      const cred = await signInWithPopup(firebaseAuth(), googleProvider());
+      const idToken = await cred.user.getIdToken();
+      const res = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+      if (!res.ok) throw new Error("Could not establish a session.");
+      // /welcome onboards first-timers and bounces onboarded users to /dashboard.
+      window.location.href = "/welcome";
+    } catch (e) {
+      setBusy(false);
+      setError(
+        e instanceof Error && e.message
+          ? e.message
+          : "Sign-in failed. Please try again.",
+      );
+    }
   }
 
   return (
@@ -61,15 +79,34 @@ export default function LoginPage() {
 
             <div className="perforation h-px" aria-hidden />
 
-            {configured ? (
-              <button
-                onClick={signInWithGoogle}
-                disabled={busy}
-                className="group inline-flex items-center justify-center gap-3 rounded-control border border-foreground bg-foreground px-6 py-3.5 font-mono text-[12px] uppercase tracking-document text-background transition-[transform,background-color] hover:-translate-y-[1px] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 disabled:opacity-60"
-              >
-                <GoogleGlyph />
-                {busy ? "Redirecting…" : "Continue with Google"}
-              </button>
+            {devAuth ? (
+              <div className="space-y-3">
+                <Link
+                  href="/dashboard"
+                  className="group inline-flex items-center justify-center gap-3 rounded-control border border-foreground bg-foreground px-6 py-3.5 font-mono text-[12px] uppercase tracking-document text-background transition-[transform,background-color] hover:-translate-y-[1px] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                >
+                  Continue as developer →
+                </Link>
+                <p className="microprint" style={{ color: "var(--accent-dark)" }}>
+                  Dev-auth on · local PGlite · NODE_ENV ≠ production
+                </p>
+              </div>
+            ) : provider === "firebase" ? (
+              <>
+                <button
+                  onClick={signInWithGoogleFirebase}
+                  disabled={busy}
+                  className="group inline-flex items-center justify-center gap-3 rounded-control border border-foreground bg-foreground px-6 py-3.5 font-mono text-[12px] uppercase tracking-document text-background transition-[transform,background-color] hover:-translate-y-[1px] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 disabled:opacity-60"
+                >
+                  <GoogleGlyph />
+                  {busy ? "Signing in…" : "Continue with Google"}
+                </button>
+                {error ? (
+                  <p className="microprint mt-2" style={{ color: "var(--accent-dark)" }}>
+                    {error}
+                  </p>
+                ) : null}
+              </>
             ) : (
               <div
                 role="note"
@@ -80,11 +117,11 @@ export default function LoginPage() {
                 </span>
                 Set{" "}
                 <code className="font-mono text-[11px] text-foreground">
-                  NEXT_PUBLIC_SUPABASE_URL
+                  NEXT_PUBLIC_FIREBASE_API_KEY
                 </code>{" "}
                 and{" "}
                 <code className="font-mono text-[11px] text-foreground">
-                  NEXT_PUBLIC_SUPABASE_ANON_KEY
+                  NEXT_PUBLIC_FIREBASE_PROJECT_ID
                 </code>{" "}
                 in{" "}
                 <code className="font-mono text-[11px] text-foreground">

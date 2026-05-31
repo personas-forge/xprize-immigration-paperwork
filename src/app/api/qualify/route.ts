@@ -76,7 +76,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     result = buildQualifyResult(mockQualification(req), "mock");
   } else {
     try {
-      const text = await llm.generate(buildQualifyPrompt(req), { json: true, tier: "fast" });
+      // temperature 0: a screening should be as deterministic as the engine
+      // allows (Gemini honors this; the Claude CLI path has no temperature knob).
+      const text = await llm.generate(buildQualifyPrompt(req), { json: true, tier: "fast", temperature: 0 });
       result = buildQualifyResult(parseQualifyResponse(text, req), llm.name);
     } catch {
       // Model/network failure must still return a safe, disclaimed screening —

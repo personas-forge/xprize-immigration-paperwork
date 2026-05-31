@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth/session";
 import { upsertProfileWithConsent } from "@/lib/auth/db";
-import { CONSENT_VERSION } from "@/lib/supabase/config";
+import { CONSENT_VERSION } from "@/lib/auth/consent";
 import { grantSignupTokens } from "@/lib/tokens/ledger";
 import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
 
