@@ -113,7 +113,7 @@ function criteriaLines(req: RfeRequest): string[] {
 export function buildRfePrompt(req: RfeRequest): string {
   return [
     "You are drafting a response to a U.S. CIS Request for Evidence (RFE) for an",
-    "O-1A petition, as work product for the attorney of record to review and sign.",
+    `${req.classification} petition, as work product for the attorney of record to review and sign.`,
     "",
     "STRICT RULES — follow all of them:",
     "1. Address the specific points the RFE raises. Use ONLY the facts provided",

@@ -74,7 +74,12 @@ function stripLegal(text: string): string {
     .replace(/\bINA\s*§?\s*(?:section\s*)?[\d.]+(?:\([a-z0-9]+\))*/gi, " ")
     .replace(/\b(?:section|§)\s*[\d.]+(?:\([a-z0-9]+\))*/gi, " ")
     .replace(/\b\d{2,4}\(a\)\(\d+\)(?:\([A-Za-z0-9]+\))*/g, " ")
-    .replace(/\bForm\s+[A-Z]-?\d+[A-Z]?/gi, " ");
+    .replace(/\bForm\s+[A-Z]-?\d+[A-Z]?/gi, " ")
+    // Case-law reporter cites: "596 F.3d 1115", "123 F. Supp. 2d 456", "410 U.S. 113".
+    .replace(/\b\d+\s+F\.?\s?(?:Supp\.?\s?)?\d?d?\s+\d+\b/gi, " ")
+    .replace(/\b\d+\s+U\.?\s?S\.?\s?(?:C\.?)?\s+§?\s*\d+/gi, " ")
+    // "(9th Cir. 2010)" and bare "9th Cir. 2010" — note "9th" carries a digit.
+    .replace(/\(?\s*(?:[A-Za-z0-9.]+\s+)*Cir\.?\s+(?:19|20)\d{2}\s*\)?/gi, " ");
 }
 // Common INA/CFR section numbers that are references, never invented facts.
 const LEGAL_NUMS = new Set(["101", "203", "204", "214", "1101", "1153", "1154", "1184"]);
@@ -96,12 +101,28 @@ const ADVICE_PATTERNS: RegExp[] = [
   /\byou\s+(?:do|definitely)\s+qualify\b/i,
   /\byou\s+should\s+(?:file|apply|petition|wait|choose|select|pursue|go\s+with)\b/i,
   /\bi\s+(?:recommend|advise|suggest)\s+(?:that\s+)?you\b/i,
-  /\b(?:guaranteed?|guarantee)\b/i,
   /\byour\s+best\s+(?:option|bet|choice)\s+is\b/i,
   /\bis\s+the\s+better\s+(?:option|choice)\s+for\s+you\b/i,
 ];
 function matchedAdvice(text: string): string[] {
-  return ADVICE_PATTERNS.map((p) => text.match(p)?.[0]).filter((m): m is string => !!m);
+  const hits = ADVICE_PATTERNS.map((p) => text.match(p)?.[0]).filter((m): m is string => !!m);
+  if (affirmsOutcomeGuarantee(text)) hits.push("guarantees an outcome");
+  return hits;
+}
+
+/**
+ * An AFFIRMATIVE guarantee of an outcome — not a negated or factual use. Both
+ * "premium processing does not guarantee approval" and "a guaranteed
+ * adjudication timeframe" are correct, lawful statements and must NOT trip this.
+ */
+function affirmsOutcomeGuarantee(text: string): boolean {
+  return text
+    .split(/(?<=[.!?])\s+/)
+    .some((s) => {
+      if (!/\bguarantee/i.test(s)) return false;
+      if (/\b(?:no|not|never|cannot|can'?t|doesn'?t|does\s+not|won'?t|will\s+not)\b/i.test(s)) return false;
+      return /\b(?:approv|the\s+visa|success|qualif|admission|you\s+will\s+(?:get|be|win))\b/i.test(s);
+    });
 }
 
 /** Visa codes other than the requested one that leaked into the output. */
@@ -300,8 +321,23 @@ function fabricationGate(ctx: GateContext, id: string): GateResult {
     : r(id, "warn", `specifics not in the record (review): ${fabricated.join(", ")}`);
 }
 
+// Reporter cites / "Matter of X" / "(Nth Cir. YYYY)" — strong legal-citation
+// signals. A model can hallucinate a real-looking but nonexistent case, so any
+// case-law cite is flagged for attorney verification (not auto-failed).
+const CASELAW = /\b\d+\s+F\.?\s?(?:Supp\.?\s?)?\d?d?\s+\d+\b|\bMatter\s+of\s+[A-Z][A-Za-z-]+|\b(?:[A-Za-z.]+\s+)?Cir\.\s+(?:19|20)\d{2}/g;
+function caseLawGate(ctx: GateContext, id: string): GateResult {
+  const hits = [...new Set((ctx.outputText.match(CASELAW) ?? []).map((s) => s.trim()))];
+  return hits.length === 0
+    ? r(id, "pass", "no case-law citations")
+    : r(id, "warn", `cites case law — attorney must verify it is real & on point: ${hits.slice(0, 4).join(" | ")}`);
+}
+
 function draftGates(ctx: GateContext): GateResult[] {
-  return [...letterStructureGates(ctx, "draft"), fabricationGate(ctx, "draft-no-fabrication")];
+  return [
+    ...letterStructureGates(ctx, "draft"),
+    fabricationGate(ctx, "draft-no-fabrication"),
+    caseLawGate(ctx, "draft-caselaw-review"),
+  ];
 }
 
 function sectionGates(ctx: GateContext): GateResult[] {
@@ -316,6 +352,7 @@ function sectionGates(ctx: GateContext): GateResult[] {
   );
   out.push(...letterStructureGates(ctx, "draft").filter((g) => g.id.endsWith("classification-consistent")));
   out.push(fabricationGate(ctx, "section-no-fabrication"));
+  out.push(caseLawGate(ctx, "section-caselaw-review"));
   return out;
 }
 
@@ -342,6 +379,7 @@ function rfeGates(ctx: GateContext): GateResult[] {
   } else {
     out.push(fabricationGate(ctx, "rfe-no-fabrication"));
   }
+  out.push(caseLawGate(ctx, "rfe-caselaw-review"));
   return out;
 }
 

@@ -130,7 +130,7 @@ function criteriaLines(req: DraftRequest): string[] {
  */
 export function buildDraftPrompt(req: DraftRequest): string {
   return [
-    "You are drafting a U.S. O-1A (extraordinary ability) petition letter as work",
+    `You are drafting a U.S. ${req.classification} immigration petition letter as work`,
     "product for a licensed immigration attorney of record to review, edit, and sign.",
     "",
     "STRICT RULES — follow all of them:",
@@ -159,7 +159,7 @@ export function buildSectionPrompt(req: DraftRequest, focus: string): string {
     (c) => c.name.toLowerCase() === focus.toLowerCase(),
   );
   return [
-    "You are revising ONE section of an O-1A petition letter, as work product for",
+    `You are revising ONE section of a ${req.classification} petition letter, as work product for`,
     "an attorney of record to review and sign.",
     "Use ONLY the provided facts; do not invent specifics. Formal tone. This is a draft, not legal advice.",
     "",
