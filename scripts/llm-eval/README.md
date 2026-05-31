@@ -35,6 +35,8 @@ Subsets while iterating:
 ```pwsh
 $env:LLM_ENGINE='claude'; npm run eval:llm -- --ids Q01,D02
 $env:LLM_ENGINE='claude'; npm run eval:llm -- --site qualify
+# stability: run the filtered set N times (ids tagged Q10#1, Q10#2, …)
+$env:LLM_ENGINE='claude'; npm run eval:llm -- --ids Q10 --repeat 5
 ```
 
 Outputs land in `scripts/llm-eval/out/` (git-ignored): `report.md` (human) and

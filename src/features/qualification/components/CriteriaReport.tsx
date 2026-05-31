@@ -113,8 +113,18 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
                 <td className="px-5 py-3.5">
                   <Badge tone={statusTone(c.status)}>{c.status}</Badge>
                 </td>
-                <td className="px-5 py-3.5 font-sans text-[13.5px] italic text-muted-strong">
-                  {c.evidence || c.rationale || "—"}
+                <td className="px-5 py-3.5">
+                  {/* Evidence = what we found; rationale = why this score / what
+                      would strengthen it. Show BOTH when present (the rationale is
+                      the actionable read-out the model already returns). */}
+                  <div className="font-sans text-[13.5px] italic text-muted-strong">
+                    {c.evidence || c.rationale || "—"}
+                  </div>
+                  {c.evidence && c.rationale ? (
+                    <div className="mt-1 font-sans text-[12px] not-italic text-muted">
+                      {c.rationale}
+                    </div>
+                  ) : null}
                 </td>
               </tr>
             ))}

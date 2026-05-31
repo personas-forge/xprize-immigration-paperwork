@@ -272,12 +272,20 @@ function writeReports(records: RunRecord[]): void {
 
 async function main(): Promise<void> {
   const scenarios = applyFilters(SCENARIOS);
-  console.log(`Running ${scenarios.length} scenario(s) sequentially…\n`);
+  const argv = process.argv.slice(2);
+  const ri = argv.indexOf("--repeat");
+  const repeat = ri >= 0 ? Math.max(1, Number(argv[ri + 1]) || 1) : 1;
+  console.log(
+    `Running ${scenarios.length} scenario(s)${repeat > 1 ? ` ×${repeat} (stability)` : ""} sequentially…\n`,
+  );
   const records: RunRecord[] = [];
-  for (const s of scenarios) {
-    const rec = await runOne(s);
-    printGates(rec);
-    records.push(rec);
+  for (let pass = 1; pass <= repeat; pass++) {
+    for (const s of scenarios) {
+      // Tag the displayed id per pass so a stability run shows Q10#1, Q10#2, …
+      const rec = await runOne(repeat > 1 ? { ...s, id: `${s.id}#${pass}` } : s);
+      printGates(rec);
+      records.push(rec);
+    }
   }
 
   const fail = records.flatMap((r) => r.gates).filter((g) => g.verdict === "fail").length;

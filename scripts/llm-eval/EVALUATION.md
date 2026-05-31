@@ -158,10 +158,43 @@ product defects — fixed so the gate stays trustworthy:
 | # | Type | Recommendation | Status |
 | --- | --- | --- | --- |
 | F1 | prompt | Parameterize classification in the 3 letter prompts | ✅ done |
-| F2a | prompt | Anti-conflation clause in the qualify prompt | proposed |
-| F2b | function | Low/zero temperature for the `qualify` op (wrapper) | proposed |
-| F2c | process | Re-run borderline scenarios N× to measure score stability | proposed |
-| F3 | prompt | Decide case-law citation policy for drafts/RFE | needs your call |
-| — | function | `extractJson` is duplicated across 5 modules — consolidate | proposed |
-| — | UI | `CriteriaReport.tsx` shows evidence **or** rationale (`c.evidence \|\| c.rationale`); show **both** — the rationale is the actionable "what would move this to Met", and it's already in the payload | proposed |
-| — | UI | Drafts/RFE: add an attorney-facing "verify citations" affordance (pairs with the new caselaw-review signal) | proposed |
+| F2a | prompt | Anti-conflation clause in the qualify prompt | ✅ done |
+| F2b | function | Zero temperature for the `qualify` op (wrapper) | ✅ done (Gemini-only; see note) |
+| F2c | process | `--repeat N` harness flag to measure score stability | ✅ done |
+| F3 | prompt | Forbid case-law citation in drafts/RFE (regulations OK) | ✅ done |
+| — | UI | `CriteriaReport` shows evidence **and** rationale | ✅ done |
+| — | function | `extractJson` is duplicated across 5 modules — consolidate | proposed (not done) |
+| — | UI | Drafts/RFE: attorney "verify citations" affordance — lower priority now that case-law citation is forbidden and the `caselaw-review` gate guards regressions | proposed (not done) |
+
+---
+
+## Resolution — verified 2026-05-31
+
+Changes applied and re-checked against the live model:
+
+- **F3 (case-law policy).** Added a STRICT RULE to `buildDraftPrompt`,
+  `buildSectionPrompt`, and `buildRfePrompt`: *do not cite case law or court
+  decisions (regulation/statute citations are fine; the attorney adds
+  authorities).* Re-run of `D01,D02,D03,S03,R01,R03` → **0 `caselaw-review`
+  warnings** (previously D03/S03 cited *Matter of Kazarian*). Classification
+  consistency still holds.
+- **F2a (anti-conflation).** Added qualify rule #4: *score each criterion only
+  from evidence specific to that criterion (publications ≠ original
+  contribution).* `Q10` previously **hard-failed** (`grounding-negative`: scored
+  Original contribution Met without basis). After the change, **3/3 stability
+  passes had 0 hard failures** AND produced an identical read each pass (the
+  output also became more *stable*). The remaining `Q10` warning is the model
+  scoring *Scholarly articles* conservatively (5 conference papers → Partial) —
+  a WARN in the safe direction, not a hallucination.
+- **F2b (temperature).** `GenerateOptions.temperature` added to the wrapper;
+  the qualify route now passes `temperature: 0`. **Note:** this only affects the
+  production Gemini engine — the Claude CLI path has no temperature control, so
+  the Claude-based eval can't exercise it. The wrapper change lives in
+  `src/lib/llm/client.ts`, which is part of an in-flight migration; it is applied
+  in the working tree but kept out of the eval commit to avoid entangling that
+  work.
+- **F2c (stability).** `npm run eval:llm -- --ids Q10 --repeat 5` runs the
+  filtered set N times (ids tagged `Q10#1…`) to measure variance.
+- **UI.** `CriteriaReport` now renders the model's per-criterion `rationale`
+  beneath the evidence, so the actionable "what would move this to Met" is no
+  longer dropped.
