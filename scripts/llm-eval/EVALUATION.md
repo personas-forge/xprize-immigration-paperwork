@@ -163,8 +163,8 @@ product defects — fixed so the gate stays trustworthy:
 | F2c | process | `--repeat N` harness flag to measure score stability | ✅ done |
 | F3 | prompt | Forbid case-law citation in drafts/RFE (regulations OK) | ✅ done |
 | — | UI | `CriteriaReport` shows evidence **and** rationale | ✅ done |
-| — | function | `extractJson` is duplicated across 5 modules — consolidate | proposed (not done) |
-| — | UI | Drafts/RFE: attorney "verify citations" affordance — lower priority now that case-law citation is forbidden and the `caselaw-review` gate guards regressions | proposed (not done) |
+| — | function | `extractJson` (duplicated in 4 modules) consolidated into `@/lib/llm/json` (+ test) | ✅ done |
+| — | UI | Drafts/RFE: attorney "verify citations" affordance (`CitationNote`) | ✅ done |
 
 ---
 

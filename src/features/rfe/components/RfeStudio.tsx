@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
+import { CitationNote } from "@/features/guidance/components/CitationNote";
 import { DISCLAIMER, type DraftSection } from "@/features/drafting";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 
@@ -181,6 +182,7 @@ export function RfeStudio({
         {status === "done" ? (
           <div className="space-y-4">
             <DisclaimerStamp text={DISCLAIMER} />
+            <CitationNote />
             {sections.map((s, i) => (
               <div key={s.heading + i} className="rounded-control border border-seal/25 bg-surface px-4 py-3">
                 <div className="mb-2 display text-[15px] text-foreground">{s.heading}</div>

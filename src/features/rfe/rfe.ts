@@ -18,6 +18,7 @@
 import { DISCLAIMER } from "@/features/guidance/guidance";
 import { type DraftSection } from "@/features/drafting";
 import { type ModelSource } from "@/lib/llm/label";
+import { extractJson } from "@/lib/llm/json";
 
 export { DISCLAIMER };
 export type { DraftSection as RfeSection };
@@ -139,19 +140,6 @@ export function buildRfePrompt(req: RfeRequest): string {
     "addressing each issue the RFE raises (reinforcing the relevant criteria with",
     "the evidence on record), and a closing. Return the JSON now.",
   ].join("\n");
-}
-
-function extractJson(text: string): unknown {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) return null;
-  try {
-    return JSON.parse(candidate.slice(start, end + 1));
-  } catch {
-    return null;
-  }
 }
 
 function toSection(value: unknown): DraftSection | null {

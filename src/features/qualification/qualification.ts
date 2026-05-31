@@ -18,6 +18,7 @@
 
 import { DISCLAIMER } from "@/features/guidance/guidance";
 import { type ModelSource } from "@/lib/llm/label";
+import { extractJson } from "@/lib/llm/json";
 import { type Classification, packFor, criteriaNames } from "./packs";
 import { isLiveProgram } from "./jurisdictions";
 
@@ -163,21 +164,6 @@ export function buildQualifyPrompt(req: QualifyRequest): string {
     "",
     "Return the JSON now.",
   ].join("\n");
-}
-
-/** Pull the first JSON object out of a model response (tolerates ```json fences
- *  and surrounding prose). Returns null when nothing parseable is found. */
-function extractJson(text: string): unknown {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) return null;
-  try {
-    return JSON.parse(candidate.slice(start, end + 1));
-  } catch {
-    return null;
-  }
 }
 
 function clampLikelihood(value: unknown): number {
