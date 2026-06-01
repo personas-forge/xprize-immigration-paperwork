@@ -8,8 +8,25 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-01
+
+Backward-compatible feature release. Pre-1.0 **minor** bump — multiple
+backward-compatible features accumulated since `0.2.1`, no breaking changes
+(and per the `0.x` policy even breaking changes would only bump minor). No
+migration or reinstall required.
+
 ### Added
 
+- **Structured eligibility questionnaire (ADR-001).** A deterministic, guided
+  yes/no/unsure screening path that complements the free-text profile funnel,
+  so users who can't write a strong bio still get screened. Questions are
+  DERIVED from the criteria packs (`packFor()`), keeping `packs.ts` the single
+  source of truth; live programs only (planned/unknown classifications return
+  `null`, never a silent O-1A fallback); every output carries the shared UPL
+  `DISCLAIMER`; and `answersToProfile` bridges answers into the profile string
+  the existing `/api/qualify` engine consumes unchanged. Pure (no
+  network/React/env) and unit-tested. New
+  `src/features/qualification/questionnaire.ts` with `index.ts` exports.
 - **Token economy & Polar paywall (Library Procedure 2).** Replaces the
   subscription/fee-schedule pricing with a prepaid token economy on the existing
   `app_immigration` ledger (no DDL). New accounts receive a one-time
@@ -101,6 +118,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.3.0]: #
 [0.2.1]: #
 
 ## [0.2.0] - 2026-05-27
