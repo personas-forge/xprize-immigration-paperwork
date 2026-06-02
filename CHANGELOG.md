@@ -8,6 +8,23 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-02
+
+Patch release. A defensive fix to the leaf display formatters so AI-sourced
+scores can never crash the UI or surface `$NaN`/`NaN%`. No API changes, no
+migration required.
+
+### Fixed
+
+- **Format helpers guard non-finite / non-number input (ADR 0003).**
+  `formatCurrency`, `formatSignedCurrency`, `formatNumber`, and `formatPercent`
+  now return the `—` placeholder when given `null`, `undefined`, `NaN`, or
+  `±Infinity` instead of throwing or emitting `"$NaN"` / `"NaN%"`. These helpers
+  are leaf formatters consuming AI-sourced scores with no upstream validation
+  boundary, so they degrade safely. Adds a `finite()` type guard in
+  `src/lib/format.ts`; covered by new unit tests for the null/undefined crash,
+  `NaN`, and `±Infinity` cases.
+
 ## [0.3.0] - 2026-06-01
 
 Backward-compatible feature release. Pre-1.0 **minor** bump — multiple
@@ -118,6 +135,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.3.1]: #
 [0.3.0]: #
 [0.2.1]: #
 
