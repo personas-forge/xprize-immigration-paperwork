@@ -9,6 +9,7 @@ import {
   mockCategorize,
   parseCategorizeRequest,
   parseCategorizeResponse,
+  tryParseCategorizeResponse,
   summarizeVault,
   type CategorizeRequest,
 } from "./evidence";
@@ -66,6 +67,17 @@ test("parseCategorizeResponse: unknown criterion → Unsorted; garbage → mock"
   const a = parseCategorizeResponse(JSON.stringify({ criterion: "Nonsense", facts: [] }), valid);
   assert.equal(a.criterion, "Unsorted");
   assert.deepEqual(parseCategorizeResponse("not json", valid), mockCategorize(valid));
+});
+
+test("tryParseCategorizeResponse: null on a silent fallback so the route can reclaim", () => {
+  // Valid JSON (even an off-list criterion coerced to Unsorted) is a real model
+  // response — kept, so the charge stands and source stays the model.
+  const ok = tryParseCategorizeResponse(JSON.stringify({ criterion: "Awards", facts: ["x"] }));
+  assert.deepEqual(ok, { criterion: "Awards", facts: ["x"] });
+  assert.equal(tryParseCategorizeResponse(JSON.stringify({ criterion: "Nonsense", facts: [] }))?.criterion, "Unsorted");
+  // Unparseable output is the silent fallback → null (NOT a mock), so the route
+  // reclaims the charge instead of billing for boilerplate stamped as the model.
+  assert.equal(tryParseCategorizeResponse("not json"), null);
 });
 
 // — Mock determinism ─────────────────────────────────────────────────────────

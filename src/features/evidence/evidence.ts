@@ -109,14 +109,18 @@ function coerceBucket(value: unknown, classification: string): Bucket {
   return allowed.has(value as string) ? (value as Bucket) : "Unsorted";
 }
 
-/** Normalize a model response, falling back to the deterministic keyword mock. */
-export function parseCategorizeResponse(
+/**
+ * Strict parse: the model's assessment ONLY when it returned usable JSON, else
+ * `null`. Lets the route distinguish a real model categorization from a silent
+ * fallback, so it can reclaim the charge and label the result "mock" instead of
+ * billing for a deterministic/Unsorted result stamped as genuine model output.
+ */
+export function tryParseCategorizeResponse(
   text: string,
-  req: CategorizeRequest,
   classification = "O-1A",
-): CategorizeAssessment {
+): CategorizeAssessment | null {
   const parsed = extractJson(text);
-  if (!parsed || typeof parsed !== "object") return mockCategorize(req, classification);
+  if (!parsed || typeof parsed !== "object") return null;
   const obj = parsed as Record<string, unknown>;
   const facts = Array.isArray(obj.facts)
     ? obj.facts
@@ -125,6 +129,15 @@ export function parseCategorizeResponse(
         .slice(0, MAX_FACTS)
     : [];
   return { criterion: coerceBucket(obj.criterion, classification), facts };
+}
+
+/** Normalize a model response, falling back to the deterministic keyword mock. */
+export function parseCategorizeResponse(
+  text: string,
+  req: CategorizeRequest,
+  classification = "O-1A",
+): CategorizeAssessment {
+  return tryParseCategorizeResponse(text, classification) ?? mockCategorize(req, classification);
 }
 
 const FACT_SPLIT = /(?<=[.!?])\s+/;
