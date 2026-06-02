@@ -10,6 +10,8 @@ export {
   parseDraftResponse,
   parseFocus,
   parseSectionResponse,
+  tryParseDraftResponse,
+  tryParseSectionResponse,
   type DraftCriterion,
   type DraftRequest,
   type DraftResult,
