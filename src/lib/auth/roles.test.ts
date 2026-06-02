@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { attorneyAllowlist, isAttorney } from "./roles";
+import { attorneyAllowlist, isAttorney, isConfiguredAttorney } from "./roles";
 
 test("attorneyAllowlist: parses, trims, lowercases, drops blanks", () => {
   assert.deepEqual(
@@ -22,4 +22,17 @@ test("isAttorney: configured allowlist restricts to listed emails (case-insensit
   assert.equal(isAttorney("someone@else.com", env), false);
   assert.equal(isAttorney(null, env), false);
   assert.equal(isAttorney(undefined, env), false);
+});
+
+test("isConfiguredAttorney: fails CLOSED — empty allowlist denies everyone", () => {
+  // The whole point: no demo unlock for cross-tenant data access.
+  assert.equal(isConfiguredAttorney("anyone@example.com", {}), false);
+  assert.equal(isConfiguredAttorney("anyone@example.com", { ATTORNEY_EMAILS: "" }), false);
+});
+
+test("isConfiguredAttorney: configured allowlist still restricts to listed emails", () => {
+  const env = { ATTORNEY_EMAILS: "counsel@firm.com" };
+  assert.equal(isConfiguredAttorney("Counsel@Firm.com", env), true);
+  assert.equal(isConfiguredAttorney("someone@else.com", env), false);
+  assert.equal(isConfiguredAttorney(null, env), false);
 });
