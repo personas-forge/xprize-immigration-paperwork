@@ -4,7 +4,14 @@ This run scanned ONE context group (Petition Drafting) and implemented 10 accept
 ideas. Two things were deliberately left for a future run because they fall outside
 the selected group or outside the change's control.
 
-## 1. Systemic cross-tenant IDOR (HIGH — security)
+## 1. Systemic cross-tenant IDOR (HIGH — security) — ✅ RESOLVED in Run #2
+
+> **Update 2026-06-02 (Run #2, Pipeline C on the Evidence & Case Management group):**
+> all three flagged sites — plus the review server actions and the review queue —
+> were migrated to `isConfiguredAttorney`. The systemic IDOR is closed. Only
+> `dashboard/page.tsx`'s `isAttorney` nav affordance remains (no data/action; left
+> as-is). Behavior change: the attorney workflow now requires `ATTORNEY_EMAILS`.
+> Original description retained below for context.
 
 Idea #10 fixed the cross-tenant IDOR on `/api/rfe` by gating the attorney
 cross-owner path on the new fail-closed `isConfiguredAttorney` instead of the

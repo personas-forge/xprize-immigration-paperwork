@@ -57,14 +57,41 @@
   `saveDraft`/`saveRfeResponse` failure after charging drops the work product with
   no signal. Log it and return a `saveFailed` flag the UI can surface.
 
-## Open follow-ups (from Run #1 — Pipeline C, 2026-06-02)
+## Structural facts (Run #2 — Pipeline C, Evidence & Case Management, 2026-06-02)
 
-- **Systemic IDOR — same `isAttorney`-gated `getCaseAnyOwner` pattern still open**
-  in three out-of-scope files (Evidence & Case Management group):
-  `src/app/api/evidence/categorize/route.ts:97`,
-  `src/app/dashboard/cases/[id]/page.tsx:42`, `src/features/evidence/actions.ts:24`.
-  Apply `isConfiguredAttorney` (this run only fixed `/api/rfe`). See
-  `docs/harness/followups-2026-06-02.md`.
+- **2026-06-02** — `Store.transitionCase(input)` is the ONLY way to change case
+  status from the review workflow: compare-and-set on `fromStatuses` + append the
+  review events, atomically (PGlite guarded `UPDATE...RETURNING`; Firestore
+  `runTransaction`). Returns false when the precondition fails. Use it (via
+  `reviews.transitionCase`) — never the blind `setCaseStatus` — for any
+  status-advancing action, so double-submits/illegal transitions can't slip through.
+- **2026-06-02** — Exhibit ordinals are a monotonic high-water mark per case:
+  Firestore `cases.doc_ord`, PGlite `cases.doc_seq` (added this run). Never reused
+  after a delete. `addCaseDocument` advances it inside the insert transaction.
+- **2026-06-02** — `case-file/criteria.ts` `classifyStatus(status)` is the single
+  source of truth ("qualifying" | "partial" | "other"); `statusTone` and
+  `summarizeCriteria` both derive from it so the table tone and summary counts
+  can't drift (ADR 0002).
+
+## Conventions enforced (Run #2)
+
+- **2026-06-02** — Cross-tenant case-DATA access AND privileged review/filing
+  actions gate on `isConfiguredAttorney` (fail-closed), never `isAttorney`. As of
+  this run the rule is applied everywhere it matters: `/api/rfe`, `/api/draft`
+  (owner-only), `/api/evidence/categorize`, `dashboard/cases/[id]`,
+  `dashboard/review`, `review/actions.ts`, `evidence/actions.ts`. Consequence:
+  the attorney workflow now needs `ATTORNEY_EMAILS` set — even in dev/demo.
+
+## Open follow-ups (updated Run #2 — Pipeline C, 2026-06-02)
+
+- **RESOLVED (Run #2): systemic IDOR.** The `isAttorney`-gated `getCaseAnyOwner`
+  pattern is now `isConfiguredAttorney` across the categorize route, case-detail
+  page, review queue, and the review + evidence server actions. `dashboard/page.tsx`
+  still uses `isAttorney` for a NAV affordance only (no data/action) — harmless,
+  left out of scope.
+- **`/api/evidence/categorize` has no rate limit.** The other three token-charged
+  routes use `src/lib/rate-limit.ts`; categorize doesn't. Not one of Run #2's
+  accepted ideas, so deferred — a ~3-line addition (`checkRateLimit` keyed by IP).
 - **`next build` is broken at baseline** (environmental): webpack can't resolve
   `firebase-admin/{app,auth,firestore}` and `@electric-sql/pglite` subpath exports
   even though both packages are installed (`serverExternalPackages` is set). `tsc`
