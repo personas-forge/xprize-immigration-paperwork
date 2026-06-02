@@ -323,6 +323,40 @@ export const firestoreStore: Store = {
       .set(update, { merge: true });
   },
 
+  async transitionCase(input): Promise<boolean> {
+    const fs = adminDb();
+    const caseRef = fs.collection(col("cases")).doc(input.caseId);
+    return fs.runTransaction(async (t) => {
+      const snap = await t.get(caseRef);
+      if (!snap.exists) return false;
+      // Compare-and-set inside the transaction: bail unless the current status
+      // is allowed, so concurrent double-submits / illegal transitions lose.
+      const current = String(snap.get("status") ?? "Intake");
+      if (!input.fromStatuses.includes(current)) return false;
+      const update: Record<string, unknown> = {
+        status: input.toStatus,
+        updated_at: FieldValue.serverTimestamp(),
+      };
+      if (input.receiptNumber !== undefined) {
+        update.receipt_number = input.receiptNumber;
+      }
+      t.set(caseRef, update, { merge: true });
+      // Append events in the SAME transaction → status + audit log stay in sync.
+      for (const ev of input.events) {
+        t.set(fs.collection(col("case_reviews")).doc(), {
+          case_id: input.caseId,
+          author_id: ev.authorId,
+          author_role: ev.authorRole,
+          kind: ev.kind,
+          body: ev.body ?? "",
+          metadata: ev.metadata ?? {},
+          created_at: FieldValue.serverTimestamp(),
+        });
+      }
+      return true;
+    });
+  },
+
   // ── Domain: petition drafts (versioned) ───────────────────────────────────
   async saveDraft(caseId, sections, source): Promise<number> {
     const fs = adminDb();
