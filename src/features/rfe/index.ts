@@ -5,6 +5,7 @@ export {
   mockRfe,
   parseRfeRequest,
   parseRfeResponse,
+  tryParseRfeResponse,
   type RfeCriterion,
   type RfeRequest,
   type RfeResponse,
