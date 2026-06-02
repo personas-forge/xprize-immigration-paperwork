@@ -34,6 +34,7 @@ export const RATE_LIMITS = {
   draft: 20, // xl/heavy full-letter + section regenerations
   rfe: 20, // heavy
   guidance: 40, // light
+  categorize: 40, // light — evidence categorization
 } as const;
 
 export const RATE_WINDOW_MS = 60_000;

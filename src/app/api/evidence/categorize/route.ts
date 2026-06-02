@@ -13,6 +13,12 @@ import { chargeForOperation } from "@/lib/tokens/guard";
 import { getLlm } from "@/lib/llm/client";
 import { getUser } from "@/lib/auth/session";
 import { isConfiguredAttorney } from "@/lib/auth/roles";
+import {
+  RATE_LIMITS,
+  checkRateLimit,
+  isRateLimitEnabled,
+  rateLimitKey,
+} from "@/lib/rate-limit";
 import { getCaseAnyOwner, getCaseForUser } from "@/lib/data/petitions";
 import { addCaseDocument } from "@/lib/data/evidence";
 
@@ -45,6 +51,19 @@ export async function POST(request: Request): Promise<NextResponse> {
   const caseId = typeof record.caseId === "string" ? record.caseId : null;
   const classification =
     typeof record.classification === "string" ? record.classification : "O-1A";
+
+  // Rate limit BEFORE charging or any model work, keyed by client IP (this route
+  // stays auth-decoupled for the keyless build) — so a flood can't run up model
+  // cost or drain a balance unchecked, matching the other charged AI routes.
+  if (isRateLimitEnabled()) {
+    const rl = checkRateLimit(rateLimitKey(request, "categorize"), RATE_LIMITS.categorize);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "rate_limited", retryAfterSec: rl.retryAfterSec, disclaimer: DISCLAIMER },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+      );
+    }
+  }
 
   // Token economy: categorize = light (1). Free pass when auth/DB/bypass off.
   const requestId = randomUUID();
