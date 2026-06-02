@@ -12,6 +12,8 @@ import {
   parseDraftRequest,
   parseDraftResponse,
   parseSectionResponse,
+  tryParseDraftResponse,
+  tryParseSectionResponse,
   type DraftRequest,
 } from "./drafting";
 
@@ -111,6 +113,29 @@ test("parseSectionResponse: parses one section, else falls back to the mock sect
   const ok = parseSectionResponse(JSON.stringify({ heading: "Awards", body: "Fresh." }), valid, "Awards");
   assert.deepEqual(ok, { heading: "Awards", body: "Fresh." });
   assert.deepEqual(parseSectionResponse("garbage", valid, "Awards"), mockSection(valid, "Awards"));
+});
+
+// — Strict (discriminating) parse: null signals a silent fallback ─────────────
+
+test("tryParseDraftResponse: returns sections on valid JSON, null on garbage/empty", () => {
+  const good = tryParseDraftResponse(JSON.stringify({ sections: [{ heading: "Introduction", body: "x" }] }));
+  assert.ok(good && good.sections[0].heading === "Introduction");
+  assert.equal(tryParseDraftResponse("not json"), null, "garbage → null, NOT a mock");
+  assert.equal(tryParseDraftResponse(JSON.stringify({ sections: [] })), null, "no usable sections → null");
+});
+
+test("tryParseSectionResponse: returns the section on valid JSON, null on garbage", () => {
+  assert.deepEqual(
+    tryParseSectionResponse(JSON.stringify({ heading: "Awards", body: "Fresh." })),
+    { heading: "Awards", body: "Fresh." },
+  );
+  assert.equal(tryParseSectionResponse("garbage"), null);
+});
+
+test("buildDraftPrompt: isolates applicant data as data, not instructions", () => {
+  const p = buildDraftPrompt(valid);
+  assert.ok(p.includes("<<<CASE_DATA>>>") && p.includes("<<<END_CASE_DATA>>>"), "wraps data in markers");
+  assert.ok(p.toLowerCase().includes("never as instructions"), "tells the model the block is data");
 });
 
 // — Mock structure & determinism ─────────────────────────────────────────────

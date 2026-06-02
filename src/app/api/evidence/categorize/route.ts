@@ -6,13 +6,19 @@ import {
   buildCategorizeResult,
   mockCategorize,
   parseCategorizeRequest,
-  parseCategorizeResponse,
+  tryParseCategorizeResponse,
   type CategorizeResult,
 } from "@/features/evidence";
 import { chargeForOperation } from "@/lib/tokens/guard";
 import { getLlm } from "@/lib/llm/client";
 import { getUser } from "@/lib/auth/session";
-import { isAttorney } from "@/lib/auth/roles";
+import { isConfiguredAttorney } from "@/lib/auth/roles";
+import {
+  RATE_LIMITS,
+  checkRateLimit,
+  isRateLimitEnabled,
+  rateLimitKey,
+} from "@/lib/rate-limit";
 import { getCaseAnyOwner, getCaseForUser } from "@/lib/data/petitions";
 import { addCaseDocument } from "@/lib/data/evidence";
 
@@ -46,6 +52,19 @@ export async function POST(request: Request): Promise<NextResponse> {
   const classification =
     typeof record.classification === "string" ? record.classification : "O-1A";
 
+  // Rate limit BEFORE charging or any model work, keyed by client IP (this route
+  // stays auth-decoupled for the keyless build) — so a flood can't run up model
+  // cost or drain a balance unchecked, matching the other charged AI routes.
+  if (isRateLimitEnabled()) {
+    const rl = checkRateLimit(rateLimitKey(request, "categorize"), RATE_LIMITS.categorize);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "rate_limited", retryAfterSec: rl.retryAfterSec, disclaimer: DISCLAIMER },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+      );
+    }
+  }
+
   // Token economy: categorize = light (1). Free pass when auth/DB/bypass off.
   const requestId = randomUUID();
   const charged = await chargeForOperation("categorize", requestId);
@@ -77,10 +96,15 @@ export async function POST(request: Request): Promise<NextResponse> {
         json: true,
         tier: "fast",
       });
-      result = buildCategorizeResult(
-        parseCategorizeResponse(text, req, classification),
-        llm.name,
-      );
+      const parsed = tryParseCategorizeResponse(text, classification);
+      if (parsed) {
+        result = buildCategorizeResult(parsed, llm.name);
+      } else {
+        // Unusable model output: reclaim the charge and label honestly, instead
+        // of billing for a deterministic mock stamped as model output.
+        await charged.reclaim();
+        result = buildCategorizeResult(mockCategorize(req, classification), "mock");
+      }
     } catch {
       await charged.reclaim();
       result = buildCategorizeResult(mockCategorize(req, classification), "mock");
@@ -88,6 +112,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   // Persist to the case vault when the user can access the case. Best-effort.
+  // Cross-tenant write gates on isConfiguredAttorney (fail-closed): isAttorney's
+  // demo default would let any signed-in user inject a document (with a real
+  // exhibit number) into a stranger's vault.
   let document = null;
   if (caseId) {
     try {
@@ -95,7 +122,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       if (user) {
         const stored =
           (await getCaseForUser(user.id, caseId)) ??
-          (isAttorney(user.email) ? await getCaseAnyOwner(caseId) : null);
+          (isConfiguredAttorney(user.email) ? await getCaseAnyOwner(caseId) : null);
         if (stored) {
           document = await addCaseDocument({
             caseId: stored.id,

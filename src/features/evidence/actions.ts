@@ -9,11 +9,14 @@
 
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth/session";
-import { isAttorney } from "@/lib/auth/roles";
+import { isConfiguredAttorney } from "@/lib/auth/roles";
 import { getCaseAnyOwner, getCaseForUser } from "@/lib/data/petitions";
 import { refileCaseDocument, removeCaseDocument } from "@/lib/data/evidence";
 
-/** True when the user owns the case or is an attorney of record. */
+/** True when the user owns the case or is a CONFIGURED attorney of record.
+ *  Uses isConfiguredAttorney (fail-closed), not isAttorney — otherwise the demo
+ *  default (every signed-in user is an "attorney") lets anyone delete or refile
+ *  documents in a stranger's vault by passing its caseId. */
 async function canAccessCase(
   userId: string,
   email: string | null | undefined,
@@ -21,7 +24,7 @@ async function canAccessCase(
 ): Promise<boolean> {
   const owned = await getCaseForUser(userId, caseId);
   if (owned) return true;
-  return isAttorney(email) && Boolean(await getCaseAnyOwner(caseId));
+  return isConfiguredAttorney(email) && Boolean(await getCaseAnyOwner(caseId));
 }
 
 export async function removeDocument(

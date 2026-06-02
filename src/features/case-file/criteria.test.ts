@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { QUALIFYING_THRESHOLD, statusTone, summarizeCriteria } from "./criteria";
+import { QUALIFYING_THRESHOLD, classifyStatus, statusTone, summarizeCriteria } from "./criteria";
 import { criteria } from "./data";
 import { type Criterion } from "./types";
 
@@ -97,6 +97,27 @@ test("statusTone: agrees with summarizeCriteria — only rows it tones success/w
   const s = summarizeCriteria(rows as Criterion[]);
   assert.equal(counted, s.total, "non-neutral rows equal the evaluated total");
   assert.equal(s.total, 3);
+});
+
+test("classifyStatus: single source of truth — tone and summary can't drift", () => {
+  assert.equal(classifyStatus("Met"), "qualifying");
+  assert.equal(classifyStatus("Strong"), "qualifying");
+  assert.equal(classifyStatus("Partial"), "partial");
+  for (const other of ["met", "Meets", "Unknown", "", null, undefined]) {
+    assert.equal(classifyStatus(other), "other", `${String(other)} → other`);
+    assert.equal(statusTone(other), "neutral", "other → neutral tone");
+  }
+  // The summary's total is exactly the rows classifyStatus does not call "other".
+  const rows = [
+    { status: "Met" },
+    { status: "Strong" },
+    { status: "Partial" },
+    { status: "Unknown" },
+    { status: "" },
+  ] as Criterion[];
+  const counted = rows.filter((r) => classifyStatus(r.status) !== "other").length;
+  assert.equal(summarizeCriteria(rows).total, counted, "summary total == non-other rows");
+  assert.equal(counted, 3);
 });
 
 test("table read-out tracks data length and threshold constant, not hardcoded 8/3", () => {

@@ -67,3 +67,28 @@ export async function setCaseStatus(
   if (!store) return;
   await store.setCaseStatus(caseId, status, opts.receiptNumber);
 }
+
+/**
+ * Atomically advance a case's status AND append review events, but ONLY if the
+ * current status is one of `fromStatuses` (compare-and-set). Returns true if it
+ * applied, false if the precondition failed. The status guard + the same-
+ * transaction event append fix both double-submits and audit-log desync. No
+ * store → graceful no-op that reports success (matches the rest of the layer).
+ */
+export async function transitionCase(input: {
+  caseId: string;
+  fromStatuses: readonly string[];
+  toStatus: string;
+  receiptNumber?: string;
+  events: readonly {
+    authorId: string | null;
+    authorRole: "applicant" | "attorney";
+    kind: ReviewKind;
+    body?: string;
+    metadata?: Record<string, unknown>;
+  }[];
+}): Promise<boolean> {
+  const store = await getStore();
+  if (!store) return true;
+  return store.transitionCase(input);
+}

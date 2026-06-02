@@ -133,6 +133,26 @@ export interface AddReviewEventInput {
   metadata?: Record<string, unknown>;
 }
 
+/** A review event appended atomically as part of a guarded status transition. */
+export interface TransitionEvent {
+  authorId: string | null;
+  authorRole: "applicant" | "attorney";
+  kind: ReviewKind;
+  body?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/** A compare-and-set case-status transition that also appends review events,
+ *  all as one atomic unit (see Store.transitionCase). */
+export interface TransitionCaseInput {
+  caseId: string;
+  /** Allowed current statuses — the transition only applies if status is one. */
+  fromStatuses: readonly string[];
+  toStatus: string;
+  receiptNumber?: string;
+  events: readonly TransitionEvent[];
+}
+
 export interface StoredDocument {
   id: string;
   name: string;
@@ -193,6 +213,14 @@ export interface Store {
     status: string,
     receiptNumber?: string,
   ): Promise<void>;
+  /**
+   * Atomically advance a case's status AND append review events, but ONLY when
+   * the current status is one of `fromStatuses` (compare-and-set). Returns true
+   * if the transition applied, false if the precondition was not met (or the
+   * case is gone). Prevents double-submits / illegal transitions and keeps the
+   * append-only review log in sync with case status.
+   */
+  transitionCase(input: TransitionCaseInput): Promise<boolean>;
 
   // ── Domain: petition drafts (versioned) ───────────────────────────────────
   /** Persist a draft as a NEW version + advance Intake→Drafting. Returns version. */

@@ -12,20 +12,39 @@ const QUALIFYING_STATUSES: ReadonlySet<CriterionStatus> = new Set([
   "Strong",
 ]);
 
+/** How a (possibly AI-sourced, possibly malformed) status counts toward
+ *  eligibility. */
+export type StatusClass = "qualifying" | "partial" | "other";
+
+/**
+ * THE single source of truth for classifying a criterion status. Both
+ * `statusTone` (the table tone) and `summarizeCriteria` (the summary counts)
+ * derive from this, so the two derived views can never drift apart — the bug
+ * this guards against (ADR 0002). The value is AI-sourced, so it is matched at
+ * runtime rather than trusting the CriterionStatus type: "Met"/"Strong" →
+ * qualifying, exact "Partial" → partial, anything else (unknown/absent) → other.
+ */
+export function classifyStatus(status: unknown): StatusClass {
+  if (status === "Partial") return "partial";
+  if (QUALIFYING_STATUSES.has(status as CriterionStatus)) return "qualifying";
+  return "other";
+}
+
 /**
  * Map a criterion status to the badge tone the criteria table renders.
- *
- * Status-safe by design (ADR 0002): the value is AI-sourced (Document AI /
- * Gemini scoring), so this guards at runtime rather than trusting the
- * CriterionStatus type. "Met"/"Strong" → success, "Partial" → warning, and
- * anything unknown or absent → neutral. An unscored criterion must NOT render
- * green — that would let the table paint a row "met" while summarizeCriteria
- * excludes it, making the table and summary disagree on eligibility.
+ * qualifying → success, partial → warning, other (unknown/absent) → neutral. An
+ * unscored criterion must NOT render green — that would let the table paint a
+ * row "met" while summarizeCriteria excludes it.
  */
 export function statusTone(status: unknown): BadgeTone {
-  if (status === "Partial") return "warning";
-  if (QUALIFYING_STATUSES.has(status as CriterionStatus)) return "success";
-  return "neutral";
+  switch (classifyStatus(status)) {
+    case "qualifying":
+      return "success";
+    case "partial":
+      return "warning";
+    default:
+      return "neutral";
+  }
 }
 
 export interface CriteriaSummary {
@@ -55,15 +74,16 @@ export function summarizeCriteria(items: readonly Criterion[]): CriteriaSummary 
   let total = 0;
 
   for (const item of list) {
-    const status = item?.status;
-    if (status === "Partial") {
+    // Same classifier statusTone uses → tone and counts can't disagree.
+    const cls = classifyStatus(item?.status);
+    if (cls === "partial") {
       partial += 1;
       total += 1;
-    } else if (QUALIFYING_STATUSES.has(status as CriterionStatus)) {
+    } else if (cls === "qualifying") {
       qualifying += 1;
       total += 1;
     }
-    // Unknown/absent status: not counted toward total or any bucket.
+    // "other" (unknown/absent): not counted toward total or any bucket.
   }
 
   return {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
@@ -29,6 +29,8 @@ interface RfeApiResponse {
   source: ModelSource;
   caseId: string | null;
   version: number | null;
+  /** True when the response was charged + generated but the version failed to save. */
+  saveFailed?: boolean;
 }
 
 export function RfeStudio({
@@ -54,15 +56,22 @@ export function RfeStudio({
   const [sections, setSections] = useState<DraftSection[]>(initialSections ?? []);
   const [source, setSource] = useState<ModelSource>(initialSource);
   const [error, setError] = useState<string | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
+  // Synchronous in-flight guard — see DraftStudio. A stale `status` closure can't
+  // stop two same-render clicks from both firing a paid POST.
+  const busyRef = useRef(false);
 
   async function generate() {
+    if (busyRef.current) return; // double-submit guard (charges tokens)
     if (rfeText.trim().length < 20) {
       setError("Paste the text of the RFE you received (a sentence or two is enough).");
       setStatus("error");
       return;
     }
+    busyRef.current = true;
     setStatus("loading");
     setError(null);
+    setSaveFailed(false);
     try {
       const res = await fetch("/api/rfe", {
         method: "POST",
@@ -92,10 +101,13 @@ export function RfeStudio({
       }
       setSections(data.sections);
       setSource(data.source);
+      setSaveFailed(Boolean(data.saveFailed));
       setStatus("done");
     } catch {
       setError("Network error — please try again.");
       setStatus("error");
+    } finally {
+      busyRef.current = false;
     }
   }
 
@@ -183,6 +195,21 @@ export function RfeStudio({
           <div className="space-y-4">
             <DisclaimerStamp text={DISCLAIMER} />
             <CitationNote />
+            {saveFailed ? (
+              <div
+                role="status"
+                className="rounded-control border border-seal/50 bg-seal-soft/40 px-4 py-3 font-sans text-[13px] leading-snug text-foreground-soft"
+              >
+                <span className="font-mono text-[10px] uppercase tracking-document text-seal">
+                  Not saved
+                </span>
+                <span className="ml-2">
+                  This response was generated and charged, but it couldn’t be saved
+                  to your case history. Copy your text before leaving — a reload may
+                  not show it.
+                </span>
+              </div>
+            ) : null}
             {sections.map((s, i) => (
               <div key={s.heading + i} className="rounded-control border border-seal/25 bg-surface px-4 py-3">
                 <div className="mb-2 display text-[15px] text-foreground">{s.heading}</div>

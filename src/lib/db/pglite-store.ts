@@ -81,6 +81,9 @@ create table if not exists cases (
   updated_at          timestamptz not null default now()
 );
 create index if not exists cases_user_idx on cases (user_id);
+-- Monotonic, never-reused exhibit ordinal (mirrors the Firestore doc_ord
+-- counter). Lives on the case so deleting a document never renumbers survivors.
+alter table cases add column if not exists doc_seq int not null default 0;
 
 create table if not exists criteria (
   id        text primary key default gen_random_uuid()::text,
@@ -463,6 +466,53 @@ export async function getPgliteStore(): Promise<Store> {
       }
     },
 
+    async transitionCase(input) {
+      return pg.transaction(async (tx) => {
+        // Compare-and-set: only flip status when it is currently one of the
+        // allowed `fromStatuses`. The guarded UPDATE returns the row iff it
+        // applied, so concurrent double-submits and illegal transitions are
+        // rejected atomically.
+        const params: unknown[] = [input.caseId, input.toStatus];
+        let receiptClause = "";
+        if (input.receiptNumber !== undefined) {
+          params.push(input.receiptNumber);
+          receiptClause = `, receipt_number = $${params.length}`;
+        }
+        const fromPlaceholders = input.fromStatuses
+          .map((s) => {
+            params.push(s);
+            return `$${params.length}`;
+          })
+          .join(", ");
+        // No allowed source statuses → never applies.
+        if (fromPlaceholders === "") return false;
+        const upd = await tx.query(
+          `update cases set status = $2${receiptClause}, updated_at = now()
+            where id = $1 and status in (${fromPlaceholders})
+          returning id`,
+          params,
+        );
+        if (upd.rows.length === 0) return false;
+        // Same transaction → status advance and the append-only log stay in sync.
+        for (const ev of input.events) {
+          await tx.query(
+            `insert into case_reviews
+               (case_id, author_id, author_role, kind, body, metadata)
+             values ($1, $2, $3, $4, $5, $6::jsonb)`,
+            [
+              input.caseId,
+              ev.authorId,
+              ev.authorRole,
+              ev.kind,
+              ev.body ?? "",
+              JSON.stringify(ev.metadata ?? {}),
+            ],
+          );
+        }
+        return true;
+      });
+    },
+
     // ── Domain: petition drafts (versioned) ───────────────────────────────────
     async saveDraft(caseId, sections, source) {
       return pg.transaction(async (tx) => {
@@ -584,12 +634,22 @@ export async function getPgliteStore(): Promise<Store> {
     // ── Domain: evidence vault ────────────────────────────────────────────────
     async addCaseDocument(input) {
       return pg.transaction(async (tx) => {
+        // Monotonic, never-reused ordinal: the high-water mark across the case's
+        // doc_seq counter AND any surviving rows (robust even if doc_seq was not
+        // backfilled). Deleting the top exhibit must NOT free its number for
+        // reuse — matches the Firestore doc_ord semantics.
         const o = await tx.query(
-          `select coalesce(max(ord), 0) + 1 as next
-             from case_documents where case_id = $1`,
+          `select greatest(
+              coalesce((select doc_seq from cases where id = $1), 0),
+              coalesce((select max(ord) from case_documents where case_id = $1), 0)
+           ) + 1 as next`,
           [input.caseId],
         );
         const ord = num(o.rows[0]?.next) || 1;
+        await tx.query(
+          `update cases set doc_seq = $2, updated_at = now() where id = $1`,
+          [input.caseId, ord],
+        );
         const exhibit = `Ex. ${ord}`;
         const status = input.status ?? "Received";
         const facts = [...input.facts].map((f) => String(f));

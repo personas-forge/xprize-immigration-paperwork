@@ -7,6 +7,7 @@ export {
   mockCategorize,
   parseCategorizeRequest,
   parseCategorizeResponse,
+  tryParseCategorizeResponse,
   summarizeVault,
   type Bucket,
   type CategorizeAssessment,

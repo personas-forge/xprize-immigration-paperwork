@@ -8,6 +8,7 @@ import {
   mockRfe,
   parseRfeRequest,
   parseRfeResponse,
+  tryParseRfeResponse,
   type RfeRequest,
 } from "./rfe";
 
@@ -83,6 +84,19 @@ test("parseRfeResponse: tolerates fences; falls back to mock on garbage/empty", 
   assert.equal(parseRfeResponse(wrapped, valid).sections[0].heading, "Opening");
   assert.deepEqual(parseRfeResponse("nope", valid), mockRfe(valid));
   assert.deepEqual(parseRfeResponse(JSON.stringify({ sections: [] }), valid), mockRfe(valid));
+});
+
+test("tryParseRfeResponse: returns null on a silent fallback so the route can reclaim", () => {
+  const good = tryParseRfeResponse(JSON.stringify({ sections: [{ heading: "Opening", body: "x" }] }));
+  assert.ok(good && good.sections[0].heading === "Opening");
+  assert.equal(tryParseRfeResponse("nope"), null, "garbage → null");
+  assert.equal(tryParseRfeResponse(JSON.stringify({ sections: [] })), null, "no usable sections → null");
+});
+
+test("buildRfePrompt: isolates the RFE notice and criteria as untrusted data", () => {
+  const p = buildRfePrompt(valid);
+  assert.ok(p.includes("<<<RFE_NOTICE>>>") && p.includes("<<<END_RFE_NOTICE>>>"), "wraps the notice");
+  assert.ok(p.toLowerCase().includes("never instructions") || p.toLowerCase().includes("untrusted data"));
 });
 
 // — Mock structure & determinism ─────────────────────────────────────────────

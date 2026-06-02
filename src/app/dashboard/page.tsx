@@ -1,6 +1,6 @@
 import { DashboardView } from "@/features/dashboard/DashboardView";
 import { requireOnboardedUser } from "@/lib/auth/session";
-import { isAttorney } from "@/lib/auth/roles";
+import { isConfiguredAttorney } from "@/lib/auth/roles";
 import { getBalance } from "@/lib/tokens/ledger";
 import { getCasesForUser } from "@/lib/data/petitions";
 import { isStoreConfigured } from "@/lib/db/config";
@@ -19,7 +19,10 @@ export default async function DashboardPage() {
   if (!bypass) {
     const { user } = await requireOnboardedUser();
     balance = await getBalance(user.id);
-    attorney = isAttorney(user.email);
+    // Use the fail-closed check: the review queue / case actions this affordance
+    // links to are now gated on isConfiguredAttorney, so don't surface the nav
+    // to users who'd only hit an empty queue.
+    attorney = isConfiguredAttorney(user.email);
     // The user's real, persisted cases (from the qualification flow). Empty in
     // the keyless/no-DB demo, where only the mock case file shows.
     cases = [...(await getCasesForUser(user.id))];

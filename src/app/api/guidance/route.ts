@@ -9,6 +9,12 @@ import {
 } from "@/features/guidance/guidance";
 import { chargeForOperation } from "@/lib/tokens/guard";
 import { getLlm } from "@/lib/llm/client";
+import {
+  RATE_LIMITS,
+  checkRateLimit,
+  isRateLimitEnabled,
+  rateLimitKey,
+} from "@/lib/rate-limit";
 
 // USCIS form-field guidance endpoint.
 //
@@ -40,6 +46,19 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
   const req = parsed.value;
+
+  // Rate limit BEFORE charging or any model work. Keyed by client IP (this route
+  // stays auth-decoupled for the keyless build), so a flood can't run up model
+  // cost or drain a balance unchecked.
+  if (isRateLimitEnabled()) {
+    const rl = checkRateLimit(rateLimitKey(request, "guidance"), RATE_LIMITS.guidance);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "rate_limited", retryAfterSec: rl.retryAfterSec, disclaimer: DISCLAIMER },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+      );
+    }
+  }
 
   // Token economy (Procedure 2): debit one "light" token up front, before any
   // model work. The guard is a free pass when auth/DB/TOKENS_BYPASS aren't
