@@ -69,7 +69,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   // record. isConfiguredAttorney fails closed when ATTORNEY_EMAILS is unset, so
   // the demo unlock can no longer be used to read another applicant's PII by id.
   // We never fall through to the inline payload for an unauthorized caseId.
-  let resolved: RfeRequest | null = null;
+  let resolved: RfeRequest;
   let resolvedCaseId: string | null = null;
 
   if (caseId) {

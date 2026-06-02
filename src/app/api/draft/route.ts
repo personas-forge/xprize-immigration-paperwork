@@ -82,7 +82,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   // Resolve the draft request (validate BEFORE charging). A supplied caseId must
   // resolve to a case the caller OWNS — otherwise deny (401/403). We never fall
   // through to the inline payload for an unauthorized caseId.
-  let req: DraftRequest | null = null;
+  let req: DraftRequest;
   let resolvedCaseId: string | null = null;
   if (caseId) {
     if (!user) {
