@@ -86,19 +86,19 @@
 
 - **RESOLVED (Run #2): systemic IDOR.** The `isAttorney`-gated `getCaseAnyOwner`
   pattern is now `isConfiguredAttorney` across the categorize route, case-detail
-  page, review queue, and the review + evidence server actions. `dashboard/page.tsx`
-  still uses `isAttorney` for a NAV affordance only (no data/action) — harmless,
-  left out of scope.
-- **`/api/evidence/categorize` has no rate limit.** The other three token-charged
-  routes use `src/lib/rate-limit.ts`; categorize doesn't. Not one of Run #2's
-  accepted ideas, so deferred — a ~3-line addition (`checkRateLimit` keyed by IP).
-- **`next build` is broken at baseline** (environmental): webpack can't resolve
-  `firebase-admin/{app,auth,firestore}` and `@electric-sql/pglite` subpath exports
-  even though both packages are installed (`serverExternalPackages` is set). `tsc`
-  reports the same 18 errors, all confined to `firestore-store.ts`,
-  `pglite-store.ts`, `firebase/admin.ts`, `firestore/admin.ts`. Likely an install /
-  version / `moduleResolution` mismatch. Until fixed, the prod build can't be a
-  green gate; verify changed files with `tsc`/`npm test`/`eslint` instead.
+  page, review queue, and the review + evidence server actions. `dashboard/page.tsx`'s
+  nav affordance was also moved to `isConfiguredAttorney` (follow-up cleanup) — no
+  `isAttorney`-for-data/affordance left in the app.
+- **RESOLVED (follow-up): `/api/evidence/categorize` now rate-limited** via
+  `src/lib/rate-limit.ts` (`categorize` cap, keyed by IP), matching draft/rfe/guidance.
+- **RESOLVED (follow-up): the `next build` break was a BROKEN PARTIAL INSTALL, not
+  config.** `node_modules/firebase-admin` and `node_modules/@electric-sql/pglite`
+  existed as EMPTY directories (0 entries) though present in `package-lock.json`;
+  `moduleResolution` was already `"bundler"`. Running `npm install` (after `rm -rf`
+  of the two empty dirs) repopulated them — `require.resolve` now succeeds, **tsc is
+  0 errors, and `npx next build` passes**. No tracked-file change (package-lock
+  unchanged). If tsc/build ever shows `Cannot find module 'firebase-admin/...'`
+  again, check for empty package dirs and re-run `npm install` before suspecting code.
 - **Regenerate-section persistence requires a prior saved full draft.** The
   `/api/draft` focus path merges into the latest stored draft; if none exists yet
   it updates the client only (version stays null). Consider seeding a draft on

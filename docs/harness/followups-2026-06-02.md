@@ -39,7 +39,15 @@ Pipeline B/C run scoped to the Evidence & Case Management group.
 > review/sign/file workflow whose demo-unlock is intentional; evaluate whether it
 > should require a configured attorney before changing it.
 
-## 2. Environmental build break (blocks the prod-build gate)
+## 2. Environmental build break (blocks the prod-build gate) — ✅ RESOLVED
+
+> **Update 2026-06-02:** root cause was a BROKEN PARTIAL INSTALL, not config.
+> `node_modules/firebase-admin` and `node_modules/@electric-sql/pglite` were EMPTY
+> directories (0 entries) although both are in `package-lock.json`, and
+> `moduleResolution` was already `"bundler"`. Fix: `rm -rf` the two empty dirs and
+> `npm install`. After that `require.resolve` succeeds, **tsc reports 0 errors, and
+> `npx next build` passes** (all 24 routes compile, 15 static pages generated). No
+> tracked-file change. Original symptom retained below.
 
 `npx next build` fails at webpack module resolution:
 
