@@ -1,17 +1,20 @@
 import { requireOnboardedUser } from "@/lib/auth/session";
-import { isAttorney } from "@/lib/auth/roles";
+import { isConfiguredAttorney } from "@/lib/auth/roles";
 import { getBalance } from "@/lib/tokens/ledger";
 import { getCasesInReview } from "@/lib/data/petitions";
 import { ReviewQueueView } from "@/features/review/components/ReviewQueueView";
 
-// Attorney-of-record review queue. Lists every case awaiting review; gated by
-// ATTORNEY_EMAILS (empty = demo-unlocked). DB + auth required.
+// Attorney-of-record review queue. Lists every case awaiting review — a
+// cross-tenant read, so it is gated by isConfiguredAttorney (fail-closed): until
+// ATTORNEY_EMAILS lists this user, the queue is empty. Using the permissive
+// isAttorney here would let any signed-in user enumerate every applicant's case
+// (and the caseIds that unlock the per-case actions). DB + auth required.
 
 export const dynamic = "force-dynamic";
 
 export default async function ReviewQueuePage() {
   const { user } = await requireOnboardedUser();
-  const attorney = isAttorney(user.email);
+  const attorney = isConfiguredAttorney(user.email);
 
   const [balance, cases] = await Promise.all([
     getBalance(user.id),

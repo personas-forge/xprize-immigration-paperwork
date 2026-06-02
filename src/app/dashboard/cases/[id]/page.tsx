@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireOnboardedUser } from "@/lib/auth/session";
-import { isAttorney } from "@/lib/auth/roles";
+import { isConfiguredAttorney } from "@/lib/auth/roles";
 import { getBalance } from "@/lib/tokens/ledger";
 import {
   getCaseAnyOwner,
@@ -35,9 +35,13 @@ export default async function CaseDetailPage({
 }) {
   const { id } = await params;
   const { user } = await requireOnboardedUser();
-  const attorney = isAttorney(user.email);
+  // Cross-tenant read + the attorney affordances must fail closed: only a
+  // CONFIGURED attorney (ATTORNEY_EMAILS) may open a case they don't own.
+  // isAttorney here would let anyone load any applicant's full case by guessing
+  // its id, and would show sign/file buttons the server actions now reject.
+  const attorney = isConfiguredAttorney(user.email);
 
-  // Owner sees their own case; an attorney may open any case to review it.
+  // Owner sees their own case; a configured attorney may open any case.
   const owned = await getCaseForUser(user.id, id);
   const stored = owned ?? (attorney ? await getCaseAnyOwner(id) : null);
   if (!stored) notFound();
