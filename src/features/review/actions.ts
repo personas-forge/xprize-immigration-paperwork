@@ -3,21 +3,27 @@
 /**
  * Server actions for the attorney review & filing workflow.
  *
- * Each action re-derives the user, enforces the right gate (ownership for
- * applicant actions, attorney role for sign-off/filing), mutates the case +
- * appends a review event, then revalidates the affected pages. Every action is
- * a no-op without auth/DB, matching the rest of the app's graceful degradation.
+ * Each action re-derives the user and enforces the right gate (ownership for
+ * applicant actions, CONFIGURED-attorney role for sign-off/filing). Status
+ * changes go through `transitionCase`, which compare-and-sets the status and
+ * appends the review events atomically — so a stale tab / double-submit / direct
+ * invocation can't double-file, record a decision on an unfiled case, or reopen
+ * a filed one, and the append-only log never desyncs from the case status.
+ *
+ * Authorization note: the privileged actions gate on `isConfiguredAttorney`
+ * (fail-closed), NOT `isAttorney` (which is true for every signed-in user when
+ * ATTORNEY_EMAILS is unset). Set ATTORNEY_EMAILS to exercise sign/file — even in
+ * dev — so cross-tenant filing is never open by default.
  *
  * DocuSign e-signature and USCIS portal e-filing are recorded as events here
- * (stubs) — the same posture as the rest of the app until those integrations
- * are wired.
+ * (stubs) — the same posture as the rest of the app until those are wired.
  */
 
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth/session";
-import { isAttorney } from "@/lib/auth/roles";
-import { getCaseAnyOwner, getCaseForUser } from "@/lib/data/petitions";
-import { addReviewEvent, setCaseStatus } from "@/lib/data/reviews";
+import { isConfiguredAttorney } from "@/lib/auth/roles";
+import { getCaseForUser } from "@/lib/data/petitions";
+import { addReviewEvent, transitionCase } from "@/lib/data/reviews";
 
 function revalidateCase(caseId: string): void {
   revalidatePath(`/dashboard/cases/${caseId}`);
@@ -36,18 +42,23 @@ export async function submitForReview(caseId: string): Promise<void> {
   if (!user) return;
   const owned = await getCaseForUser(user.id, caseId);
   if (!owned) return; // only the owner may submit their case
-  await addReviewEvent({
+  const applied = await transitionCase({
     caseId,
-    authorId: user.id,
-    authorRole: "applicant",
-    kind: "submitted",
-    body: "Submitted to the attorney of record for review.",
+    fromStatuses: ["Intake", "Drafting"],
+    toStatus: "Attorney Review",
+    events: [
+      {
+        authorId: user.id,
+        authorRole: "applicant",
+        kind: "submitted",
+        body: "Submitted to the attorney of record for review.",
+      },
+    ],
   });
-  await setCaseStatus(caseId, "Attorney Review");
-  revalidateCase(caseId);
+  if (applied) revalidateCase(caseId);
 }
 
-/** Owner OR attorney adds a free-form note to the review thread. */
+/** Owner OR a configured attorney adds a free-form note to the review thread. */
 export async function addReviewNote(
   caseId: string,
   formData: FormData,
@@ -57,7 +68,7 @@ export async function addReviewNote(
   const body = String(formData.get("body") ?? "").trim().slice(0, 4000);
   if (!body) return;
   const owned = await getCaseForUser(user.id, caseId);
-  const attorney = isAttorney(user.email);
+  const attorney = isConfiguredAttorney(user.email);
   if (!owned && !attorney) return;
   await addReviewEvent({
     caseId,
@@ -75,48 +86,57 @@ export async function attorneyRequestChanges(
   formData: FormData,
 ): Promise<void> {
   const user = await getUser();
-  if (!user || !isAttorney(user.email)) return;
-  const c = await getCaseAnyOwner(caseId);
-  if (!c) return;
+  if (!user || !isConfiguredAttorney(user.email)) return;
   const body =
     String(formData.get("feedback") ?? "").trim().slice(0, 4000) ||
     "Please revise and resubmit.";
-  await addReviewEvent({
+  // Only from Attorney Review — can't bounce an already-Filed case to Drafting.
+  const applied = await transitionCase({
     caseId,
-    authorId: user.id,
-    authorRole: "attorney",
-    kind: "changes_requested",
-    body,
+    fromStatuses: ["Attorney Review"],
+    toStatus: "Drafting",
+    events: [
+      {
+        authorId: user.id,
+        authorRole: "attorney",
+        kind: "changes_requested",
+        body,
+      },
+    ],
   });
-  await setCaseStatus(caseId, "Drafting");
-  revalidateCase(caseId);
+  if (applied) revalidateCase(caseId);
 }
 
 /** Attorney signs the petition (e-sign stub) and files it with USCIS (stub),
  *  recording a receipt number and advancing the case to "Filed". */
 export async function attorneySignAndFile(caseId: string): Promise<void> {
   const user = await getUser();
-  if (!user || !isAttorney(user.email)) return;
-  const c = await getCaseAnyOwner(caseId);
-  if (!c) return;
+  if (!user || !isConfiguredAttorney(user.email)) return;
   const receipt = newReceiptNumber();
-  await addReviewEvent({
+  // Compare-and-set from Attorney Review → a second (double-click / stale tab)
+  // call finds status already Filed, does NOT apply, and mints no second receipt.
+  const applied = await transitionCase({
     caseId,
-    authorId: user.id,
-    authorRole: "attorney",
-    kind: "signed",
-    body: "Petition signed by the attorney of record.",
+    fromStatuses: ["Attorney Review"],
+    toStatus: "Filed",
+    receiptNumber: receipt,
+    events: [
+      {
+        authorId: user.id,
+        authorRole: "attorney",
+        kind: "signed",
+        body: "Petition signed by the attorney of record.",
+      },
+      {
+        authorId: user.id,
+        authorRole: "attorney",
+        kind: "filed",
+        body: "Filed with USCIS.",
+        metadata: { receipt },
+      },
+    ],
   });
-  await addReviewEvent({
-    caseId,
-    authorId: user.id,
-    authorRole: "attorney",
-    kind: "filed",
-    body: "Filed with USCIS.",
-    metadata: { receipt },
-  });
-  await setCaseStatus(caseId, "Filed", { receiptNumber: receipt });
-  revalidateCase(caseId);
+  if (applied) revalidateCase(caseId);
 }
 
 /** Attorney records the USCIS decision once it comes back. */
@@ -125,19 +145,22 @@ export async function attorneyRecordDecision(
   formData: FormData,
 ): Promise<void> {
   const user = await getUser();
-  if (!user || !isAttorney(user.email)) return;
-  const c = await getCaseAnyOwner(caseId);
-  if (!c) return;
+  if (!user || !isConfiguredAttorney(user.email)) return;
   const decision = String(formData.get("decision") ?? "Approved");
-  await addReviewEvent({
+  // Only a Filed case can receive a decision. "Approved" is terminal; any other
+  // decision keeps the case "Filed" (the decision is recorded in the thread).
+  const applied = await transitionCase({
     caseId,
-    authorId: user.id,
-    authorRole: "attorney",
-    kind: "decision",
-    body: `USCIS decision recorded: ${decision}.`,
+    fromStatuses: ["Filed"],
+    toStatus: decision === "Approved" ? "Approved" : "Filed",
+    events: [
+      {
+        authorId: user.id,
+        authorRole: "attorney",
+        kind: "decision",
+        body: `USCIS decision recorded: ${decision}.`,
+      },
+    ],
   });
-  // Approved advances to the terminal "Approved" state; anything else stays
-  // "Filed" (the record of the decision is in the thread).
-  await setCaseStatus(caseId, decision === "Approved" ? "Approved" : "Filed");
-  revalidateCase(caseId);
+  if (applied) revalidateCase(caseId);
 }
