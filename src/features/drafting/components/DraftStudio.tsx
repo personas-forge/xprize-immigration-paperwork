@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
@@ -32,12 +32,15 @@ interface DraftApiResponse {
   source: ModelSource;
   caseId: string | null;
   version: number | null;
+  /** True when the draft was charged + generated but the version failed to save. */
+  saveFailed?: boolean;
 }
 
 interface SectionApiResponse {
   section: DraftSection;
   disclaimer: string;
   source: ModelSource;
+  saveFailed?: boolean;
 }
 
 export function DraftStudio({
@@ -62,6 +65,10 @@ export function DraftStudio({
   const [source, setSource] = useState<ModelSource>(initialSource);
   const [error, setError] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState<string | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
+  // Synchronous in-flight guard: a stale-closure `status` check can't stop two
+  // clicks in the same render from both firing a paid POST. A ref can.
+  const busyRef = useRef(false);
 
   const payload = {
     petitioner: petitioner || "the beneficiary",
@@ -76,8 +83,11 @@ export function DraftStudio({
   };
 
   async function generate() {
+    if (busyRef.current) return; // double-submit guard (charges tokens)
+    busyRef.current = true;
     setStatus("loading");
     setError(null);
+    setSaveFailed(false);
     try {
       const res = await fetch("/api/draft", {
         method: "POST",
@@ -96,14 +106,19 @@ export function DraftStudio({
       }
       setSections(data.sections);
       setSource(data.source);
+      setSaveFailed(Boolean(data.saveFailed));
       setStatus("done");
     } catch {
       setError("Network error — please try again.");
       setStatus("error");
+    } finally {
+      busyRef.current = false;
     }
   }
 
   async function regenerate(heading: string) {
+    if (busyRef.current) return; // double-submit guard (charges tokens)
+    busyRef.current = true;
     setRegenerating(heading);
     try {
       const res = await fetch("/api/draft", {
@@ -121,10 +136,12 @@ export function DraftStudio({
         prev.map((s) => (s.heading === heading ? data.section : s)),
       );
       setSource(data.source);
+      setSaveFailed(Boolean(data.saveFailed));
     } catch {
       // Keep the existing section on a transient failure.
     } finally {
       setRegenerating(null);
+      busyRef.current = false;
     }
   }
 
@@ -212,6 +229,21 @@ export function DraftStudio({
           <div className="space-y-4">
             <DisclaimerStamp text={DISCLAIMER} />
             <CitationNote />
+            {saveFailed ? (
+              <div
+                role="status"
+                className="rounded-control border border-seal/50 bg-seal-soft/40 px-4 py-3 font-sans text-[13px] leading-snug text-foreground-soft"
+              >
+                <span className="font-mono text-[10px] uppercase tracking-document text-seal">
+                  Not saved
+                </span>
+                <span className="ml-2">
+                  This draft was generated and charged, but it couldn’t be saved to
+                  your case history. Copy your text before leaving — a reload may not
+                  show it.
+                </span>
+              </div>
+            ) : null}
             {sections.map((s, i) => (
               <div
                 key={s.heading + i}
@@ -239,7 +271,12 @@ export function DraftStudio({
               </div>
             ))}
             <div className="flex flex-wrap items-center gap-3">
-              <Button type="button" variant="secondary" onClick={generate}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={generate}
+                disabled={regenerating !== null}
+              >
                 Regenerate full draft
               </Button>
               <span className="microprint" style={{ color: "var(--muted)" }}>
