@@ -8,6 +8,103 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-03
+
+Backward-compatible feature + hardening release. Pre-1.0 **minor** bump for the
+work accumulated on `main` since `0.3.1`: a security-hardening pass on the
+charged AI routes, the first steps of the AI Operation Orchestrator (ADR-0004)
+— its core utility plus the `qualify` and `guidance` routes migrated onto it —
+and the first piece of the route-authorization consolidation (ADR-0006): a
+composable `authorizeRoute()` helper. No data migration required.
+
+> **Heads-up for API clients:** the charged AI routes now return new status
+> codes — **401/403** for an unauthorized `caseId` (no more silent fallthrough
+> to the demo payload) and **429** when rate-limited. `/api/qualify` is now
+> rate-limited too (40 req/min). Clients that call these routes directly must
+> handle these responses. Every error body still carries the not-legal-advice
+> `DISCLAIMER`.
+
+### Added
+
+- **AI Operation Orchestrator core — `executeAiOperation()` (ADR-0004, task
+  1/6).** A reusable `executeAiOperation<TInput, TOutput>()` utility
+  (`src/lib/ai/operation.ts`) that encapsulates the shared charged-AI-route
+  pipeline — parse → rate-limit → token charge → model call → output guard →
+  persist, with token reclaim on failure — as a single declarative spec. Routes
+  migrate onto it incrementally to eliminate the ~500 lines of per-route
+  boilerplate duplication; fully unit-covered.
+- **Composable route-authorization helper — `authorizeRoute()` (ADR-0006, task
+  1/4).** A single fail-closed case-access decision
+  (`src/lib/auth/authorizeRoute.ts`) shared by the token-charged AI routes:
+  `authorizeRoute(request, policy)` takes a `RoutePolicy` (`requiresCase`,
+  `requiresAttorney`) and returns a discriminated `Authorized` result —
+  `ok` (caller may access the resolved case), `unauthenticated` (→ 401),
+  `forbidden` (→ 403) — that each route maps to its response. Its decision logic
+  is injected (`AuthzDeps`) so it unit-tests with no DB, cookies, or network;
+  fully unit-covered. This consolidates the access-control checks currently
+  copy-pasted across the AI routes into one auditable boundary, advancing the
+  team's auth-middleware consolidation goal. Pure-additive — no route is wired
+  onto it yet (tasks 2–4).
+
+### Security
+
+- **Cross-tenant access control on the AI routes (IDOR fix).** `/api/draft`,
+  `/api/rfe`, and `/api/evidence/categorize` now authorize the case a request
+  acts on: a supplied `caseId` must resolve to a case the caller owns, otherwise
+  the request is denied — **401** when not signed in, **403** when signed in
+  without access — instead of silently degrading to the inline demo payload.
+  Cross-tenant access on `/api/rfe` and `/api/evidence/categorize` gates on
+  `isConfiguredAttorney` (fail-closed when `ATTORNEY_EMAILS` is unset) rather
+  than the demo-default `isAttorney`, closing a hole where any signed-in user
+  could read another applicant's PII by case id, or file a document (with a real
+  exhibit number) into a stranger's case vault.
+- **Rate limiting on the charged AI routes.** `/api/draft` and `/api/rfe`
+  (20 req/min) and `/api/guidance` and `/api/evidence/categorize` (40 req/min)
+  enforce a fixed 60-second window, checked **before** any token charge or model
+  call. Over-limit requests get **HTTP 429** with a `Retry-After` header and
+  `retryAfterSec` in the body, so a flood can't drain a token balance or run up
+  model cost.
+- **`/api/qualify` now rate-limited (ADR-0004, task 4/6).** Adds a
+  `RATE_LIMITS.qualify = 40` (req/min) bucket, closing the gap where `qualify`
+  was the **only** token-charged AI route with no per-user frequency cap — an
+  authenticated caller could loop the medium-cost screening to drain their own
+  balance and run up real model cost. It now matches `/api/draft`, `/api/rfe`,
+  `/api/guidance`, and `/api/evidence/categorize`.
+
+### Changed
+
+- **`/api/qualify` migrated onto `executeAiOperation` (ADR-0004, task 4/6).**
+  The route is now a declarative spec on the orchestrator, replacing ~88 lines
+  of hand-rolled parse → rate-limit → charge → model → guard → persist
+  boilerplate with no change to its external contract (besides the new 429).
+- **`/api/guidance` migrated onto `executeAiOperation` (ADR-0004, task 3/6).**
+  The third route folded onto the orchestrator, replacing ~70 lines of
+  hand-rolled parse → rate-limit → charge → model → guard → respond boilerplate
+  with a declarative spec. Behaviour is preserved with one consistency fix: when
+  the engine returns blank text, the route now reclaims the charge and labels the
+  templated fallback `source: "mock"` (the orchestrator's honest-mock invariant)
+  instead of billing a fallback stamped with the engine name — matching every
+  other migrated AI route.
+- **AI route responses report the persistence outcome.** `/api/draft` and
+  `/api/rfe` responses now include `saveFailed` (and `version`): when the user
+  has already paid but storing the work product fails, the failure is surfaced
+  to the client instead of being silently swallowed — the saved version is the
+  draft the attorney of record reviews and signs.
+
+### Fixed
+
+- **Token refunded on unusable model output.** Previously a token was reclaimed
+  only when the model call threw; `/api/draft`, `/api/rfe`, and
+  `/api/evidence/categorize` now also refund the token when the model returns
+  unparseable output, and label the fallback honestly as `source: "mock"`
+  instead of billing for — and persisting — a deterministic mock stamped as a
+  real model response.
+- **Paid single-section draft regenerate now persists.** A `focus` regenerate on
+  `/api/draft` previously never saved, so it diverged from the stored draft and
+  was lost on reload. It now merges into the latest draft as a new version, with
+  the regenerated section pinned to the requested heading so a model rename can't
+  turn a paid regenerate into a silent no-op.
+
 ## [0.3.1] - 2026-06-02
 
 Patch release. A defensive fix to the leaf display formatters so AI-sourced
@@ -135,6 +232,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.4.0]: #
 [0.3.1]: #
 [0.3.0]: #
 [0.2.1]: #
