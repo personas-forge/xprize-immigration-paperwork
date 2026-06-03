@@ -12,14 +12,8 @@ import {
 } from "@/features/rfe";
 import { chargeForOperation } from "@/lib/tokens/guard";
 import { getLlm } from "@/lib/llm/client";
-import { getUser } from "@/lib/auth/session";
-import { isConfiguredAttorney } from "@/lib/auth/roles";
-import {
-  getCaseAnyOwner,
-  getCaseForUser,
-  getCriteriaForCase,
-  saveRfeResponse,
-} from "@/lib/data/petitions";
+import { authorizeRoute } from "@/lib/auth/authorizeRoute";
+import { getCriteriaForCase, saveRfeResponse } from "@/lib/data/petitions";
 import {
   RATE_LIMITS,
   checkRateLimit,
@@ -40,18 +34,41 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<NextResponse> {
+  // Resolve user + case access up front (ADR-0006: authorizeRoute owns the
+  // owner-or-configured-attorney fail-closed decision). It reads the body's
+  // caseId from a clone, so the original request is still parseable below. A
+  // supplied caseId that the caller can't access never falls through to the
+  // inline payload — unauthenticated → 401, no access → 403. Case resolution now
+  // runs as part of authorizeRoute (one indexed read) ahead of the rate limit;
+  // the rate-limit invariant protects the charge + model call, which still come
+  // after, so this is the one documented behavior nuance.
+  const auth = await authorizeRoute(request, {
+    requiresCase: true,
+    requiresAttorney: true,
+  });
+  if (auth.status === "unauthenticated") {
+    return NextResponse.json(
+      { error: "Sign in to respond to an RFE on a saved case." },
+      { status: 401 },
+    );
+  }
+  if (auth.status === "forbidden") {
+    return NextResponse.json(
+      { error: "You don't have access to this case." },
+      { status: 403 },
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
-
   const record = (body ?? {}) as Record<string, unknown>;
-  const caseId = typeof record.caseId === "string" ? record.caseId : null;
 
-  // Resolve the user once — for access gating and the rate-limit key.
-  const user = await getUser();
+  // user (possibly null on the inline/demo path) keys the rate limit.
+  const user = auth.user;
 
   // Rate limit BEFORE charging or any model work.
   if (isRateLimitEnabled()) {
@@ -64,34 +81,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   }
 
-  // Resolve the request (validate BEFORE charging). A supplied caseId must
-  // authorize: the caller owns it, OR is an EXPLICITLY configured attorney of
-  // record. isConfiguredAttorney fails closed when ATTORNEY_EMAILS is unset, so
-  // the demo unlock can no longer be used to read another applicant's PII by id.
-  // We never fall through to the inline payload for an unauthorized caseId.
+  // Build the request context (validate BEFORE charging): from the authorized
+  // case (DB path) or the inline payload (demo path, caseId-less only).
   let resolved: RfeRequest;
   let resolvedCaseId: string | null = null;
 
-  if (caseId) {
-    if (!user) {
-      return NextResponse.json(
-        { error: "Sign in to respond to an RFE on a saved case." },
-        { status: 401 },
-      );
-    }
-    const stored =
-      (await getCaseForUser(user.id, caseId)) ??
-      (isConfiguredAttorney(user.email) ? await getCaseAnyOwner(caseId) : null);
-    if (!stored) {
-      return NextResponse.json(
-        { error: "You don't have access to this case." },
-        { status: 403 },
-      );
-    }
-    const criteria = await getCriteriaForCase(caseId);
+  if (auth.status === "ok") {
+    const criteria = await getCriteriaForCase(auth.case.id);
     const parsed = parseRfeRequest({
-      petitioner: stored.petitioner,
-      classification: stored.classification,
+      petitioner: auth.case.petitioner,
+      classification: auth.case.classification,
       criteria,
       rfeText: record.rfeText,
     });
@@ -99,7 +98,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
     resolved = parsed.value;
-    resolvedCaseId = stored.id;
+    resolvedCaseId = auth.case.id;
   } else {
     const parsed = parseRfeRequest(body);
     if (!parsed.ok) {

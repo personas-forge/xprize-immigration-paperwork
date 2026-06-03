@@ -11,15 +11,13 @@ import {
 } from "@/features/evidence";
 import { chargeForOperation } from "@/lib/tokens/guard";
 import { getLlm } from "@/lib/llm/client";
-import { getUser } from "@/lib/auth/session";
-import { isConfiguredAttorney } from "@/lib/auth/roles";
+import { authorizeRoute, type Authorized } from "@/lib/auth/authorizeRoute";
 import {
   RATE_LIMITS,
   checkRateLimit,
   isRateLimitEnabled,
   rateLimitKey,
 } from "@/lib/rate-limit";
-import { getCaseAnyOwner, getCaseForUser } from "@/lib/data/petitions";
 import { addCaseDocument } from "@/lib/data/evidence";
 
 // Evidence categorization endpoint.
@@ -35,6 +33,22 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<NextResponse> {
+  // Resolve case access BEFORE consuming the body, so authorizeRoute can read
+  // the caseId from a clone (ADR-0006). Best-effort for this route: persistence
+  // is a side effect, so any resolution failure simply means "no document" —
+  // never a hard 401/403. The owner-or-configured-attorney fail-closed rule
+  // (which keeps a stranger from injecting an exhibit into another applicant's
+  // vault) now lives in authorizeRoute, not inline here.
+  let auth: Authorized | null = null;
+  try {
+    auth = await authorizeRoute(request, {
+      requiresCase: true,
+      requiresAttorney: true,
+    });
+  } catch {
+    auth = null;
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -48,7 +62,6 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
   const req = parsed.value;
   const record = (body ?? {}) as Record<string, unknown>;
-  const caseId = typeof record.caseId === "string" ? record.caseId : null;
   const classification =
     typeof record.classification === "string" ? record.classification : "O-1A";
 
@@ -111,28 +124,19 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   }
 
-  // Persist to the case vault when the user can access the case. Best-effort.
-  // Cross-tenant write gates on isConfiguredAttorney (fail-closed): isAttorney's
-  // demo default would let any signed-in user inject a document (with a real
-  // exhibit number) into a stranger's vault.
+  // Persist to the case vault when the caller can access the case (resolved
+  // above by authorizeRoute: owner, or the configured attorney of record).
+  // Best-effort — a storage failure just yields no document, never an error.
   let document = null;
-  if (caseId) {
+  if (auth?.status === "ok") {
     try {
-      const user = await getUser();
-      if (user) {
-        const stored =
-          (await getCaseForUser(user.id, caseId)) ??
-          (isConfiguredAttorney(user.email) ? await getCaseAnyOwner(caseId) : null);
-        if (stored) {
-          document = await addCaseDocument({
-            caseId: stored.id,
-            name: req.name,
-            criterion: result.criterion,
-            facts: result.facts,
-            source: result.source,
-          });
-        }
-      }
+      document = await addCaseDocument({
+        caseId: auth.case.id,
+        name: req.name,
+        criterion: result.criterion,
+        facts: result.facts,
+        source: result.source,
+      });
     } catch {
       document = null;
     }
