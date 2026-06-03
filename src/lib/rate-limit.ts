@@ -33,6 +33,7 @@ interface Bucket {
 export const RATE_LIMITS = {
   draft: 20, // xl/heavy full-letter + section regenerations
   rfe: 20, // heavy
+  qualify: 40, // medium — O-1A/EB-1A qualification screening
   guidance: 40, // light
   categorize: 40, // light — evidence categorization
 } as const;
