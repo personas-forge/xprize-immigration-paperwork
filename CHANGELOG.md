@@ -8,6 +8,60 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-04
+
+Backward-compatible feature release. Pre-1.0 **minor** bump — a large batch of
+backward-compatible features, an AI-route orchestrator, a route-authorization
+helper, an in-process event bus, and a cross-tenant security-hardening sweep
+accumulated on `main` since `0.3.1`. No breaking changes (and per the `0.x`
+policy even breaking changes would only bump minor). No migration or reinstall
+required.
+
+### Added
+
+- **In-process domain event bus + Store emission + subscribers (ADR-0007, #18).**
+  A typed in-process event bus the Store emits domain events onto, with
+  subscribers wiring side-effects off those events — decoupling write paths from
+  downstream reactions.
+- **`authorizeRoute` case-access helper (ADR-0006, #14).** A single owner-only
+  case-access guard for API routes, with unit tests, so per-route authorization
+  is centralized and consistent instead of re-implemented per handler.
+
+### Changed
+
+- **`executeAiOperation` orchestrator core (ADR-0004, #10).** A single
+  orchestration entry point for AI operations (auth → rate-limit → token charge →
+  model call → token reclaim on failure → persist), the foundation the AI routes
+  migrate onto.
+- **Migrate `/api/qualify` and `/api/guidance` to `executeAiOperation`
+  (ADR-0004, #12, #13).** Both AI routes now run through the orchestrator,
+  inheriting uniform auth, rate-limiting, and charge-then-reclaim token handling.
+- **Adopt `authorizeRoute` (owner-only) in `/api/draft` (ADR-0006, #17).** The
+  draft route now uses the shared case-access helper.
+- **`OperationRegistry` — single source of truth for op cost / rate-limit / label
+  (ADR-0007, #19).** Per-operation cost, rate-limit, and display metadata are
+  consolidated into one registry rather than scattered constants.
+- **Composite `useCaseFileData` hook (ADR-0009, #22).** Replaces the case
+  dashboard's three independent `useEffect` fetches (`getCaseFacts`,
+  `getOutstandingTasks`, `getPetitionExcerpt`) with one composite hook over a
+  React-free `caseFileData.ts` that runs the three concurrently and exposes
+  unified loading/error state.
+
+### Security
+
+- **Cross-tenant access fail-closed + systemic IDOR remediation (#9).**
+  `isConfiguredAttorney` is now strict/fail-closed; cross-tenant access is denied
+  on the review queue, case detail, and evidence actions; IDOR holes closed
+  across `/api/draft`, `/api/rfe`, `/api/guidance`, and `/api/evidence/categorize`.
+- **AI-route abuse + cost controls (#9).** An in-process fixed-window rate
+  limiter guards the AI routes, and tokens are charged-then-reclaimed (refunded
+  when the model call throws or returns unparseable output) so failures don't
+  burn balance.
+- **Data-integrity guards (#9).** Atomic guarded case transitions, never-reused
+  PGlite exhibit identifiers, a double-submit guard, and save-failure surfacing
+  in the Draft/RFE studios; model-fallback discrimination and isolation of
+  untrusted prompt input.
+
 ## [0.3.1] - 2026-06-02
 
 Patch release. A defensive fix to the leaf display formatters so AI-sourced
@@ -135,6 +189,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.4.0]: #
 [0.3.1]: #
 [0.3.0]: #
 [0.2.1]: #
