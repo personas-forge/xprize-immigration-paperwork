@@ -33,15 +33,18 @@ interface Bucket {
 
 /**
  * Sensible per-window caps by route, generous enough not to bother real use.
- * Sourced from the OperationRegistry (single source of truth) — the four keys
- * (`draft | rfe | guidance | categorize`) are exactly the operations that own a
- * route bucket. `draft_section` shares the `draft` bucket and `qualify` has no
- * cap today, so neither appears here. Kept `as const` so `keyof typeof
- * RATE_LIMITS` still narrows to those four buckets for the orchestrator spec.
+ * Sourced from the OperationRegistry (single source of truth) — the five keys
+ * (`draft | rfe | qualify | guidance | categorize`) are exactly the operations
+ * that own a route bucket. `draft_section` shares the `draft` bucket so it has
+ * no own entry. `qualify` gained its cap in the qualify→orchestrator migration
+ * (ADR-0005, PR #12); the value now lives in the registry like the rest. Kept
+ * `as const` so `keyof typeof RATE_LIMITS` still narrows to those buckets for
+ * the orchestrator spec.
  */
 export const RATE_LIMITS = {
   draft: OPERATION_REGISTRY.draft.rateLimit, // xl/heavy full-letter + section regenerations
   rfe: OPERATION_REGISTRY.rfe.rateLimit, // heavy
+  qualify: OPERATION_REGISTRY.qualify.rateLimit, // medium — O-1A/EB-1A qualification screening
   guidance: OPERATION_REGISTRY.guidance.rateLimit, // light
   categorize: OPERATION_REGISTRY.categorize.rateLimit, // light — evidence categorization
 } as const;

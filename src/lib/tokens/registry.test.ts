@@ -17,7 +17,7 @@ const EXPECTED = {
   draft: { tier: "xl", cost: 12, rateLimit: 20 },
   draft_section: { tier: "heavy", cost: 5, rateLimit: undefined },
   rfe: { tier: "heavy", cost: 5, rateLimit: 20 },
-  qualify: { tier: "medium", cost: 3, rateLimit: undefined },
+  qualify: { tier: "medium", cost: 3, rateLimit: 40 },
   guidance: { tier: "light", cost: 1, rateLimit: 40 },
   categorize: { tier: "light", cost: 1, rateLimit: 40 },
 } as const;
@@ -91,21 +91,26 @@ test("economy.ts costOf is the registry costOf (re-export, identical results)", 
   }
 });
 
-test("rate-limit.ts RATE_LIMITS keeps the four route buckets, sourced from the registry", () => {
+test("rate-limit.ts RATE_LIMITS keeps the five route buckets, sourced from the registry", () => {
   assert.deepEqual(Object.keys(RATE_LIMITS).sort(), [
     "categorize",
     "draft",
     "guidance",
+    "qualify",
     "rfe",
   ]);
   assert.equal(RATE_LIMITS.draft, OPERATION_REGISTRY.draft.rateLimit);
   assert.equal(RATE_LIMITS.rfe, OPERATION_REGISTRY.rfe.rateLimit);
+  assert.equal(RATE_LIMITS.qualify, OPERATION_REGISTRY.qualify.rateLimit);
   assert.equal(RATE_LIMITS.guidance, OPERATION_REGISTRY.guidance.rateLimit);
   assert.equal(RATE_LIMITS.categorize, OPERATION_REGISTRY.categorize.rateLimit);
-  // Exact grounded caps — guards against an accidental reprice.
+  // Exact grounded caps — guards against an accidental reprice. `qualify` gained
+  // its 40/window cap in the qualify migration (ADR-0005, PR #12); `draft_section`
+  // shares the `draft` bucket so it has no own entry.
   assert.deepEqual(RATE_LIMITS, {
     draft: 20,
     rfe: 20,
+    qualify: 40,
     guidance: 40,
     categorize: 40,
   });

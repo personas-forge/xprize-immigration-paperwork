@@ -30,16 +30,16 @@ export interface OperationDef {
   rateLimit?: number;
 }
 
-// The six metered AI operations. Values are byte-identical to the prior inline
-// config (economy.ts OP_COST/OPERATIONS + rate-limit.ts RATE_LIMITS); this is a
-// pure consolidation, NOT a reprice. `draft_section` and `qualify` intentionally
-// have no own cap (draft_section shares the `draft` bucket; qualify has no cap
-// today — adding one is owned by the qualify migration, ADR-0005).
+// The six metered AI operations. Cost/cap values are byte-identical to the prior
+// inline config (economy.ts OP_COST/OPERATIONS + rate-limit.ts RATE_LIMITS); this
+// is a pure consolidation, NOT a reprice. `draft_section` intentionally has no own
+// cap — it shares the `draft` bucket. `qualify` gained its 40/window cap in the
+// qualify→orchestrator migration (ADR-0005, PR #12); that value now lives here too.
 export const OPERATION_REGISTRY = {
   draft: { label: "Petition letter draft", tier: "xl", rateLimit: 20 },
   draft_section: { label: "Petition section regeneration", tier: "heavy" },
   rfe: { label: "RFE response", tier: "heavy", rateLimit: 20 },
-  qualify: { label: "O-1A qualification screening", tier: "medium" },
+  qualify: { label: "O-1A qualification screening", tier: "medium", rateLimit: 40 },
   guidance: { label: "USCIS form-field guidance", tier: "light", rateLimit: 40 },
   categorize: { label: "Evidence categorization", tier: "light", rateLimit: 40 },
 } as const satisfies Record<string, OperationDef>;

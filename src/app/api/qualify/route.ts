@@ -1,111 +1,84 @@
-import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import {
-  DISCLAIMER,
   buildQualifyPrompt,
   buildQualifyResult,
   mockQualification,
   parseQualifyRequest,
   parseQualifyResponse,
-  type QualifyResult,
+  type QualifyAssessment,
+  type QualifyRequest,
 } from "@/features/qualification";
-import { chargeForOperation } from "@/lib/tokens/guard";
-import { getLlm } from "@/lib/llm/client";
-import { getUser } from "@/lib/auth/session";
 import { createCaseWithCriteria } from "@/lib/data/petitions";
+import { executeAiOperation } from "@/lib/ai/operation";
 
-// O-1A qualification screening endpoint.
+// O-1A qualification screening endpoint (migrated to the shared orchestrator,
+// ADR-0004 task 4/6).
 //
-// Given { profile, name } it returns a QualifyResult — the eight O-1A criteria
-// scored, an overall likelihood, gaps, and (always) the not-legal-advice
-// DISCLAIMER. Same shape of graceful fallback as /api/guidance: with no
-// GEMINI_API_KEY it returns a deterministic keyword-based screening; with a key
-// it asks Gemini for strict JSON and normalizes it.
+// Given { profile, name, classification } it returns a QualifyResult — the
+// classification's criteria scored, an overall likelihood, gaps, and (always)
+// the not-legal-advice DISCLAIMER. The entire parse → rate-limit → charge →
+// model → guard → persist → respond pipeline (incl. the 400/401/402/429 +
+// DISCLAIMER boilerplate and the charge-then-reclaim-to-mock recovery) is owned
+// by `executeAiOperation`; this route is the declarative spec for the screening.
 //
-// On success, if a user is signed in and a database is configured, the result
-// is persisted as a case (+ its criteria) so it can be drafted later; the
-// response carries the new `caseId` (null when not persisted).
+// BEHAVIOUR CHANGE vs the pre-orchestrator route: qualify now enforces a
+// per-window rate limit (bucket `qualify`, keyed by user). Previously this was
+// the only token-charged AI route with NO frequency cap, so an authenticated
+// caller could loop the medium-cost screening to drain their balance and run up
+// real model cost. It now matches /api/draft, /api/rfe, /api/guidance and
+// /api/evidence/categorize.
 
 // Node runtime — the Google SDK and `pg` are not Edge-safe.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request): Promise<NextResponse> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
-  }
-
-  const parsed = parseQualifyRequest(body);
-  if (!parsed.ok) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
-  }
-  const req = parsed.value;
-
-  // Token economy: debit one "medium" charge up front (structured screening),
-  // before any model work. Free pass when auth/DB/TOKENS_BYPASS aren't set.
-  const requestId = randomUUID();
-  const charged = await chargeForOperation("qualify", requestId);
-  if (!charged.ok) {
-    if (charged.reason === "unauthenticated") {
-      return NextResponse.json(
-        { error: "Sign in to run a qualification assessment." },
-        { status: 401 },
-      );
-    }
-    // 402: out of tokens. Echo cost/balance for the paywall; keep the
-    // not-legal-advice disclaimer present on this path too (UPL safeguard).
-    return NextResponse.json(
-      {
-        error: "insufficient_tokens",
-        cost: charged.cost,
-        balance: charged.balance,
-        disclaimer: DISCLAIMER,
-      },
-      { status: 402 },
-    );
-  }
-
-  const llm = getLlm();
-  let result: QualifyResult;
-
-  if (!llm) {
-    // No engine → deterministic informational screening. Build stays secret-free.
-    result = buildQualifyResult(mockQualification(req), "mock");
-  } else {
-    try {
-      // temperature 0: a screening should be as deterministic as the engine
-      // allows (Gemini honors this; the Claude CLI path has no temperature knob).
-      const text = await llm.generate(buildQualifyPrompt(req), { json: true, tier: "fast", temperature: 0 });
-      result = buildQualifyResult(parseQualifyResponse(text, req), llm.name);
-    } catch {
-      // Model/network failure must still return a safe, disclaimed screening —
-      // and we refund the token since the user never got a model answer.
-      await charged.reclaim();
-      result = buildQualifyResult(mockQualification(req), "mock");
-    }
-  }
-
-  // Persist as a case for the signed-in user (no-op when no DB). Best-effort:
-  // a storage hiccup must not fail the screening the user already paid for.
-  let caseId: string | null = null;
-  try {
-    const user = await getUser();
-    if (user) {
+export function POST(request: Request): Promise<NextResponse> {
+  return executeAiOperation<QualifyRequest, QualifyAssessment>(request, {
+    operation: "qualify",
+    // Rate-limit BEFORE charge, keyed by the signed-in user (a screening is an
+    // authenticated, persisted op — keying by user stops IP-rotation evasion).
+    rateLimit: { bucket: "qualify", scope: "qualify", byUser: true },
+    unauthenticatedError: "Sign in to run a qualification assessment.",
+    parse: ({ body }) => {
+      const parsed = parseQualifyRequest(body);
+      return parsed.ok
+        ? { ok: true, value: parsed.value }
+        : {
+            ok: false,
+            response: NextResponse.json({ error: parsed.error }, { status: 400 }),
+          };
+    },
+    // temperature 0: a screening should be as deterministic as the engine allows
+    // (Gemini honors this; the Claude CLI path has no temperature knob).
+    prompt: (req) => ({
+      text: buildQualifyPrompt(req),
+      options: { json: true, tier: "fast", temperature: 0 },
+    }),
+    // Strict-JSON normalization. A throw here (malformed model output) is caught
+    // by the orchestrator → reclaim + deterministic mock labelled source:"mock".
+    guard: (raw, req) => parseQualifyResponse(raw, req),
+    mock: (req) => mockQualification(req),
+    build: (assessment, source) =>
+      // The orchestrator widens `source` to string; buildQualifyResult takes the
+      // ModelSource union (engine name | "mock"), which is exactly what the
+      // orchestrator produces.
+      buildQualifyResult(
+        assessment,
+        source as Parameters<typeof buildQualifyResult>[1],
+      ) as unknown as Record<string, unknown>,
+    // Persist as a case for the signed-in user (no-op when no DB / no user).
+    // Best-effort: a storage hiccup must not fail the screening already paid for.
+    persist: async (assessment, req, user) => {
+      if (!user) return { caseId: null };
       const created = await createCaseWithCriteria({
         userId: user.id,
         petitioner: req.name,
         classification: req.classification,
-        approvalLikelihood: result.likelihood,
-        criteria: result.criteria,
+        approvalLikelihood: assessment.likelihood,
+        criteria: assessment.criteria,
       });
-      caseId = created?.id ?? null;
-    }
-  } catch {
-    caseId = null;
-  }
-
-  return NextResponse.json({ ...result, caseId });
+      return { caseId: created?.id ?? null };
+    },
+    onPersistError: () => ({ caseId: null }),
+  });
 }
