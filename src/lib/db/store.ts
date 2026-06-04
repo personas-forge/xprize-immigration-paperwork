@@ -270,12 +270,19 @@ let cached: Store | null | undefined;
 export async function getStore(): Promise<Store | null> {
   if (cached !== undefined) return cached;
   const driver = dbDriver();
+  let resolved: Store | null;
   if (driver === "firestore") {
-    cached = (await import("./firestore-store")).firestoreStore;
+    resolved = (await import("./firestore-store")).firestoreStore;
   } else if (driver === "pglite") {
-    cached = await (await import("./pglite-store")).getPgliteStore();
+    resolved = await (await import("./pglite-store")).getPgliteStore();
   } else {
-    cached = null;
+    resolved = null;
   }
+  // Wrap the driver so domain mutations publish typed events to the in-process
+  // bus (ADR-0007). Lazily imported to keep the events subsystem + its
+  // subscribers out of the bundle until a store is actually used.
+  cached = resolved
+    ? (await import("../events")).withDomainEvents(resolved)
+    : null;
   return cached;
 }
