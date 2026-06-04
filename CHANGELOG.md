@@ -8,6 +8,34 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-04
+
+Backward-compatible feature release. Pre-1.0 **minor** bump — introduces the
+data-adapter layer foundation (the first slice, tasks 1–3 of 7, of the team
+goal to insulate API routes from direct Store calls). Purely additive: ten new
+standalone modules under `src/lib/data/adapters/`, not yet wired into any route,
+so there is no change to existing route behavior, API contracts, or status
+codes. No migration or reinstall required.
+
+### Added
+
+- **Data-adapter layer foundation + Petition/Evidence adapters (ADR-0010, #24).**
+  A thin adapter layer that wraps raw Store calls with a consistent result
+  contract, so API routes stop calling the Store directly:
+  - **`result.ts` — `AdapterResult<T>`.** A discriminated `ok` / `err` union
+    with four typed error kinds (`unconfigured` → 503, `forbidden` → 403,
+    `not_found` → 404, `store_error` → 500), replacing the prior layer's lossy
+    bare-`null` returns.
+  - **`access.ts` — `resolveCase()`.** A fail-closed, dependency-injected
+    owner-or-attorney access gate that consolidates the previously copy-pasted
+    cross-tenant check; denies without revealing case existence and never leaks
+    its `cause` to the client.
+  - **`http.ts`.** A pure `AdapterError → NextResponse` mapping that never
+    leaks `cause`/PII to the client.
+  - **`petition.ts` / `evidence.ts`.** The first two concrete adapters
+    (Petition, Evidence).
+  - Unit tests for every module (186/186 suite green).
+
 ## [0.4.0] - 2026-06-04
 
 Backward-compatible feature release. Pre-1.0 **minor** bump — a large batch of
@@ -189,6 +217,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.5.0]: #
 [0.4.0]: #
 [0.3.1]: #
 [0.3.0]: #
