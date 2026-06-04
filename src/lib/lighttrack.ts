@@ -1,4 +1,7 @@
 /**
+ * VENDORED from LightTrack (clients/typescript/src/index.ts) — keep in sync with upstream; don't
+ * edit locally. Single-file, zero-dependency client.
+ *
  * LightTrack TypeScript/JavaScript client — fire-and-forget LLM event ingestion.
  *
  * Wrap your OpenAI / Anthropic / Gemini results and POST a normalized event to the LightTrack API.
@@ -62,36 +65,128 @@ function num(v: unknown): number | undefined {
   return typeof v === "number" && isFinite(v) ? v : undefined;
 }
 
-/** Coerce an unknown value to a plain record for safe optional field reads. */
-function rec(v: unknown): Record<string, unknown> {
-  return v && typeof v === "object" ? (v as Record<string, unknown>) : {};
-}
-
 /** Extract (model, input, output, cached) from an OpenAI chat/responses object. */
-export function extractOpenAI(resp: unknown): [string | undefined, number, number, number | undefined] {
-  const r = rec(resp);
-  const u = rec(r.usage);
+export function extractOpenAI(resp: any): [string | undefined, number, number, number | undefined] {
+  const u = resp?.usage ?? {};
   const input = num(u.prompt_tokens) ?? num(u.input_tokens) ?? 0;
   const output = num(u.completion_tokens) ?? num(u.output_tokens) ?? 0;
-  const cached = num(rec(u.prompt_tokens_details).cached_tokens);
-  return [r.model as string | undefined, input, output, cached];
+  const cached = num(u.prompt_tokens_details?.cached_tokens);
+  return [resp?.model, input, output, cached];
 }
 
 /** Extract (model, input, output, cached) from an Anthropic messages object. */
-export function extractAnthropic(resp: unknown): [string | undefined, number, number, number | undefined] {
-  const r = rec(resp);
-  const u = rec(r.usage);
-  return [r.model as string | undefined, num(u.input_tokens) ?? 0, num(u.output_tokens) ?? 0, num(u.cache_read_input_tokens)];
+export function extractAnthropic(resp: any): [string | undefined, number, number, number | undefined] {
+  const u = resp?.usage ?? {};
+  return [resp?.model, num(u.input_tokens) ?? 0, num(u.output_tokens) ?? 0, num(u.cache_read_input_tokens)];
 }
 
 /** Extract (model, input, output, cached) from a Gemini generateContent object. */
-export function extractGemini(resp: unknown): [string | undefined, number, number, number | undefined] {
-  const r = rec(resp);
-  const u = rec(r.usageMetadata ?? r.usage_metadata);
+export function extractGemini(resp: any): [string | undefined, number, number, number | undefined] {
+  const u = resp?.usageMetadata ?? resp?.usage_metadata ?? {};
   const input = num(u.promptTokenCount) ?? num(u.prompt_token_count) ?? 0;
   const output = num(u.candidatesTokenCount) ?? num(u.candidates_token_count) ?? 0;
   const cached = num(u.cachedContentTokenCount) ?? num(u.cached_content_token_count);
-  return [(r.modelVersion ?? r.model_version) as string | undefined, input, output, cached];
+  return [resp?.modelVersion ?? resp?.model_version, input, output, cached];
+}
+
+// ---- Output guardrails -----------------------------------------------------
+
+export interface GuardRules {
+  /** Output must parse as JSON. */
+  json?: boolean;
+  /** Required top-level JSON keys (implies `json`). */
+  jsonKeys?: string[];
+  maxWords?: number;
+  minWords?: number;
+  maxChars?: number;
+  /** Substrings that must all appear. */
+  mustInclude?: string[];
+  /** Output must match this pattern. */
+  mustMatch?: RegExp | string;
+  /** Output must NOT match any of these (banned content / patterns). */
+  mustNotMatch?: Array<RegExp | string>;
+  /** Reject common PII (email, phone, credit-card-like, SSN). */
+  noPII?: boolean;
+}
+
+export interface GuardResult {
+  ok: boolean;
+  violations: string[];
+  checks: Record<string, boolean>;
+}
+
+const PII_PATTERNS: Array<[string, RegExp]> = [
+  ["email", /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/],
+  ["phone", /(?:\+?\d[\s().-]?){10,}/],
+  ["credit_card", /\b(?:\d[ -]?){13,16}\b/],
+  ["ssn", /\b\d{3}-\d{2}-\d{4}\b/],
+];
+
+/**
+ * Deterministic, network-free output validation — runs inline in the request path. Pure: it returns
+ * a verdict; the caller decides what to do (retry / fallback / block). Catches the failure classes
+ * LLMs slip on (bad JSON, length/format violations, leaked PII, banned content).
+ */
+export function guard(output: string, rules: GuardRules): GuardResult {
+  const violations: string[] = [];
+  const checks: Record<string, boolean> = {};
+  const fail = (k: string, msg: string) => {
+    checks[k] = false;
+    violations.push(msg);
+  };
+  const ok = (k: string) => {
+    checks[k] = true;
+  };
+
+  const wantJson = rules.json || (rules.jsonKeys?.length ?? 0) > 0;
+  let parsed: any;
+  if (wantJson) {
+    try {
+      parsed = JSON.parse(output.trim());
+      ok("json");
+    } catch {
+      fail("json", "output is not valid JSON");
+    }
+  }
+  if (rules.jsonKeys && parsed && typeof parsed === "object") {
+    for (const k of rules.jsonKeys) {
+      k in parsed ? ok(`key:${k}`) : fail(`key:${k}`, `missing required JSON key '${k}'`);
+    }
+  }
+
+  const words = output.trim() ? output.trim().split(/\s+/).length : 0;
+  if (rules.maxWords != null) {
+    words <= rules.maxWords ? ok("maxWords") : fail("maxWords", `too long: ${words} words > ${rules.maxWords}`);
+  }
+  if (rules.minWords != null) {
+    words >= rules.minWords ? ok("minWords") : fail("minWords", `too short: ${words} words < ${rules.minWords}`);
+  }
+  if (rules.maxChars != null) {
+    output.length <= rules.maxChars ? ok("maxChars") : fail("maxChars", `too long: ${output.length} chars > ${rules.maxChars}`);
+  }
+  for (const s of rules.mustInclude ?? []) {
+    output.includes(s) ? ok(`include:${s}`) : fail(`include:${s}`, `must include "${s}"`);
+  }
+  if (rules.mustMatch != null) {
+    const re = typeof rules.mustMatch === "string" ? new RegExp(rules.mustMatch) : rules.mustMatch;
+    re.test(output) ? ok("mustMatch") : fail("mustMatch", `must match ${re}`);
+  }
+  for (const pat of rules.mustNotMatch ?? []) {
+    const re = typeof pat === "string" ? new RegExp(pat) : pat;
+    re.test(output) ? fail(`notMatch:${re}`, `must not match ${re}`) : ok(`notMatch:${re}`);
+  }
+  if (rules.noPII) {
+    let clean = true;
+    for (const [name, re] of PII_PATTERNS) {
+      if (re.test(output)) {
+        clean = false;
+        fail(`pii:${name}`, `contains ${name}-like PII`);
+      }
+    }
+    if (clean) ok("noPII");
+  }
+
+  return { ok: violations.length === 0, violations, checks };
 }
 
 export class LightTrack {
@@ -146,22 +241,45 @@ export class LightTrack {
     if (this.source) ev.source = this.source;
     if (opts.metadata) ev.metadata = opts.metadata;
 
-    this.send(ev);
+    this.post("/v1/events", ev);
   }
 
-  trackOpenAI(response: unknown, opts: TrackOptions = {}): void {
+  trackOpenAI(response: any, opts: TrackOptions = {}): void {
     const [model, input, output, cached] = extractOpenAI(response);
     this.track("openai", model, { inputTokens: input, outputTokens: output, cachedInput: cached, ...opts });
   }
 
-  trackAnthropic(response: unknown, opts: TrackOptions = {}): void {
+  trackAnthropic(response: any, opts: TrackOptions = {}): void {
     const [model, input, output, cached] = extractAnthropic(response);
     this.track("anthropic", model, { inputTokens: input, outputTokens: output, cachedInput: cached, ...opts });
   }
 
-  trackGemini(response: unknown, model?: string, opts: TrackOptions = {}): void {
+  trackGemini(response: any, model?: string, opts: TrackOptions = {}): void {
     const [m, input, output, cached] = extractGemini(response);
     this.track("google", model ?? m, { inputTokens: input, outputTokens: output, cachedInput: cached, ...opts });
+  }
+
+  /**
+   * Validate an output inline against deterministic {@link guard} rules and record the verdict to
+   * LightTrack (fire-and-forget) as a score, so guardrail pass-rates are observable. Returns the
+   * verdict so the caller can act (retry / fallback / block). Never blocks or throws.
+   */
+  trackGuard(output: string, rules: GuardRules, opts: { project?: string; name?: string } = {}): GuardResult {
+    const result = guard(output, rules);
+    if (this.enabled) {
+      const score: Record<string, unknown> = {
+        rubric: opts.name ? `guard:${opts.name}` : "guard",
+        value: result.ok ? 1 : 0,
+        max: 1,
+        pass: result.ok,
+        reasoning: result.violations.join("; ") || "all checks passed",
+        scored_by: this.source ? `guard:${this.source}` : "lighttrack-guard",
+      };
+      const pid = opts.project ?? this.project;
+      if (pid) score.project_id = pid;
+      this.post("/v1/scores", score);
+    }
+    return result;
   }
 
   /** Time a call and track on `end()`: `const s = lt.span("openai","gpt-4o"); ...; s.endOpenAI(resp)`. */
@@ -174,15 +292,15 @@ export class LightTrack {
     await Promise.allSettled([...this.inflight]);
   }
 
-  private send(ev: Record<string, unknown>): void {
+  private post(path: string, body: Record<string, unknown>): void {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (this.apiKey) headers["Authorization"] = `Bearer ${this.apiKey}`;
     const ac = typeof AbortController !== "undefined" ? new AbortController() : undefined;
     const timer = ac ? setTimeout(() => ac.abort(), this.timeoutMs) : undefined;
-    const p = fetch(`${this.baseUrl}/v1/events`, {
+    const p = fetch(`${this.baseUrl}${path}`, {
       method: "POST",
       headers,
-      body: JSON.stringify(ev),
+      body: JSON.stringify(body),
       signal: ac?.signal,
     })
       .then(() => undefined)
@@ -219,19 +337,19 @@ export class Span {
     return this;
   }
 
-  setOpenAI(resp: unknown): this {
+  setOpenAI(resp: any): this {
     const [m, i, o, c] = extractOpenAI(resp);
     this.model = this.model ?? m;
     return this.setUsage(i, o, c);
   }
 
-  setAnthropic(resp: unknown): this {
+  setAnthropic(resp: any): this {
     const [m, i, o, c] = extractAnthropic(resp);
     this.model = this.model ?? m;
     return this.setUsage(i, o, c);
   }
 
-  setGemini(resp: unknown): this {
+  setGemini(resp: any): this {
     const [m, i, o, c] = extractGemini(resp);
     this.model = this.model ?? m;
     return this.setUsage(i, o, c);
