@@ -2,38 +2,29 @@
 // "Tokens" is the product term; internally these are app CREDITS, not LLM
 // tokens. EVERY tunable number lives here — change pricing/grants in one place.
 // 1 token ≈ 1.0¢ at the baseline bundle.
+//
+// Per-operation cost/tier config now lives in the OperationRegistry
+// (`registry.ts`, the single source of truth); the exports below DERIVE from it
+// and keep the same public surface (OP_COST, OPERATIONS, OpTier, costOf) so
+// guard.ts, the routes, and the existing tests stay green unchanged.
+
+import { OPERATION_REGISTRY, TIER_COST } from "./registry";
+import type { OpTier } from "./registry";
+
+export type { OpTier } from "./registry";
+export { costOf } from "./registry";
 
 export const FREE_SIGNUP_GRANT = 150; // granted once, at first onboarding
 
-// Per-operation cost, weighted to reflect real compute cost.
-export const OP_COST = {
-  light: 1, // short output: categorize, review reply, form-field guidance
-  medium: 3, // structured/medium: O-1A qualification screening, match score
-  heavy: 5, // long generation: cover letter, RFE response section
-  xl: 12, // 1M-context full petition-letter drafting — the premium op
-} as const;
-export type OpTier = keyof typeof OP_COST;
+// Per-operation cost, weighted to reflect real compute cost. Sourced from the
+// registry's TIER_COST so the weights live in exactly one place.
+export const OP_COST = TIER_COST;
 
-// Map THIS app's operations -> tier. Adapt per app (key = the `operation`
-// string passed to chargeForOperation()).
-export const OPERATIONS: Record<string, OpTier> = {
-  // USCIS form-field guidance — a short informational answer (1 token).
-  guidance: "light",
-  // Evidence categorization — classify a document into a criterion (1 token).
-  categorize: "light",
-  // O-1A qualification screening — structured 8-criterion assessment (3 tokens).
-  qualify: "medium",
-  // Full petition-letter draft — long-context generation (12 tokens).
-  draft: "xl",
-  // Regenerate a single petition-letter section (5 tokens).
-  draft_section: "heavy",
-  // Draft a response to a USCIS Request for Evidence (5 tokens).
-  rfe: "heavy",
-};
-
-export function costOf(operation: string): number {
-  return OP_COST[OPERATIONS[operation] ?? "light"];
-}
+// Map THIS app's operations -> tier (key = the `operation` string passed to
+// chargeForOperation()). Derived from the OperationRegistry.
+export const OPERATIONS: Record<string, OpTier> = Object.fromEntries(
+  Object.entries(OPERATION_REGISTRY).map(([op, def]) => [op, def.tier]),
+);
 
 /**
  * True when the token economy is NOT enforced and AI routes should run as a

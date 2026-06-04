@@ -16,6 +16,8 @@
  * the node test runner; it is only ever imported from server route handlers.
  */
 
+import { OPERATION_REGISTRY } from "./tokens/registry";
+
 export interface RateLimitResult {
   ok: boolean;
   limit: number;
@@ -29,12 +31,19 @@ interface Bucket {
   resetAt: number;
 }
 
-/** Sensible per-window caps by route, generous enough not to bother real use. */
+/**
+ * Sensible per-window caps by route, generous enough not to bother real use.
+ * Sourced from the OperationRegistry (single source of truth) — the four keys
+ * (`draft | rfe | guidance | categorize`) are exactly the operations that own a
+ * route bucket. `draft_section` shares the `draft` bucket and `qualify` has no
+ * cap today, so neither appears here. Kept `as const` so `keyof typeof
+ * RATE_LIMITS` still narrows to those four buckets for the orchestrator spec.
+ */
 export const RATE_LIMITS = {
-  draft: 20, // xl/heavy full-letter + section regenerations
-  rfe: 20, // heavy
-  guidance: 40, // light
-  categorize: 40, // light — evidence categorization
+  draft: OPERATION_REGISTRY.draft.rateLimit, // xl/heavy full-letter + section regenerations
+  rfe: OPERATION_REGISTRY.rfe.rateLimit, // heavy
+  guidance: OPERATION_REGISTRY.guidance.rateLimit, // light
+  categorize: OPERATION_REGISTRY.categorize.rateLimit, // light — evidence categorization
 } as const;
 
 export const RATE_WINDOW_MS = 60_000;
