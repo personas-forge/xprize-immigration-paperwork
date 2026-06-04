@@ -16,8 +16,10 @@ charged AI routes, the first steps of the AI Operation Orchestrator (ADR-0004)
 — its core utility plus the `qualify` and `guidance` routes migrated onto it —
 the first pieces of the route-authorization consolidation (ADR-0006): a
 composable `authorizeRoute()` helper plus `/api/draft` wired onto it
-(owner-only), and a new in-process domain event bus (ADR-0007) that decouples
-side-effects from persistence. No data migration required.
+(owner-only), a new in-process domain event bus (ADR-0007) that decouples
+side-effects from persistence, and a consolidation of every AI operation's
+cost / rate-limit / label into a single `OPERATION_REGISTRY` (ADR-0007). No
+data migration required.
 
 > **Heads-up for API clients:** the charged AI routes now return new status
 > codes — **401/403** for an unauthorized `caseId` (no more silent fallthrough
@@ -88,6 +90,16 @@ side-effects from persistence. No data migration required.
 
 ### Changed
 
+- **Operation cost / rate-limit / label unified in `OPERATION_REGISTRY`
+  (ADR-0007).** A new `src/lib/tokens/registry.ts` is the single source of truth
+  for every AI operation's token cost, per-window rate limit, and display label;
+  `tokens/economy.ts` and `rate-limit.ts` now **derive** their tables from it
+  instead of carrying parallel inline magic numbers. The derived `RATE_LIMITS`
+  reproduces all five route buckets byte-for-byte — `draft` 20, `rfe` 20,
+  `qualify` 40, `guidance` 40, `categorize` 40 — with a `registry.test.ts`
+  assertion locking the bucket set so a future edit can't silently drop the
+  `qualify` abuse cap (or any other) again. Pure consolidation: no route, cost,
+  or public-surface change.
 - **`/api/draft` migrated onto `authorizeRoute` — owner-only (ADR-0006, task
   3/4).** The draft-generation route now delegates its case-access decision to
   `authorizeRoute({ requiresCase: true })`, replacing ~30 lines of hand-rolled
