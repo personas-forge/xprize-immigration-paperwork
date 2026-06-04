@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { Stamp, ChapterMark, Seal } from "@/components/brand";
 import { FieldGuidancePanel } from "@/features/guidance";
-import { getCaseFacts } from "@/lib/data";
-import { type CaseFact, type SavedCaseSummary } from "../types";
+import { type SavedCaseSummary } from "../types";
+import { useCaseFileData } from "../useCaseFileData";
 import { CaseList } from "./CaseList";
 import { CriteriaTable } from "./CriteriaTable";
 import { PetitionDraftCard, TasksCard } from "./SidePanels";
@@ -16,17 +15,11 @@ export function CaseFileDashboard({
 }: {
   cases?: readonly SavedCaseSummary[];
 }) {
-  const [caseFacts, setCaseFacts] = useState<readonly CaseFact[] | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    getCaseFacts().then((facts) => {
-      if (active) setCaseFacts(facts);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  // Single owner of the case-file data: one composited fetch (case facts +
+  // outstanding tasks + petition excerpt) drilled into the child cards as
+  // props, replacing the three independent useEffect fetches (ADR-0009).
+  const { data } = useCaseFileData();
+  const caseFacts = data?.caseFacts ?? null;
 
   return (
     <div className="px-8 py-10">
@@ -93,8 +86,8 @@ export function CaseFileDashboard({
             <FieldGuidancePanel />
           </div>
           <div className="space-y-6 lg:col-span-4">
-            <TasksCard />
-            <PetitionDraftCard />
+            <TasksCard tasks={data?.tasks ?? null} />
+            <PetitionDraftCard excerpt={data?.petitionExcerpt ?? null} />
           </div>
         </div>
 
