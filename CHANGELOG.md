@@ -14,8 +14,9 @@ Backward-compatible feature + hardening release. Pre-1.0 **minor** bump for the
 work accumulated on `main` since `0.3.1`: a security-hardening pass on the
 charged AI routes, the first steps of the AI Operation Orchestrator (ADR-0004)
 — its core utility plus the `qualify` and `guidance` routes migrated onto it —
-and the first piece of the route-authorization consolidation (ADR-0006): a
-composable `authorizeRoute()` helper. No data migration required.
+and the first pieces of the route-authorization consolidation (ADR-0006): a
+composable `authorizeRoute()` helper plus `/api/draft` wired onto it
+(owner-only). No data migration required.
 
 > **Heads-up for API clients:** the charged AI routes now return new status
 > codes — **401/403** for an unauthorized `caseId` (no more silent fallthrough
@@ -43,8 +44,9 @@ composable `authorizeRoute()` helper. No data migration required.
   is injected (`AuthzDeps`) so it unit-tests with no DB, cookies, or network;
   fully unit-covered. This consolidates the access-control checks currently
   copy-pasted across the AI routes into one auditable boundary, advancing the
-  team's auth-middleware consolidation goal. Pure-additive — no route is wired
-  onto it yet (tasks 2–4).
+  team's auth-middleware consolidation goal. `/api/draft` is the first route
+  wired onto it (task 3/4, see _Changed_); the remaining route migrations land
+  in tasks 2 and 4.
 
 ### Security
 
@@ -73,6 +75,15 @@ composable `authorizeRoute()` helper. No data migration required.
 
 ### Changed
 
+- **`/api/draft` migrated onto `authorizeRoute` — owner-only (ADR-0006, task
+  3/4).** The draft-generation route now delegates its case-access decision to
+  `authorizeRoute({ requiresCase: true })`, replacing ~30 lines of hand-rolled
+  auth + case-lookup boilerplate. `requiresAttorney` is intentionally **omitted**
+  — a draft is the owner's work product, so the configured-attorney cross-tenant
+  fallback honored by `/api/rfe` is **not** granted here; access is owner-only.
+  The 401/403 decision is resolved up front (before any rate-limit, token
+  charge, or model call), preserving fail-closed behaviour with no change to the
+  external contract. First route wired onto the ADR-0006 helper.
 - **`/api/qualify` migrated onto `executeAiOperation` (ADR-0004, task 4/6).**
   The route is now a declarative spec on the orchestrator, replacing ~88 lines
   of hand-rolled parse → rate-limit → charge → model → guard → persist
