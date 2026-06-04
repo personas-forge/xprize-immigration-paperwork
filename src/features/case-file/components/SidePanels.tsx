@@ -1,23 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
-import { getOutstandingTasks, getPetitionExcerpt } from "@/lib/data";
 import { type CaseTask } from "../types";
 
-export function TasksCard() {
-  const [tasks, setTasks] = useState<readonly CaseTask[] | null>(null);
+// Presentational side-panel cards (ADR-0009). They no longer fetch — the
+// dashboard owns the single `useCaseFileData` fetch and drills `tasks` /
+// `excerpt` in as props. `null` still means "loading" → render the skeleton.
 
-  useEffect(() => {
-    let active = true;
-    getOutstandingTasks().then((rows) => {
-      if (active) setTasks(rows);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
+export function TasksCard({ tasks }: { tasks: readonly CaseTask[] | null }) {
   return (
     <Card>
       <CardHeader>
@@ -60,19 +50,7 @@ export function TasksCard() {
   );
 }
 
-export function PetitionDraftCard() {
-  const [excerpt, setExcerpt] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    getPetitionExcerpt().then((text) => {
-      if (active) setExcerpt(text);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
+export function PetitionDraftCard({ excerpt }: { excerpt: string | null }) {
   return (
     <Card tone="accent">
       <CardHeader className="border-accent/30 bg-accent-soft/40">
