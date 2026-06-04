@@ -8,15 +8,16 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
-## [0.4.0] - 2026-06-03
+## [0.4.0] - 2026-06-04
 
 Backward-compatible feature + hardening release. Pre-1.0 **minor** bump for the
 work accumulated on `main` since `0.3.1`: a security-hardening pass on the
 charged AI routes, the first steps of the AI Operation Orchestrator (ADR-0004)
 — its core utility plus the `qualify` and `guidance` routes migrated onto it —
-and the first pieces of the route-authorization consolidation (ADR-0006): a
+the first pieces of the route-authorization consolidation (ADR-0006): a
 composable `authorizeRoute()` helper plus `/api/draft` wired onto it
-(owner-only). No data migration required.
+(owner-only), and a new in-process domain event bus (ADR-0007) that decouples
+side-effects from persistence. No data migration required.
 
 > **Heads-up for API clients:** the charged AI routes now return new status
 > codes — **401/403** for an unauthorized `caseId` (no more silent fallthrough
@@ -47,6 +48,18 @@ composable `authorizeRoute()` helper plus `/api/draft` wired onto it
   team's auth-middleware consolidation goal. `/api/draft` is the first route
   wired onto it (task 3/4, see _Changed_); the remaining route migrations land
   in tasks 2 and 4.
+- **In-process domain event bus (ADR-0007).** A typed, in-process event bus
+  (`src/lib/events/`) that decouples side-effects from persistence. Discriminated
+  -union domain events (`CaseStatusChanged`, `DraftGenerated`, `EvidenceUploaded`)
+  flow through an `EventBus` (`on` / `onAny` / `publish`) with **per-subscriber
+  error isolation** — a failing subscriber can no longer break the DB write or
+  its sibling subscribers. The `Store` (the single persistence boundary) is
+  wrapped by a `withEvents()` Proxy decorator that publishes an event only
+  **after** a successful, non-no-op write (a failed compare-and-set
+  `transitionCase` stays silent). Ships three isolated subscribers — audit-log,
+  attorney-notify, and analytics. Fully unit-covered. This advances the team
+  goal of introducing domain events for case-status transitions; future
+  durable-outbox work plugs into the same `Store` seam.
 
 ### Security
 
