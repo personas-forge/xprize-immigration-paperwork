@@ -113,6 +113,53 @@ test("getLatestDraft: null (none yet) is still a success", async () => {
   assert.deepEqual(r, { ok: true, value: null });
 });
 
+// getCriteria is the read /api/draft (ADR-0010 increment 4) now routes through
+// instead of the raw getCriteriaForCase data-fn — gate first, then normalize.
+test("getCriteria: gates first — a forbidden case never reaches getCriteriaForCase", async () => {
+  let criteriaCalled = false;
+  const a = new PetitionAdapter(
+    deps({
+      getCaseForUser: async () => null, // not owner
+      isConfiguredAttorney: () => false, // not attorney
+      getCriteriaForCase: async () => {
+        criteriaCalled = true;
+        return [];
+      },
+    }),
+  );
+  const r = await a.getCriteria({ userId: "intruder", email: "x@x.com" }, "c1");
+  assert.deepEqual(r, { ok: false, error: { kind: "forbidden" } });
+  assert.equal(criteriaCalled, false);
+});
+
+test("getCriteria: owner → returns the scored criteria", async () => {
+  const criteria = [
+    {
+      id: "cr1",
+      name: "Awards",
+      status: "met",
+      evidence: "Two national awards",
+      rationale: "x",
+      exhibit: "A",
+    },
+  ];
+  const a = new PetitionAdapter(deps({ getCriteriaForCase: async () => criteria }));
+  const r = await a.getCriteria(OWNER, "c1");
+  assert.deepEqual(r, { ok: true, value: criteria });
+});
+
+test("getCriteria: a store throw downstream of the gate → store_error", async () => {
+  const a = new PetitionAdapter(
+    deps({
+      getCriteriaForCase: async () => {
+        throw new Error("read failed");
+      },
+    }),
+  );
+  const r = await a.getCriteria(OWNER, "c1");
+  assert.equal(r.ok === false && r.error.kind, "store_error");
+});
+
 test("saveRfeResponse: a store throw downstream of the gate → store_error", async () => {
   const boom = new Error("write failed");
   const a = new PetitionAdapter(
