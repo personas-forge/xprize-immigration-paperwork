@@ -19,11 +19,9 @@ import { type ModelSource } from "@/lib/llm/label";
 import { chargeForOperation } from "@/lib/tokens/guard";
 import { getLlm } from "@/lib/llm/client";
 import { authorizeRoute } from "@/lib/auth/authorizeRoute";
-import {
-  getCriteriaForCase,
-  getLatestDraft,
-  saveDraft,
-} from "@/lib/data/petitions";
+import { petitions } from "@/lib/data/adapters/petition";
+import { type CaseAccess } from "@/lib/data/adapters/access";
+import { toErrorResponse } from "@/lib/data/adapters/http";
 import {
   RATE_LIMITS,
   checkRateLimit,
@@ -91,6 +89,16 @@ export async function POST(request: Request): Promise<NextResponse> {
   // user (possibly null on the inline/demo path) keys the rate limit.
   const user = auth.user;
 
+  // Owner-only access context for the PetitionAdapter (ADR-0010). draft never
+  // honors the configured-attorney cross-tenant fallback (requiresAttorney was
+  // OMITTED on authorizeRoute above), so `email` is deliberately null — the
+  // adapter's own resolveCase gate then resolves owner-only, matching the
+  // decision already made by authorizeRoute. The adapter is the single seam for
+  // the criteria read + draft persistence below; it owns null-handling, Firestore
+  // error handling and access re-validation so this route no longer hand-wraps
+  // each Store call.
+  const access: CaseAccess = { userId: user?.id ?? null, email: null };
+
   // Rate limit BEFORE charging or any model work. Keyed by user when known, else
   // by IP, so a flood can't drain a balance or run up model cost unchecked.
   if (isRateLimitEnabled()) {
@@ -108,11 +116,18 @@ export async function POST(request: Request): Promise<NextResponse> {
   let req: DraftRequest;
   let resolvedCaseId: string | null = null;
   if (auth.status === "ok") {
-    const criteria = await getCriteriaForCase(auth.case.id);
+    const criteriaResult = await petitions.getCriteria(access, auth.case.id);
+    if (!criteriaResult.ok) {
+      // A store fault / lost backend on the criteria read is now a typed
+      // adapter error mapped to its own status (503/500/…) instead of an
+      // uncaught throw that 500s — "no access" / "not found" / "store down" no
+      // longer collapse into one shape.
+      return toErrorResponse(criteriaResult.error);
+    }
     const parsed = parseDraftRequest({
       petitioner: auth.case.petitioner,
       classification: auth.case.classification,
-      criteria,
+      criteria: criteriaResult.value,
     });
     if (!parsed.ok) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
@@ -191,17 +206,33 @@ export async function POST(request: Request): Promise<NextResponse> {
     let version: number | null = null;
     let saveFailed = false;
     if (resolvedCaseId) {
-      try {
-        const latest = await getLatestDraft(resolvedCaseId);
-        if (latest) {
-          const merged = latest.sections.map((s) =>
-            s.heading === focus ? { heading: focus, body: section.body } : s,
-          );
-          version = await saveDraft(resolvedCaseId, merged, source);
-        }
-      } catch (err) {
+      const latestResult = await petitions.getLatestDraft(access, resolvedCaseId);
+      if (!latestResult.ok) {
+        // User already paid → surface the failure, never swallow it.
         saveFailed = true;
-        console.error("[/api/draft] failed to persist regenerated section", err);
+        console.error(
+          "[/api/draft] failed to load latest draft for merge",
+          latestResult.error,
+        );
+      } else if (latestResult.value) {
+        const merged = latestResult.value.sections.map((s) =>
+          s.heading === focus ? { heading: focus, body: section.body } : s,
+        );
+        const saved = await petitions.saveDraft(
+          access,
+          resolvedCaseId,
+          merged,
+          source,
+        );
+        if (!saved.ok) {
+          saveFailed = true;
+          console.error(
+            "[/api/draft] failed to persist regenerated section",
+            saved.error,
+          );
+        } else {
+          version = saved.value;
+        }
       }
     }
 
@@ -239,11 +270,17 @@ export async function POST(request: Request): Promise<NextResponse> {
   let version: number | null = null;
   let saveFailed = false;
   if (resolvedCaseId) {
-    try {
-      version = await saveDraft(resolvedCaseId, result.sections, result.source);
-    } catch (err) {
+    const saved = await petitions.saveDraft(
+      access,
+      resolvedCaseId,
+      result.sections,
+      result.source,
+    );
+    if (!saved.ok) {
       saveFailed = true;
-      console.error("[/api/draft] failed to persist draft version", err);
+      console.error("[/api/draft] failed to persist draft version", saved.error);
+    } else {
+      version = saved.value;
     }
   }
 
