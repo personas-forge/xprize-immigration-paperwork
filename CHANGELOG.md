@@ -8,6 +8,39 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-06-08
+
+Maintenance / refactor release. Pre-1.0 **patch** bump — behavior-preserving
+internal refactors that **complete** the data-adapter migration (ADR-0010,
+tasks 6 and 7 of 7), with no change to API contracts, status codes, or
+observable behavior at the call sites (one intentional internal error-handling
+change in the evidence actions, noted below). This release finishes the team
+goal of insulating routes/actions from direct Store calls behind the adapter
+layer.
+
+### Changed
+
+- **Review server actions now route through `PetitionAdapter` (ADR-0010, 7/7,
+  #28).** The owner-or-attorney case gate in `src/features/review/actions.ts`
+  now flows through the shared `PetitionAdapter` rather than a hand-rolled
+  access check, finishing the adapter migration (7/7). Adds
+  `owner-only-gate.test.ts` pinning the `email: null` owner-only invariant.
+  Behavior at the call site is preserved.
+- **Evidence-vault server actions now route through `EvidenceAdapter` (ADR-0010,
+  6/7, #29).** `removeDocument` and `refileDocument` in
+  `src/features/evidence/actions.ts` no longer hand-roll their own
+  owner-or-attorney access check; every mutation now flows through the shared
+  `EvidenceAdapter → resolveCase` fail-closed seam. The cross-tenant
+  attorney-of-record check (the invariant behind the prior HIGH PII-egress
+  findings) is now enforced in one audited place instead of being copy-pasted
+  per route, so it can no longer be accidentally omitted at this call site. The
+  action consumes the `AdapterResult` union directly and treats every non-ok
+  outcome (`unconfigured` / `forbidden` / `not_found` / `store_error`) as a
+  no-op. **One intentional behavior change:** a Store throw previously
+  propagated out of the server action; the adapter now catches it and degrades
+  to a no-op (the page is not revalidated), matching ADR-0010's uniform
+  error-handling contract. Scope: 1 file, +34 / −24. Suite 271/271 green.
+
 ## [0.5.1] - 2026-06-08
 
 Maintenance / refactor release. Pre-1.0 **patch** bump — a behavior-preserving
@@ -240,6 +273,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.5.2]: #
 [0.5.1]: #
 [0.5.0]: #
 [0.4.0]: #
