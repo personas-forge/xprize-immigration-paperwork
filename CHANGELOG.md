@@ -8,6 +8,36 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-08
+
+Foundation release for the typed response envelope (ADR-0011, increment 1/4).
+Pre-1.0 **minor** bump — adds new backward-compatible public API in `src/lib/`
+with no change to existing behavior. This is the foundation that lets every AI
+feature attach the non-negotiable not-legal-advice disclaimer (and its model
+source) at the type level, closing a UPL (unauthorized-practice-of-law)
+compliance gap where a route could silently omit the disclaimer. Subsequent
+increments (2–4/4) wire the AI routes onto `wrapResult`.
+
+### Added
+
+- **`Result<T>` envelope + `wrapResult` factory (ADR-0011, 1/4, #32).** New
+  `src/lib/result.ts` defines `Result<T> = { data: T; disclaimer: string;
+  source: ModelSource }` and a `wrapResult(data, source)` factory. The module
+  is pure and client-safe (no `server-only`/React imports) so the disclaimer
+  invariant is unit-testable. A new AI route now gets the disclaimer + model
+  source for free and cannot silently drop them. Covered by non-vacuous tests
+  (`src/lib/result.test.ts`): payload-field shadowing, generics across
+  string/object/array, and a UPL content assertion paired with a positive
+  control so it cannot pass when the disclaimer is emptied.
+
+### Changed
+
+- **`DISCLAIMER` constant relocated to its canonical home (#32).** The shared
+  not-legal-advice `DISCLAIMER` now lives in `src/lib/result.ts`;
+  `src/features/guidance/guidance.ts` re-exports it **byte-identically** for
+  back-compatibility, so existing importers are unaffected. No field semantics
+  changed.
+
 ## [0.5.2] - 2026-06-08
 
 Maintenance / refactor release. Pre-1.0 **patch** bump — behavior-preserving
@@ -273,6 +303,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.6.0]: #
 [0.5.2]: #
 [0.5.1]: #
 [0.5.0]: #
