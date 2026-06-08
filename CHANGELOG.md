@@ -8,6 +8,29 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-06-08
+
+Maintenance / refactor release. Pre-1.0 **patch** bump — a behavior-preserving
+internal refactor that continues the data-adapter migration (ADR-0010, task 4
+of 7) with no change to API contracts, status codes, or runtime behavior.
+
+### Changed
+
+- **`/api/draft` now routes through `PetitionAdapter` (ADR-0010, 4/7, #26).**
+  The draft route no longer hand-wraps the raw `petitions` data functions
+  (`getCriteriaForCase` / `getLatestDraft` / `saveDraft`) in ad-hoc try/catch.
+  Its criteria read and draft persistence now go through the `PetitionAdapter`
+  (`petitions.getCriteria` / `getLatestDraft` / `saveDraft`), which owns access
+  re-validation, null-handling, and Firestore error handling. Store faults are
+  surfaced as typed adapter errors mapped to proper statuses via
+  `toErrorResponse` (503 / 500 / 404 / 403) instead of collapsing into an
+  uncaught 500. Access context is owner-only — `draft` omits the
+  `requiresAttorney` cross-tenant fallback, consistent with the upstream
+  `authorizeRoute` decision. The null-latest-draft, paid-then-save-failed, and
+  regenerate-section merge paths preserve prior semantics. Adds three
+  `getCriteria` adapter tests (gate-first, owner-success, store_error); suite
+  232/232 green.
+
 ## [0.5.0] - 2026-06-04
 
 Backward-compatible feature release. Pre-1.0 **minor** bump — introduces the
@@ -217,6 +240,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.5.1]: #
 [0.5.0]: #
 [0.4.0]: #
 [0.3.1]: #
