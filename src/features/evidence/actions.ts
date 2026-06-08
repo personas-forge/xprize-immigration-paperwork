@@ -2,30 +2,30 @@
 
 /**
  * Server actions for managing the evidence vault: remove a document, or re-file
- * it under a different criterion. Each re-derives the user and enforces the
- * owner-or-attorney gate before mutating, then revalidates the case page. No-op
- * without auth/DB (graceful degradation), matching the rest of the app.
+ * it under a different criterion. Each re-derives the user and routes the
+ * mutation through the {@link EvidenceAdapter} (ADR-0010), then revalidates the
+ * case page. No-op without auth/DB (graceful degradation), matching the rest of
+ * the app.
+ *
+ * ADR-0010 adoption: the owner-or-attorney gate is no longer hand-rolled here.
+ * `EvidenceAdapter.removeDocument` / `refileDocument` gate through the single
+ * fail-closed `resolveCase` seam before touching the vault, so the cross-tenant
+ * `isConfiguredAttorney` check can never be forgotten at this call site (the
+ * security invariant behind the prior HIGH findings on PII egress). Being a
+ * server action — return type `void`, not an HTTP response — it consumes the
+ * `AdapterResult` union directly (no `http.ts` mapping) and treats EVERY
+ * non-`ok` outcome as a no-op: `unconfigured` (no backend), `forbidden` /
+ * `not_found` (the access denial that previously short-circuited via
+ * `canAccessCase`), and `store_error`. Behaviour nuance: a Store throw used to
+ * propagate out of the action (an unhandled server-action error); it is now
+ * caught by the adapter and degrades to a no-op (the page simply isn't
+ * revalidated), matching the ADR's uniform error-handling contract.
  */
 
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth/session";
-import { isConfiguredAttorney } from "@/lib/auth/roles";
-import { getCaseAnyOwner, getCaseForUser } from "@/lib/data/petitions";
-import { refileCaseDocument, removeCaseDocument } from "@/lib/data/evidence";
-
-/** True when the user owns the case or is a CONFIGURED attorney of record.
- *  Uses isConfiguredAttorney (fail-closed), not isAttorney — otherwise the demo
- *  default (every signed-in user is an "attorney") lets anyone delete or refile
- *  documents in a stranger's vault by passing its caseId. */
-async function canAccessCase(
-  userId: string,
-  email: string | null | undefined,
-  caseId: string,
-): Promise<boolean> {
-  const owned = await getCaseForUser(userId, caseId);
-  if (owned) return true;
-  return isConfiguredAttorney(email) && Boolean(await getCaseAnyOwner(caseId));
-}
+import { evidence } from "@/lib/data/adapters/evidence";
+import { type CaseAccess } from "@/lib/data/adapters/access";
 
 export async function removeDocument(
   caseId: string,
@@ -33,8 +33,12 @@ export async function removeDocument(
 ): Promise<void> {
   const user = await getUser();
   if (!user) return;
-  if (!(await canAccessCase(user.id, user.email, caseId))) return;
-  await removeCaseDocument(caseId, documentId);
+  // Full owner-or-attorney access context — these vault mutations DO honor the
+  // configured-attorney-of-record fallback (unlike /api/draft, which is
+  // owner-only), so the real email is passed for resolveCase to evaluate.
+  const access: CaseAccess = { userId: user.id, email: user.email ?? null };
+  const result = await evidence.removeDocument(access, caseId, documentId);
+  if (!result.ok) return;
   revalidatePath(`/dashboard/cases/${caseId}`);
 }
 
@@ -45,7 +49,13 @@ export async function refileDocument(
 ): Promise<void> {
   const user = await getUser();
   if (!user) return;
-  if (!(await canAccessCase(user.id, user.email, caseId))) return;
-  await refileCaseDocument(caseId, documentId, criterion);
+  const access: CaseAccess = { userId: user.id, email: user.email ?? null };
+  const result = await evidence.refileDocument(
+    access,
+    caseId,
+    documentId,
+    criterion,
+  );
+  if (!result.ok) return;
   revalidatePath(`/dashboard/cases/${caseId}`);
 }
