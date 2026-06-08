@@ -22,7 +22,7 @@
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth/session";
 import { isConfiguredAttorney } from "@/lib/auth/roles";
-import { getCaseForUser } from "@/lib/data/petitions";
+import { petitions } from "@/lib/data/adapters/petition";
 import { addReviewEvent, transitionCase } from "@/lib/data/reviews";
 
 function revalidateCase(caseId: string): void {
@@ -40,8 +40,12 @@ function newReceiptNumber(): string {
 export async function submitForReview(caseId: string): Promise<void> {
   const user = await getUser();
   if (!user) return;
-  const owned = await getCaseForUser(user.id, caseId);
-  if (!owned) return; // only the owner may submit their case
+  // Owner-only gate via the PetitionAdapter (ADR-0010). `email` is omitted so the
+  // adapter's single resolveCase resolves owner-only (the configured-attorney
+  // cross-tenant fallback never fires) — preserving the prior owner-only
+  // `getCaseForUser` semantics while the adapter owns null/store-error handling.
+  const gate = await petitions.resolveCase({ userId: user.id, email: null }, caseId);
+  if (!gate.ok) return; // only the owner may submit their case
   const applied = await transitionCase({
     caseId,
     fromStatuses: ["Intake", "Drafting"],
@@ -67,7 +71,13 @@ export async function addReviewNote(
   if (!user) return;
   const body = String(formData.get("body") ?? "").trim().slice(0, 4000);
   if (!body) return;
-  const owned = await getCaseForUser(user.id, caseId);
+  // Owner-or-attorney note gate. Ownership resolves through the adapter
+  // (email omitted ⇒ owner-only, fail-closed) so it gets the centralized
+  // null/store-error handling; a non-owning configured attorney is the
+  // fallback. Mirrors the prior `owned`/`attorney` split byte-for-byte, and
+  // `owned` still drives the author-role attribution (StoredCase carries no
+  // owner field, so the role can't be read off the resolved case).
+  const owned = (await petitions.resolveCase({ userId: user.id, email: null }, caseId)).ok;
   const attorney = isConfiguredAttorney(user.email);
   if (!owned && !attorney) return;
   await addReviewEvent({
