@@ -82,7 +82,7 @@ export function CaseFileDashboard({
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="lg:col-span-8 space-y-6">
-            <CriteriaTable />
+            <CriteriaTable criteria={data?.criteria ?? null} />
             <FieldGuidancePanel />
           </div>
           <div className="space-y-6 lg:col-span-4">

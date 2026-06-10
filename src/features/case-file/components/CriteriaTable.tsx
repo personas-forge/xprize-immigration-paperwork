@@ -1,24 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Badge, Card, CardHeader, Skeleton } from "@/components/ui";
-import { getCriteria } from "@/lib/data";
 import { QUALIFYING_THRESHOLD, statusTone, summarizeCriteria } from "../criteria";
 import { type Criterion } from "../types";
 
-export function CriteriaTable() {
-  const [criteria, setCriteria] = useState<readonly Criterion[] | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    getCriteria().then((rows) => {
-      if (active) setCriteria(rows);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
+/**
+ * The O-1A criteria table. Criteria are no longer fetched here — they arrive as
+ * a prop from the coordinated `useCaseFileData` fan-out (ADR-0009), so this card
+ * shares the single composited fetch with the rest of the dashboard instead of
+ * issuing its own `useEffect` read. `null` means the parent fetch is still in
+ * flight (skeleton state).
+ */
+export function CriteriaTable({
+  criteria,
+}: {
+  criteria: readonly Criterion[] | null;
+}) {
   const summary = summarizeCriteria(criteria ?? []);
 
   return (

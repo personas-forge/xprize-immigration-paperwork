@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getCaseFacts, getOutstandingTasks, getPetitionExcerpt } from "@/lib/data";
+import { getCaseFacts, getCriteria, getOutstandingTasks, getPetitionExcerpt } from "@/lib/data";
 import {
   type CaseFileData,
   type CaseFileDataDeps,
@@ -15,6 +15,7 @@ const liveDeps: CaseFileDataDeps = {
   getCaseFacts,
   getOutstandingTasks,
   getPetitionExcerpt,
+  getCriteria,
 };
 
 export interface CaseFileDataState {
