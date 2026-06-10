@@ -81,6 +81,7 @@ function Hero() {
         aria-hidden
         width={1536}
         height={1024}
+        sizes="(max-width: 1280px) 80vw, 1024px"
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 mx-auto h-auto max-w-5xl opacity-[0.10] mix-blend-multiply"
       />
       <div className="mx-auto grid max-w-6xl grid-cols-12 gap-8 px-8 pb-28 pt-20">
