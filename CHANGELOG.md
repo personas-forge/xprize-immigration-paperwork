@@ -8,6 +8,32 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-06-11
+
+Accessibility patch release. Pre-1.0 **patch** bump — two backward-compatible
+a11y fixes merged since v0.6.0 (#40, #42), plus a new automated CI contrast
+audit that prevents future WCAG AA regressions. No features, no breaking
+changes, no API-contract or persisted-field semantics changed.
+
+### Fixed
+
+- **Dark-theme muted-text contrast now meets WCAG AA (a11y, #42).** The ink
+  (midnight) theme's `--muted` token failed the AA 4.5:1 ratio for normal
+  text (`#95876a` measured 4.44:1 on `--surface` and 3.75:1 on
+  `--surface-elevated` — the ground under the dashboard doc-number labels).
+  Lifted to `#a89a7e`, which clears 4.78:1 on the tightest surface while
+  preserving the warm-khaki hue and the muted / muted-strong hierarchy.
+- **`DashboardTopBar` backdrop-blur gated behind `prefers-reduced-motion`
+  (a11y, #40).** Users who prefer reduced motion no longer get the
+  backdrop-blur effect on the dashboard top bar.
+
+### Added
+
+- **CI contrast audit (`themes.contrast.test.ts`, #42).** Every text token is
+  now audited against every opaque surface token in both themes on every
+  `npm test` run, so CI fails on any future WCAG AA contrast regression.
+  Includes a positive control proving the audit flags the old `#95876a`.
+
 ## [0.6.0] - 2026-06-10
 
 Feature release. Pre-1.0 **minor** bump — two backward-compatible additions
@@ -319,6 +345,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.6.1]: #
 [0.6.0]: #
 [0.5.2]: #
 [0.5.1]: #
