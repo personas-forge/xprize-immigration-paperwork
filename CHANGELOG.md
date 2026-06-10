@@ -8,15 +8,16 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
-## [0.6.0] - 2026-06-08
+## [0.6.0] - 2026-06-10
 
-Foundation release for the typed response envelope (ADR-0011, increment 1/4).
-Pre-1.0 **minor** bump — adds new backward-compatible public API in `src/lib/`
-with no change to existing behavior. This is the foundation that lets every AI
-feature attach the non-negotiable not-legal-advice disclaimer (and its model
-source) at the type level, closing a UPL (unauthorized-practice-of-law)
-compliance gap where a route could silently omit the disclaimer. Subsequent
-increments (2–4/4) wire the AI routes onto `wrapResult`.
+Foundation release for the typed response envelope (ADR-0011, increment 1/4),
+plus an accessibility fix to the root layout. Pre-1.0 **minor** bump — adds new
+backward-compatible public API in `src/lib/` with no change to existing
+behavior. This is the foundation that lets every AI feature attach the
+non-negotiable not-legal-advice disclaimer (and its model source) at the type
+level, closing a UPL (unauthorized-practice-of-law) compliance gap where a
+route could silently omit the disclaimer. Subsequent increments (2–4/4) wire
+the AI routes onto `wrapResult`.
 
 ### Added
 
@@ -37,6 +38,14 @@ increments (2–4/4) wire the AI routes onto `wrapResult`.
   `src/features/guidance/guidance.ts` re-exports it **byte-identically** for
   back-compatibility, so existing importers are unaffected. No field semantics
   changed.
+
+### Fixed
+
+- **Skip-link target is now a real `<main>` landmark (#34).** In
+  `src/app/layout.tsx`, the `#main` skip-link target was a generic
+  `<div id="main">`; it is now `<main id="main">`, so screen readers and other
+  assistive technology recognize the page's main content landmark
+  (WCAG 1.3.1 / 2.4.1). No behavior or styling change.
 
 ## [0.5.2] - 2026-06-08
 
