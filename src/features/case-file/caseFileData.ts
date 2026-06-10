@@ -1,12 +1,12 @@
 /**
  * Pure, composited case-file fetch (ADR-0009).
  *
- * The case dashboard used to issue three INDEPENDENT `useEffect` fetches —
- * `getCaseFacts` (CaseFileDashboard) plus `getOutstandingTasks` /
- * `getPetitionExcerpt` (SidePanels) — each with its own loading state. This
- * module collapses them into ONE concurrent `Promise.all` behind a module-level
- * promise cache, exposing a single `{ caseFacts, tasks, petitionExcerpt }`
- * snapshot.
+ * The case dashboard used to issue independent `useEffect` fetches —
+ * `getCaseFacts` (CaseFileDashboard), `getOutstandingTasks` /
+ * `getPetitionExcerpt` (SidePanels), and `getCriteria` (CriteriaTable) — each
+ * with its own loading state. This module collapses them into ONE concurrent
+ * `Promise.all` behind a module-level promise cache, exposing a single
+ * `{ caseFacts, tasks, petitionExcerpt, criteria }` snapshot.
  *
  * Why this file has no `@/lib/data` import: the test harness is `tsx --test`
  * (node:test) with no jsdom/RTL, so a hook can't be rendered in a unit test.
@@ -15,13 +15,14 @@
  * real `@/lib/data` functions. (See ADR-0009 / usePersistentQuery for the
  * native-React, no-new-dependency convention.)
  */
-import { type CaseFact, type CaseTask } from "./types";
+import { type CaseFact, type CaseTask, type Criterion } from "./types";
 
 /** The unified snapshot every case-file consumer reads from. */
 export interface CaseFileData {
   caseFacts: readonly CaseFact[];
   tasks: readonly CaseTask[];
   petitionExcerpt: string;
+  criteria: readonly Criterion[];
 }
 
 /**
@@ -34,6 +35,7 @@ export interface CaseFileDataDeps {
   getCaseFacts: (caseId?: string) => Promise<readonly CaseFact[]>;
   getOutstandingTasks: (caseId?: string) => Promise<readonly CaseTask[]>;
   getPetitionExcerpt: (caseId?: string) => Promise<string>;
+  getCriteria: (caseId?: string) => Promise<readonly Criterion[]>;
 }
 
 // Module-level promise cache keyed by case. Two consumers mounting in the same
@@ -59,11 +61,13 @@ export function fetchCaseFileData(
     deps.getCaseFacts(caseId),
     deps.getOutstandingTasks(caseId),
     deps.getPetitionExcerpt(caseId),
+    deps.getCriteria(caseId),
   ]).then(
-    ([caseFacts, tasks, petitionExcerpt]): CaseFileData => ({
+    ([caseFacts, tasks, petitionExcerpt, criteria]): CaseFileData => ({
       caseFacts,
       tasks,
       petitionExcerpt,
+      criteria,
     }),
   );
 

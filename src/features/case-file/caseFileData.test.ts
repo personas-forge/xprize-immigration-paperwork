@@ -6,15 +6,18 @@ import {
   clearCaseFileDataCache,
   fetchCaseFileData,
 } from "./caseFileData";
-import { type CaseFact, type CaseTask } from "./types";
+import { type CaseFact, type CaseTask, type Criterion } from "./types";
 
 const FACTS: readonly CaseFact[] = [{ label: "Classification", value: "O-1A" }];
 const TASKS: readonly CaseTask[] = [{ id: "t1", label: "Sign G-28", owner: "Attorney" }];
 const EXCERPT = "The petitioner is a person of extraordinary ability…";
+const CRITERIA: readonly Criterion[] = [
+  { id: "c1", name: "Awards", status: "Strong", evidence: "IEEE medal", exhibit: "A-1" },
+];
 
 /** A deps stub that records call counts and resolves the fixtures above. */
 function makeDeps(): CaseFileDataDeps & { calls: Record<string, number> } {
-  const calls = { facts: 0, tasks: 0, excerpt: 0 };
+  const calls = { facts: 0, tasks: 0, excerpt: 0, criteria: 0 };
   return {
     calls,
     getCaseFacts: async () => {
@@ -29,10 +32,14 @@ function makeDeps(): CaseFileDataDeps & { calls: Record<string, number> } {
       calls.excerpt++;
       return EXCERPT;
     },
+    getCriteria: async () => {
+      calls.criteria++;
+      return CRITERIA;
+    },
   };
 }
 
-test("fetchCaseFileData composes the three sources into one snapshot", async () => {
+test("fetchCaseFileData composes the four sources into one snapshot", async () => {
   clearCaseFileDataCache();
   const deps = makeDeps();
   const data = await fetchCaseFileData(deps);
@@ -40,19 +47,21 @@ test("fetchCaseFileData composes the three sources into one snapshot", async () 
   assert.deepEqual(data.caseFacts, FACTS);
   assert.deepEqual(data.tasks, TASKS);
   assert.equal(data.petitionExcerpt, EXCERPT);
+  assert.deepEqual(data.criteria, CRITERIA);
   assert.equal(deps.calls.facts, 1);
   assert.equal(deps.calls.tasks, 1);
   assert.equal(deps.calls.excerpt, 1);
+  assert.equal(deps.calls.criteria, 1);
 });
 
-test("the three reads run concurrently (Promise.all, not sequential)", async () => {
+test("the four reads run concurrently (Promise.all, not sequential)", async () => {
   clearCaseFileDataCache();
   let inFlight = 0;
   let maxConcurrent = 0;
   const gate = (result: unknown) => async () => {
     inFlight++;
     maxConcurrent = Math.max(maxConcurrent, inFlight);
-    await Promise.resolve(); // yield so all three overlap before any resolves
+    await Promise.resolve(); // yield so all four overlap before any resolves
     inFlight--;
     return result as never;
   };
@@ -60,8 +69,9 @@ test("the three reads run concurrently (Promise.all, not sequential)", async () 
     getCaseFacts: gate(FACTS),
     getOutstandingTasks: gate(TASKS),
     getPetitionExcerpt: gate(EXCERPT),
+    getCriteria: gate(CRITERIA),
   });
-  assert.equal(maxConcurrent, 3, "all three fetches should be in flight at once");
+  assert.equal(maxConcurrent, 4, "all four fetches should be in flight at once");
 });
 
 test("repeated calls for the same case share one cached in-flight promise", async () => {
@@ -94,6 +104,7 @@ test("a rejected fetch is evicted so a later call can retry", async () => {
     },
     getOutstandingTasks: async () => TASKS,
     getPetitionExcerpt: async () => EXCERPT,
+    getCriteria: async () => CRITERIA,
   };
 
   await assert.rejects(() => fetchCaseFileData(flaky), /transient/);
