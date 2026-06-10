@@ -13,7 +13,7 @@ const variantClass: Record<Variant, string> = {
   secondary:
     "bg-transparent text-foreground border border-border-strong hover:border-foreground hover:bg-surface-muted/60",
   ghost:
-    "text-muted-strong hover:text-foreground hover:bg-surface-muted/50 border border-transparent",
+    "text-muted-strong hover:text-foreground hover:bg-surface-muted/50 border border-transparent focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
   seal:
     "bg-seal text-background border border-seal hover:bg-[color:var(--accent-dark)] hover:border-[color:var(--accent-dark)]",
 };
