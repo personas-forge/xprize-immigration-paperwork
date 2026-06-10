@@ -8,6 +8,52 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-10
+
+Feature release. Pre-1.0 **minor** bump — two backward-compatible additions
+(the `Result<T>` envelope foundation and the ghost-Button focus-visible ring)
+ship alongside accessibility fixes, a landing-page image perf tweak, and an
+internal case-file data-fetch consolidation. Batches all seven increments
+merged to `main` since v0.5.2 (#32, #34–#39) into one published release. No
+breaking changes; no API-contract or persisted-field semantics changed.
+
+### Added
+
+- **`Result<T>` envelope + `wrapResult` factory (ADR-0011, 1/4 foundation,
+  #32).** Introduces a typed success/error result envelope and a `wrapResult`
+  helper as the foundation for the upcoming uniform error-handling rollout.
+  Additive only — no existing call sites changed.
+- **Focus-visible ring on the ghost `Button` variant (#35).** The ghost
+  variant now renders a keyboard focus-visible ring, closing an accessibility
+  gap for keyboard users without affecting mouse interaction or visual
+  styling at rest.
+
+### Fixed
+
+- **Skip-link target is now a real `<main>` landmark (a11y, #34).** The
+  skip-to-content link now points at a genuine `<main>` element, fixing
+  screen-reader landmark navigation.
+- **Recovered the stranded ghost focus-ring contrast fix (a11y, #36).**
+  Re-applies an a11y contrast correction for the ghost focus ring that had
+  been stranded on a branch.
+- **`scope="col"` on `CriteriaTable` column headers (a11y, #38).** Column
+  headers now declare `scope="col"` so assistive tech associates cells with
+  the correct header.
+
+### Changed
+
+- **Responsive `sizes` prop on the landing hero background image (perf,
+  #37).** Adds a responsive `sizes` hint so the browser fetches an
+  appropriately scaled hero image, reducing wasted bytes on small viewports.
+- **Consolidated `CriteriaTable`'s data fetch into `useCaseFileData`
+  (refactor, #39).** `CriteriaTable` no longer runs its own
+  `useEffect`/`useState` fetch — `getCriteria()` now rides the coordinated
+  `useCaseFileData` `Promise.all` fan-out (now 4 sources) and the component
+  consumes `criteria` as a prop. Behavior-preserving; removes a redundant
+  per-component network read and avoids the set-state-in-effect lint trap.
+  Completes the team goal *"Consolidate CriteriaTable data fetch into
+  useCaseFileData hook."*
+
 ## [0.5.2] - 2026-06-08
 
 Maintenance / refactor release. Pre-1.0 **patch** bump — behavior-preserving
@@ -273,6 +319,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.6.0]: #
 [0.5.2]: #
 [0.5.1]: #
 [0.5.0]: #
