@@ -13,7 +13,11 @@ const variantClass: Record<Variant, string> = {
   secondary:
     "bg-transparent text-foreground border border-border-strong hover:border-foreground hover:bg-surface-muted/60",
   ghost:
-    "text-muted-strong hover:text-foreground hover:bg-surface-muted/50 border border-transparent focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
+    // ring-accent-dark, not ring-accent: gold-leaf --accent is 2.63:1 against the
+    // parchment background (below the 3:1 non-text-contrast minimum, WCAG 1.4.11);
+    // --accent-dark clears it on both themes (4.2:1 light, 5.6:1 dark). The offset
+    // is pinned to the themed background so the gap never falls back to white.
+    "text-muted-strong hover:text-foreground hover:bg-surface-muted/50 border border-transparent focus-visible:ring-2 focus-visible:ring-accent-dark focus-visible:ring-offset-2 focus-visible:ring-offset-background",
   seal:
     "bg-seal text-background border border-seal hover:bg-[color:var(--accent-dark)] hover:border-[color:var(--accent-dark)]",
 };
