@@ -50,10 +50,10 @@ export function CriteriaTable() {
         <table className="w-full text-sm">
           <thead className="bg-background-tint/40 text-left">
             <tr>
-              <th className="px-5 py-3 microprint font-medium">Criterion</th>
-              <th className="px-5 py-3 microprint font-medium">Status</th>
-              <th className="px-5 py-3 microprint font-medium">Evidence</th>
-              <th className="px-5 py-3 microprint text-right font-medium">Ex.</th>
+              <th scope="col" className="px-5 py-3 microprint font-medium">Criterion</th>
+              <th scope="col" className="px-5 py-3 microprint font-medium">Status</th>
+              <th scope="col" className="px-5 py-3 microprint font-medium">Evidence</th>
+              <th scope="col" className="px-5 py-3 microprint text-right font-medium">Ex.</th>
             </tr>
           </thead>
           <tbody>
