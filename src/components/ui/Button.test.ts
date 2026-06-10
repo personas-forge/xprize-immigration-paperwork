@@ -15,8 +15,9 @@ function renderClassAttr(variant?: "primary" | "secondary" | "ghost" | "seal"): 
 
 const FOCUS_RING_CLASSES = [
   "focus-visible:ring-2",
-  "focus-visible:ring-accent",
+  "focus-visible:ring-accent-dark",
   "focus-visible:ring-offset-2",
+  "focus-visible:ring-offset-background",
 ];
 
 test("ghost variant renders the focus-visible ring classes", () => {
