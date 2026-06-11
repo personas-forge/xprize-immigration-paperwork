@@ -15,6 +15,20 @@ export function CriterionPrimerButton({ criterionName }: { criterionName: string
   const primer = CRITERIA_PRIMERS[criterionName];
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+
+  // Move focus into dialog on open; return it to trigger on close.
+  useEffect(() => {
+    if (open) {
+      wasOpen.current = true;
+      closeRef.current?.focus();
+    } else if (wasOpen.current) {
+      wasOpen.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [open]);
 
   // Close on Escape or outside click.
   useEffect(() => {
@@ -43,6 +57,7 @@ export function CriterionPrimerButton({ criterionName }: { criterionName: string
   return (
     <div ref={containerRef} className="relative inline-flex items-center">
       <button
+        ref={triggerRef}
         type="button"
         aria-label={`Learn about the ${criterionName} criterion`}
         aria-expanded={open}
@@ -64,6 +79,7 @@ export function CriterionPrimerButton({ criterionName }: { criterionName: string
       {open && (
         <div
           role="dialog"
+          aria-modal="true"
           aria-label={`${criterionName} criterion explained`}
           className={[
             "absolute left-0 top-full z-50 mt-2",
@@ -72,8 +88,9 @@ export function CriterionPrimerButton({ criterionName }: { criterionName: string
             "p-4 text-left",
           ].join(" ")}
         >
-          {/* Close affordance */}
+          {/* Close affordance — receives focus when dialog opens */}
           <button
+            ref={closeRef}
             type="button"
             aria-label="Close primer"
             onClick={() => setOpen(false)}

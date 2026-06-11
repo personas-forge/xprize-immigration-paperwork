@@ -20,7 +20,11 @@ export function CriteriaTable({
   const summary = summarizeCriteria(criteria ?? []);
 
   return (
-    <Card className="overflow-hidden">
+    <Card>
+      {/* Wrapper clips the header bg to the card's top corners without
+          applying overflow-hidden to the whole card, which would clip
+          the absolutely-positioned criterion primer popovers. */}
+      <div className="overflow-hidden rounded-t-card">
       <CardHeader className="bg-surface-muted/60">
         <div>
           <div className="microprint" style={{ color: "var(--accent-dark)" }}>
@@ -37,6 +41,7 @@ export function CriteriaTable({
           {summary.qualifying} strong · {summary.partial} partial
         </Badge>
       </CardHeader>
+      </div>
 
       {criteria === null ? (
         <div className="space-y-2 p-5">
