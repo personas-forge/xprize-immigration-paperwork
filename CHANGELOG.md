@@ -39,6 +39,11 @@ changed.
   4.1.3).** The save-failure error banner in `RfeStudio` was a plain `<div>`
   invisible to assistive technology. Adding `role="alert"` ensures screen
   readers announce the error immediately without requiring user focus.
+- **Nested `<a>` + `<button>` in `EmptyCasesCallout` corrected (a11y, #51,
+  issue #50).** The callout was rendering a `<Link>` wrapping a `<Button>`,
+  producing an interactive element inside an anchor — invalid HTML and a
+  screen-reader/keyboard trap. Replaced with a single `<Link>` styled as a
+  button so the DOM tree is valid.
 
 ## [0.6.1] - 2026-06-11
 
