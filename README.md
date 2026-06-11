@@ -31,6 +31,12 @@ file are real; AI, billing, and filing integrations are mocked.
   task panel, petition draft preview, all themable. Empty-state shows a
   **'Start your case'** callout that routes new users straight to the
   qualification flow.
+- **First-visit token economy explainer** — on first dashboard load, an inline
+  banner above the top bar shows the user's current token balance and the cost
+  of a full petition draft (~12 tokens). Dismissed state persists in
+  `localStorage` (key `atelier-token-banner-dismissed`) via
+  `useSyncExternalStore`; the banner does not mount in demo/bypass mode
+  (`balance === null`).
 - **Qualification flow + Next Steps panel** — paste a CV/bio to get an
   informational O-1A eligibility screening; after a passing result, a
   structured **Next Steps** card (Create account → Upload evidence → Attorney
