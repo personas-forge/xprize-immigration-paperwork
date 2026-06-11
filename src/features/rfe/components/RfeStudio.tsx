@@ -197,7 +197,7 @@ export function RfeStudio({
             <CitationNote />
             {saveFailed ? (
               <div
-                role="status"
+                role="alert"
                 className="rounded-control border border-seal/50 bg-seal-soft/40 px-4 py-3 font-sans text-[13px] leading-snug text-foreground-soft"
               >
                 <span className="font-mono text-[10px] uppercase tracking-document text-seal">
