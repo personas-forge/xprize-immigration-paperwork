@@ -26,10 +26,9 @@ export function CaseFileDashboard({
       <div className="mx-auto max-w-7xl space-y-8">
         <ChapterMark numeral="I" label="Petitioner of record" />
 
-        {/* The user's real, persisted cases (from the qualification flow). Only
-            rendered when there are any — the keyless demo shows just the mock
-            case file below. */}
-        {cases.length > 0 ? <YourCasesCard cases={cases} /> : null}
+        {/* The user's real, persisted cases (from the qualification flow). Shows
+            an empty-state CTA when none exist yet. */}
+        {cases.length > 0 ? <YourCasesCard cases={cases} /> : <EmptyCasesCallout />}
 
         {/* Masthead — the case-file header card */}
         <Card className="relative overflow-hidden">
@@ -100,6 +99,27 @@ export function CaseFileDashboard({
         </div>
       </div>
     </div>
+  );
+}
+
+// — Empty state — shown when the user has no cases yet ──────────────────────────
+function EmptyCasesCallout() {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="bg-surface-muted/60">
+        <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+          § — Your cases
+        </div>
+      </CardHeader>
+      <CardBody className="flex flex-col items-center gap-4 py-10 text-center">
+        <p className="font-sans text-[15px] text-muted-strong max-w-sm">
+          Your case file will appear here — begin by qualifying your profile
+        </p>
+        <Link href="/qualify">
+          <Button variant="primary">Qualify your profile</Button>
+        </Link>
+      </CardBody>
+    </Card>
   );
 }
 
