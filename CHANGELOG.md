@@ -408,6 +408,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.8.0]: #
 [0.7.0]: #
 [0.6.1]: #
 [0.6.0]: #

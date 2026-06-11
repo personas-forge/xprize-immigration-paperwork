@@ -38,6 +38,10 @@ file are real; AI, billing, and filing integrations are mocked.
 - **Drafting studio with actionable save-recovery** — when a draft save fails,
   a `role="alert"` banner offers 'Copy draft' (clipboard) and a no-charge
   retry-save, so paid work is never silently lost.
+- **Per-panel error boundaries on the case dashboard** — a throw inside any
+  single dashboard panel (CriteriaTable, TasksCard, PetitionDraftCard,
+  EvidenceVault) renders an inline "Could not load — retry" card rather than
+  crashing the whole dashboard. Each panel is independently recoverable.
 - **Parchment ↔ ink theme toggle** — a sun/moon button in the header swaps the
   whole site between a daylight parchment desk and an after-hours notary's
   office. Choice persists in `localStorage`; a pre-paint inline script prevents
@@ -154,7 +158,7 @@ src/
 │   └── dashboard/page.tsx
 ├── components/
 │   ├── brand/               # Guilloche, Seal, Stamp, ChapterMark, Wordmark, PageFrame
-│   ├── ui/                  # Badge, Button, Card, SectionHeader, StatCard
+│   ├── ui/                  # Badge, Button, Card, SectionHeader, StatCard, PanelErrorBoundary
 │   ├── Motion.tsx           # Rise / Stagger / HoverCard wrappers
 │   ├── PetitionStepper.tsx  # 5-stage rosette stepper with stamp-in animation
 │   ├── FaqEntry.tsx         # client-only <details> animator
