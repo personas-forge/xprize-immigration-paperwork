@@ -3,6 +3,7 @@
 import { Badge, Card, CardHeader, Skeleton } from "@/components/ui";
 import { QUALIFYING_THRESHOLD, statusTone, summarizeCriteria } from "../criteria";
 import { type Criterion } from "../types";
+import { CriterionPrimerButton } from "./CriterionPrimerButton";
 
 /**
  * The O-1A criteria table. Criteria are no longer fetched here — they arrive as
@@ -60,13 +61,14 @@ export function CriteriaTable({
                 className="border-t border-dotted border-rule transition-[background-color] duration-200 hover:bg-accent-soft/35"
               >
                 <td className="px-5 py-3.5">
-                  <div className="flex items-baseline gap-3">
+                  <div className="flex items-center gap-3">
                     <span className="doc-number text-[10px] text-muted">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <span className="font-sans text-[14.5px] text-foreground">
                       {c.name}
                     </span>
+                    <CriterionPrimerButton criterionName={c.name} />
                   </div>
                 </td>
                 <td className="px-5 py-3.5">
