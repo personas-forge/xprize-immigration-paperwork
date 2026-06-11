@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Badge, Card, CardBody, CardHeader } from "@/components/ui";
+import { Badge, Card, CardBody, CardHeader, PanelErrorBoundary } from "@/components/ui";
 import { Stamp, ChapterMark, Seal } from "@/components/brand";
 import { DashboardTopBar } from "@/components/DashboardTopBar";
 import { ThemeScope } from "@/features/dashboard/ThemeScope";
@@ -189,11 +189,13 @@ export function CaseDetailView({
           </Card>
 
           {/* Evidence vault — categorized exhibits + coverage gaps. */}
-          <EvidenceVault
-            caseId={caseId}
-            classification={classification}
-            initialDocuments={documents}
-          />
+          <PanelErrorBoundary label="Evidence vault">
+            <EvidenceVault
+              caseId={caseId}
+              classification={classification}
+              initialDocuments={documents}
+            />
+          </PanelErrorBoundary>
 
           {/* Drafting Studio — wired to this case, so drafts persist (versioned). */}
           <DraftStudio

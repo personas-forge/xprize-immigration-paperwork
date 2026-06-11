@@ -4,3 +4,4 @@ export { StatCard, type StatTone } from "./StatCard";
 export { SectionHeader } from "./SectionHeader";
 export { Button } from "./Button";
 export { Skeleton } from "./Skeleton";
+export { PanelErrorBoundary, PanelFallback } from "./PanelErrorBoundary";
