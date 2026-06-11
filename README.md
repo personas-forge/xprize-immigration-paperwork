@@ -187,7 +187,12 @@ public/
 - The petition stepper marks the active stage with `aria-current="step"` and
   exposes per-stage jump buttons labelled `"Jump to stage N: {name}"`.
 - All decorative SVG (guilloché, perforations, stamps) is `aria-hidden`.
-- Animations gate on `useReducedMotion()` and respect `prefers-reduced-motion`.
+- Animations gate on `useReducedMotion()` and respect `prefers-reduced-motion`;
+  the dashboard top bar's backdrop-blur is likewise gated behind Tailwind's
+  `motion-safe:` variant.
+- Text/surface token pairs in both dashboard themes meet WCAG AA contrast,
+  enforced by an automated audit (`features/dashboard/themes.contrast.test.ts`)
+  that runs with `npm test`.
 - `<html lang="en">` with `suppressHydrationWarning` for the theme attribute.
 
 ## Environment variables
@@ -215,7 +220,11 @@ npm run lint         # ESLint flat config
 
 The first unit tests cover `features/case-file/criteria.ts`
 (`summarizeCriteria`, which aggregates O-1A status rows against a qualifying
-threshold of 3). Add new tests as `*.test.ts` alongside the module they cover.
+threshold of 3). A CI contrast audit
+(`features/dashboard/themes.contrast.test.ts`) checks every text token against
+every opaque surface token in both dashboard themes for WCAG AA, so contrast
+regressions fail `npm test`. Add new tests as `*.test.ts` alongside the module
+they cover.
 
 ## Building & deployment
 
