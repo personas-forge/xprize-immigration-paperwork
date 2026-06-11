@@ -8,6 +8,38 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-12
+
+Feature release. Pre-1.0 **minor** bump — four backward-compatible increments
+merged since v0.6.1 (#45–#48). Highlights: a user-facing empty-cases CTA on
+the dashboard, a post-qualification Next Steps panel, actionable saveFailed
+recovery in the drafting studio, and an ARIA live-region fix for the RFE
+banner. No breaking changes; no API-contract or persisted-field semantics
+changed.
+
+### Added
+
+- **Empty-cases CTA callout on the case-file dashboard (#46).** When a user
+  has no cases, the dashboard now renders an `EmptyCasesCallout` card with a
+  "Start your case" link that routes to `/qualify`. Previously the 'Your cases'
+  card was unconditionally hidden at `cases.length === 0`, leaving new users
+  with a blank screen and no path forward.
+- **Next Steps panel after a successful qualification result (#47).** After a
+  passing qualification assessment, users now see a structured Next Steps
+  panel guiding them toward filing, rather than landing on a dead-end result
+  screen.
+- **Actionable saveFailed recovery in the drafting studio (#45).** When a
+  draft save fails, users are now offered a "Copy draft" action and a
+  no-charge retry so no work is silently lost. The retry does not re-charge
+  token balance on transient failures.
+
+### Fixed
+
+- **`role="alert"` on the RFE Studio saveFailed banner (a11y, #48, WCAG
+  4.1.3).** The save-failure error banner in `RfeStudio` was a plain `<div>`
+  invisible to assistive technology. Adding `role="alert"` ensures screen
+  readers announce the error immediately without requiring user focus.
+
 ## [0.6.1] - 2026-06-11
 
 Accessibility patch release. Pre-1.0 **patch** bump — two backward-compatible
@@ -345,6 +377,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.7.0]: #
 [0.6.1]: #
 [0.6.0]: #
 [0.5.2]: #
