@@ -28,7 +28,16 @@ file are real; AI, billing, and filing integrations are mocked.
   certificate vignette, three-promise strip, four-step process band, schedule
   of fees, closing seal.
 - **Working case file dashboard** — O-1A criteria audit table, evidence list,
-  task panel, petition draft preview, all themable.
+  task panel, petition draft preview, all themable. Empty-state shows a
+  **'Start your case'** callout that routes new users straight to the
+  qualification flow.
+- **Qualification flow + Next Steps panel** — paste a CV/bio to get an
+  informational O-1A eligibility screening; after a passing result, a
+  structured **Next Steps** card (Create account → Upload evidence → Attorney
+  reviews) with a 'Get started' CTA guides users toward filing.
+- **Drafting studio with actionable save-recovery** — when a draft save fails,
+  a `role="alert"` banner offers 'Copy draft' (clipboard) and a no-charge
+  retry-save, so paid work is never silently lost.
 - **Parchment ↔ ink theme toggle** — a sun/moon button in the header swaps the
   whole site between a daylight parchment desk and an after-hours notary's
   office. Choice persists in `localStorage`; a pre-paint inline script prevents
@@ -128,6 +137,7 @@ After upgrading from 0.1.x: `rm -rf node_modules && npm install` — see
 | `/pricing` | Schedule of fees — three petition tiers as perforated document bands |
 | `/faq` | Eight petition-styled FAQ entries (form compatibility, RFE, refunds, security) |
 | `/landing-claude` | Alternate masthead — narrow editorial column, printed-pamphlet treatment |
+| `/qualify` | O-1A eligibility screening — paste a CV/bio, get criteria assessment + Next Steps panel |
 | `/dashboard` | The case file — O-1A criteria audit, tasks, petition draft preview |
 
 ## Project structure
@@ -193,6 +203,8 @@ public/
 - Text/surface token pairs in both dashboard themes meet WCAG AA contrast,
   enforced by an automated audit (`features/dashboard/themes.contrast.test.ts`)
   that runs with `npm test`.
+- Data-loss warnings (e.g. draft save failure) use `role="alert"` so screen
+  readers announce them immediately without requiring user focus (WCAG 4.1.3).
 - `<html lang="en">` with `suppressHydrationWarning` for the theme attribute.
 
 ## Environment variables
