@@ -8,6 +8,39 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-06-12
+
+Feature release. Pre-1.0 **minor** bump — two onboarding UX increments
+merged since v0.8.0: O-1A criteria primer tooltips for first-time dashboard
+visitors (#56) and a one-time dismissible token economy explainer banner
+before the first paywall encounter (#57). No API-contract or persisted-field
+semantics changed.
+
+### Added
+
+- **O-1A criteria primer tooltips on the case-file dashboard (#56).**
+  Each of the eight O-1A criterion labels in `CriteriaTable` now shows a
+  `?` icon button that opens an inline popover with a one-sentence plain-English
+  definition and a concrete evidence example. `criteria-primers.ts` holds the
+  static primer data; `CriterionPrimerButton.tsx` manages the toggle popover
+  (Escape / outside-click to close). The popover is fully accessible:
+  `role="dialog"`, `aria-modal="true"`, focus moves into the close button on
+  open and returns to the trigger on close. `overflow-hidden` was scoped to the
+  `CardHeader` so absolutely-positioned popovers are not clipped.
+- **One-time dismissible token economy explainer banner (#57, ADR-0006).**
+  `TokenExplainerBanner` mounts in `DashboardView` (inside `ThemeScope`, before
+  `DashboardTopBar`) and explains the token credit model before users first hit
+  a paywall. Gated on `balance !== null` (demo/bypass mode → no mount). Dismiss
+  state persists to `localStorage` via `useSyncExternalStore` through
+  `bannerDismiss.ts`, injected for testability.
+
+### Tests
+
+- 5 data-integrity tests for `criteria-primers.ts` (all primer fields present and
+  non-empty for every O-1A criterion, #56).
+- 7 unit tests for `bannerDismiss.ts` (first-visit display, dismiss behaviour,
+  localStorage persistence, #57).
+
 ## [0.8.0] - 2026-06-12
 
 Feature release. Pre-1.0 **minor** bump — per-panel React error boundaries
