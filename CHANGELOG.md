@@ -8,6 +8,32 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-12
+
+Feature release. Pre-1.0 **minor** bump — per-panel React error boundaries
+for the case-file dashboard (#55). A throw inside any single dashboard panel
+(CriteriaTable, TasksCard, PetitionDraftCard, EvidenceVault) now renders an
+inline "Could not load — retry" card instead of crashing the whole dashboard.
+No API-contract or persisted-field semantics changed.
+
+### Added
+
+- **Per-panel `PanelErrorBoundary` component (#55).** A reusable class-based
+  React error boundary (`getDerivedStateFromError` + `componentDidCatch`) with
+  an inline `PanelFallback` ("Could not load {panel} — retry") exported from
+  `src/components/ui`. Each dashboard panel gets its own boundary instance, so
+  a render error in one panel does not unmount its siblings or trigger the
+  route-level error page.
+- **Error boundaries applied to all four dashboard panels (#55).**
+  `CriteriaTable`, `TasksCard`, and `PetitionDraftCard` in
+  `CaseFileDashboard.tsx`, and `EvidenceVault` in `CaseDetailView.tsx` are
+  each individually wrapped, completing the team goal "Wrap dashboard feature
+  panels in per-panel React error boundaries."
+- **Structural unit tests for `PanelErrorBoundary` (7 tests, #55).** Tests
+  verify `getDerivedStateFromError`, `componentDidCatch`, class-component
+  shape, `hasError` guard, exported symbols, and the "Could not load" / "Retry"
+  user-facing copy in `PanelFallback`.
+
 ## [0.7.0] - 2026-06-12
 
 Feature release. Pre-1.0 **minor** bump — four backward-compatible increments
