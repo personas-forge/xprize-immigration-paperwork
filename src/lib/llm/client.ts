@@ -22,6 +22,7 @@ import "server-only";
 import { spawn } from "node:child_process";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { LightTrack } from "@/lib/lighttrack";
+import { withGuards, LLM_OUTPUT_GUARD } from "./guards";
 import {
   claudeBin,
   claudeModel,
@@ -57,8 +58,11 @@ export function getLlm(opts: { requiresImages?: boolean } = {}): Llm | null {
   if (opts.requiresImages && engine === "claude") {
     engine = process.env.GEMINI_API_KEY ? "gemini" : null;
   }
-  if (engine === "gemini") return geminiClient();
-  if (engine === "claude") return claudeClient();
+  // Output guards are composed transparently via the decorator (ADR-0008) — each
+  // engine stays guard-free; `withGuards` applies the shared rule once, sharing
+  // the module `lt` so the score's `source` attribution stays per-engine.
+  if (engine === "gemini") return withGuards(geminiClient(), LLM_OUTPUT_GUARD, lt);
+  if (engine === "claude") return withGuards(claudeClient(), LLM_OUTPUT_GUARD, lt);
   return null;
 }
 
