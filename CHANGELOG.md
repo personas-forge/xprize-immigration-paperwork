@@ -8,6 +8,17 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Single-section regeneration failures in the drafting studio are no longer
+  silent (#63).** When regenerating one petition section fails (API error or
+  network failure), `DraftStudio` now shows an inline `role="alert"` notice on
+  the affected section — "Regeneration failed — your previous text was kept" —
+  instead of giving no feedback. The existing section text is always preserved,
+  and the alert clears when the user retries regeneration or edits the section
+  inline. Tokens behavior is unchanged. No API-contract or persisted-field
+  semantics changed.
+
 ## [0.9.0] - 2026-06-12
 
 Feature release. Pre-1.0 **minor** bump — two onboarding UX increments
