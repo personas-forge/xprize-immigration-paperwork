@@ -19,6 +19,8 @@ type Status = "idle" | "loading" | "done" | "error" | "paywall";
 
 export function FieldGuidancePanel() {
   const [forms, setForms] = useState<readonly UscisForm[] | null>(null);
+  const [formsError, setFormsError] = useState(false);
+  const [formsRetry, setFormsRetry] = useState(0);
   const [formId, setFormId] = useState("");
   const [fieldLabel, setFieldLabel] = useState("");
   const [situation, setSituation] = useState("");
@@ -33,19 +35,25 @@ export function FieldGuidancePanel() {
   // Load the form catalog through the data layer (mock today, API later).
   useEffect(() => {
     let active = true;
-    getForms().then((list) => {
-      if (!active) return;
-      setForms(list);
-      const first = list[0];
-      if (first) {
-        setFormId(first.number);
-        setFieldLabel(first.commonFields[0] ?? "");
-      }
-    });
+    setFormsError(false);
+    getForms()
+      .then((list) => {
+        if (!active) return;
+        setForms(list);
+        const first = list[0];
+        if (first) {
+          setFormId(first.number);
+          setFieldLabel(first.commonFields[0] ?? "");
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setFormsError(true);
+      });
     return () => {
       active = false;
     };
-  }, []);
+  }, [formsRetry]);
 
   const activeForm = forms?.find((f) => f.number === formId) ?? null;
 
@@ -100,7 +108,24 @@ export function FieldGuidancePanel() {
         <Badge tone="accent">AI-assisted</Badge>
       </CardHeader>
       <CardBody className="space-y-5">
-        {forms === null ? (
+        {formsError ? (
+          <div
+            role="alert"
+            className="flex flex-col gap-3 rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[13px] text-danger sm:flex-row sm:items-center sm:justify-between"
+          >
+            <span>Could not load form list. Check your connection and try again.</span>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setForms(null);
+                setFormsRetry((n) => n + 1);
+              }}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : forms === null ? (
           <GuidanceFormSkeleton />
         ) : (
           <form onSubmit={onSubmit} className="space-y-4">
