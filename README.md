@@ -31,6 +31,13 @@ file are real; AI, billing, and filing integrations are mocked.
   task panel, petition draft preview, all themable. Empty-state shows a
   **'Start your case'** callout that routes new users straight to the
   qualification flow.
+- **O-1A criteria primer tooltips** — each of the eight criterion labels in
+  `CriteriaTable` shows a `?` icon button that opens an accessible inline
+  popover (`role="dialog"`, `aria-modal`, focus-managed) with a plain-English
+  definition and a concrete evidence example. Static data lives in
+  `criteria-primers.ts`; `CriterionPrimerButton` manages open/close (Escape /
+  outside-click). Helpful for first-time users who don't yet know what
+  "Critical role" or "Judging" means.
 - **First-visit token economy explainer** — on first dashboard load, an inline
   banner above the top bar shows the user's current token balance and the cost
   of a full petition draft (~12 tokens). Dismissed state persists in
