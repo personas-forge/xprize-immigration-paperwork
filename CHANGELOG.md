@@ -8,8 +8,22 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-06-12
+
+Bug-fix release. Pre-1.0 **patch** bump — two error-handling fixes that
+surface previously silent fetch/regeneration failures with retryable inline
+alerts (#63, #65). No new feature surface; no API-contract or persisted-field
+semantics changed.
+
 ### Fixed
 
+- **The field-guidance form list no longer hangs on a fetch failure (#65).**
+  The `useEffect` in `FieldGuidancePanel` that loads the USCIS form/field
+  list now has a `.catch()`: on API or network failure users see a
+  `role="alert"` error notice with a **Retry** button instead of an endless
+  loading skeleton. Error state is set only inside the async `.catch()`, and
+  the Retry handler owns the reset (clearing the error and re-running the
+  fetch via an attempt counter).
 - **Single-section regeneration failures in the drafting studio are no longer
   silent (#63).** When regenerating one petition section fails (API error or
   network failure), `DraftStudio` now shows an inline `role="alert"` notice on
@@ -452,6 +466,8 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.9.1]: #
+[0.9.0]: #
 [0.8.0]: #
 [0.7.0]: #
 [0.6.1]: #
