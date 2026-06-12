@@ -27,6 +27,10 @@ file are real; AI, billing, and filing integrations are mocked.
 - **Engraved-document marketing site** — hero with a watermarked I-129
   certificate vignette, three-promise strip, four-step process band, schedule
   of fees, closing seal.
+- **O-1A qualification screener (`/qualify`)** — criteria form with AI scoring;
+  after a positive result a "§ What happens next" panel lists the three ordered
+  steps (Create account → Upload evidence → Attorney reviews) and a "Get
+  started →" CTA that links to `/login`.
 - **Working case file dashboard** — O-1A criteria audit table, evidence list,
   task panel, petition draft preview, all themable. Empty-state shows a
   **'Start your case'** callout that routes new users straight to the
@@ -162,8 +166,8 @@ After upgrading from 0.1.x: `rm -rf node_modules && npm install` — see
 | `/pricing` | Schedule of fees — three petition tiers as perforated document bands |
 | `/faq` | Eight petition-styled FAQ entries (form compatibility, RFE, refunds, security) |
 | `/landing-claude` | Alternate masthead — narrow editorial column, printed-pamphlet treatment |
-| `/qualify` | O-1A eligibility screening — paste a CV/bio, get criteria assessment + Next Steps panel |
-| `/dashboard` | The case file — O-1A criteria audit, tasks, petition draft preview |
+| `/qualify` | O-1A qualification screener — criteria form, AI scoring, and the "What happens next" panel with a "Get started →" CTA once a positive result is returned. |
+| `/dashboard` | The case file — O-1A criteria audit, tasks, petition draft preview. Empty-state CTA links to `/qualify` when no cases exist. |
 
 ## Data access — the Adapter layer
 

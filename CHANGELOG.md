@@ -8,6 +8,35 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+### Added
+
+- **'What happens next' panel after successful O-1A screening (#47).** After a
+  positive qualification result, a contextual "§ What happens next" card renders
+  below the criteria report, listing the three ordered steps (Create account →
+  Upload evidence → Attorney reviews) with a "Get started →" CTA linking to
+  `/login`. Users who qualify now have a clear path forward from the screening
+  page.
+
+- **Dashboard empty-state 'Qualify your profile' CTA (#46).** When a user has
+  no saved cases the "Your cases" slot now shows an `EmptyCasesCallout` — a
+  prompt and a "Qualify your profile" button linking to `/qualify` — instead of
+  rendering nothing. New users are no longer left with a blank dashboard section.
+
+- **Actionable `saveFailed` recovery in DraftStudio — copy draft + no-charge
+  retry save (#45).** When `/api/draft` charges and generates but version
+  persistence fails, the failure banner is now a `role="alert"` recovery surface
+  offering two escapes: copy the generated draft to the clipboard, or retry
+  saving via the new `/api/draft/save` endpoint (owner-only, rate-limited, never
+  re-charges or re-generates). Users no longer lose paid AI work product when a
+  transient persistence error occurs.
+
+### Fixed
+
+- **`role=alert` on `RfeStudio` `saveFailed` banner (a11y, WCAG 4.1.3, #48).**
+  The data-loss warning in the RFE drafting studio now uses `role="alert"`
+  (assertive live region) instead of `role="status"` (polite), so screen-reader
+  users are immediately notified when their saved work is lost.
+
 ## [0.9.1] - 2026-06-12
 
 Bug-fix release. Pre-1.0 **patch** bump — two error-handling fixes that
