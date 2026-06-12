@@ -18,13 +18,10 @@ import {
 import { type ModelSource } from "@/lib/llm/label";
 import { chargeForOperation } from "@/lib/tokens/guard";
 import { getLlm } from "@/lib/llm/client";
-import { getUser } from "@/lib/auth/session";
-import {
-  getCaseForUser,
-  getCriteriaForCase,
-  getLatestDraft,
-  saveDraft,
-} from "@/lib/data/petitions";
+import { authorizeRoute } from "@/lib/auth/authorizeRoute";
+import { petitions } from "@/lib/data/adapters/petition";
+import { type CaseAccess } from "@/lib/data/adapters/access";
+import { toErrorResponse } from "@/lib/data/adapters/http";
 import {
   RATE_LIMITS,
   checkRateLimit,
@@ -53,6 +50,32 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<NextResponse> {
+  // Resolve user + case access up front (ADR-0006: authorizeRoute owns the
+  // fail-closed case-access decision). draft is OWNER-ONLY — requiresAttorney is
+  // OMITTED, so the configured-attorney cross-tenant fallback is NOT honored
+  // here (a draft is the owner's work product, not the attorney-of-record's to
+  // generate by id). authorizeRoute reads the body's caseId from a clone, so the
+  // original request is still parseable below; it MUST run before the route's
+  // own request.json() (a body stream is single-consumption). A supplied caseId
+  // the caller can't access never degrades to the inline payload —
+  // unauthenticated → 401, no access → 403. Case resolution now runs as part of
+  // authorizeRoute (one indexed read) ahead of the rate limit; the rate-limit
+  // invariant protects the charge + model call, which still come after, so this
+  // is the one documented behavior nuance (mirrors /api/rfe).
+  const auth = await authorizeRoute(request, { requiresCase: true });
+  if (auth.status === "unauthenticated") {
+    return NextResponse.json(
+      { error: "Sign in to draft from a saved case." },
+      { status: 401 },
+    );
+  }
+  if (auth.status === "forbidden") {
+    return NextResponse.json(
+      { error: "You don't have access to this case." },
+      { status: 403 },
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -62,10 +85,19 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const record = (body ?? {}) as Record<string, unknown>;
   const focus = parseFocus(record.focus);
-  const caseId = typeof record.caseId === "string" ? record.caseId : null;
 
-  // Resolve the user once — used both for access gating and the rate-limit key.
-  const user = await getUser();
+  // user (possibly null on the inline/demo path) keys the rate limit.
+  const user = auth.user;
+
+  // Owner-only access context for the PetitionAdapter (ADR-0010). draft never
+  // honors the configured-attorney cross-tenant fallback (requiresAttorney was
+  // OMITTED on authorizeRoute above), so `email` is deliberately null — the
+  // adapter's own resolveCase gate then resolves owner-only, matching the
+  // decision already made by authorizeRoute. The adapter is the single seam for
+  // the criteria read + draft persistence below; it owns null-handling, Firestore
+  // error handling and access re-validation so this route no longer hand-wraps
+  // each Store call.
+  const access: CaseAccess = { userId: user?.id ?? null, email: null };
 
   // Rate limit BEFORE charging or any model work. Keyed by user when known, else
   // by IP, so a flood can't drain a balance or run up model cost unchecked.
@@ -79,36 +111,29 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   }
 
-  // Resolve the draft request (validate BEFORE charging). A supplied caseId must
-  // resolve to a case the caller OWNS — otherwise deny (401/403). We never fall
-  // through to the inline payload for an unauthorized caseId.
+  // Build the draft request (validate BEFORE charging): from the authorized case
+  // (DB path) or the inline payload (demo path, caseId-less only).
   let req: DraftRequest;
   let resolvedCaseId: string | null = null;
-  if (caseId) {
-    if (!user) {
-      return NextResponse.json(
-        { error: "Sign in to draft from a saved case." },
-        { status: 401 },
-      );
+  if (auth.status === "ok") {
+    const criteriaResult = await petitions.getCriteria(access, auth.case.id);
+    if (!criteriaResult.ok) {
+      // A store fault / lost backend on the criteria read is now a typed
+      // adapter error mapped to its own status (503/500/…) instead of an
+      // uncaught throw that 500s — "no access" / "not found" / "store down" no
+      // longer collapse into one shape.
+      return toErrorResponse(criteriaResult.error);
     }
-    const stored = await getCaseForUser(user.id, caseId);
-    if (!stored) {
-      return NextResponse.json(
-        { error: "You don't have access to this case." },
-        { status: 403 },
-      );
-    }
-    const criteria = await getCriteriaForCase(caseId);
     const parsed = parseDraftRequest({
-      petitioner: stored.petitioner,
-      classification: stored.classification,
-      criteria,
+      petitioner: auth.case.petitioner,
+      classification: auth.case.classification,
+      criteria: criteriaResult.value,
     });
     if (!parsed.ok) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
     req = parsed.value;
-    resolvedCaseId = stored.id;
+    resolvedCaseId = auth.case.id;
   } else {
     const parsed = parseDraftRequest(body);
     if (!parsed.ok) {
@@ -181,17 +206,33 @@ export async function POST(request: Request): Promise<NextResponse> {
     let version: number | null = null;
     let saveFailed = false;
     if (resolvedCaseId) {
-      try {
-        const latest = await getLatestDraft(resolvedCaseId);
-        if (latest) {
-          const merged = latest.sections.map((s) =>
-            s.heading === focus ? { heading: focus, body: section.body } : s,
-          );
-          version = await saveDraft(resolvedCaseId, merged, source);
-        }
-      } catch (err) {
+      const latestResult = await petitions.getLatestDraft(access, resolvedCaseId);
+      if (!latestResult.ok) {
+        // User already paid → surface the failure, never swallow it.
         saveFailed = true;
-        console.error("[/api/draft] failed to persist regenerated section", err);
+        console.error(
+          "[/api/draft] failed to load latest draft for merge",
+          latestResult.error,
+        );
+      } else if (latestResult.value) {
+        const merged = latestResult.value.sections.map((s) =>
+          s.heading === focus ? { heading: focus, body: section.body } : s,
+        );
+        const saved = await petitions.saveDraft(
+          access,
+          resolvedCaseId,
+          merged,
+          source,
+        );
+        if (!saved.ok) {
+          saveFailed = true;
+          console.error(
+            "[/api/draft] failed to persist regenerated section",
+            saved.error,
+          );
+        } else {
+          version = saved.value;
+        }
       }
     }
 
@@ -229,11 +270,17 @@ export async function POST(request: Request): Promise<NextResponse> {
   let version: number | null = null;
   let saveFailed = false;
   if (resolvedCaseId) {
-    try {
-      version = await saveDraft(resolvedCaseId, result.sections, result.source);
-    } catch (err) {
+    const saved = await petitions.saveDraft(
+      access,
+      resolvedCaseId,
+      result.sections,
+      result.source,
+    );
+    if (!saved.ok) {
       saveFailed = true;
-      console.error("[/api/draft] failed to persist draft version", err);
+      console.error("[/api/draft] failed to persist draft version", saved.error);
+    } else {
+      version = saved.value;
     }
   }
 

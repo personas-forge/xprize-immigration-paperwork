@@ -2,38 +2,29 @@
 // "Tokens" is the product term; internally these are app CREDITS, not LLM
 // tokens. EVERY tunable number lives here — change pricing/grants in one place.
 // 1 token ≈ 1.0¢ at the baseline bundle.
+//
+// Per-operation cost/tier config now lives in the OperationRegistry
+// (`registry.ts`, the single source of truth); the exports below DERIVE from it
+// and keep the same public surface (OP_COST, OPERATIONS, OpTier, costOf) so
+// guard.ts, the routes, and the existing tests stay green unchanged.
+
+import { OPERATION_REGISTRY, TIER_COST } from "./registry";
+import type { OpTier } from "./registry";
+
+export type { OpTier } from "./registry";
+export { costOf } from "./registry";
 
 export const FREE_SIGNUP_GRANT = 150; // granted once, at first onboarding
 
-// Per-operation cost, weighted to reflect real compute cost.
-export const OP_COST = {
-  light: 1, // short output: categorize, review reply, form-field guidance
-  medium: 3, // structured/medium: O-1A qualification screening, match score
-  heavy: 5, // long generation: cover letter, RFE response section
-  xl: 12, // 1M-context full petition-letter drafting — the premium op
-} as const;
-export type OpTier = keyof typeof OP_COST;
+// Per-operation cost, weighted to reflect real compute cost. Sourced from the
+// registry's TIER_COST so the weights live in exactly one place.
+export const OP_COST = TIER_COST;
 
-// Map THIS app's operations -> tier. Adapt per app (key = the `operation`
-// string passed to chargeForOperation()).
-export const OPERATIONS: Record<string, OpTier> = {
-  // USCIS form-field guidance — a short informational answer (1 token).
-  guidance: "light",
-  // Evidence categorization — classify a document into a criterion (1 token).
-  categorize: "light",
-  // O-1A qualification screening — structured 8-criterion assessment (3 tokens).
-  qualify: "medium",
-  // Full petition-letter draft — long-context generation (12 tokens).
-  draft: "xl",
-  // Regenerate a single petition-letter section (5 tokens).
-  draft_section: "heavy",
-  // Draft a response to a USCIS Request for Evidence (5 tokens).
-  rfe: "heavy",
-};
-
-export function costOf(operation: string): number {
-  return OP_COST[OPERATIONS[operation] ?? "light"];
-}
+// Map THIS app's operations -> tier (key = the `operation` string passed to
+// chargeForOperation()). Derived from the OperationRegistry.
+export const OPERATIONS: Record<string, OpTier> = Object.fromEntries(
+  Object.entries(OPERATION_REGISTRY).map(([op, def]) => [op, def.tier]),
+);
 
 /**
  * True when the token economy is NOT enforced and AI routes should run as a
@@ -50,6 +41,10 @@ export function isMeteringBypassed(
 
 // Purchasable bundles — discount grows with size. `polarProductId` is filled
 // from env after you create the products in the Polar dashboard.
+// `recurring` marks a Polar SUBSCRIPTION product (monthly token allowance):
+// same checkout route and webhook path as one-time bundles — Polar emits an
+// order per billing cycle, and each cycle order re-credits `tokens` (the
+// ledger dedupes by order id, and every cycle has a fresh order id).
 export type Bundle = {
   key: string;
   label: string;
@@ -58,6 +53,7 @@ export type Bundle = {
   centsPerToken: number;
   discountLabel?: string;
   polarProductId?: string;
+  recurring?: boolean;
 };
 
 export const BUNDLES: Bundle[] = [
@@ -65,6 +61,8 @@ export const BUNDLES: Bundle[] = [
   { key: "builder", label: "Builder", tokens: 2000, priceLabel: "$15", centsPerToken: 0.75, discountLabel: "25% off", polarProductId: process.env.POLAR_PRODUCT_BUILDER },
   { key: "pro", label: "Pro", tokens: 8000, priceLabel: "$48", centsPerToken: 0.6, discountLabel: "40% off", polarProductId: process.env.POLAR_PRODUCT_PRO },
   { key: "scale", label: "Scale", tokens: 30000, priceLabel: "$150", centsPerToken: 0.5, discountLabel: "50% off", polarProductId: process.env.POLAR_PRODUCT_SCALE },
+  // Monthly subscription — ~builder rate as a convenience plan, renews itself.
+  { key: "monthly", label: "Monthly", tokens: 2500, priceLabel: "$19/mo", centsPerToken: 0.76, recurring: true, polarProductId: process.env.POLAR_PRODUCT_MONTHLY },
 ];
 
 export function bundleByKey(key: string): Bundle | undefined {

@@ -12,13 +12,18 @@ type DashboardTopBarProps = {
 // Document-style app chrome: an engraved seal lockup on the left, the case
 // reference set in monospace on the right, perforated baseline rule under
 // the bar — every dashboard page sits on this masthead.
+//
+// The translucent backdrop-blur is gated behind Tailwind's `motion-safe:`
+// variant (-> @media (prefers-reduced-motion: no-preference)) so users who
+// request reduced motion get a fully opaque header (bg-surface/95) with no
+// backdrop-filter, avoiding the blur-induced motion/transparency effect.
 export function DashboardTopBar({
   product: _product,
   context,
   actions,
 }: DashboardTopBarProps) {
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-border bg-surface/95 motion-safe:backdrop-blur">
       <div className="flex items-center justify-between gap-6 px-8 py-4">
         <div className="flex items-center gap-3">
           <Image

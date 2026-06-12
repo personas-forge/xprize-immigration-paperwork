@@ -25,27 +25,44 @@ export function FieldGuidancePanel() {
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<GuidanceResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [formsError, setFormsError] = useState(false);
+  // Bumping this re-runs the catalog effect; the Retry handler owns the
+  // formsError reset so no setState ever runs synchronously in the effect body
+  // (react-hooks/set-state-in-effect).
+  const [formsAttempt, setFormsAttempt] = useState(0);
 
   const fieldSelectId = useId();
   const formSelectId = useId();
   const situationId = useId();
 
   // Load the form catalog through the data layer (mock today, API later).
+  // A rejected fetch flips formsError so the panel shows a retryable alert
+  // instead of an endless skeleton.
   useEffect(() => {
     let active = true;
-    getForms().then((list) => {
-      if (!active) return;
-      setForms(list);
-      const first = list[0];
-      if (first) {
-        setFormId(first.number);
-        setFieldLabel(first.commonFields[0] ?? "");
-      }
-    });
+    getForms()
+      .then((list) => {
+        if (!active) return;
+        setForms(list);
+        const first = list[0];
+        if (first) {
+          setFormId(first.number);
+          setFieldLabel(first.commonFields[0] ?? "");
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setFormsError(true);
+      });
     return () => {
       active = false;
     };
-  }, []);
+  }, [formsAttempt]);
+
+  function onRetryForms() {
+    setFormsError(false);
+    setFormsAttempt((n) => n + 1);
+  }
 
   const activeForm = forms?.find((f) => f.number === formId) ?? null;
 
@@ -100,7 +117,17 @@ export function FieldGuidancePanel() {
         <Badge tone="accent">AI-assisted</Badge>
       </CardHeader>
       <CardBody className="space-y-5">
-        {forms === null ? (
+        {formsError ? (
+          <div
+            role="alert"
+            className="flex flex-col gap-3 rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[13px] text-danger sm:flex-row sm:items-center sm:justify-between"
+          >
+            <span>Could not load the USCIS form list — please try again.</span>
+            <Button type="button" variant="secondary" onClick={onRetryForms}>
+              Retry
+            </Button>
+          </div>
+        ) : forms === null ? (
           <GuidanceFormSkeleton />
         ) : (
           <form onSubmit={onSubmit} className="space-y-4">

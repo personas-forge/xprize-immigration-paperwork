@@ -8,6 +8,337 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-06-12
+
+Bug-fix release. Pre-1.0 **patch** bump — two error-handling fixes that
+surface previously silent fetch/regeneration failures with retryable inline
+alerts (#63, #65). No new feature surface; no API-contract or persisted-field
+semantics changed.
+
+### Fixed
+
+- **The field-guidance form list no longer hangs on a fetch failure (#65).**
+  The `useEffect` in `FieldGuidancePanel` that loads the USCIS form/field
+  list now has a `.catch()`: on API or network failure users see a
+  `role="alert"` error notice with a **Retry** button instead of an endless
+  loading skeleton. Error state is set only inside the async `.catch()`, and
+  the Retry handler owns the reset (clearing the error and re-running the
+  fetch via an attempt counter).
+- **Single-section regeneration failures in the drafting studio are no longer
+  silent (#63).** When regenerating one petition section fails (API error or
+  network failure), `DraftStudio` now shows an inline `role="alert"` notice on
+  the affected section — "Regeneration failed — your previous text was kept" —
+  instead of giving no feedback. The existing section text is always preserved,
+  and the alert clears when the user retries regeneration or edits the section
+  inline. Tokens behavior is unchanged. No API-contract or persisted-field
+  semantics changed.
+
+## [0.9.0] - 2026-06-12
+
+Feature release. Pre-1.0 **minor** bump — two onboarding UX increments
+merged since v0.8.0: O-1A criteria primer tooltips for first-time dashboard
+visitors (#56) and a one-time dismissible token economy explainer banner
+before the first paywall encounter (#57). No API-contract or persisted-field
+semantics changed.
+
+### Added
+
+- **O-1A criteria primer tooltips on the case-file dashboard (#56).**
+  Each of the eight O-1A criterion labels in `CriteriaTable` now shows a
+  `?` icon button that opens an inline popover with a one-sentence plain-English
+  definition and a concrete evidence example. `criteria-primers.ts` holds the
+  static primer data; `CriterionPrimerButton.tsx` manages the toggle popover
+  (Escape / outside-click to close). The popover is fully accessible:
+  `role="dialog"`, `aria-modal="true"`, focus moves into the close button on
+  open and returns to the trigger on close. `overflow-hidden` was scoped to the
+  `CardHeader` so absolutely-positioned popovers are not clipped.
+- **One-time dismissible token economy explainer banner (#57, ADR-0006).**
+  `TokenExplainerBanner` mounts in `DashboardView` (inside `ThemeScope`, before
+  `DashboardTopBar`) and explains the token credit model before users first hit
+  a paywall. Gated on `balance !== null` (demo/bypass mode → no mount). Dismiss
+  state persists to `localStorage` via `useSyncExternalStore` through
+  `bannerDismiss.ts`, injected for testability.
+
+### Tests
+
+- 5 data-integrity tests for `criteria-primers.ts` (all primer fields present and
+  non-empty for every O-1A criterion, #56).
+- 7 unit tests for `bannerDismiss.ts` (first-visit display, dismiss behaviour,
+  localStorage persistence, #57).
+
+## [0.8.0] - 2026-06-12
+
+Feature release. Pre-1.0 **minor** bump — per-panel React error boundaries
+for the case-file dashboard (#55). A throw inside any single dashboard panel
+(CriteriaTable, TasksCard, PetitionDraftCard, EvidenceVault) now renders an
+inline "Could not load — retry" card instead of crashing the whole dashboard.
+No API-contract or persisted-field semantics changed.
+
+### Added
+
+- **Per-panel `PanelErrorBoundary` component (#55).** A reusable class-based
+  React error boundary (`getDerivedStateFromError` + `componentDidCatch`) with
+  an inline `PanelFallback` ("Could not load {panel} — retry") exported from
+  `src/components/ui`. Each dashboard panel gets its own boundary instance, so
+  a render error in one panel does not unmount its siblings or trigger the
+  route-level error page.
+- **Error boundaries applied to all four dashboard panels (#55).**
+  `CriteriaTable`, `TasksCard`, and `PetitionDraftCard` in
+  `CaseFileDashboard.tsx`, and `EvidenceVault` in `CaseDetailView.tsx` are
+  each individually wrapped, completing the team goal "Wrap dashboard feature
+  panels in per-panel React error boundaries."
+- **Structural unit tests for `PanelErrorBoundary` (7 tests, #55).** Tests
+  verify `getDerivedStateFromError`, `componentDidCatch`, class-component
+  shape, `hasError` guard, exported symbols, and the "Could not load" / "Retry"
+  user-facing copy in `PanelFallback`.
+
+## [0.7.0] - 2026-06-12
+
+Feature release. Pre-1.0 **minor** bump — four backward-compatible increments
+merged since v0.6.1 (#45–#48). Highlights: a user-facing empty-cases CTA on
+the dashboard, a post-qualification Next Steps panel, actionable saveFailed
+recovery in the drafting studio, and an ARIA live-region fix for the RFE
+banner. No breaking changes; no API-contract or persisted-field semantics
+changed.
+
+### Added
+
+- **Empty-cases CTA callout on the case-file dashboard (#46).** When a user
+  has no cases, the dashboard now renders an `EmptyCasesCallout` card with a
+  "Start your case" link that routes to `/qualify`. Previously the 'Your cases'
+  card was unconditionally hidden at `cases.length === 0`, leaving new users
+  with a blank screen and no path forward.
+- **Next Steps panel after a successful qualification result (#47).** After a
+  passing qualification assessment, users now see a structured Next Steps
+  panel guiding them toward filing, rather than landing on a dead-end result
+  screen.
+- **Actionable saveFailed recovery in the drafting studio (#45).** When a
+  draft save fails, users are now offered a "Copy draft" action and a
+  no-charge retry so no work is silently lost. The retry does not re-charge
+  token balance on transient failures.
+
+### Fixed
+
+- **`role="alert"` on the RFE Studio saveFailed banner (a11y, #48, WCAG
+  4.1.3).** The save-failure error banner in `RfeStudio` was a plain `<div>`
+  invisible to assistive technology. Adding `role="alert"` ensures screen
+  readers announce the error immediately without requiring user focus.
+- **Nested `<a>` + `<button>` in `EmptyCasesCallout` corrected (a11y, #51,
+  issue #50).** The callout was rendering a `<Link>` wrapping a `<Button>`,
+  producing an interactive element inside an anchor — invalid HTML and a
+  screen-reader/keyboard trap. Replaced with a single `<Link>` styled as a
+  button so the DOM tree is valid.
+
+## [0.6.1] - 2026-06-11
+
+Accessibility patch release. Pre-1.0 **patch** bump — two backward-compatible
+a11y fixes merged since v0.6.0 (#40, #42), plus a new automated CI contrast
+audit that prevents future WCAG AA regressions. No features, no breaking
+changes, no API-contract or persisted-field semantics changed.
+
+### Fixed
+
+- **Dark-theme muted-text contrast now meets WCAG AA (a11y, #42).** The ink
+  (midnight) theme's `--muted` token failed the AA 4.5:1 ratio for normal
+  text (`#95876a` measured 4.44:1 on `--surface` and 3.75:1 on
+  `--surface-elevated` — the ground under the dashboard doc-number labels).
+  Lifted to `#a89a7e`, which clears 4.78:1 on the tightest surface while
+  preserving the warm-khaki hue and the muted / muted-strong hierarchy.
+- **`DashboardTopBar` backdrop-blur gated behind `prefers-reduced-motion`
+  (a11y, #40).** Users who prefer reduced motion no longer get the
+  backdrop-blur effect on the dashboard top bar.
+
+### Added
+
+- **CI contrast audit (`themes.contrast.test.ts`, #42).** Every text token is
+  now audited against every opaque surface token in both themes on every
+  `npm test` run, so CI fails on any future WCAG AA contrast regression.
+  Includes a positive control proving the audit flags the old `#95876a`.
+
+## [0.6.0] - 2026-06-10
+
+Feature release. Pre-1.0 **minor** bump — two backward-compatible additions
+(the `Result<T>` envelope foundation and the ghost-Button focus-visible ring)
+ship alongside accessibility fixes, a landing-page image perf tweak, and an
+internal case-file data-fetch consolidation. Batches all seven increments
+merged to `main` since v0.5.2 (#32, #34–#39) into one published release. No
+breaking changes; no API-contract or persisted-field semantics changed.
+
+### Added
+
+- **`Result<T>` envelope + `wrapResult` factory (ADR-0011, 1/4 foundation,
+  #32).** Introduces a typed success/error result envelope and a `wrapResult`
+  helper as the foundation for the upcoming uniform error-handling rollout.
+  Additive only — no existing call sites changed.
+- **Focus-visible ring on the ghost `Button` variant (#35).** The ghost
+  variant now renders a keyboard focus-visible ring, closing an accessibility
+  gap for keyboard users without affecting mouse interaction or visual
+  styling at rest.
+
+### Fixed
+
+- **Skip-link target is now a real `<main>` landmark (a11y, #34).** The
+  skip-to-content link now points at a genuine `<main>` element, fixing
+  screen-reader landmark navigation.
+- **Recovered the stranded ghost focus-ring contrast fix (a11y, #36).**
+  Re-applies an a11y contrast correction for the ghost focus ring that had
+  been stranded on a branch.
+- **`scope="col"` on `CriteriaTable` column headers (a11y, #38).** Column
+  headers now declare `scope="col"` so assistive tech associates cells with
+  the correct header.
+
+### Changed
+
+- **Responsive `sizes` prop on the landing hero background image (perf,
+  #37).** Adds a responsive `sizes` hint so the browser fetches an
+  appropriately scaled hero image, reducing wasted bytes on small viewports.
+- **Consolidated `CriteriaTable`'s data fetch into `useCaseFileData`
+  (refactor, #39).** `CriteriaTable` no longer runs its own
+  `useEffect`/`useState` fetch — `getCriteria()` now rides the coordinated
+  `useCaseFileData` `Promise.all` fan-out (now 4 sources) and the component
+  consumes `criteria` as a prop. Behavior-preserving; removes a redundant
+  per-component network read and avoids the set-state-in-effect lint trap.
+  Completes the team goal *"Consolidate CriteriaTable data fetch into
+  useCaseFileData hook."*
+
+## [0.5.2] - 2026-06-08
+
+Maintenance / refactor release. Pre-1.0 **patch** bump — behavior-preserving
+internal refactors that **complete** the data-adapter migration (ADR-0010,
+tasks 6 and 7 of 7), with no change to API contracts, status codes, or
+observable behavior at the call sites (one intentional internal error-handling
+change in the evidence actions, noted below). This release finishes the team
+goal of insulating routes/actions from direct Store calls behind the adapter
+layer.
+
+### Changed
+
+- **Review server actions now route through `PetitionAdapter` (ADR-0010, 7/7,
+  #28).** The owner-or-attorney case gate in `src/features/review/actions.ts`
+  now flows through the shared `PetitionAdapter` rather than a hand-rolled
+  access check, finishing the adapter migration (7/7). Adds
+  `owner-only-gate.test.ts` pinning the `email: null` owner-only invariant.
+  Behavior at the call site is preserved.
+- **Evidence-vault server actions now route through `EvidenceAdapter` (ADR-0010,
+  6/7, #29).** `removeDocument` and `refileDocument` in
+  `src/features/evidence/actions.ts` no longer hand-roll their own
+  owner-or-attorney access check; every mutation now flows through the shared
+  `EvidenceAdapter → resolveCase` fail-closed seam. The cross-tenant
+  attorney-of-record check (the invariant behind the prior HIGH PII-egress
+  findings) is now enforced in one audited place instead of being copy-pasted
+  per route, so it can no longer be accidentally omitted at this call site. The
+  action consumes the `AdapterResult` union directly and treats every non-ok
+  outcome (`unconfigured` / `forbidden` / `not_found` / `store_error`) as a
+  no-op. **One intentional behavior change:** a Store throw previously
+  propagated out of the server action; the adapter now catches it and degrades
+  to a no-op (the page is not revalidated), matching ADR-0010's uniform
+  error-handling contract. Scope: 1 file, +34 / −24. Suite 271/271 green.
+
+## [0.5.1] - 2026-06-08
+
+Maintenance / refactor release. Pre-1.0 **patch** bump — a behavior-preserving
+internal refactor that continues the data-adapter migration (ADR-0010, task 4
+of 7) with no change to API contracts, status codes, or runtime behavior.
+
+### Changed
+
+- **`/api/draft` now routes through `PetitionAdapter` (ADR-0010, 4/7, #26).**
+  The draft route no longer hand-wraps the raw `petitions` data functions
+  (`getCriteriaForCase` / `getLatestDraft` / `saveDraft`) in ad-hoc try/catch.
+  Its criteria read and draft persistence now go through the `PetitionAdapter`
+  (`petitions.getCriteria` / `getLatestDraft` / `saveDraft`), which owns access
+  re-validation, null-handling, and Firestore error handling. Store faults are
+  surfaced as typed adapter errors mapped to proper statuses via
+  `toErrorResponse` (503 / 500 / 404 / 403) instead of collapsing into an
+  uncaught 500. Access context is owner-only — `draft` omits the
+  `requiresAttorney` cross-tenant fallback, consistent with the upstream
+  `authorizeRoute` decision. The null-latest-draft, paid-then-save-failed, and
+  regenerate-section merge paths preserve prior semantics. Adds three
+  `getCriteria` adapter tests (gate-first, owner-success, store_error); suite
+  232/232 green.
+
+## [0.5.0] - 2026-06-04
+
+Backward-compatible feature release. Pre-1.0 **minor** bump — introduces the
+data-adapter layer foundation (the first slice, tasks 1–3 of 7, of the team
+goal to insulate API routes from direct Store calls). Purely additive: ten new
+standalone modules under `src/lib/data/adapters/`, not yet wired into any route,
+so there is no change to existing route behavior, API contracts, or status
+codes. No migration or reinstall required.
+
+### Added
+
+- **Data-adapter layer foundation + Petition/Evidence adapters (ADR-0010, #24).**
+  A thin adapter layer that wraps raw Store calls with a consistent result
+  contract, so API routes stop calling the Store directly:
+  - **`result.ts` — `AdapterResult<T>`.** A discriminated `ok` / `err` union
+    with four typed error kinds (`unconfigured` → 503, `forbidden` → 403,
+    `not_found` → 404, `store_error` → 500), replacing the prior layer's lossy
+    bare-`null` returns.
+  - **`access.ts` — `resolveCase()`.** A fail-closed, dependency-injected
+    owner-or-attorney access gate that consolidates the previously copy-pasted
+    cross-tenant check; denies without revealing case existence and never leaks
+    its `cause` to the client.
+  - **`http.ts`.** A pure `AdapterError → NextResponse` mapping that never
+    leaks `cause`/PII to the client.
+  - **`petition.ts` / `evidence.ts`.** The first two concrete adapters
+    (Petition, Evidence).
+  - Unit tests for every module (186/186 suite green).
+
+## [0.4.0] - 2026-06-04
+
+Backward-compatible feature release. Pre-1.0 **minor** bump — a large batch of
+backward-compatible features, an AI-route orchestrator, a route-authorization
+helper, an in-process event bus, and a cross-tenant security-hardening sweep
+accumulated on `main` since `0.3.1`. No breaking changes (and per the `0.x`
+policy even breaking changes would only bump minor). No migration or reinstall
+required.
+
+### Added
+
+- **In-process domain event bus + Store emission + subscribers (ADR-0007, #18).**
+  A typed in-process event bus the Store emits domain events onto, with
+  subscribers wiring side-effects off those events — decoupling write paths from
+  downstream reactions.
+- **`authorizeRoute` case-access helper (ADR-0006, #14).** A single owner-only
+  case-access guard for API routes, with unit tests, so per-route authorization
+  is centralized and consistent instead of re-implemented per handler.
+
+### Changed
+
+- **`executeAiOperation` orchestrator core (ADR-0004, #10).** A single
+  orchestration entry point for AI operations (auth → rate-limit → token charge →
+  model call → token reclaim on failure → persist), the foundation the AI routes
+  migrate onto.
+- **Migrate `/api/qualify` and `/api/guidance` to `executeAiOperation`
+  (ADR-0004, #12, #13).** Both AI routes now run through the orchestrator,
+  inheriting uniform auth, rate-limiting, and charge-then-reclaim token handling.
+- **Adopt `authorizeRoute` (owner-only) in `/api/draft` (ADR-0006, #17).** The
+  draft route now uses the shared case-access helper.
+- **`OperationRegistry` — single source of truth for op cost / rate-limit / label
+  (ADR-0007, #19).** Per-operation cost, rate-limit, and display metadata are
+  consolidated into one registry rather than scattered constants.
+- **Composite `useCaseFileData` hook (ADR-0009, #22).** Replaces the case
+  dashboard's three independent `useEffect` fetches (`getCaseFacts`,
+  `getOutstandingTasks`, `getPetitionExcerpt`) with one composite hook over a
+  React-free `caseFileData.ts` that runs the three concurrently and exposes
+  unified loading/error state.
+
+### Security
+
+- **Cross-tenant access fail-closed + systemic IDOR remediation (#9).**
+  `isConfiguredAttorney` is now strict/fail-closed; cross-tenant access is denied
+  on the review queue, case detail, and evidence actions; IDOR holes closed
+  across `/api/draft`, `/api/rfe`, `/api/guidance`, and `/api/evidence/categorize`.
+- **AI-route abuse + cost controls (#9).** An in-process fixed-window rate
+  limiter guards the AI routes, and tokens are charged-then-reclaimed (refunded
+  when the model call throws or returns unparseable output) so failures don't
+  burn balance.
+- **Data-integrity guards (#9).** Atomic guarded case transitions, never-reused
+  PGlite exhibit identifiers, a double-submit guard, and save-failure surfacing
+  in the Draft/RFE studios; model-fallback discrimination and isolation of
+  untrusted prompt input.
+
 ## [0.3.1] - 2026-06-02
 
 Patch release. A defensive fix to the leaf display formatters so AI-sourced
@@ -135,6 +466,16 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.9.1]: #
+[0.9.0]: #
+[0.8.0]: #
+[0.7.0]: #
+[0.6.1]: #
+[0.6.0]: #
+[0.5.2]: #
+[0.5.1]: #
+[0.5.0]: #
+[0.4.0]: #
 [0.3.1]: #
 [0.3.0]: #
 [0.2.1]: #
