@@ -39,7 +39,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   // never a hard 401/403. The owner-or-configured-attorney fail-closed rule
   // (which keeps a stranger from injecting an exhibit into another applicant's
   // vault) now lives in authorizeRoute, not inline here.
-  let auth: Authorized | null = null;
+  let auth: Authorized | null;
   try {
     auth = await authorizeRoute(request, {
       requiresCase: true,
