@@ -201,6 +201,7 @@ export function DraftStudio({
   }
 
   function editBody(heading: string, body: string) {
+    setRegenerationError(null);
     setSections((prev) => prev.map((s) => (s.heading === heading ? { ...s, body } : s)));
   }
 
