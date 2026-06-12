@@ -50,7 +50,11 @@ file are real; AI, billing, and filing integrations are mocked.
   reviews) with a 'Get started' CTA guides users toward filing.
 - **Drafting studio with actionable save-recovery** — when a draft save fails,
   a `role="alert"` banner offers 'Copy draft' (clipboard) and a no-charge
-  retry-save, so paid work is never silently lost.
+  retry-save, so paid work is never silently lost. Single-section regeneration
+  failures are no longer silent either: an inline `role="alert"` notice appears
+  on the affected section ("Regeneration failed — your previous text was
+  kept"), the existing text is preserved, and the alert clears on the next
+  regeneration attempt or an inline edit.
 - **Per-panel error boundaries on the case dashboard** — a throw inside any
   single dashboard panel (CriteriaTable, TasksCard, PetitionDraftCard,
   EvidenceVault) renders an inline "Could not load — retry" card rather than
