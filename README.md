@@ -55,6 +55,10 @@ file are real; AI, billing, and filing integrations are mocked.
   on the affected section ("Regeneration failed — your previous text was
   kept"), the existing text is preserved, and the alert clears on the next
   regeneration attempt or an inline edit.
+- **Field-guidance panel survives a failed form-list fetch** — if loading the
+  USCIS form catalog fails (API or network error), the panel shows a
+  `role="alert"` notice with a **Retry** button instead of an endless loading
+  skeleton; retrying re-runs the fetch in place.
 - **Per-panel error boundaries on the case dashboard** — a throw inside any
   single dashboard panel (CriteriaTable, TasksCard, PetitionDraftCard,
   EvidenceVault) renders an inline "Could not load — retry" card rather than
