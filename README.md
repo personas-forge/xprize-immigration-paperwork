@@ -165,6 +165,37 @@ After upgrading from 0.1.x: `rm -rf node_modules && npm install` — see
 | `/qualify` | O-1A eligibility screening — paste a CV/bio, get criteria assessment + Next Steps panel |
 | `/dashboard` | The case file — O-1A criteria audit, tasks, petition draft preview |
 
+## Data access — the Adapter layer
+
+API routes and server actions never call the persistence `Store` (or the
+`src/lib/data/*` function wrappers) directly. They go through a thin **adapter
+layer** at `src/lib/data/adapters/` (ADR-0010) that owns three contracts the raw
+function layer does not:
+
+- **One fail-closed access gate.** The owner-or-attorney check
+  (`resolveCase`) is implemented once, so the security-sensitive
+  `isConfiguredAttorney` fallback can't be forgotten or copy-pasted out of sync
+  at a call site.
+- **Uniform results, never throws.** Every method returns a discriminated
+  `AdapterResult<T>` — `{ ok: true, value }` or `{ ok: false, error }` — with a
+  typed `AdapterError` kind (`unconfigured` / `forbidden` / `not_found` /
+  `store_error`). A `Store` throw is caught and surfaced as `store_error`; an
+  unconfigured backend surfaces as `unconfigured` instead of collapsing into a
+  bare `null`.
+- **Pure HTTP shaping.** `adapters/http.ts` maps an `AdapterError` to a
+  `NextResponse` (`unconfigured→503`, `forbidden→403`, `not_found→404`,
+  `store_error→500`) without ever leaking the underlying `cause`. Server actions
+  skip this and consume the `AdapterResult` union directly (they redirect, not
+  respond).
+
+Two adapters expose the domain as singletons — `petitions` (`PetitionAdapter`:
+case resolution, criteria, draft/RFE persistence) and `evidence`
+(`EvidenceAdapter`: evidence-vault documents). Adapters stay
+framework-agnostic (no `next/server` import) so they're unit-testable under
+`node:test`. Routes and actions are migrated onto the layer incrementally; see
+ADR-0010 and the [`CHANGELOG.md`](CHANGELOG.md) `0.5.x` entries for adoption
+status.
+
 ## Project structure
 
 ```
@@ -191,7 +222,8 @@ src/
 └── lib/
     ├── cn.ts                # classname joiner
     ├── format.ts            # number/date formatters
-    └── motion.ts            # easeArrival, fadeUp, staggerParent, stampIn
+    ├── motion.ts            # easeArrival, fadeUp, staggerParent, stampIn
+    └── data/adapters/       # PetitionAdapter / EvidenceAdapter — route↔Store seam (ADR-0010)
 docs/
 ├── BACKLOG.md               # 12-week hackathon build plan
 ├── CHECKLIST.md             # pre-launch + UPL/compliance gates
