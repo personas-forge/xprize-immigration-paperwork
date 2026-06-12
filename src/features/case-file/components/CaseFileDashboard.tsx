@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
+import { Badge, Button, Card, CardBody, CardHeader, PanelErrorBoundary, Skeleton } from "@/components/ui";
 import { Stamp, ChapterMark, Seal } from "@/components/brand";
 import { FieldGuidancePanel } from "@/features/guidance";
 import { type SavedCaseSummary } from "../types";
@@ -81,12 +81,18 @@ export function CaseFileDashboard({
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="lg:col-span-8 space-y-6">
-            <CriteriaTable criteria={data?.criteria ?? null} />
+            <PanelErrorBoundary label="Criteria">
+              <CriteriaTable criteria={data?.criteria ?? null} />
+            </PanelErrorBoundary>
             <FieldGuidancePanel />
           </div>
           <div className="space-y-6 lg:col-span-4">
-            <TasksCard tasks={data?.tasks ?? null} />
-            <PetitionDraftCard excerpt={data?.petitionExcerpt ?? null} />
+            <PanelErrorBoundary label="Outstanding tasks">
+              <TasksCard tasks={data?.tasks ?? null} />
+            </PanelErrorBoundary>
+            <PanelErrorBoundary label="Petition draft">
+              <PetitionDraftCard excerpt={data?.petitionExcerpt ?? null} />
+            </PanelErrorBoundary>
           </div>
         </div>
 
@@ -115,8 +121,11 @@ function EmptyCasesCallout() {
         <p className="font-sans text-[15px] text-muted-strong max-w-sm">
           Your case file will appear here — begin by qualifying your profile
         </p>
-        <Link href="/qualify">
-          <Button variant="primary">Qualify your profile</Button>
+        <Link
+          href="/qualify"
+          className="inline-flex items-center justify-center gap-2 rounded-control font-mono uppercase tracking-document transition-[background-color,border-color,color,transform] duration-300 ease-out focus-visible:outline-none active:translate-y-[1px] bg-foreground text-background border border-foreground hover:bg-foreground-soft px-5 py-2.5 text-[13px]"
+        >
+          Qualify your profile
         </Link>
       </CardBody>
     </Card>

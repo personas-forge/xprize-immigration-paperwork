@@ -7,6 +7,7 @@ import { CaseFileDashboard } from "@/features/case-file";
 import { type SavedCaseSummary } from "@/features/case-file/types";
 import { ThemeScope } from "./ThemeScope";
 import { ink, parchment } from "./themes";
+import { TokenExplainerBanner } from "./TokenExplainerBanner";
 
 // The dashboard ships parchment (daylight) and ink (after-hours) skins;
 // the toggle swaps the entire token set on the ThemeScope wrapper so every
@@ -24,6 +25,7 @@ export function DashboardView({
 
   return (
     <ThemeScope theme={dark ? ink : parchment}>
+      {balance !== null && <TokenExplainerBanner balance={balance} />}
       <DashboardTopBar
         glyph="✦"
         product="Immigration Concierge"

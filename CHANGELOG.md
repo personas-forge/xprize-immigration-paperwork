@@ -37,6 +37,127 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
   (assertive live region) instead of `role="status"` (polite), so screen-reader
   users are immediately notified when their saved work is lost.
 
+## [0.9.1] - 2026-06-12
+
+Bug-fix release. Pre-1.0 **patch** bump — two error-handling fixes that
+surface previously silent fetch/regeneration failures with retryable inline
+alerts (#63, #65). No new feature surface; no API-contract or persisted-field
+semantics changed.
+
+### Fixed
+
+- **The field-guidance form list no longer hangs on a fetch failure (#65).**
+  The `useEffect` in `FieldGuidancePanel` that loads the USCIS form/field
+  list now has a `.catch()`: on API or network failure users see a
+  `role="alert"` error notice with a **Retry** button instead of an endless
+  loading skeleton. Error state is set only inside the async `.catch()`, and
+  the Retry handler owns the reset (clearing the error and re-running the
+  fetch via an attempt counter).
+- **Single-section regeneration failures in the drafting studio are no longer
+  silent (#63).** When regenerating one petition section fails (API error or
+  network failure), `DraftStudio` now shows an inline `role="alert"` notice on
+  the affected section — "Regeneration failed — your previous text was kept" —
+  instead of giving no feedback. The existing section text is always preserved,
+  and the alert clears when the user retries regeneration or edits the section
+  inline. Tokens behavior is unchanged. No API-contract or persisted-field
+  semantics changed.
+
+## [0.9.0] - 2026-06-12
+
+Feature release. Pre-1.0 **minor** bump — two onboarding UX increments
+merged since v0.8.0: O-1A criteria primer tooltips for first-time dashboard
+visitors (#56) and a one-time dismissible token economy explainer banner
+before the first paywall encounter (#57). No API-contract or persisted-field
+semantics changed.
+
+### Added
+
+- **O-1A criteria primer tooltips on the case-file dashboard (#56).**
+  Each of the eight O-1A criterion labels in `CriteriaTable` now shows a
+  `?` icon button that opens an inline popover with a one-sentence plain-English
+  definition and a concrete evidence example. `criteria-primers.ts` holds the
+  static primer data; `CriterionPrimerButton.tsx` manages the toggle popover
+  (Escape / outside-click to close). The popover is fully accessible:
+  `role="dialog"`, `aria-modal="true"`, focus moves into the close button on
+  open and returns to the trigger on close. `overflow-hidden` was scoped to the
+  `CardHeader` so absolutely-positioned popovers are not clipped.
+- **One-time dismissible token economy explainer banner (#57, ADR-0006).**
+  `TokenExplainerBanner` mounts in `DashboardView` (inside `ThemeScope`, before
+  `DashboardTopBar`) and explains the token credit model before users first hit
+  a paywall. Gated on `balance !== null` (demo/bypass mode → no mount). Dismiss
+  state persists to `localStorage` via `useSyncExternalStore` through
+  `bannerDismiss.ts`, injected for testability.
+
+### Tests
+
+- 5 data-integrity tests for `criteria-primers.ts` (all primer fields present and
+  non-empty for every O-1A criterion, #56).
+- 7 unit tests for `bannerDismiss.ts` (first-visit display, dismiss behaviour,
+  localStorage persistence, #57).
+
+## [0.8.0] - 2026-06-12
+
+Feature release. Pre-1.0 **minor** bump — per-panel React error boundaries
+for the case-file dashboard (#55). A throw inside any single dashboard panel
+(CriteriaTable, TasksCard, PetitionDraftCard, EvidenceVault) now renders an
+inline "Could not load — retry" card instead of crashing the whole dashboard.
+No API-contract or persisted-field semantics changed.
+
+### Added
+
+- **Per-panel `PanelErrorBoundary` component (#55).** A reusable class-based
+  React error boundary (`getDerivedStateFromError` + `componentDidCatch`) with
+  an inline `PanelFallback` ("Could not load {panel} — retry") exported from
+  `src/components/ui`. Each dashboard panel gets its own boundary instance, so
+  a render error in one panel does not unmount its siblings or trigger the
+  route-level error page.
+- **Error boundaries applied to all four dashboard panels (#55).**
+  `CriteriaTable`, `TasksCard`, and `PetitionDraftCard` in
+  `CaseFileDashboard.tsx`, and `EvidenceVault` in `CaseDetailView.tsx` are
+  each individually wrapped, completing the team goal "Wrap dashboard feature
+  panels in per-panel React error boundaries."
+- **Structural unit tests for `PanelErrorBoundary` (7 tests, #55).** Tests
+  verify `getDerivedStateFromError`, `componentDidCatch`, class-component
+  shape, `hasError` guard, exported symbols, and the "Could not load" / "Retry"
+  user-facing copy in `PanelFallback`.
+
+## [0.7.0] - 2026-06-12
+
+Feature release. Pre-1.0 **minor** bump — four backward-compatible increments
+merged since v0.6.1 (#45–#48). Highlights: a user-facing empty-cases CTA on
+the dashboard, a post-qualification Next Steps panel, actionable saveFailed
+recovery in the drafting studio, and an ARIA live-region fix for the RFE
+banner. No breaking changes; no API-contract or persisted-field semantics
+changed.
+
+### Added
+
+- **Empty-cases CTA callout on the case-file dashboard (#46).** When a user
+  has no cases, the dashboard now renders an `EmptyCasesCallout` card with a
+  "Start your case" link that routes to `/qualify`. Previously the 'Your cases'
+  card was unconditionally hidden at `cases.length === 0`, leaving new users
+  with a blank screen and no path forward.
+- **Next Steps panel after a successful qualification result (#47).** After a
+  passing qualification assessment, users now see a structured Next Steps
+  panel guiding them toward filing, rather than landing on a dead-end result
+  screen.
+- **Actionable saveFailed recovery in the drafting studio (#45).** When a
+  draft save fails, users are now offered a "Copy draft" action and a
+  no-charge retry so no work is silently lost. The retry does not re-charge
+  token balance on transient failures.
+
+### Fixed
+
+- **`role="alert"` on the RFE Studio saveFailed banner (a11y, #48, WCAG
+  4.1.3).** The save-failure error banner in `RfeStudio` was a plain `<div>`
+  invisible to assistive technology. Adding `role="alert"` ensures screen
+  readers announce the error immediately without requiring user focus.
+- **Nested `<a>` + `<button>` in `EmptyCasesCallout` corrected (a11y, #51,
+  issue #50).** The callout was rendering a `<Link>` wrapping a `<Button>`,
+  producing an interactive element inside an anchor — invalid HTML and a
+  screen-reader/keyboard trap. Replaced with a single `<Link>` styled as a
+  button so the DOM tree is valid.
+
 ## [0.6.1] - 2026-06-11
 
 Accessibility patch release. Pre-1.0 **patch** bump — two backward-compatible
@@ -374,6 +495,10 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.9.1]: #
+[0.9.0]: #
+[0.8.0]: #
+[0.7.0]: #
 [0.6.1]: #
 [0.6.0]: #
 [0.5.2]: #

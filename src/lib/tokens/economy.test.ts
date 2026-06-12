@@ -47,15 +47,34 @@ test("OP_COST weighting stays light < medium < heavy < xl", () => {
 
 // — Bundle lookup ────────────────────────────────────────────────────────────
 
-test("BUNDLES: four bundles, ascending tokens, growing per-token discount", () => {
-  assert.equal(BUNDLES.length, 4);
-  for (let i = 1; i < BUNDLES.length; i++) {
-    assert.ok(BUNDLES[i].tokens > BUNDLES[i - 1].tokens, "tokens ascend");
+test("BUNDLES: four one-time bundles, ascending tokens, growing per-token discount", () => {
+  // The size-discount ladder applies to ONE-TIME bundles only; the recurring
+  // monthly allowance is a convenience plan priced between builder and pro
+  // rates, asserted separately below.
+  const oneTime = BUNDLES.filter((b) => !b.recurring);
+  assert.equal(oneTime.length, 4);
+  for (let i = 1; i < oneTime.length; i++) {
+    assert.ok(oneTime[i].tokens > oneTime[i - 1].tokens, "tokens ascend");
     assert.ok(
-      BUNDLES[i].centsPerToken <= BUNDLES[i - 1].centsPerToken,
+      oneTime[i].centsPerToken <= oneTime[i - 1].centsPerToken,
       "cents-per-token never increases with size",
     );
   }
+});
+
+test("BUNDLES: the monthly subscription is recurring and priced inside the ladder", () => {
+  const monthly = BUNDLES.find((b) => b.recurring);
+  assert.ok(monthly, "a recurring bundle exists");
+  assert.equal(monthly?.key, "monthly");
+  assert.equal(monthly?.tokens, 2500);
+  // $19/2,500 = 0.76¢/token — cheaper than starter, a hair above the builder
+  // one-time rate (the recurring convenience premium), never beating pro.
+  const starter = bundleByKey("starter");
+  const pro = bundleByKey("pro");
+  assert.ok(
+    monthly!.centsPerToken < starter!.centsPerToken && monthly!.centsPerToken > pro!.centsPerToken,
+    "monthly rate sits inside the starter–pro band",
+  );
 });
 
 test("bundleByKey: resolves a known key and rejects an unknown one", () => {

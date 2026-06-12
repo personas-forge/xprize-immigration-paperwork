@@ -20,9 +20,15 @@ export async function POST(request: NextRequest) {
     return new Response("invalid signature", { status: 403 });
   }
 
-  // Polar emits order.paid / order.created for completed one-time purchases.
-  // Confirm the exact event name in the Polar sandbox.
-  if (event.type === "order.paid" || event.type === "order.created") {
+  // Credit ONLY on order.paid: Polar fires order.created BEFORE the payment is
+  // captured (verified against the sandbox in the kp project, 2026-06-12) — a
+  // created-but-never-paid order must not grant tokens. The order-id dedupe in
+  // credit() already made created+paid double-fires safe; this closes the
+  // created-only hole. Covers subscription cycle orders too (the monthly
+  // bundle): each cycle has a fresh order id, so renewals re-credit monthly —
+  // verify metadata.userId propagates to cycle orders on the first sandbox
+  // renewal (checkout metadata → subscription → order).
+  if (event.type === "order.paid") {
     const order = event.data as {
       id: string;
       productId?: string;
