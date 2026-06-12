@@ -74,6 +74,7 @@ export function DraftStudio({
   const [source, setSource] = useState<ModelSource>(initialSource);
   const [error, setError] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState<string | null>(null);
+  const [regenerationError, setRegenerationError] = useState<string | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
   // saveFailed recovery UI state (SaveFailedAlert). resolvedCaseId tracks the
   // case the SERVER persisted against (response caseId) — the retry must target
@@ -138,6 +139,7 @@ export function DraftStudio({
     if (busyRef.current) return; // double-submit guard (charges tokens)
     busyRef.current = true;
     setRegenerating(heading);
+    setRegenerationError(null);
     try {
       const res = await fetch("/api/draft", {
         method: "POST",
@@ -149,7 +151,10 @@ export function DraftStudio({
         return;
       }
       const data = (await res.json()) as SectionApiResponse | { error: string };
-      if (!res.ok || "error" in data) return;
+      if (!res.ok || "error" in data) {
+        setRegenerationError(heading);
+        return;
+      }
       setSections((prev) =>
         prev.map((s) => (s.heading === heading ? data.section : s)),
       );
@@ -158,7 +163,7 @@ export function DraftStudio({
       setCopyState("idle");
       setRetryState("idle");
     } catch {
-      // Keep the existing section on a transient failure.
+      setRegenerationError(heading);
     } finally {
       setRegenerating(null);
       busyRef.current = false;
@@ -305,6 +310,14 @@ export function DraftStudio({
                     {regenerating === s.heading ? "Regenerating…" : "Regenerate · 5"}
                   </button>
                 </div>
+                {regenerationError === s.heading ? (
+                  <div
+                    role="alert"
+                    className="mb-2 rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[12px] text-danger"
+                  >
+                    Regeneration failed — your previous text was kept
+                  </div>
+                ) : null}
                 <textarea
                   value={s.body}
                   onChange={(e) => editBody(s.heading, e.target.value)}
