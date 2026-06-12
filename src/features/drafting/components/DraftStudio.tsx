@@ -103,6 +103,7 @@ export function DraftStudio({
     busyRef.current = true;
     setStatus("loading");
     setError(null);
+    setRegenerationError(null);
     setSaveFailed(false);
     setCopyState("idle");
     setRetryState("idle");
