@@ -41,6 +41,10 @@ export function isMeteringBypassed(
 
 // Purchasable bundles — discount grows with size. `polarProductId` is filled
 // from env after you create the products in the Polar dashboard.
+// `recurring` marks a Polar SUBSCRIPTION product (monthly token allowance):
+// same checkout route and webhook path as one-time bundles — Polar emits an
+// order per billing cycle, and each cycle order re-credits `tokens` (the
+// ledger dedupes by order id, and every cycle has a fresh order id).
 export type Bundle = {
   key: string;
   label: string;
@@ -49,6 +53,7 @@ export type Bundle = {
   centsPerToken: number;
   discountLabel?: string;
   polarProductId?: string;
+  recurring?: boolean;
 };
 
 export const BUNDLES: Bundle[] = [
@@ -56,6 +61,8 @@ export const BUNDLES: Bundle[] = [
   { key: "builder", label: "Builder", tokens: 2000, priceLabel: "$15", centsPerToken: 0.75, discountLabel: "25% off", polarProductId: process.env.POLAR_PRODUCT_BUILDER },
   { key: "pro", label: "Pro", tokens: 8000, priceLabel: "$48", centsPerToken: 0.6, discountLabel: "40% off", polarProductId: process.env.POLAR_PRODUCT_PRO },
   { key: "scale", label: "Scale", tokens: 30000, priceLabel: "$150", centsPerToken: 0.5, discountLabel: "50% off", polarProductId: process.env.POLAR_PRODUCT_SCALE },
+  // Monthly subscription — ~builder rate as a convenience plan, renews itself.
+  { key: "monthly", label: "Monthly", tokens: 2500, priceLabel: "$19/mo", centsPerToken: 0.76, recurring: true, polarProductId: process.env.POLAR_PRODUCT_MONTHLY },
 ];
 
 export function bundleByKey(key: string): Bundle | undefined {
