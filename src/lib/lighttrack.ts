@@ -65,28 +65,36 @@ function num(v: unknown): number | undefined {
   return typeof v === "number" && isFinite(v) ? v : undefined;
 }
 
+/** Coerce an unknown value to a plain record for safe optional field reads. */
+function rec(v: unknown): Record<string, unknown> {
+  return v && typeof v === "object" ? (v as Record<string, unknown>) : {};
+}
+
 /** Extract (model, input, output, cached) from an OpenAI chat/responses object. */
-export function extractOpenAI(resp: any): [string | undefined, number, number, number | undefined] {
-  const u = resp?.usage ?? {};
+export function extractOpenAI(resp: unknown): [string | undefined, number, number, number | undefined] {
+  const r = rec(resp);
+  const u = rec(r.usage);
   const input = num(u.prompt_tokens) ?? num(u.input_tokens) ?? 0;
   const output = num(u.completion_tokens) ?? num(u.output_tokens) ?? 0;
-  const cached = num(u.prompt_tokens_details?.cached_tokens);
-  return [resp?.model, input, output, cached];
+  const cached = num(rec(u.prompt_tokens_details).cached_tokens);
+  return [r.model as string | undefined, input, output, cached];
 }
 
 /** Extract (model, input, output, cached) from an Anthropic messages object. */
-export function extractAnthropic(resp: any): [string | undefined, number, number, number | undefined] {
-  const u = resp?.usage ?? {};
-  return [resp?.model, num(u.input_tokens) ?? 0, num(u.output_tokens) ?? 0, num(u.cache_read_input_tokens)];
+export function extractAnthropic(resp: unknown): [string | undefined, number, number, number | undefined] {
+  const r = rec(resp);
+  const u = rec(r.usage);
+  return [r.model as string | undefined, num(u.input_tokens) ?? 0, num(u.output_tokens) ?? 0, num(u.cache_read_input_tokens)];
 }
 
 /** Extract (model, input, output, cached) from a Gemini generateContent object. */
-export function extractGemini(resp: any): [string | undefined, number, number, number | undefined] {
-  const u = resp?.usageMetadata ?? resp?.usage_metadata ?? {};
+export function extractGemini(resp: unknown): [string | undefined, number, number, number | undefined] {
+  const r = rec(resp);
+  const u = rec(r.usageMetadata ?? r.usage_metadata);
   const input = num(u.promptTokenCount) ?? num(u.prompt_token_count) ?? 0;
   const output = num(u.candidatesTokenCount) ?? num(u.candidates_token_count) ?? 0;
   const cached = num(u.cachedContentTokenCount) ?? num(u.cached_content_token_count);
-  return [resp?.modelVersion ?? resp?.model_version, input, output, cached];
+  return [(r.modelVersion ?? r.model_version) as string | undefined, input, output, cached];
 }
 
 // ---- Output guardrails -----------------------------------------------------
@@ -139,7 +147,7 @@ export function guard(output: string, rules: GuardRules): GuardResult {
   };
 
   const wantJson = rules.json || (rules.jsonKeys?.length ?? 0) > 0;
-  let parsed: any;
+  let parsed: unknown;
   if (wantJson) {
     try {
       parsed = JSON.parse(output.trim());
@@ -150,30 +158,37 @@ export function guard(output: string, rules: GuardRules): GuardResult {
   }
   if (rules.jsonKeys && parsed && typeof parsed === "object") {
     for (const k of rules.jsonKeys) {
-      k in parsed ? ok(`key:${k}`) : fail(`key:${k}`, `missing required JSON key '${k}'`);
+      if (k in parsed) ok(`key:${k}`);
+      else fail(`key:${k}`, `missing required JSON key '${k}'`);
     }
   }
 
   const words = output.trim() ? output.trim().split(/\s+/).length : 0;
   if (rules.maxWords != null) {
-    words <= rules.maxWords ? ok("maxWords") : fail("maxWords", `too long: ${words} words > ${rules.maxWords}`);
+    if (words <= rules.maxWords) ok("maxWords");
+    else fail("maxWords", `too long: ${words} words > ${rules.maxWords}`);
   }
   if (rules.minWords != null) {
-    words >= rules.minWords ? ok("minWords") : fail("minWords", `too short: ${words} words < ${rules.minWords}`);
+    if (words >= rules.minWords) ok("minWords");
+    else fail("minWords", `too short: ${words} words < ${rules.minWords}`);
   }
   if (rules.maxChars != null) {
-    output.length <= rules.maxChars ? ok("maxChars") : fail("maxChars", `too long: ${output.length} chars > ${rules.maxChars}`);
+    if (output.length <= rules.maxChars) ok("maxChars");
+    else fail("maxChars", `too long: ${output.length} chars > ${rules.maxChars}`);
   }
   for (const s of rules.mustInclude ?? []) {
-    output.includes(s) ? ok(`include:${s}`) : fail(`include:${s}`, `must include "${s}"`);
+    if (output.includes(s)) ok(`include:${s}`);
+    else fail(`include:${s}`, `must include "${s}"`);
   }
   if (rules.mustMatch != null) {
     const re = typeof rules.mustMatch === "string" ? new RegExp(rules.mustMatch) : rules.mustMatch;
-    re.test(output) ? ok("mustMatch") : fail("mustMatch", `must match ${re}`);
+    if (re.test(output)) ok("mustMatch");
+    else fail("mustMatch", `must match ${re}`);
   }
   for (const pat of rules.mustNotMatch ?? []) {
     const re = typeof pat === "string" ? new RegExp(pat) : pat;
-    re.test(output) ? fail(`notMatch:${re}`, `must not match ${re}`) : ok(`notMatch:${re}`);
+    if (re.test(output)) fail(`notMatch:${re}`, `must not match ${re}`);
+    else ok(`notMatch:${re}`);
   }
   if (rules.noPII) {
     let clean = true;
@@ -244,17 +259,17 @@ export class LightTrack {
     this.post("/v1/events", ev);
   }
 
-  trackOpenAI(response: any, opts: TrackOptions = {}): void {
+  trackOpenAI(response: unknown, opts: TrackOptions = {}): void {
     const [model, input, output, cached] = extractOpenAI(response);
     this.track("openai", model, { inputTokens: input, outputTokens: output, cachedInput: cached, ...opts });
   }
 
-  trackAnthropic(response: any, opts: TrackOptions = {}): void {
+  trackAnthropic(response: unknown, opts: TrackOptions = {}): void {
     const [model, input, output, cached] = extractAnthropic(response);
     this.track("anthropic", model, { inputTokens: input, outputTokens: output, cachedInput: cached, ...opts });
   }
 
-  trackGemini(response: any, model?: string, opts: TrackOptions = {}): void {
+  trackGemini(response: unknown, model?: string, opts: TrackOptions = {}): void {
     const [m, input, output, cached] = extractGemini(response);
     this.track("google", model ?? m, { inputTokens: input, outputTokens: output, cachedInput: cached, ...opts });
   }
@@ -337,19 +352,19 @@ export class Span {
     return this;
   }
 
-  setOpenAI(resp: any): this {
+  setOpenAI(resp: unknown): this {
     const [m, i, o, c] = extractOpenAI(resp);
     this.model = this.model ?? m;
     return this.setUsage(i, o, c);
   }
 
-  setAnthropic(resp: any): this {
+  setAnthropic(resp: unknown): this {
     const [m, i, o, c] = extractAnthropic(resp);
     this.model = this.model ?? m;
     return this.setUsage(i, o, c);
   }
 
-  setGemini(resp: any): this {
+  setGemini(resp: unknown): this {
     const [m, i, o, c] = extractGemini(resp);
     this.model = this.model ?? m;
     return this.setUsage(i, o, c);
