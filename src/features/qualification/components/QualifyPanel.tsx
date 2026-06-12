@@ -222,9 +222,59 @@ export function QualifyPanel() {
               </Link>
             </p>
           ) : null}
+          <NextStepsPanel />
         </div>
       ) : null}
     </div>
+  );
+}
+
+const NEXT_STEPS = [
+  "Create your account",
+  "Upload evidence",
+  "Attorney reviews your petition",
+] as const;
+
+function NextStepsPanel() {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+          § What happens next
+        </div>
+        <Badge tone="accent">3 steps</Badge>
+      </CardHeader>
+      <CardBody>
+        <ol className="space-y-3">
+          {NEXT_STEPS.map((step, i) => (
+            <li key={step} className="flex items-start gap-3">
+              <span
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-medium"
+                style={{
+                  background: "var(--accent-soft)",
+                  color: "var(--accent-dark)",
+                }}
+                aria-hidden
+              >
+                {i + 1}
+              </span>
+              <span className="font-sans text-[14px] leading-snug text-foreground-soft">
+                {step}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-5">
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center gap-2 rounded-control bg-[color:var(--accent)] px-5 py-2.5 font-mono text-[12px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
+          >
+            Get started
+            <span aria-hidden>→</span>
+          </Link>
+        </div>
+      </CardBody>
+    </Card>
   );
 }
 

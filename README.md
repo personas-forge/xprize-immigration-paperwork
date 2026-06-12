@@ -28,7 +28,41 @@ file are real; AI, billing, and filing integrations are mocked.
   certificate vignette, three-promise strip, four-step process band, schedule
   of fees, closing seal.
 - **Working case file dashboard** — O-1A criteria audit table, evidence list,
-  task panel, petition draft preview, all themable.
+  task panel, petition draft preview, all themable. Empty-state shows a
+  **'Start your case'** callout that routes new users straight to the
+  qualification flow.
+- **O-1A criteria primer tooltips** — each of the eight criterion labels in
+  `CriteriaTable` shows a `?` icon button that opens an accessible inline
+  popover (`role="dialog"`, `aria-modal`, focus-managed) with a plain-English
+  definition and a concrete evidence example. Static data lives in
+  `criteria-primers.ts`; `CriterionPrimerButton` manages open/close (Escape /
+  outside-click). Helpful for first-time users who don't yet know what
+  "Critical role" or "Judging" means.
+- **First-visit token economy explainer** — on first dashboard load, an inline
+  banner above the top bar shows the user's current token balance and the cost
+  of a full petition draft (~12 tokens). Dismissed state persists in
+  `localStorage` (key `atelier-token-banner-dismissed`) via
+  `useSyncExternalStore`; the banner does not mount in demo/bypass mode
+  (`balance === null`).
+- **Qualification flow + Next Steps panel** — paste a CV/bio to get an
+  informational O-1A eligibility screening; after a passing result, a
+  structured **Next Steps** card (Create account → Upload evidence → Attorney
+  reviews) with a 'Get started' CTA guides users toward filing.
+- **Drafting studio with actionable save-recovery** — when a draft save fails,
+  a `role="alert"` banner offers 'Copy draft' (clipboard) and a no-charge
+  retry-save, so paid work is never silently lost. Single-section regeneration
+  failures are no longer silent either: an inline `role="alert"` notice appears
+  on the affected section ("Regeneration failed — your previous text was
+  kept"), the existing text is preserved, and the alert clears on the next
+  regeneration attempt or an inline edit.
+- **Field-guidance panel survives a failed form-list fetch** — if loading the
+  USCIS form catalog fails (API or network error), the panel shows a
+  `role="alert"` notice with a **Retry** button instead of an endless loading
+  skeleton; retrying re-runs the fetch in place.
+- **Per-panel error boundaries on the case dashboard** — a throw inside any
+  single dashboard panel (CriteriaTable, TasksCard, PetitionDraftCard,
+  EvidenceVault) renders an inline "Could not load — retry" card rather than
+  crashing the whole dashboard. Each panel is independently recoverable.
 - **Parchment ↔ ink theme toggle** — a sun/moon button in the header swaps the
   whole site between a daylight parchment desk and an after-hours notary's
   office. Choice persists in `localStorage`; a pre-paint inline script prevents
@@ -128,7 +162,39 @@ After upgrading from 0.1.x: `rm -rf node_modules && npm install` — see
 | `/pricing` | Schedule of fees — three petition tiers as perforated document bands |
 | `/faq` | Eight petition-styled FAQ entries (form compatibility, RFE, refunds, security) |
 | `/landing-claude` | Alternate masthead — narrow editorial column, printed-pamphlet treatment |
+| `/qualify` | O-1A eligibility screening — paste a CV/bio, get criteria assessment + Next Steps panel |
 | `/dashboard` | The case file — O-1A criteria audit, tasks, petition draft preview |
+
+## Data access — the Adapter layer
+
+API routes and server actions never call the persistence `Store` (or the
+`src/lib/data/*` function wrappers) directly. They go through a thin **adapter
+layer** at `src/lib/data/adapters/` (ADR-0010) that owns three contracts the raw
+function layer does not:
+
+- **One fail-closed access gate.** The owner-or-attorney check
+  (`resolveCase`) is implemented once, so the security-sensitive
+  `isConfiguredAttorney` fallback can't be forgotten or copy-pasted out of sync
+  at a call site.
+- **Uniform results, never throws.** Every method returns a discriminated
+  `AdapterResult<T>` — `{ ok: true, value }` or `{ ok: false, error }` — with a
+  typed `AdapterError` kind (`unconfigured` / `forbidden` / `not_found` /
+  `store_error`). A `Store` throw is caught and surfaced as `store_error`; an
+  unconfigured backend surfaces as `unconfigured` instead of collapsing into a
+  bare `null`.
+- **Pure HTTP shaping.** `adapters/http.ts` maps an `AdapterError` to a
+  `NextResponse` (`unconfigured→503`, `forbidden→403`, `not_found→404`,
+  `store_error→500`) without ever leaking the underlying `cause`. Server actions
+  skip this and consume the `AdapterResult` union directly (they redirect, not
+  respond).
+
+Two adapters expose the domain as singletons — `petitions` (`PetitionAdapter`:
+case resolution, criteria, draft/RFE persistence) and `evidence`
+(`EvidenceAdapter`: evidence-vault documents). Adapters stay
+framework-agnostic (no `next/server` import) so they're unit-testable under
+`node:test`. Routes and actions are migrated onto the layer incrementally; see
+ADR-0010 and the [`CHANGELOG.md`](CHANGELOG.md) `0.5.x` entries for adoption
+status.
 
 ## Project structure
 
@@ -144,7 +210,7 @@ src/
 │   └── dashboard/page.tsx
 ├── components/
 │   ├── brand/               # Guilloche, Seal, Stamp, ChapterMark, Wordmark, PageFrame
-│   ├── ui/                  # Badge, Button, Card, SectionHeader, StatCard
+│   ├── ui/                  # Badge, Button, Card, SectionHeader, StatCard, PanelErrorBoundary
 │   ├── Motion.tsx           # Rise / Stagger / HoverCard wrappers
 │   ├── PetitionStepper.tsx  # 5-stage rosette stepper with stamp-in animation
 │   ├── FaqEntry.tsx         # client-only <details> animator
@@ -156,7 +222,8 @@ src/
 └── lib/
     ├── cn.ts                # classname joiner
     ├── format.ts            # number/date formatters
-    └── motion.ts            # easeArrival, fadeUp, staggerParent, stampIn
+    ├── motion.ts            # easeArrival, fadeUp, staggerParent, stampIn
+    └── data/adapters/       # PetitionAdapter / EvidenceAdapter — route↔Store seam (ADR-0010)
 docs/
 ├── BACKLOG.md               # 12-week hackathon build plan
 ├── CHECKLIST.md             # pre-launch + UPL/compliance gates
@@ -187,7 +254,14 @@ public/
 - The petition stepper marks the active stage with `aria-current="step"` and
   exposes per-stage jump buttons labelled `"Jump to stage N: {name}"`.
 - All decorative SVG (guilloché, perforations, stamps) is `aria-hidden`.
-- Animations gate on `useReducedMotion()` and respect `prefers-reduced-motion`.
+- Animations gate on `useReducedMotion()` and respect `prefers-reduced-motion`;
+  the dashboard top bar's backdrop-blur is likewise gated behind Tailwind's
+  `motion-safe:` variant.
+- Text/surface token pairs in both dashboard themes meet WCAG AA contrast,
+  enforced by an automated audit (`features/dashboard/themes.contrast.test.ts`)
+  that runs with `npm test`.
+- Data-loss warnings (e.g. draft save failure) use `role="alert"` so screen
+  readers announce them immediately without requiring user focus (WCAG 4.1.3).
 - `<html lang="en">` with `suppressHydrationWarning` for the theme attribute.
 
 ## Environment variables
@@ -215,7 +289,11 @@ npm run lint         # ESLint flat config
 
 The first unit tests cover `features/case-file/criteria.ts`
 (`summarizeCriteria`, which aggregates O-1A status rows against a qualifying
-threshold of 3). Add new tests as `*.test.ts` alongside the module they cover.
+threshold of 3). A CI contrast audit
+(`features/dashboard/themes.contrast.test.ts`) checks every text token against
+every opaque surface token in both dashboard themes for WCAG AA, so contrast
+regressions fail `npm test`. Add new tests as `*.test.ts` alongside the module
+they cover.
 
 ## Building & deployment
 

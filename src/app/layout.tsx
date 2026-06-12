@@ -123,9 +123,9 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        {/* Skip-link target — `id="main"` on a structural wrapper so the
-            inner page's <header>/<section> tree keeps its document outline. */}
-        <div id="main">{children}</div>
+        {/* Skip-link target — a real <main> landmark so screen-reader
+            rotors and the skip link land on the document's main region. */}
+        <main id="main">{children}</main>
       </body>
     </html>
   );

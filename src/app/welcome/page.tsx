@@ -37,6 +37,20 @@ export default async function WelcomePage() {
           </p>
           <div className="perforation h-px" aria-hidden />
         </header>
+        <div
+          className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-document text-muted-strong"
+          aria-label="Step 2 of 2: Confirm your details"
+        >
+          <span
+            className="flex h-5 w-5 items-center justify-center rounded-full border border-border-strong text-[10px]"
+            aria-hidden
+          >
+            2
+          </span>
+          <span>Step 2 of 2</span>
+          <span aria-hidden className="text-muted">·</span>
+          <span>Confirm your details</span>
+        </div>
         <ConsentForm defaultName={defaultName} email={user.email ?? null} />
       </main>
     </PageFrame>

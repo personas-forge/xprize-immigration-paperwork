@@ -18,6 +18,7 @@ export interface GuidanceRequest {
 }
 
 import { type ModelSource } from "@/lib/llm/label";
+import { DISCLAIMER } from "@/lib/result";
 
 export interface GuidanceResponse {
   guidance: string;
@@ -29,12 +30,12 @@ export interface GuidanceResponse {
 /**
  * The not-legal-advice / attorney-of-record disclaimer. MUST accompany every
  * AI output. Do not weaken or drop this string — it is the UPL safeguard.
+ *
+ * Canonical home is now `@/lib/result` (ADR-0011); re-exported here so the
+ * existing `@/features/guidance` importers (drafting, evidence, jurisdictions)
+ * keep working unchanged.
  */
-export const DISCLAIMER =
-  "This is general informational guidance only, not legal advice. " +
-  "Immigration law is fact-specific and changes frequently. An attorney " +
-  "of record licensed to practice law is required to review your petition " +
-  "and advise on your situation before anything is filed with USCIS.";
+export { DISCLAIMER };
 
 const MAX_FIELD = 4000;
 

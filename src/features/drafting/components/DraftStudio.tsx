@@ -7,6 +7,15 @@ import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp"
 import { CitationNote } from "@/features/guidance/components/CitationNote";
 import { DISCLAIMER, type DraftSection } from "@/features/drafting";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
+import {
+  copyDraftToClipboard,
+  retrySaveDraft,
+} from "@/features/drafting/saveRecovery";
+import {
+  SaveFailedAlert,
+  type CopyState,
+  type RetryState,
+} from "./SaveFailedAlert";
 
 /** Minimal criterion shape the studio needs — decoupled from the qualification
  *  module so both the qualify result and a stored case can supply it. */
@@ -65,7 +74,14 @@ export function DraftStudio({
   const [source, setSource] = useState<ModelSource>(initialSource);
   const [error, setError] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState<string | null>(null);
+  const [regenerationError, setRegenerationError] = useState<string | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
+  // saveFailed recovery UI state (SaveFailedAlert). resolvedCaseId tracks the
+  // case the SERVER persisted against (response caseId) — the retry must target
+  // it, not just the incoming prop.
+  const [copyState, setCopyState] = useState<CopyState>("idle");
+  const [retryState, setRetryState] = useState<RetryState>("idle");
+  const [resolvedCaseId, setResolvedCaseId] = useState<string | null>(caseId);
   // Synchronous in-flight guard: a stale-closure `status` check can't stop two
   // clicks in the same render from both firing a paid POST. A ref can.
   const busyRef = useRef(false);
@@ -87,7 +103,10 @@ export function DraftStudio({
     busyRef.current = true;
     setStatus("loading");
     setError(null);
+    setRegenerationError(null);
     setSaveFailed(false);
+    setCopyState("idle");
+    setRetryState("idle");
     try {
       const res = await fetch("/api/draft", {
         method: "POST",
@@ -107,6 +126,7 @@ export function DraftStudio({
       setSections(data.sections);
       setSource(data.source);
       setSaveFailed(Boolean(data.saveFailed));
+      setResolvedCaseId(data.caseId ?? caseId);
       setStatus("done");
     } catch {
       setError("Network error — please try again.");
@@ -120,6 +140,7 @@ export function DraftStudio({
     if (busyRef.current) return; // double-submit guard (charges tokens)
     busyRef.current = true;
     setRegenerating(heading);
+    setRegenerationError(null);
     try {
       const res = await fetch("/api/draft", {
         method: "POST",
@@ -131,21 +152,56 @@ export function DraftStudio({
         return;
       }
       const data = (await res.json()) as SectionApiResponse | { error: string };
-      if (!res.ok || "error" in data) return;
+      if (!res.ok || "error" in data) {
+        setRegenerationError(heading);
+        return;
+      }
       setSections((prev) =>
         prev.map((s) => (s.heading === heading ? data.section : s)),
       );
       setSource(data.source);
       setSaveFailed(Boolean(data.saveFailed));
+      setCopyState("idle");
+      setRetryState("idle");
     } catch {
-      // Keep the existing section on a transient failure.
+      setRegenerationError(heading);
     } finally {
       setRegenerating(null);
       busyRef.current = false;
     }
   }
 
+  async function copyDraft() {
+    const ok = await copyDraftToClipboard(sections);
+    setCopyState(ok ? "copied" : "failed");
+  }
+
+  async function retrySave() {
+    // Persistence-only retry (/api/draft/save) — never re-generates, so it can
+    // never re-charge. Guarded by busyRef like the paid calls so a retry can't
+    // race a regenerate that would change `sections` mid-save.
+    if (busyRef.current || !resolvedCaseId) return;
+    busyRef.current = true;
+    setRetryState("saving");
+    try {
+      const result = await retrySaveDraft({
+        caseId: resolvedCaseId,
+        sections,
+        source,
+      });
+      if (result.ok) {
+        setSaveFailed(false);
+        setRetryState("idle");
+      } else {
+        setRetryState("failed");
+      }
+    } finally {
+      busyRef.current = false;
+    }
+  }
+
   function editBody(heading: string, body: string) {
+    setRegenerationError(null);
     setSections((prev) => prev.map((s) => (s.heading === heading ? { ...s, body } : s)));
   }
 
@@ -230,19 +286,13 @@ export function DraftStudio({
             <DisclaimerStamp text={DISCLAIMER} />
             <CitationNote />
             {saveFailed ? (
-              <div
-                role="status"
-                className="rounded-control border border-seal/50 bg-seal-soft/40 px-4 py-3 font-sans text-[13px] leading-snug text-foreground-soft"
-              >
-                <span className="font-mono text-[10px] uppercase tracking-document text-seal">
-                  Not saved
-                </span>
-                <span className="ml-2">
-                  This draft was generated and charged, but it couldn’t be saved to
-                  your case history. Copy your text before leaving — a reload may not
-                  show it.
-                </span>
-              </div>
+              <SaveFailedAlert
+                copyState={copyState}
+                retryState={retryState}
+                onCopy={copyDraft}
+                onRetry={retrySave}
+                canRetry={resolvedCaseId !== null}
+              />
             ) : null}
             {sections.map((s, i) => (
               <div
@@ -262,6 +312,14 @@ export function DraftStudio({
                     {regenerating === s.heading ? "Regenerating…" : "Regenerate · 5"}
                   </button>
                 </div>
+                {regenerationError === s.heading ? (
+                  <div
+                    role="alert"
+                    className="mb-2 rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[12px] text-danger"
+                  >
+                    Regeneration failed — your previous text was kept
+                  </div>
+                ) : null}
                 <textarea
                   value={s.body}
                   onChange={(e) => editBody(s.heading, e.target.value)}

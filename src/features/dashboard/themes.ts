@@ -44,7 +44,13 @@ export const ink: Theme = {
   "--rule": "rgba(243, 234, 214, 0.16)",
   "--foreground": "#f3ead6",
   "--foreground-soft": "#ddd0ac",
-  "--muted": "#95876a",
+  // #a89a7e is the darkest shade of the warm-khaki muted hue that holds
+  // WCAG AA 4.5:1 for normal text on every ink surface — the binding pair
+  // is --surface-elevated #1a3245 (4.78:1; the previous #95876a sat at
+  // 3.75:1 there and 4.44:1 on --surface). It stays below --muted-strong
+  // (5.70:1 on the same surface) so the muted < muted-strong hierarchy
+  // survives. Enforced by themes.contrast.test.ts.
+  "--muted": "#a89a7e",
   "--muted-strong": "#b7a988",
   "--accent": "#d4a554",
   "--accent-dark": "#b8893a",

@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
+import { Badge, Button, Card, CardBody, CardHeader, PanelErrorBoundary, Skeleton } from "@/components/ui";
 import { Stamp, ChapterMark, Seal } from "@/components/brand";
 import { FieldGuidancePanel } from "@/features/guidance";
-import { getCaseFacts } from "@/lib/data";
-import { type CaseFact, type SavedCaseSummary } from "../types";
+import { type SavedCaseSummary } from "../types";
+import { useCaseFileData } from "../useCaseFileData";
 import { CaseList } from "./CaseList";
 import { CriteriaTable } from "./CriteriaTable";
 import { PetitionDraftCard, TasksCard } from "./SidePanels";
@@ -16,27 +15,20 @@ export function CaseFileDashboard({
 }: {
   cases?: readonly SavedCaseSummary[];
 }) {
-  const [caseFacts, setCaseFacts] = useState<readonly CaseFact[] | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    getCaseFacts().then((facts) => {
-      if (active) setCaseFacts(facts);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  // Single owner of the case-file data: one composited fetch (case facts +
+  // outstanding tasks + petition excerpt) drilled into the child cards as
+  // props, replacing the three independent useEffect fetches (ADR-0009).
+  const { data } = useCaseFileData();
+  const caseFacts = data?.caseFacts ?? null;
 
   return (
     <div className="px-8 py-10">
       <div className="mx-auto max-w-7xl space-y-8">
         <ChapterMark numeral="I" label="Petitioner of record" />
 
-        {/* The user's real, persisted cases (from the qualification flow). Only
-            rendered when there are any — the keyless demo shows just the mock
-            case file below. */}
-        {cases.length > 0 ? <YourCasesCard cases={cases} /> : null}
+        {/* The user's real, persisted cases (from the qualification flow). Shows
+            an empty-state CTA when none exist yet. */}
+        {cases.length > 0 ? <YourCasesCard cases={cases} /> : <EmptyCasesCallout />}
 
         {/* Masthead — the case-file header card */}
         <Card className="relative overflow-hidden">
@@ -89,12 +81,18 @@ export function CaseFileDashboard({
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="lg:col-span-8 space-y-6">
-            <CriteriaTable />
+            <PanelErrorBoundary label="Criteria">
+              <CriteriaTable criteria={data?.criteria ?? null} />
+            </PanelErrorBoundary>
             <FieldGuidancePanel />
           </div>
           <div className="space-y-6 lg:col-span-4">
-            <TasksCard />
-            <PetitionDraftCard />
+            <PanelErrorBoundary label="Outstanding tasks">
+              <TasksCard tasks={data?.tasks ?? null} />
+            </PanelErrorBoundary>
+            <PanelErrorBoundary label="Petition draft">
+              <PetitionDraftCard excerpt={data?.petitionExcerpt ?? null} />
+            </PanelErrorBoundary>
           </div>
         </div>
 
@@ -107,6 +105,30 @@ export function CaseFileDashboard({
         </div>
       </div>
     </div>
+  );
+}
+
+// — Empty state — shown when the user has no cases yet ──────────────────────────
+function EmptyCasesCallout() {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="bg-surface-muted/60">
+        <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+          § — Your cases
+        </div>
+      </CardHeader>
+      <CardBody className="flex flex-col items-center gap-4 py-10 text-center">
+        <p className="font-sans text-[15px] text-muted-strong max-w-sm">
+          Your case file will appear here — begin by qualifying your profile
+        </p>
+        <Link
+          href="/qualify"
+          className="inline-flex items-center justify-center gap-2 rounded-control font-mono uppercase tracking-document transition-[background-color,border-color,color,transform] duration-300 ease-out focus-visible:outline-none active:translate-y-[1px] bg-foreground text-background border border-foreground hover:bg-foreground-soft px-5 py-2.5 text-[13px]"
+        >
+          Qualify your profile
+        </Link>
+      </CardBody>
+    </Card>
   );
 }
 

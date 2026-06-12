@@ -1,28 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Badge, Card, CardHeader, Skeleton } from "@/components/ui";
-import { getCriteria } from "@/lib/data";
 import { QUALIFYING_THRESHOLD, statusTone, summarizeCriteria } from "../criteria";
 import { type Criterion } from "../types";
+import { CriterionPrimerButton } from "./CriterionPrimerButton";
 
-export function CriteriaTable() {
-  const [criteria, setCriteria] = useState<readonly Criterion[] | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    getCriteria().then((rows) => {
-      if (active) setCriteria(rows);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
+/**
+ * The O-1A criteria table. Criteria are no longer fetched here — they arrive as
+ * a prop from the coordinated `useCaseFileData` fan-out (ADR-0009), so this card
+ * shares the single composited fetch with the rest of the dashboard instead of
+ * issuing its own `useEffect` read. `null` means the parent fetch is still in
+ * flight (skeleton state).
+ */
+export function CriteriaTable({
+  criteria,
+}: {
+  criteria: readonly Criterion[] | null;
+}) {
   const summary = summarizeCriteria(criteria ?? []);
 
   return (
-    <Card className="overflow-hidden">
+    <Card>
+      {/* Wrapper clips the header bg to the card's top corners without
+          applying overflow-hidden to the whole card, which would clip
+          the absolutely-positioned criterion primer popovers. */}
+      <div className="overflow-hidden rounded-t-card">
       <CardHeader className="bg-surface-muted/60">
         <div>
           <div className="microprint" style={{ color: "var(--accent-dark)" }}>
@@ -39,6 +41,7 @@ export function CriteriaTable() {
           {summary.qualifying} strong · {summary.partial} partial
         </Badge>
       </CardHeader>
+      </div>
 
       {criteria === null ? (
         <div className="space-y-2 p-5">
@@ -50,10 +53,10 @@ export function CriteriaTable() {
         <table className="w-full text-sm">
           <thead className="bg-background-tint/40 text-left">
             <tr>
-              <th className="px-5 py-3 microprint font-medium">Criterion</th>
-              <th className="px-5 py-3 microprint font-medium">Status</th>
-              <th className="px-5 py-3 microprint font-medium">Evidence</th>
-              <th className="px-5 py-3 microprint text-right font-medium">Ex.</th>
+              <th scope="col" className="px-5 py-3 microprint font-medium">Criterion</th>
+              <th scope="col" className="px-5 py-3 microprint font-medium">Status</th>
+              <th scope="col" className="px-5 py-3 microprint font-medium">Evidence</th>
+              <th scope="col" className="px-5 py-3 microprint text-right font-medium">Ex.</th>
             </tr>
           </thead>
           <tbody>
@@ -63,13 +66,14 @@ export function CriteriaTable() {
                 className="border-t border-dotted border-rule transition-[background-color] duration-200 hover:bg-accent-soft/35"
               >
                 <td className="px-5 py-3.5">
-                  <div className="flex items-baseline gap-3">
+                  <div className="flex items-center gap-3">
                     <span className="doc-number text-[10px] text-muted">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <span className="font-sans text-[14.5px] text-foreground">
                       {c.name}
                     </span>
+                    <CriterionPrimerButton criterionName={c.name} />
                   </div>
                 </td>
                 <td className="px-5 py-3.5">
