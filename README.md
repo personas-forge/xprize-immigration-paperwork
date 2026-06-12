@@ -48,10 +48,24 @@ file are real; AI, billing, and filing integrations are mocked.
   `localStorage` (key `atelier-token-banner-dismissed`) via
   `useSyncExternalStore`; the banner does not mount in demo/bypass mode
   (`balance === null`).
+- **Buy tokens through Polar — one-off bundles or a monthly subscription** —
+  the `/billing` page (`BundleGrid`) sells four one-off token bundles (Starter
+  $5 / 500 · Builder $15 / 2,000 · Pro $48 / 8,000 · Scale $150 / 30,000) and,
+  new in 0.10.0, a recurring **Monthly** plan ($19/mo for a 2,500-token
+  allowance that renews each billing cycle). Checkout runs through Polar's
+  hosted flow (`/api/checkout`) and `/api/polar/webhook` credits the buyer's
+  balance on `order.paid` — including each subscription renewal (every cycle is
+  a fresh, de-duped order id). All purchase paths are gated on
+  `isPolarConfigured()`, so the UI degrades gracefully when Polar credentials
+  are absent (or when `TOKENS_BYPASS=1` runs the AI unmetered in dev).
 - **Qualification flow + Next Steps panel** — paste a CV/bio to get an
   informational O-1A eligibility screening; after a passing result, a
   structured **Next Steps** card (Create account → Upload evidence → Attorney
   reviews) with a 'Get started' CTA guides users toward filing.
+- **Two-step onboarding with a progress indicator** — the post-screening
+  account/consent step at `/welcome` shows a "Step 2 of 2 · Confirm your
+  details" indicator and clarified submit-button copy, so users can see where
+  they sit in the onboarding sequence before their case file opens.
 - **Drafting studio with actionable save-recovery** — when a draft save fails,
   a `role="alert"` banner offers 'Copy draft' (clipboard) and a no-charge
   retry-save, so paid work is never silently lost. Single-section regeneration
@@ -168,6 +182,8 @@ After upgrading from 0.1.x: `rm -rf node_modules && npm install` — see
 | `/landing-claude` | Alternate masthead — narrow editorial column, printed-pamphlet treatment |
 | `/qualify` | O-1A qualification screener — criteria form, AI scoring, and the "What happens next" panel with a "Get started →" CTA once a positive result is returned. |
 | `/dashboard` | The case file — O-1A criteria audit, tasks, petition draft preview. Empty-state CTA links to `/qualify` when no cases exist. |
+| `/billing` | Token store — four one-off Polar bundles plus the recurring monthly subscription (`BundleGrid` → `/api/checkout`). |
+| `/welcome` | Post-screening account/consent step — "Step 2 of 2" onboarding progress indicator before the case file opens. |
 
 ## Data access — the Adapter layer
 
@@ -278,7 +294,7 @@ integration code is currently stubbed.
 | Gemini / Vertex AI | `GEMINI_API_KEY`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_APPLICATION_CREDENTIALS`, `GEMINI_MODEL` |
 | Document AI | `DOCAI_PROCESSOR_ID`, `DOCAI_LOCATION` |
 | Voice intake | `VAPI_API_KEY`, `RETELL_API_KEY` |
-| Billing | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY` |
+| Billing (Polar token economy) | `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_SERVER`, `POLAR_PRODUCT_{STARTER,BUILDER,PRO,SCALE,MONTHLY}`, `TOKENS_BYPASS` (dev-only paywall bypass) |
 | E-sign | `DOCUSIGN_INTEGRATION_KEY`, `DOCUSIGN_USER_ID` |
 | App | `DATABASE_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_ATTORNEY_FIRM_NAME`, `NEXT_PUBLIC_ATTORNEY_BAR_STATE` |
 | Deploy (optional) | `NEXT_PUBLIC_SITE_URL`, `VERCEL_URL` (used to resolve `metadataBase` for OG cards) |
