@@ -94,7 +94,7 @@ export function ConsentForm({
         disabled={pending}
         className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-seal px-6 py-3.5 font-mono text-[12px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 disabled:opacity-60"
       >
-        {pending ? "Stamping…" : "Agree & open my case file"}
+        {pending ? "Stamping…" : "Finish setup — open my case file"}
         <span aria-hidden>→</span>
       </button>
     </form>
