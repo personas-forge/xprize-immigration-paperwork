@@ -8,7 +8,26 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-13
+
+Pre-1.0 **minor** bump — batches every increment merged after v0.9.1 (#45, #46,
+#47, #48, #64, #70, #20, #16). User-facing features (recurring Polar
+subscription, onboarding progress indicator, post-screening guidance, dashboard
+empty-state CTA, draft save-failure recovery) drive the minor bump; internal
+auth/LLM-guard refactors and an a11y fix ride along. No breaking API or
+persisted-field semantics changes.
+
 ### Added
+
+- **Polar monthly subscription — recurring token allowance (#70).** A new
+  `monthly` bundle ($19/mo ≈ 2,500 tokens per billing cycle), wired to
+  `POLAR_PRODUCT_MONTHLY` and reusing the existing checkout/webhook flow, gives
+  users a recurring alternative to one-off token purchases.
+
+- **'Step 2 of 2 · Confirm your details' progress indicator in the welcome flow
+  (#64).** The consent/onboarding step now shows where the user sits in the
+  two-step flow and clarifies the submit-button copy, reducing onboarding
+  drop-off.
 
 - **'What happens next' panel after successful O-1A screening (#47).** After a
   positive qualification result, a contextual "§ What happens next" card renders
@@ -29,6 +48,18 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
   saving via the new `/api/draft/save` endpoint (owner-only, rate-limited, never
   re-charges or re-generates). Users no longer lose paid AI work product when a
   transient persistence error occurs.
+
+### Changed
+
+- **Output guards composed via a `withGuards` decorator (ADR-0008, #20).**
+  `getLlm()` now wraps both engines (gemini, claude) through `withGuards(...)`,
+  applying the deterministic output guard exactly once on every `generate()`
+  call; the engine clients stay guard-free. No change to guard behaviour.
+
+- **`authorizeRoute` adopted in the RFE and evidence-categorize routes
+  (ADR-0006, #16).** `/api/rfe` and `/api/evidence/categorize` now use the
+  shared `authorizeRoute` case-access helper instead of hand-rolled checks;
+  401/403 status codes and error copy are byte-identical to before.
 
 ### Fixed
 
@@ -495,6 +526,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.10.0]: #
 [0.9.1]: #
 [0.9.0]: #
 [0.8.0]: #
