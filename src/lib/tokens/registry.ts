@@ -53,6 +53,12 @@ export type OperationKey = keyof typeof OPERATION_REGISTRY;
  */
 export function costOf(op: string): number {
   const def = (OPERATION_REGISTRY as Record<string, OperationDef>)[op];
+  if (!def) {
+    // A mistyped/unregistered op key (e.g. "Draft" or "qualify_v2") falls back
+    // to the light tier and is silently underbilled (1 vs 3-12). Surface it so a
+    // pricing mismatch is observable instead of a quiet revenue shortfall.
+    console.warn(`[tokens] costOf: unknown operation "${op}" — defaulting to light tier (1 token)`);
+  }
   return TIER_COST[def?.tier ?? "light"];
 }
 
