@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
+import { costOf } from "@/lib/tokens/economy";
 import { getForms } from "@/lib/data";
 import { type UscisForm } from "@/features/case-file/types";
 import { DISCLAIMER, type GuidanceResponse } from "../guidance";
@@ -179,7 +180,16 @@ export function FieldGuidancePanel() {
 
             <div className="flex items-center gap-3">
               <Button type="submit" variant="primary" disabled={status === "loading"}>
-                {status === "loading" ? "Generating…" : "Get field guidance"}
+                {status === "loading" ? (
+                  "Generating…"
+                ) : (
+                  <>
+                    Get field guidance
+                    <span className="ml-2 rounded-full bg-background/15 px-1.5 py-0.5 font-mono text-[10px] tracking-document">
+                      {costOf("guidance")} token
+                    </span>
+                  </>
+                )}
               </Button>
               <span className="microprint" style={{ color: "var(--muted)" }}>
                 Informational only
