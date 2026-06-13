@@ -9,6 +9,7 @@ import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { isDevAuth } from "@/lib/auth/devAuth";
 import { BUNDLES, ENTERPRISE_CONTACT, FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
 import { BundleGrid } from "./BundleGrid";
+import { PurchaseToast } from "./PurchaseToast";
 
 export const metadata: Metadata = {
   title: "Token ledger — Immigration Concierge",
@@ -27,7 +28,12 @@ export const dynamic = "force-dynamic";
 // with the header ThemeToggle (no theme-specific markup). When auth/DB isn't
 // configured the balance reads "∞" (the guard gives a free, unmetered pass).
 
-export default async function BillingPage() {
+export default async function BillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const purchaseSuccess = (await searchParams).status === "success";
   const user = isFirebaseConfigured() || isDevAuth() ? await getUser() : null;
   // "∞" when the token economy isn't enforced (no auth/DB → guard free-passes).
   const balance =
@@ -39,6 +45,7 @@ export default async function BillingPage() {
       <SiteHeader />
 
       <section className="mx-auto max-w-6xl px-8 pb-10 pt-20">
+        {purchaseSuccess ? <PurchaseToast /> : null}
         <Rise>
           <ChapterMark numeral="IV" label="Token ledger" />
           <h1 className="display mt-5 max-w-3xl text-[clamp(2.4rem,6vw,4.4rem)]">
