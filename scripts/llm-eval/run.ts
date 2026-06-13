@@ -290,8 +290,16 @@ async function main(): Promise<void> {
 
   const fail = records.flatMap((r) => r.gates).filter((g) => g.verdict === "fail").length;
   const warn = records.flatMap((r) => r.gates).filter((g) => g.verdict === "warn").length;
-  console.log(`\n── done: ${records.length} scenarios, ${fail} hard failures, ${warn} warnings ──`);
+  const errored = records.filter((r) => r.error).length;
+  console.log(
+    `\n── done: ${records.length} scenarios, ${fail} hard failures, ${warn} warnings, ${errored} errored ──`,
+  );
   writeReports(records);
+  // A scenario whose pipeline threw (LLM timeout / parse failure) ran its gates
+  // against an EMPTY context, so they can't reliably hard-fail it. Surface those
+  // runs with a non-zero exit so the quality gate doesn't silently pass a run
+  // where the model was never really exercised.
+  if (errored > 0) process.exitCode = 1;
 }
 
 main().catch((e) => {
