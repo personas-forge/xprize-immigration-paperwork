@@ -297,7 +297,8 @@ export function DraftStudio({
             {sections.map((s, i) => (
               <div
                 key={s.heading + i}
-                className="rounded-control border border-accent/25 bg-surface px-4 py-3"
+                style={{ animationDelay: `${i * 70}ms` }}
+                className="card-enter rounded-control border border-accent/25 bg-surface px-4 py-3"
               >
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <span className="display text-[15px] text-foreground">
@@ -307,9 +308,29 @@ export function DraftStudio({
                     type="button"
                     onClick={() => regenerate(s.heading)}
                     disabled={regenerating !== null}
-                    className="font-mono text-[10px] uppercase tracking-document text-accent-dark underline-offset-2 hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                    className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                   >
-                    {regenerating === s.heading ? "Regenerating…" : "Regenerate · 5"}
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                      className={regenerating === s.heading ? "animate-spin" : ""}
+                    >
+                      <path d="M21 12a9 9 0 1 1-3-6.7" />
+                      <path d="M21 4v4h-4" />
+                    </svg>
+                    {regenerating === s.heading ? "Regenerating…" : "Regenerate"}
+                    {regenerating !== s.heading ? (
+                      <span className="rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[9px] tracking-normal text-accent-dark">
+                        5
+                      </span>
+                    ) : null}
                   </button>
                 </div>
                 {regenerationError === s.heading ? (
