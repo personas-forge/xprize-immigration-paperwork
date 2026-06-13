@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { DISCLAIMER, type QualifyResult } from "../qualification";
@@ -40,14 +40,20 @@ export function QualifyPanel() {
   const nameId = useId();
   const classId = useId();
   const profileId = useId();
+  // Synchronous in-flight guard: the disabled button doesn't stop an Enter-key
+  // repeat or requestSubmit() from firing two concurrent /api/qualify calls
+  // (each charges tokens and creates a separate case) before the re-render.
+  const submitting = useRef(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting.current) return;
     if (profile.trim().length < 40) {
       setError("Tell us a bit more about your background (at least a sentence or two).");
       setStatus("error");
       return;
     }
+    submitting.current = true;
     setStatus("loading");
     setError(null);
     setResult(null);
@@ -74,6 +80,8 @@ export function QualifyPanel() {
     } catch {
       setError("Network error — please try again.");
       setStatus("error");
+    } finally {
+      submitting.current = false;
     }
   }
 
