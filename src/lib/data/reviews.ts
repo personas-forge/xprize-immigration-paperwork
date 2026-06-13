@@ -73,7 +73,8 @@ export async function setCaseStatus(
  * current status is one of `fromStatuses` (compare-and-set). Returns true if it
  * applied, false if the precondition failed. The status guard + the same-
  * transaction event append fix both double-submits and audit-log desync. No
- * store → graceful no-op that reports success (matches the rest of the layer).
+ * store → returns false: nothing was written, so the caller must NOT report
+ * success (a phantom "filed" in a legal workflow is worse than a visible error).
  */
 export async function transitionCase(input: {
   caseId: string;
@@ -89,6 +90,6 @@ export async function transitionCase(input: {
   }[];
 }): Promise<boolean> {
   const store = await getStore();
-  if (!store) return true;
+  if (!store) return false;
   return store.transitionCase(input);
 }
