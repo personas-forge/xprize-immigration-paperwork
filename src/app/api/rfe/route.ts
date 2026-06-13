@@ -87,7 +87,23 @@ export async function POST(request: Request): Promise<NextResponse> {
   let resolvedCaseId: string | null = null;
 
   if (auth.status === "ok") {
-    const criteria = await getCriteriaForCase(auth.case.id);
+    // Loading the case criteria can throw if the store errors mid-query (a
+    // configured store does NOT degrade to []). Catch it here — before any
+    // charge — so it returns a structured, disclaimer-bearing error instead of a
+    // raw Next.js 500, matching the rest of this route's contract.
+    let criteria: Awaited<ReturnType<typeof getCriteriaForCase>>;
+    try {
+      criteria = await getCriteriaForCase(auth.case.id);
+    } catch (err) {
+      console.error("[/api/rfe] failed to load case criteria", err);
+      return NextResponse.json(
+        {
+          error: "We couldn't load the case criteria. Please try again.",
+          disclaimer: DISCLAIMER,
+        },
+        { status: 503 },
+      );
+    }
     const parsed = parseRfeRequest({
       petitioner: auth.case.petitioner,
       classification: auth.case.classification,
