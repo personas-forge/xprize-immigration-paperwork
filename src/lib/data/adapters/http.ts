@@ -24,10 +24,12 @@ const STATUS: Record<AdapterErrorKind, number> = {
 
 /** Client-safe message per kind. Deliberately generic — never leaks a `cause`. */
 const MESSAGE: Record<AdapterErrorKind, string> = {
-  unconfigured: "Storage is not configured.",
+  // Avoid infra jargon ("storage") for anxious immigration clients — keep these
+  // reassuring and actionable. forbidden/not_found are already user-appropriate.
+  unconfigured: "Our case-file service is temporarily unavailable. Please try again shortly.",
   forbidden: "You do not have access to this case.",
   not_found: "Case not found.",
-  store_error: "A storage error occurred. Please try again.",
+  store_error: "We couldn't reach your case file just now. Please try again in a moment.",
 };
 
 /** Pure: the HTTP status for an adapter error kind. */
