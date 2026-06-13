@@ -54,7 +54,10 @@ export async function chargeForOperation(
     ok: true,
     cost,
     balance: res.balance,
-    reclaim: () => reclaim(user.id, cost, `reclaim:${requestId}`, { operation }),
+    // Scope the reclaim ref by user id: the ledger's idempotency index is the
+    // GLOBAL (ref, reason), so a per-user ref keeps one user's reclaim from ever
+    // deduping against another's.
+    reclaim: () => reclaim(user.id, cost, `reclaim:${user.id}:${requestId}`, { operation }),
   };
 }
 
