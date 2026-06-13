@@ -59,11 +59,23 @@ export async function POST(request: NextRequest) {
 
   // Refund/chargeback reversal (optional clawback). Confirm event name.
   if (event.type === "refund.created" || event.type === "order.refunded") {
-    const order = event.data as { id: string; metadata?: Record<string, string> };
+    const order = event.data as {
+      id: string;
+      order_id?: string;
+      orderId?: string;
+      metadata?: Record<string, string>;
+    };
     const userId = order.metadata?.userId;
     const b = order.metadata?.bundle ? bundleByKey(order.metadata.bundle) : undefined;
-    if (userId && b) {
-      await credit(userId, -b.tokens, "refund", `refund:${order.id}`, { bundle: b.key });
+    // Dedupe on the ORIGINAL order id, not the per-attempt refund id. A
+    // refund.created payload's root `id` is the refund id (distinct for each
+    // refund attempt), so keying the ref on it would let two refunds against the
+    // same order both clawback (double-debit). order.refunded carries the order
+    // id at its root; refund.created carries it as order_id.
+    const originalOrderId =
+      event.type === "order.refunded" ? order.id : order.order_id ?? order.orderId;
+    if (userId && b && originalOrderId) {
+      await credit(userId, -b.tokens, "refund", `refund:${originalOrderId}`, { bundle: b.key });
     }
   }
 
