@@ -112,7 +112,10 @@ function write(next: CaseQuery): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {
-    // best-effort; the session still works without persistence
+    // Persistence failed (private mode / quota). Don't notify subscribers:
+    // getSnapshot re-reads localStorage, so a change event here would just make
+    // them re-render the OLD value. The session continues without persistence.
+    return;
   }
   window.dispatchEvent(new Event(EVENT));
 }

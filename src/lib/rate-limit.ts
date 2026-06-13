@@ -53,6 +53,18 @@ export const RATE_WINDOW_MS = 60_000;
 
 const globalBuckets = new Map<string, Bucket>();
 
+// Cap the bucket map so one-time visitors / rotated IPs can't leak memory: a
+// fixed-window entry is only overwritten when its key is hit again, so without
+// this, keys that never recur accumulate forever. When the map grows past this,
+// drop every entry whose window has already elapsed (cheap, no background timer).
+const MAX_BUCKETS = 10_000;
+
+function pruneExpired(store: Map<string, Bucket>, now: number): void {
+  for (const [k, b] of store) {
+    if (now >= b.resetAt) store.delete(k);
+  }
+}
+
 /**
  * Record a hit against `key` and report whether it is within `limit` for the
  * current `windowMs` window. Pure given `now` and `store`.
@@ -68,6 +80,7 @@ export function checkRateLimit(
 
   // Fresh window: first hit, or the previous window has elapsed.
   if (!bucket || now >= bucket.resetAt) {
+    if (store.size >= MAX_BUCKETS) pruneExpired(store, now);
     store.set(key, { count: 1, resetAt: now + windowMs });
     return { ok: true, limit, remaining: limit - 1, retryAfterSec: 0 };
   }
