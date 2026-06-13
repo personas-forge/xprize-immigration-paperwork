@@ -164,7 +164,14 @@ async function open(): Promise<Pglite> {
   if (!pgPromise) {
     pgPromise = (async () => {
       const { PGlite } = await import("@electric-sql/pglite");
-      const pg = new PGlite(pglitePath()) as unknown as Pglite;
+      // CORE_DDL runs `create extension pgcrypto` (for gen_random_uuid()), which
+      // PGlite only makes available when the contrib extension is loaded at
+      // construction — without this the whole DDL fails with
+      // 'extension "pgcrypto" is not available' and every DB-backed page 500s.
+      const { pgcrypto } = await import("@electric-sql/pglite/contrib/pgcrypto");
+      const pg = new PGlite(pglitePath(), {
+        extensions: { pgcrypto },
+      }) as unknown as Pglite;
       await pg.waitReady;
       await pg.exec(CORE_DDL);
       return pg;
