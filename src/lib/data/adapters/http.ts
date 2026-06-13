@@ -35,11 +35,12 @@ export function httpStatusForError(kind: AdapterErrorKind): number {
   return STATUS[kind];
 }
 
+/** Client-safe error body returned to the browser (no `cause`, no PII).
+ *  Exported so client fetch wrappers can type a failed adapter response. */
+export type ErrorEnvelope = { error: string; code: AdapterErrorKind };
+
 /** Pure: the JSON body for an adapter error (no `cause`, no PII). */
-export function adapterErrorBody(error: AdapterError): {
-  error: string;
-  code: AdapterErrorKind;
-} {
+export function adapterErrorBody(error: AdapterError): ErrorEnvelope {
   return { error: MESSAGE[error.kind], code: error.kind };
 }
 
