@@ -261,11 +261,16 @@ export async function executeAiOperation<TInput, TOutput>(
     output = spec.mock(input);
     source = "mock";
   } else {
+    // Track whether the charge has already been reclaimed so a throw FROM
+    // reclaim() (or from mock()) in the guard-null branch doesn't re-enter the
+    // catch and reclaim a second time (double-refund / idempotency error).
+    let reclaimed = false;
     try {
       const { text, options } = spec.prompt(input);
       const raw = await llm.generate(text, options);
       const guarded = spec.guard(raw, input);
       if (guarded === null) {
+        reclaimed = true;
         await charged.reclaim();
         output = spec.mock(input);
         source = "mock";
@@ -274,7 +279,7 @@ export async function executeAiOperation<TInput, TOutput>(
         source = llm.name;
       }
     } catch {
-      await charged.reclaim();
+      if (!reclaimed) await charged.reclaim();
       output = spec.mock(input);
       source = "mock";
     }
