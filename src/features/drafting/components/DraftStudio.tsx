@@ -285,6 +285,17 @@ export function DraftStudio({
           <div className="space-y-4">
             <DisclaimerStamp text={DISCLAIMER} />
             <CitationNote />
+            {!isModelSource(source) ? (
+              <div
+                className="rounded-control border border-dashed border-border-strong bg-surface-muted/40 px-4 py-2.5"
+                style={{ color: "var(--muted-strong)" }}
+              >
+                <span className="microprint">
+                  Placeholder output — no AI engine configured; this is
+                  deterministic template text for the attorney to replace.
+                </span>
+              </div>
+            ) : null}
             {saveFailed ? (
               <SaveFailedAlert
                 copyState={copyState}
@@ -298,7 +309,9 @@ export function DraftStudio({
               <div
                 key={s.heading + i}
                 style={{ animationDelay: `${i * 70}ms` }}
-                className="card-enter rounded-control border border-accent/25 bg-surface px-4 py-3"
+                className={`card-enter rounded-control border bg-surface px-4 py-3 ${
+                  isModelSource(source) ? "border-accent/25" : "border-dashed border-border-strong"
+                }`}
               >
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <span className="display text-[15px] text-foreground">

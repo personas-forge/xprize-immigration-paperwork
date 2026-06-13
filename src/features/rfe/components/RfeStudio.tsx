@@ -197,6 +197,17 @@ export function RfeStudio({
           <div className="space-y-4">
             <DisclaimerStamp text={DISCLAIMER} />
             <CitationNote />
+            {!isModelSource(source) ? (
+              <div
+                className="rounded-control border border-dashed border-border-strong bg-surface-muted/40 px-4 py-2.5"
+                style={{ color: "var(--muted-strong)" }}
+              >
+                <span className="microprint">
+                  Placeholder output — no AI engine configured; this is
+                  deterministic template text for the attorney to replace.
+                </span>
+              </div>
+            ) : null}
             {saveFailed ? (
               <div
                 role="alert"
@@ -213,7 +224,12 @@ export function RfeStudio({
               </div>
             ) : null}
             {sections.map((s, i) => (
-              <div key={s.heading + i} className="rounded-control border border-seal/25 bg-surface px-4 py-3">
+              <div
+                key={s.heading + i}
+                className={`rounded-control border bg-surface px-4 py-3 ${
+                  isModelSource(source) ? "border-seal/25" : "border-dashed border-border-strong"
+                }`}
+              >
                 <div className="mb-2 display text-[15px] text-foreground">{s.heading}</div>
                 <textarea
                   value={s.body}
