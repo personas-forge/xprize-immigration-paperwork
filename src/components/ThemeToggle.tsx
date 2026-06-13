@@ -30,7 +30,11 @@ export function ThemeToggle() {
 
   const toggle = useCallback(() => {
     const next: ThemeMode = isInk ? "parchment" : "ink";
-    document.documentElement.dataset.theme = next === "ink" ? "ink" : "";
+    // Remove the attribute entirely for parchment (rather than leaving
+    // data-theme=""), matching the pre-paint script which only ever SETS it for
+    // ink — so hasAttribute("data-theme") reflects the real state.
+    if (next === "ink") document.documentElement.dataset.theme = "ink";
+    else delete document.documentElement.dataset.theme;
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
     } catch {

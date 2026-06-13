@@ -18,14 +18,22 @@ export async function POST(request: NextRequest) {
   }
 
   const origin = new URL(request.url).origin;
-  // Verify args against @polar-sh/sdk types for the installed version.
-  const checkout = await polar().checkouts.create({
-    products: [b.polarProductId],
-    successUrl: `${origin}/billing?status=success`,
-    customerEmail: user.email ?? undefined,
-    // Echoed back on the order webhook so we credit the right user/bundle.
-    metadata: { userId: user.id, bundle: b.key, tokens: String(b.tokens) },
-  });
+  // Verify args against @polar-sh/sdk types for the installed version. A Polar
+  // hiccup (rate limit, timeout, 4xx) must become a structured error the UI can
+  // act on — not an unhandled rejection surfacing as a bare 500.
+  let checkout: { url: string };
+  try {
+    checkout = await polar().checkouts.create({
+      products: [b.polarProductId],
+      successUrl: `${origin}/billing?status=success`,
+      customerEmail: user.email ?? undefined,
+      // Echoed back on the order webhook so we credit the right user/bundle.
+      metadata: { userId: user.id, bundle: b.key, tokens: String(b.tokens) },
+    });
+  } catch (cause) {
+    console.error("[checkout] polar checkout creation failed", cause);
+    return Response.json({ error: "checkout_failed" }, { status: 502 });
+  }
 
   return Response.json({ url: checkout.url });
 }

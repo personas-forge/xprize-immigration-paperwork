@@ -64,12 +64,12 @@ export default function LandingClaude() {
             style={{ "--delay": "360ms" } as React.CSSProperties}
             className="mt-10 flex flex-wrap items-center justify-center gap-3"
           >
-            <a
-              href="#criteria"
+            <Link
+              href="/qualify"
               className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-background hover:bg-foreground-soft"
             >
               Take the free qualification
-            </a>
+            </Link>
             <Link
               href="/dashboard"
               className="rounded-control border border-border-strong px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-foreground hover:border-foreground"
@@ -182,12 +182,12 @@ export default function LandingClaude() {
             what would change it.
           </p>
           <div className="mt-9 flex items-center justify-center gap-4">
-            <a
-              href="#criteria"
+            <Link
+              href="/qualify"
               className="rounded-control bg-seal px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-background shadow-seal hover:bg-[color:var(--accent-dark)]"
             >
               Begin qualification
-            </a>
+            </Link>
             <Stamp label="Notarized" meta="On file" tone="indigo" rotate={5} />
           </div>
         </section>

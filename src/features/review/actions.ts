@@ -157,6 +157,10 @@ export async function attorneyRecordDecision(
   const user = await getUser();
   if (!user || !isConfiguredAttorney(user.email)) return;
   const decision = String(formData.get("decision") ?? "Approved");
+  // Server-side allowlist: the ReviewPanel <select> only offers these three, but
+  // a crafted POST could otherwise write an arbitrary string into the append-only
+  // review log (and only "Approved" is terminal). Reject anything else.
+  if (!["Approved", "RFE issued", "Denied"].includes(decision)) return;
   // Only a Filed case can receive a decision. "Approved" is terminal; any other
   // decision keeps the case "Filed" (the decision is recorded in the thread).
   const applied = await transitionCase({

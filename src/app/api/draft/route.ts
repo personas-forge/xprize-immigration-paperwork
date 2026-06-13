@@ -233,6 +233,15 @@ export async function POST(request: Request): Promise<NextResponse> {
         } else {
           version = saved.value;
         }
+      } else {
+        // No stored base draft to merge the regenerated section into (e.g. the
+        // initial full-draft save failed). The user already paid, so surface it
+        // rather than silently dropping the section with saveFailed:false.
+        saveFailed = true;
+        console.error(
+          "[/api/draft] section regenerate has no stored draft to merge into",
+          { caseId: resolvedCaseId },
+        );
       }
     }
 

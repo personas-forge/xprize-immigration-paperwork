@@ -99,7 +99,7 @@ export default function FaqPage() {
               Take the qualification
             </Link>
             <Link
-              href="/pricing"
+              href="/billing"
               className="rounded-control border border-border-strong px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-foreground hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
             >
               See the fees

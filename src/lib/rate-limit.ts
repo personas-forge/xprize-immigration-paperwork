@@ -85,10 +85,32 @@ export function checkRateLimit(
   return { ok: true, limit, remaining: limit - bucket.count, retryAfterSec: 0 };
 }
 
+/** Strict syntactic check for an IPv4 or IPv6 literal. Rejects empty strings,
+ *  garbage, and anything an attacker could inject to fan out into many buckets. */
+function isValidIp(value: string): boolean {
+  // IPv4: four 0-255 octets.
+  if (
+    /^(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/.test(
+      value,
+    )
+  ) {
+    return true;
+  }
+  // IPv6: hex groups with optional `::` compression (incl. IPv4-mapped tails).
+  return /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))$/.test(
+    value,
+  );
+}
+
 /**
  * Identity for limiting: the authenticated user when known (so a user can't dodge
  * the cap by rotating IPs), else the forwarded client IP, else a shared "anon"
  * bucket. Scoped per route so one endpoint's traffic can't exhaust another's.
+ *
+ * SECURITY: `x-forwarded-for` is client-controlled, so the first hop is only
+ * honoured when it parses as a real IP literal; garbage / spoofed non-IP values
+ * (an attacker injecting per-request junk to mint a fresh bucket each call) all
+ * collapse into the shared `anon` bucket instead of bypassing the cap.
  */
 export function rateLimitKey(
   request: Request,
@@ -97,9 +119,11 @@ export function rateLimitKey(
 ): string {
   if (userId) return `${scope}:u:${userId}`;
   const h = request.headers;
-  const ip =
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "anon";
-  return `${scope}:ip:${ip}`;
+  const candidate =
+    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    h.get("x-real-ip")?.trim() ||
+    "";
+  return isValidIp(candidate) ? `${scope}:ip:${candidate}` : `${scope}:ip:anon`;
 }
 
 /** True unless explicitly disabled (e.g. RATE_LIMIT_DISABLED=1 for e2e/load tests). */

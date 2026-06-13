@@ -10,7 +10,7 @@ import {
   PROGRAM_VALIDATIONS,
   REVALIDATE_AFTER_DAYS,
   VISA_PACKS,
-  isStale,
+  freshnessOf,
   type Classification,
   type JurisdictionCode,
   type SourceRef,
@@ -29,11 +29,6 @@ export const dynamic = "force-dynamic";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-function addDays(iso: string, days: number): string {
-  const t = new Date(`${iso}T00:00:00Z`).getTime() + days * 86_400_000;
-  return new Date(t).toISOString().slice(0, 10);
 }
 
 const STATUS_TONE: Record<ValidationStatus, BadgeTone> = {
@@ -156,8 +151,7 @@ function ValidationCard({
   record: ValidationRecord;
   now: string;
 }) {
-  const stale = isStale(record, now);
-  const reverifyBy = addDays(record.lastVerified, REVALIDATE_AFTER_DAYS);
+  const freshness = freshnessOf(record, now);
 
   return (
     <Card className="overflow-hidden">
@@ -182,10 +176,12 @@ function ValidationCard({
           ) : null}
           <Field label="Last reviewed">{record.lastVerified}</Field>
           <Field label="Freshness">
-            {stale ? (
+            {freshness.level === "stale" ? (
               <Badge tone="warning">Re-verify due</Badge>
+            ) : freshness.level === "due-soon" ? (
+              <Badge tone="warning">Re-verify soon · by {freshness.dueBy}</Badge>
             ) : (
-              <span className="text-muted-strong">Fresh · re-verify by {reverifyBy}</span>
+              <span className="text-muted-strong">Fresh · re-verify by {freshness.dueBy}</span>
             )}
           </Field>
         </dl>

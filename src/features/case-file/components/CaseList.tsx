@@ -81,8 +81,16 @@ export function CaseList() {
     const a = document.createElement("a");
     a.href = url;
     a.download = "petition-cases.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    // Attach before click (a detached-anchor click is non-standard and fails in
+    // Firefox/Safari) and revoke in finally so the Blob URL is freed even if
+    // click() throws.
+    document.body.appendChild(a);
+    try {
+      a.click();
+    } finally {
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
   }
 
   const filtersActive =

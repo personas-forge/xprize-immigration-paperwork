@@ -137,12 +137,6 @@ function Hero() {
               Take the 5-min qualification
               <span aria-hidden>→</span>
             </Link>
-            <a
-              href="/docs/BACKLOG.md"
-              className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-transparent px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-foreground hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
-            >
-              Read the 12-week build plan
-            </a>
             <span className="microprint" style={{ color: "var(--muted-strong)" }}>
               Free if you don&apos;t qualify · 50% upfront, 50% on filing
             </span>
@@ -413,12 +407,6 @@ function SiteFooter() {
           © Immigration Concierge · XPrize hackathon · 90-day MVP
         </div>
         <div className="microprint flex gap-4">
-          <a className="ink-link" href="/docs/BACKLOG.md">
-            Backlog
-          </a>
-          <a className="ink-link" href="/docs/CHECKLIST.md">
-            Checklist
-          </a>
           <Link className="ink-link" href="/landing-claude">
             Alt. masthead
           </Link>

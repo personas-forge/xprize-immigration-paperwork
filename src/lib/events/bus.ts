@@ -76,7 +76,14 @@ export class EventBus {
         try {
           await handler(event);
         } catch (error) {
-          this.#onError(error, event);
+          // The error reporter itself must never break the publish (and thus
+          // the Store mutation): a throwing onError would otherwise reject the
+          // Promise.all and defeat the isolation guarantee.
+          try {
+            this.#onError(error, event);
+          } catch (reporterError) {
+            console.error("[events] onError reporter threw", reporterError);
+          }
         }
       }),
     );

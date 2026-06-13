@@ -69,11 +69,22 @@ export function getLlm(opts: { requiresImages?: boolean } = {}): Llm | null {
 // LightTrack observability (fire-and-forget; LIGHTTRACK_URL from env, default localhost:8787).
 const lt = new LightTrack({ project: "immigration-paperwork", source: "gemini" });
 
+// Memoize the SDK client so concurrent generate() calls don't each re-read the
+// env var and re-allocate a GoogleGenerativeAI. The per-call model (with its own
+// generationConfig) is still constructed per request below.
+let genAISingleton: GoogleGenerativeAI | null = null;
+function geminiSdk(): GoogleGenerativeAI {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("GEMINI_API_KEY is not set");
+  if (!genAISingleton) genAISingleton = new GoogleGenerativeAI(key);
+  return genAISingleton;
+}
+
 function geminiClient(): Llm {
   return {
     name: "gemini",
     async generate(prompt, options = {}) {
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+      const genAI = geminiSdk();
       const modelName = geminiModelFor(options.tier ?? "fast");
       const model = genAI.getGenerativeModel({
         model: modelName,
@@ -138,6 +149,10 @@ function runClaudeCli(prompt: string): Promise<string> {
     child.stdout.on("data", (d) => (out += d.toString()));
     child.stderr.on("data", (d) => (err += d.toString()));
     child.on("error", reject);
+    // A stdin pipe error (e.g. the child exits immediately on auth failure and
+    // closes the pipe) would otherwise be an unhandled stream 'error' and could
+    // hang the promise until the 180s timeout — reject like the process error.
+    child.stdin.on("error", reject);
     child.on("close", (code) => {
       if (code === 0) resolve(out.trim());
       else reject(new Error(`claude CLI exited with code ${code}: ${err.slice(0, 400)}`));

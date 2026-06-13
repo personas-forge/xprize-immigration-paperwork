@@ -257,27 +257,51 @@ export async function executeAiOperation<TInput, TOutput>(
   const llm = d.getLlm({ requiresImages: spec.requiresImages });
   let output: TOutput;
   let source: string;
-  if (!llm) {
-    output = spec.mock(input);
-    source = "mock";
-  } else {
-    try {
-      const { text, options } = spec.prompt(input);
-      const raw = await llm.generate(text, options);
-      const guarded = spec.guard(raw, input);
-      if (guarded === null) {
-        await charged.reclaim();
-        output = spec.mock(input);
-        source = "mock";
-      } else {
-        output = guarded;
-        source = llm.name;
-      }
-    } catch {
-      await charged.reclaim();
+  // Track whether the charge has already been reclaimed so a throw FROM
+  // reclaim() (or from mock()) in the guard-null/catch path doesn't reclaim a
+  // second time (double-refund / idempotency error).
+  let reclaimed = false;
+  try {
+    if (!llm) {
       output = spec.mock(input);
       source = "mock";
+    } else {
+      try {
+        const { text, options } = spec.prompt(input);
+        const raw = await llm.generate(text, options);
+        const guarded = spec.guard(raw, input);
+        if (guarded === null) {
+          reclaimed = true;
+          await charged.reclaim();
+          output = spec.mock(input);
+          source = "mock";
+        } else {
+          output = guarded;
+          source = llm.name;
+        }
+      } catch {
+        if (!reclaimed) await charged.reclaim();
+        reclaimed = true;
+        output = spec.mock(input);
+        source = "mock";
+      }
     }
+  } catch {
+    // The deterministic mock (the last-resort fallback) itself threw. Reclaim
+    // any still-outstanding charge and emit a structured 500 that STILL carries
+    // the DISCLAIMER — the UPL invariant: every error body this orchestrator
+    // emits includes it (a raw framework 500 would not).
+    if (!reclaimed) {
+      try {
+        await charged.reclaim();
+      } catch {
+        /* best-effort refund; don't mask the original mock failure */
+      }
+    }
+    return NextResponse.json(
+      { error: "generation_failed", disclaimer: DISCLAIMER },
+      { status: 500 },
+    );
   }
 
   // 6. Persist best-effort — a storage hiccup must never fail a paid response.

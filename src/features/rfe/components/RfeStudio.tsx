@@ -111,8 +111,10 @@ export function RfeStudio({
     }
   }
 
-  function editBody(heading: string, body: string) {
-    setSections((prev) => prev.map((s) => (s.heading === heading ? { ...s, body } : s)));
+  function editBody(index: number, body: string) {
+    // Key by index, not heading: if the model returns two sections with the same
+    // heading, a heading match would overwrite the body of every duplicate at once.
+    setSections((prev) => prev.map((s, i) => (i === index ? { ...s, body } : s)));
   }
 
   return (
@@ -215,7 +217,7 @@ export function RfeStudio({
                 <div className="mb-2 display text-[15px] text-foreground">{s.heading}</div>
                 <textarea
                   value={s.body}
-                  onChange={(e) => editBody(s.heading, e.target.value)}
+                  onChange={(e) => editBody(i, e.target.value)}
                   rows={Math.max(3, Math.ceil(s.body.length / 90))}
                   className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[13.5px] leading-[1.7] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                 />

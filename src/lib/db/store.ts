@@ -264,25 +264,37 @@ export interface Store {
   ): Promise<void>;
 }
 
-let cached: Store | null | undefined;
+let cached: Promise<Store | null> | undefined;
 
 /** Resolve the active store, lazily importing only the chosen driver. */
-export async function getStore(): Promise<Store | null> {
+export function getStore(): Promise<Store | null> {
+  // Cache the in-flight PROMISE (set synchronously, before any await) so two
+  // concurrent cold-start callers share ONE initialization. Caching the resolved
+  // value instead let both race past the null check and each build a separate
+  // Store — for the PGlite in-memory driver that means two divergent databases.
   if (cached !== undefined) return cached;
-  const driver = dbDriver();
-  let resolved: Store | null;
-  if (driver === "firestore") {
-    resolved = (await import("./firestore-store")).firestoreStore;
-  } else if (driver === "pglite") {
-    resolved = await (await import("./pglite-store")).getPgliteStore();
-  } else {
-    resolved = null;
-  }
-  // Wrap the driver so domain mutations publish typed events to the in-process
-  // bus (ADR-0007). Lazily imported to keep the events subsystem + its
-  // subscribers out of the bundle until a store is actually used.
-  cached = resolved
-    ? (await import("../events")).withDomainEvents(resolved)
-    : null;
+  cached = (async (): Promise<Store | null> => {
+    const driver = dbDriver();
+    let resolved: Store | null;
+    if (driver === "firestore") {
+      resolved = (await import("./firestore-store")).firestoreStore;
+    } else if (driver === "pglite") {
+      resolved = await (await import("./pglite-store")).getPgliteStore();
+    } else {
+      resolved = null;
+    }
+    // Wrap the driver so domain mutations publish typed events to the in-process
+    // bus (ADR-0007). Lazily imported to keep the events subsystem + its
+    // subscribers out of the bundle until a store is actually used.
+    return resolved
+      ? (await import("../events")).withDomainEvents(resolved)
+      : null;
+  })();
+  // Don't pin a rejected init: clear the cache so a transient import/driver
+  // failure can be retried on the next call (preserves the prior throw-and-retry
+  // behavior).
+  cached.catch(() => {
+    cached = undefined;
+  });
   return cached;
 }
