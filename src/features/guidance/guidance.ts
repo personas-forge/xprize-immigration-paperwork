@@ -40,6 +40,19 @@ export { DISCLAIMER };
 const MAX_FIELD = 4000;
 
 /**
+ * Flatten newlines and control characters in an untrusted field to single
+ * spaces. {@link buildGuidancePrompt} interpolates these values directly into
+ * the model prompt, so without this a multi-line `fieldLabel`/`situation` could
+ * inject instructions that escape the user-input section (prompt injection).
+ */
+function sanitizeField(value: string): string {
+  return value
+    .replace(/[\u0000-\u001F\u007F\u2028\u2029]+/g, " ")
+    .replace(/ {2,}/g, " ")
+    .trim();
+}
+
+/**
  * Validate and normalize an untrusted request body. Returns the cleaned
  * request or a human-readable error — never throws, so the route stays a
  * thin 200/400 switch.
@@ -75,9 +88,9 @@ export function parseGuidanceRequest(
   return {
     ok: true,
     value: {
-      formId: formId.trim(),
-      fieldLabel: fieldLabel.trim(),
-      situation: situation.trim(),
+      formId: sanitizeField(formId),
+      fieldLabel: sanitizeField(fieldLabel),
+      situation: sanitizeField(situation),
     },
   };
 }
