@@ -127,9 +127,21 @@ export function EvidenceVault({
         <div className="microprint" style={{ color: "var(--accent-dark)" }}>
           § III — Evidence vault
         </div>
-        <Badge tone={summary.gaps.length === 0 ? "success" : "warning"}>
-          {summary.covered}/{summary.total} criteria covered
-        </Badge>
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex w-36 gap-0.5" aria-hidden>
+            {Array.from({ length: summary.total }).map((_, i) => (
+              <span
+                key={i}
+                className={`h-2 flex-1 rounded-full transition-all duration-500 ${
+                  i < summary.covered ? "bg-success" : "bg-warning/40"
+                }`}
+              />
+            ))}
+          </div>
+          <span className="microprint" style={{ color: "var(--muted)" }}>
+            {summary.covered}/{summary.total} criteria covered
+          </span>
+        </div>
       </CardHeader>
 
       <CardBody className="space-y-5">
