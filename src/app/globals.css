@@ -253,8 +253,24 @@ body {
   from { transform: scaleX(0); }
   to   { transform: scaleX(1); }
 }
+/* Skeleton: a warm light-catch sweeps across the parchment (static if reduced). */
+@keyframes skeletonShimmer {
+  to { background-position: -200% 0; }
+}
+.skeleton-shimmer { background-color: var(--surface-muted); }
 
 @media (prefers-reduced-motion: no-preference) {
+  .skeleton-shimmer {
+    background-image: linear-gradient(
+      100deg,
+      transparent 30%,
+      var(--surface) 50%,
+      transparent 70%
+    );
+    background-size: 200% 100%;
+    background-position: 200% 0;
+    animation: skeletonShimmer 1.6s ease-in-out infinite;
+  }
   [data-animate="ink-rise"] {
     opacity: 0;
     animation: inkRise 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;

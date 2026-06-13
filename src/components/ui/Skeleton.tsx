@@ -11,7 +11,7 @@ export function Skeleton({ className, ...props }: HTMLAttributes<HTMLDivElement>
     <div
       aria-hidden
       className={cn(
-        "animate-pulse rounded-[3px] bg-surface-muted/80",
+        "skeleton-shimmer rounded-[3px]",
         className,
       )}
       {...props}
