@@ -138,6 +138,10 @@ function runClaudeCli(prompt: string): Promise<string> {
     child.stdout.on("data", (d) => (out += d.toString()));
     child.stderr.on("data", (d) => (err += d.toString()));
     child.on("error", reject);
+    // A stdin pipe error (e.g. the child exits immediately on auth failure and
+    // closes the pipe) would otherwise be an unhandled stream 'error' and could
+    // hang the promise until the 180s timeout — reject like the process error.
+    child.stdin.on("error", reject);
     child.on("close", (code) => {
       if (code === 0) resolve(out.trim());
       else reject(new Error(`claude CLI exited with code ${code}: ${err.slice(0, 400)}`));
