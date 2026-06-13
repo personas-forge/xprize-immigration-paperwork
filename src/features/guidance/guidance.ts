@@ -47,6 +47,7 @@ const MAX_FIELD = 4000;
  */
 function sanitizeField(value: string): string {
   return value
+    // eslint-disable-next-line no-control-regex -- intentional: this control-char strip IS the prompt-injection guard
     .replace(/[\u0000-\u001F\u007F\u2028\u2029]+/g, " ")
     .replace(/ {2,}/g, " ")
     .trim();
