@@ -43,6 +43,17 @@ export async function POST(request: NextRequest) {
 
     if (userId && b) {
       await credit(userId, b.tokens, "purchase", order.id, { bundle: b.key });
+    } else {
+      // A captured payment we cannot credit (missing metadata.userId or an
+      // unmapped product) must NOT be silently dropped with a 200 — that
+      // leaves a paying customer uncredited and unobservable. Log it and
+      // return 500 so Polar retries (and an operator can fix the mapping).
+      console.error(
+        `[polar webhook] order.paid not credited: order=${order.id} ` +
+          `userId=${userId ?? "<missing>"} bundle=${b?.key ?? "<unresolved>"} ` +
+          `productId=${productId ?? "<none>"}`,
+      );
+      return new Response("order.paid could not be credited", { status: 500 });
     }
   }
 
