@@ -23,6 +23,11 @@ export async function submitConsent(
   const marketing = formData.get("marketing") === "on";
 
   if (!fullName) return { error: "Please enter your name." };
+  // Cap the length server-side — full_name is written to a TEXT column with no
+  // DB constraint, so an unbounded value could bloat the row and overflow
+  // downstream PDF fields.
+  if (fullName.length > 200)
+    return { error: "Please enter a shorter name (200 characters max)." };
   if (!terms || !privacy)
     return { error: "You must accept the Terms and Privacy Policy to continue." };
 
