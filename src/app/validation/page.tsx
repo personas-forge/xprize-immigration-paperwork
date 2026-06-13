@@ -142,6 +142,50 @@ function JurisdictionBlock({ code, now }: { code: JurisdictionCode; now: string 
   );
 }
 
+// Progress bar encoding elapsed-vs-180-day window, colored by freshness level,
+// with a days-remaining countdown. Uses freshnessOf()'s daysLeft + level.
+function FreshnessBar({
+  daysLeft,
+  level,
+  dueBy,
+}: {
+  daysLeft: number;
+  level: "fresh" | "due-soon" | "stale";
+  dueBy: string;
+}) {
+  const pct = Math.max(
+    0,
+    Math.min(100, ((REVALIDATE_AFTER_DAYS - daysLeft) / REVALIDATE_AFTER_DAYS) * 100),
+  );
+  const bar =
+    level === "stale" ? "bg-danger" : level === "due-soon" ? "bg-warning" : "bg-success";
+  return (
+    <div className="space-y-1">
+      <span className="microprint" style={{ color: "var(--muted-strong)" }}>
+        {level === "stale"
+          ? `Re-verify due · ${Math.abs(daysLeft)}d overdue`
+          : `${daysLeft} days until re-verify`}
+      </span>
+      <div
+        className="h-1.5 w-full overflow-hidden rounded-full bg-surface-muted"
+        role="meter"
+        aria-valuenow={Math.round(pct)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="Freshness — elapsed since last verification"
+      >
+        <div
+          className={`h-full rounded-full ${bar} transition-[width] duration-700 ease-out`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="microprint block" style={{ color: "var(--muted)" }}>
+        re-verify by {dueBy}
+      </span>
+    </div>
+  );
+}
+
 function ValidationCard({
   title,
   record,
@@ -176,13 +220,11 @@ function ValidationCard({
           ) : null}
           <Field label="Last reviewed">{record.lastVerified}</Field>
           <Field label="Freshness">
-            {freshness.level === "stale" ? (
-              <Badge tone="warning">Re-verify due</Badge>
-            ) : freshness.level === "due-soon" ? (
-              <Badge tone="warning">Re-verify soon · by {freshness.dueBy}</Badge>
-            ) : (
-              <span className="text-muted-strong">Fresh · re-verify by {freshness.dueBy}</span>
-            )}
+            <FreshnessBar
+              daysLeft={freshness.daysLeft}
+              level={freshness.level}
+              dueBy={freshness.dueBy}
+            />
           </Field>
         </dl>
 
