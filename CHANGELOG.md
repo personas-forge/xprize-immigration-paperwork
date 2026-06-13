@@ -8,6 +8,24 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-06-14
+
+Pre-1.0 **patch** bump — a single critical copy fix, no API or persisted-field
+changes. Restores the missing consent verb on the onboarding submit button so
+the action a user takes to grant consent is unambiguous (a valid-consent / UPL
+safeguard). Ships with a source-level regression guard so the copy cannot
+silently regress past a green CI gate again.
+
+### Fixed
+
+- **Restored the 'Agree' consent verb on the ConsentForm submit button (#73).**
+  The button copy had regressed in v0.10.0 (#64) to the verb-less "Finish
+  setup — open my case file"; it now reads **"Agree & open my case file"** so
+  the consent action is explicit. A new `ConsentForm.consent-copy.test.ts`
+  asserts the button contains the consent verb and never regresses to the
+  banned label — closing the gap where component copy was not covered by the
+  React/E2E suites.
+
 ## [0.10.0] - 2026-06-13
 
 Pre-1.0 **minor** bump — batches every increment merged after v0.9.1 (#45, #46,
@@ -526,6 +544,7 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.10.1]: #
 [0.10.0]: #
 [0.9.1]: #
 [0.9.0]: #
