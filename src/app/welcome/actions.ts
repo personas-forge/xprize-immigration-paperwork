@@ -39,6 +39,13 @@ export async function submitConsent(
   // NEXT_REDIRECT that must propagate. A persistence failure here becomes a
   // friendly ConsentState error instead of a generic 500 page.
   try {
+    // Grant the one-time free tokens (idempotent per user, no-op without a DB)
+    // BEFORE marking the profile onboarded. These are two separate writes, so on
+    // a crash between them this order leaves the user not-yet-onboarded — they
+    // retry consent and the idempotent grant is a no-op — rather than onboarded
+    // with a zero balance, which would 402 every AI op with no way forward.
+    await grantSignupTokens(user.id, FREE_SIGNUP_GRANT);
+
     await upsertProfileWithConsent({
       userId: user.id,
       email: user.email ?? null,
@@ -51,11 +58,6 @@ export async function submitConsent(
       ip,
       userAgent: h.get("user-agent"),
     });
-
-    // One-time free token grant for the new account (idempotent per user, and a
-    // no-op when the DB isn't configured). Lets the user try AI guidance right
-    // away before topping up via the /billing bundles.
-    await grantSignupTokens(user.id, FREE_SIGNUP_GRANT);
   } catch {
     return {
       error: "We couldn't save your consent. Please try again in a moment.",
