@@ -46,6 +46,13 @@ export function err<T = never>(
   kind: AdapterErrorKind,
   cause?: unknown,
 ): AdapterResult<T> {
+  // The contract is that a store_error's underlying Store exception is LOGGED
+  // here (http.ts strips it from the response and server actions consume the
+  // union directly), so log at the single construction seam rather than relying
+  // on every adapter caller to remember to.
+  if (kind === "store_error") {
+    console.error("[adapter] store_error", cause);
+  }
   return {
     ok: false,
     error: cause === undefined ? { kind } : { kind, cause },
