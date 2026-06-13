@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Stamp } from "@/components/brand";
 import { HoverCard } from "@/components/Motion";
 import type { Bundle } from "@/lib/tokens/economy";
@@ -16,8 +16,21 @@ type Status = { key: string | null; error: string | null };
 
 export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
   const [status, setStatus] = useState<Status>({ key: null, error: null });
+  const loading = status.key !== null;
+
+  // Clear the in-flight state if the page is restored from the bfcache (the user
+  // opened Polar's checkout, then hit Back) — otherwise the button stays stuck on
+  // "Opening…" and disabled.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setStatus({ key: null, error: null });
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   async function buy(key: string) {
+    if (loading) return; // a checkout is already in flight
     setStatus({ key, error: null });
     try {
       const res = await fetch("/api/checkout", {
@@ -116,7 +129,7 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
               <button
                 type="button"
                 onClick={() => buy(b.key)}
-                disabled={status.key === b.key}
+                disabled={loading}
                 className={`mt-6 inline-flex items-center justify-center gap-2 rounded-control px-5 py-3 font-mono text-[12px] uppercase tracking-document transition-[background-color,border-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px] disabled:opacity-60 ${
                   isBest
                     ? "bg-seal text-background hover:bg-[color:var(--accent-dark)]"
