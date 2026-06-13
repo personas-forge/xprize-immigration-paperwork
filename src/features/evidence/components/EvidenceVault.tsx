@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader } from "@/components/ui";
 import { criteriaNames, summarizeVault } from "@/features/evidence";
@@ -50,16 +50,23 @@ export function EvidenceVault({
   const [status, setStatus] = useState<AddStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  // Synchronous re-entrancy guard: `disabled={status === "adding"}` only blocks
+  // the button AFTER the next render, so a rapid double-click could fire two
+  // concurrent add() calls (charged twice + duplicate exhibit). A ref flips
+  // immediately, before any await.
+  const submitting = useRef(false);
 
   const BUCKETS: readonly string[] = [...criteriaNames(classification), "Unsorted"];
   const summary = summarizeVault(documents, classification);
 
   async function add() {
+    if (submitting.current) return; // a request is already in flight
     if (name.trim() === "" || content.trim().length < 20) {
       setError("Name the document and paste or describe its contents.");
       setStatus("error");
       return;
     }
+    submitting.current = true;
     setStatus("adding");
     setError(null);
     try {
@@ -95,6 +102,8 @@ export function EvidenceVault({
     } catch {
       setError("Network error — please try again.");
       setStatus("error");
+    } finally {
+      submitting.current = false;
     }
   }
 
