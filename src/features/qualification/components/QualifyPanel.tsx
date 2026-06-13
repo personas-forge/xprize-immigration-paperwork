@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
+import { costOf } from "@/lib/tokens/economy";
 import { DISCLAIMER, type QualifyResult } from "../qualification";
 import { VISA_PACKS, type Classification } from "../packs";
 import { jurisdictionFor, livePrograms } from "../jurisdictions";
@@ -153,11 +154,35 @@ export function QualifyPanel() {
                 placeholder="Paste your CV highlights or describe your achievements in plain language…"
                 className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
               />
+              <div className="mt-1 flex justify-end">
+                <span
+                  className="microprint"
+                  style={{
+                    color:
+                      profile.trim().length >= 40
+                        ? "var(--success)"
+                        : "var(--muted)",
+                  }}
+                >
+                  {profile.trim().length >= 40
+                    ? "Ready to screen ✓"
+                    : `${40 - profile.trim().length} more characters to screen`}
+                </span>
+              </div>
             </label>
 
             <div className="flex flex-wrap items-center gap-3">
               <Button type="submit" variant="primary" disabled={status === "loading"}>
-                {status === "loading" ? "Screening…" : "Check my eligibility"}
+                {status === "loading" ? (
+                  "Screening…"
+                ) : (
+                  <>
+                    Check my eligibility
+                    <span className="ml-2 rounded-full bg-background/15 px-1.5 py-0.5 font-mono text-[10px] tracking-document">
+                      {costOf("qualify")} tokens
+                    </span>
+                  </>
+                )}
               </Button>
               <button
                 type="button"
