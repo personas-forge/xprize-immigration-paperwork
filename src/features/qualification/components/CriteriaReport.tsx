@@ -98,7 +98,13 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
             {result.criteria.map((c, i) => (
               <tr
                 key={c.id}
-                className="border-t border-dotted border-rule transition-[background-color] duration-200 hover:bg-accent-soft/35"
+                className={`border-t border-dotted border-rule border-l-[3px] [border-left-style:solid] transition-[background-color] duration-200 hover:bg-accent-soft/35 ${
+                  c.status === "Met" || c.status === "Strong"
+                    ? "border-l-success"
+                    : c.status === "Partial"
+                      ? "border-l-warning"
+                      : "border-l-transparent"
+                }`}
               >
                 <td className="px-5 py-3.5">
                   <div className="flex items-baseline gap-3">
