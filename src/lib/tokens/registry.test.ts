@@ -8,7 +8,7 @@ import {
   labelOf,
   type OperationKey,
 } from "./registry";
-import { OP_COST, OPERATIONS, costOf as economyCostOf } from "./economy";
+import { OP_COST, costOf as economyCostOf } from "./economy";
 import { RATE_LIMITS } from "../rate-limit";
 
 // The six metered AI operations and their grounded, must-not-drift values
@@ -71,17 +71,6 @@ test("costOf: unknown operations default to the light tier (never free/throw)", 
 
 test("economy.ts OP_COST is the registry's TIER_COST (single source of truth)", () => {
   assert.deepEqual(OP_COST, TIER_COST);
-});
-
-test("economy.ts OPERATIONS maps every op to its registry tier", () => {
-  for (const op of Object.keys(OPERATION_REGISTRY) as OperationKey[]) {
-    assert.equal(OPERATIONS[op], OPERATION_REGISTRY[op].tier, `${op}`);
-  }
-  // No extra/stale operation keys leaked in.
-  assert.deepEqual(
-    Object.keys(OPERATIONS).sort(),
-    Object.keys(OPERATION_REGISTRY).sort(),
-  );
 });
 
 test("economy.ts costOf is the registry costOf (re-export, identical results)", () => {

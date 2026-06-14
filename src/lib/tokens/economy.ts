@@ -5,11 +5,10 @@
 //
 // Per-operation cost/tier config now lives in the OperationRegistry
 // (`registry.ts`, the single source of truth); the exports below DERIVE from it
-// and keep the same public surface (OP_COST, OPERATIONS, OpTier, costOf) so
-// guard.ts, the routes, and the existing tests stay green unchanged.
+// and keep the same public surface (OP_COST, OpTier, costOf) so guard.ts, the
+// routes, and the existing tests stay green unchanged.
 
-import { OPERATION_REGISTRY, TIER_COST } from "./registry";
-import type { OpTier } from "./registry";
+import { TIER_COST } from "./registry";
 
 export type { OpTier } from "./registry";
 export { costOf } from "./registry";
@@ -19,12 +18,6 @@ export const FREE_SIGNUP_GRANT = 150; // granted once, at first onboarding
 // Per-operation cost, weighted to reflect real compute cost. Sourced from the
 // registry's TIER_COST so the weights live in exactly one place.
 export const OP_COST = TIER_COST;
-
-// Map THIS app's operations -> tier (key = the `operation` string passed to
-// chargeForOperation()). Derived from the OperationRegistry.
-export const OPERATIONS: Record<string, OpTier> = Object.fromEntries(
-  Object.entries(OPERATION_REGISTRY).map(([op, def]) => [op, def.tier]),
-);
 
 /**
  * True when the token economy is NOT enforced and AI routes should run as a
