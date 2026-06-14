@@ -8,3 +8,4 @@
  */
 export { DisclaimerStamp } from "./DisclaimerStamp";
 export { CitationNote } from "./CitationNote";
+export { AdjudicationBadge } from "./AdjudicationBadge";

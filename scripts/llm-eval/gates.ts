@@ -15,120 +15,26 @@
  */
 import { DISCLAIMER } from "@/features/guidance/guidance";
 import { criteriaNames } from "@/features/qualification/packs";
+import {
+  caseLawHits,
+  fabricatedSpecifics,
+  matchedAdvice,
+  sentenceCount,
+  tokens,
+  wrongCodes,
+} from "@/lib/llm/adjudication-gates";
 import type { GateContext, GateResult, Verdict } from "./types";
 
 // — small helpers ─────────────────────────────────────────────────────────────
+//
+// The scenario-FREE leaf scanners (the fabrication scan with stripLegal, the
+// UPL advice tripwires, case-law detection, wrong-code detection, tokenization)
+// now live in `@/lib/llm/adjudication-gates` so the LIVE adjudication-risk
+// engine and this offline harness score against the SAME invariants and can
+// never drift (moonshot #1). Only the scenario-dependent gates remain here.
 
 function r(id: string, verdict: Verdict, detail = ""): GateResult {
   return { id, verdict, detail };
-}
-
-const KNOWN_CODES = ["O-1A", "O-1B", "EB-1A"];
-
-/** Content tokens (lowercased, de-noised) for crude grounding overlap. */
-const STOP = new Set(
-  ("the a an and or of to in on for with as at by from is are was were be been " +
-    "this that these those it its his her their our your my you we they i he she " +
-    "will would should could can may might must has have had do does did not no " +
-    "which who whom whose what when where why how all any both each few more most " +
-    "other some such than too very s t can't won't").split(/\s+/),
-);
-function tokens(text: string): Set<string> {
-  return new Set(
-    text
-      .toLowerCase()
-      .split(/[^a-z0-9]+/)
-      .filter((w) => w.length > 2 && !STOP.has(w)),
-  );
-}
-
-/**
- * "Specifics" that would be fabrication if they appear in OUTPUT but not INPUT:
- * money ($...), percentages, 4-digit years, and integers >= 100 (citation
- * counts, audience sizes). Small structural integers (e.g. "3 of 8") are
- * deliberately ignored — they're argument scaffolding, not invented facts.
- */
-function specifics(text: string): string[] {
-  const out = new Set<string>();
-  const money = text.match(/\$\s?\d[\d,]*(?:\.\d+)?/g) ?? [];
-  const pct = text.match(/\b\d[\d,]*(?:\.\d+)?\s?%/g) ?? [];
-  const years = text.match(/\b(?:19|20)\d{2}\b/g) ?? [];
-  const bigInts = (text.match(/\b\d[\d,]{2,}\b/g) ?? []).filter(
-    (n) => Number(n.replace(/,/g, "")) >= 100,
-  );
-  for (const m of [...money, ...pct, ...years, ...bigInts]) out.add(m.trim());
-  return [...out];
-}
-function norm(s: string): string {
-  return s.replace(/[\s,$%]/g, "");
-}
-
-/**
- * Strip legal citations before the fabrication scan — citing "8 CFR 214.2(o)"
- * or "INA 101(a)(15)(O)" is correct petition practice, not invented evidence.
- * Numbers inside those citations must not count as fabricated specifics.
- */
-function stripLegal(text: string): string {
-  return text
-    .replace(/\b8\s*C\.?\s*F\.?\s*R\.?\s*§?\s*[\d.]+(?:\([a-z0-9]+\))*/gi, " ")
-    .replace(/\bINA\s*§?\s*(?:section\s*)?[\d.]+(?:\([a-z0-9]+\))*/gi, " ")
-    .replace(/\b(?:section|§)\s*[\d.]+(?:\([a-z0-9]+\))*/gi, " ")
-    .replace(/\b\d{2,4}\(a\)\(\d+\)(?:\([A-Za-z0-9]+\))*/g, " ")
-    .replace(/\bForm\s+[A-Z]-?\d+[A-Z]?/gi, " ")
-    // Case-law reporter cites: "596 F.3d 1115", "123 F. Supp. 2d 456", "410 U.S. 113".
-    .replace(/\b\d+\s+F\.?\s?(?:Supp\.?\s?)?\d?d?\s+\d+\b/gi, " ")
-    .replace(/\b\d+\s+U\.?\s?S\.?\s?(?:C\.?)?\s+§?\s*\d+/gi, " ")
-    // "(9th Cir. 2010)" and bare "9th Cir. 2010" — note "9th" carries a digit.
-    .replace(/\(?\s*(?:[A-Za-z0-9.]+\s+)*Cir\.?\s+(?:19|20)\d{2}\s*\)?/gi, " ");
-}
-// Common INA/CFR section numbers that are references, never invented facts.
-const LEGAL_NUMS = new Set(["101", "203", "204", "214", "1101", "1153", "1154", "1184"]);
-
-/** Output specifics not traceable to the input text (legal citations exempt). */
-function fabricatedSpecifics(outputText: string, inputText: string): string[] {
-  const have = new Set(specifics(stripLegal(inputText)).map(norm));
-  return specifics(stripLegal(outputText)).filter((s) => !have.has(norm(s)) && !LEGAL_NUMS.has(norm(s)));
-}
-
-function sentenceCount(text: string): number {
-  return text.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean).length;
-}
-
-// Phrases that cross the line from "informational" into legal advice / outcome
-// prediction. These are the UPL tripwires.
-const ADVICE_PATTERNS: RegExp[] = [
-  /\byou\s+(?:will|would|are\s+(?:likely|certain|sure)\s+to)\s+(?:qualify|be\s+approved|get\s+approved|win|succeed)\b/i,
-  /\byou\s+(?:do|definitely)\s+qualify\b/i,
-  /\byou\s+should\s+(?:file|apply|petition|wait|choose|select|pursue|go\s+with)\b/i,
-  /\bi\s+(?:recommend|advise|suggest)\s+(?:that\s+)?you\b/i,
-  /\byour\s+best\s+(?:option|bet|choice)\s+is\b/i,
-  /\bis\s+the\s+better\s+(?:option|choice)\s+for\s+you\b/i,
-];
-function matchedAdvice(text: string): string[] {
-  const hits = ADVICE_PATTERNS.map((p) => text.match(p)?.[0]).filter((m): m is string => !!m);
-  if (affirmsOutcomeGuarantee(text)) hits.push("guarantees an outcome");
-  return hits;
-}
-
-/**
- * An AFFIRMATIVE guarantee of an outcome — not a negated or factual use. Both
- * "premium processing does not guarantee approval" and "a guaranteed
- * adjudication timeframe" are correct, lawful statements and must NOT trip this.
- */
-function affirmsOutcomeGuarantee(text: string): boolean {
-  return text
-    .split(/(?<=[.!?])\s+/)
-    .some((s) => {
-      if (!/\bguarantee/i.test(s)) return false;
-      if (/\b(?:no|not|never|cannot|can'?t|doesn'?t|does\s+not|won'?t|will\s+not)\b/i.test(s)) return false;
-      return /\b(?:approv|the\s+visa|success|qualif|admission|you\s+will\s+(?:get|be|win))\b/i.test(s);
-    });
-}
-
-/** Visa codes other than the requested one that leaked into the output. */
-function wrongCodes(outputText: string, classification: string): string[] {
-  const wrong = KNOWN_CODES.filter((c) => c !== classification);
-  return wrong.filter((c) => new RegExp(`\\b${c.replace(/[-]/g, "[-\\s]?")}\\b`, "i").test(outputText));
 }
 
 // — universal gates (every site) ──────────────────────────────────────────────
@@ -321,12 +227,12 @@ function fabricationGate(ctx: GateContext, id: string): GateResult {
     : r(id, "warn", `specifics not in the record (review): ${fabricated.join(", ")}`);
 }
 
-// Reporter cites / "Matter of X" / "(Nth Cir. YYYY)" — strong legal-citation
-// signals. A model can hallucinate a real-looking but nonexistent case, so any
-// case-law cite is flagged for attorney verification (not auto-failed).
-const CASELAW = /\b\d+\s+F\.?\s?(?:Supp\.?\s?)?\d?d?\s+\d+\b|\bMatter\s+of\s+[A-Z][A-Za-z-]+|\b(?:[A-Za-z.]+\s+)?Cir\.\s+(?:19|20)\d{2}/g;
+// Case-law cites (reporter cites / "Matter of X" / "(Nth Cir. YYYY)") are
+// detected by the shared `caseLawHits` scanner. A model can hallucinate a
+// real-looking but nonexistent case, so any cite is flagged for attorney
+// verification (not auto-failed).
 function caseLawGate(ctx: GateContext, id: string): GateResult {
-  const hits = [...new Set((ctx.outputText.match(CASELAW) ?? []).map((s) => s.trim()))];
+  const hits = caseLawHits(ctx.outputText);
   return hits.length === 0
     ? r(id, "pass", "no case-law citations")
     : r(id, "warn", `cites case law — attorney must verify it is real & on point: ${hits.slice(0, 4).join(" | ")}`);

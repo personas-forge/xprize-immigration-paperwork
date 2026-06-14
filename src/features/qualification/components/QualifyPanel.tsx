@@ -13,7 +13,8 @@ import { validationFor } from "../validation";
 
 // Only programs whose jurisdiction is live are offered (US today).
 const PROGRAMS = livePrograms();
-import { DisclaimerStamp } from "@/components/legal";
+import { DisclaimerStamp, AdjudicationBadge } from "@/components/legal";
+import { type AdjudicationReport } from "@/lib/llm/adjudication-gates";
 import { DraftStudio } from "@/features/drafting/components/DraftStudio";
 import { CriteriaReport } from "./CriteriaReport";
 
@@ -25,7 +26,10 @@ import { CriteriaReport } from "./CriteriaReport";
 
 type Status = "idle" | "loading" | "done" | "error" | "paywall";
 
-type QualifyApiResponse = QualifyResult & { caseId: string | null };
+type QualifyApiResponse = QualifyResult & {
+  caseId: string | null;
+  adjudication?: AdjudicationReport;
+};
 
 const SAMPLE =
   "Senior research engineer. 6 peer-reviewed papers (412 citations), best-paper " +
@@ -261,6 +265,7 @@ export function QualifyPanel() {
 
       {status === "done" && result ? (
         <div className="space-y-4">
+          {result.adjudication ? <AdjudicationBadge report={result.adjudication} /> : null}
           <CriteriaReport result={result} threshold={packFor(classification).threshold} />
           {/* Second wow moment: draft the petition straight from the score. */}
           <DraftStudio

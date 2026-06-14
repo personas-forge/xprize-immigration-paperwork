@@ -3,7 +3,8 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
-import { DisclaimerStamp, CitationNote } from "@/components/legal";
+import { DisclaimerStamp, CitationNote, AdjudicationBadge } from "@/components/legal";
+import { type AdjudicationReport } from "@/lib/llm/adjudication-gates";
 import {
   DISCLAIMER,
   attachExhibits,
@@ -49,6 +50,8 @@ interface DraftApiResponse {
   version: number | null;
   /** True when the draft was charged + generated but the version failed to save. */
   saveFailed?: boolean;
+  /** Live adjudication-risk verdict (moonshot #1). */
+  adjudication?: AdjudicationReport;
 }
 
 interface SectionApiResponse {
@@ -56,6 +59,7 @@ interface SectionApiResponse {
   disclaimer: string;
   source: ModelSource;
   saveFailed?: boolean;
+  adjudication?: AdjudicationReport;
 }
 
 export function DraftStudio({
@@ -85,6 +89,7 @@ export function DraftStudio({
   const [regenerating, setRegenerating] = useState<string | null>(null);
   const [regenerationError, setRegenerationError] = useState<string | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
+  const [adjudication, setAdjudication] = useState<AdjudicationReport | null>(null);
   // saveFailed recovery UI state (SaveFailedAlert). resolvedCaseId tracks the
   // case the SERVER persisted against (response caseId) — the retry must target
   // it, not just the incoming prop.
@@ -156,6 +161,7 @@ export function DraftStudio({
       setSections(data.sections);
       setSource(data.source);
       setSaveFailed(Boolean(data.saveFailed));
+      setAdjudication(data.adjudication ?? null);
       setResolvedCaseId(data.caseId ?? caseId);
       setStatus("done");
     } catch {
@@ -191,6 +197,7 @@ export function DraftStudio({
       );
       setSource(data.source);
       setSaveFailed(Boolean(data.saveFailed));
+      setAdjudication(data.adjudication ?? null);
       setCopyState("idle");
       setRetryState("idle");
     } catch {
@@ -315,6 +322,7 @@ export function DraftStudio({
           <div className="space-y-4">
             <DisclaimerStamp text={DISCLAIMER} />
             <CitationNote />
+            {adjudication ? <AdjudicationBadge report={adjudication} /> : null}
             {exhibitIndex.length > 0 ? (
               <ExhibitIndex
                 entries={exhibitIndex}
