@@ -47,8 +47,3 @@ function resolve<T>(value: T): Promise<T> {
 export function getForms(): Promise<readonly UscisForm[]> {
   return resolve(forms);
 }
-
-/** A single form by id, or `null` when unknown. */
-export function getFormById(id: string): Promise<UscisForm | null> {
-  return resolve(forms.find((f) => f.id === id) ?? null);
-}

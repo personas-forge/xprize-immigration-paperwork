@@ -124,7 +124,7 @@ function SiteHeader() {
           <Link href="/" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">
             Home
           </Link>
-          <Link href="/pricing" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">
+          <Link href="/billing" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">
             Pricing
           </Link>
           <Link href="/dashboard" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">
@@ -147,7 +147,7 @@ function SiteFooter() {
         </div>
         <div className="microprint flex gap-4">
           <Link className="ink-link" href="/">Home</Link>
-          <Link className="ink-link" href="/pricing">Pricing</Link>
+          <Link className="ink-link" href="/billing">Pricing</Link>
           <Link className="ink-link" href="/dashboard">Live case</Link>
         </div>
       </div>

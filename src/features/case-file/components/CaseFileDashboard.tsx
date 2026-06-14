@@ -100,8 +100,8 @@ export function CaseFileDashboard({
 
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone="success">92% approval likelihood</Badge>
-          <Badge tone="neutral">$2,500 flat fee</Badge>
-          <Badge tone="neutral">USCIS premium $2,805 passthrough</Badge>
+          <Badge tone="neutral">Prepaid tokens · start free</Badge>
+          <Badge tone="neutral">USCIS premium $2,805 (paid to USCIS)</Badge>
         </div>
       </div>
     </div>

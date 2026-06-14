@@ -3,15 +3,16 @@
 import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
-import { costOf } from "@/lib/tokens/economy";
-import { DISCLAIMER, type QualifyResult } from "../qualification";
-import { VISA_PACKS, type Classification } from "../packs";
+import { costOf } from "@/lib/tokens/registry";
+import { DISCLAIMER } from "@/lib/result";
+import { type QualifyResult } from "../qualification";
+import { VISA_PACKS, packFor, type Classification } from "../packs";
 import { jurisdictionFor, livePrograms } from "../jurisdictions";
 import { validationFor } from "../validation";
 
 // Only programs whose jurisdiction is live are offered (US today).
 const PROGRAMS = livePrograms();
-import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
+import { DisclaimerStamp } from "@/components/legal";
 import { DraftStudio } from "@/features/drafting/components/DraftStudio";
 import { CriteriaReport } from "./CriteriaReport";
 
@@ -239,7 +240,7 @@ export function QualifyPanel() {
 
       {status === "done" && result ? (
         <div className="space-y-4">
-          <CriteriaReport result={result} />
+          <CriteriaReport result={result} threshold={packFor(classification).threshold} />
           {/* Second wow moment: draft the petition straight from the score. */}
           <DraftStudio
             petitioner={name.trim() || "Applicant"}

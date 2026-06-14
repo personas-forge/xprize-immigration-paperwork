@@ -1,6 +1,8 @@
 /**
- * Extract the first JSON object from a model response. Tolerates ```json fences
- * and surrounding prose; returns `null` when nothing parseable is found.
+ * Extract the first *balanced* JSON object from a model response: the substring
+ * from the first `{` to the `}` that closes it (NOT to the last `}` in the
+ * string — see the brace-balancing loop below). Tolerates ```json fences and
+ * surrounding prose; returns `null` when nothing parseable is found.
  *
  * Shared by every JSON-returning AI feature (qualification, drafting, rfe,
  * evidence) so the tolerant-parse behavior is defined — and tested — once.

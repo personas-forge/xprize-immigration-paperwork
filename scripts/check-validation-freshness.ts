@@ -14,9 +14,10 @@ import {
   REVERIFY_WARN_DAYS,
   allValidations,
   freshnessOf,
+  todayIso,
 } from "../src/features/qualification/validation";
 
-const today = new Date().toISOString().slice(0, 10);
+const today = todayIso();
 
 const rows = allValidations()
   .map((record) => ({ record, freshness: freshnessOf(record, today) }))

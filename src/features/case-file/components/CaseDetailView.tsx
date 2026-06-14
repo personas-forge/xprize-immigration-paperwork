@@ -7,6 +7,7 @@ import { Stamp, ChapterMark, Seal } from "@/components/brand";
 import { DashboardTopBar } from "@/components/DashboardTopBar";
 import { ThemeScope } from "@/features/dashboard/ThemeScope";
 import { ink, parchment } from "@/features/dashboard/themes";
+import { BalancePill, LocalThemeToggle } from "@/features/dashboard/DashboardChrome";
 import { DraftStudio } from "@/features/drafting/components/DraftStudio";
 import { type DraftSection } from "@/features/drafting";
 import { ReviewPanel, type ReviewEventView } from "@/features/review/components/ReviewPanel";
@@ -76,13 +77,12 @@ export function CaseDetailView({
   return (
     <ThemeScope theme={dark ? ink : parchment}>
       <DashboardTopBar
-        glyph="✦"
         product="Immigration Concierge"
         context={`${fileNumber} · ${petitioner} · ${classification}`}
         actions={
           <>
             <BalancePill balance={balance} />
-            <ThemeToggle dark={dark} onToggle={() => setDark((d) => !d)} />
+            <LocalThemeToggle dark={dark} onToggle={() => setDark((d) => !d)} />
           </>
         }
       />
@@ -245,35 +245,3 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
-function BalancePill({ balance }: { balance: number | null }) {
-  const label = balance === null ? "∞" : balance.toLocaleString();
-  return (
-    <Link
-      href="/billing"
-      aria-label={`Token balance: ${label}. Buy more tokens.`}
-      className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[12.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
-    >
-      <span aria-hidden style={{ color: "var(--accent-dark)" }}>
-        ◈
-      </span>
-      <span className="doc-number text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
-        {label}
-      </span>
-      <span style={{ color: "var(--muted)" }}>tokens</span>
-    </Link>
-  );
-}
-
-function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={dark ? "Switch to parchment theme" : "Switch to ink theme"}
-      className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[12.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted"
-    >
-      <span aria-hidden>{dark ? "☾" : "☼"}</span>
-      {dark ? "Ink" : "Parchment"}
-    </button>
-  );
-}

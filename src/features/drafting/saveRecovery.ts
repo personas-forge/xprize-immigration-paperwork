@@ -12,7 +12,7 @@
  * with an injected fetch.
  */
 
-import type { DraftSection } from "./drafting";
+import { type DraftSection, toSection } from "./drafting";
 import { asModelSource, type ModelSource } from "@/lib/llm/label";
 
 /** The exact copy the recovery alert shows — asserted by the component tests. */
@@ -56,15 +56,6 @@ export async function copyDraftToClipboard(
   } catch {
     return false;
   }
-}
-
-function toSection(value: unknown): DraftSection | null {
-  if (!value || typeof value !== "object") return null;
-  const row = value as Record<string, unknown>;
-  const heading = typeof row.heading === "string" ? row.heading.trim() : "";
-  const body = typeof row.body === "string" ? row.body.trim() : "";
-  if (heading === "" || body === "") return null;
-  return { heading, body };
 }
 
 /**

@@ -8,7 +8,7 @@ import {
   type QualifyAssessment,
   type QualifyRequest,
 } from "@/features/qualification";
-import { createCaseWithCriteria } from "@/lib/data/petitions";
+import { petitions } from "@/lib/data/adapters/petition";
 import { executeAiOperation } from "@/lib/ai/operation";
 
 // O-1A qualification screening endpoint (migrated to the shared orchestrator,
@@ -70,14 +70,21 @@ export function POST(request: Request): Promise<NextResponse> {
     // Best-effort: a storage hiccup must not fail the screening already paid for.
     persist: async (assessment, req, user) => {
       if (!user) return { caseId: null };
-      const created = await createCaseWithCriteria({
-        userId: user.id,
-        petitioner: req.name,
-        classification: req.classification,
-        approvalLikelihood: assessment.likelihood,
-        criteria: assessment.criteria,
-      });
-      return { caseId: created?.id ?? null };
+      // Persist via the PetitionAdapter (ADR-0010) — createCase owns the
+      // userId/store-configured checks and wraps the write in store_error.
+      // Best-effort: any non-ok result yields no caseId (the screening is paid).
+      const created = await petitions.createCase(
+        // createCase creates a NEW owned case and gates on userId only (no
+        // per-case owner-or-attorney check), so email is irrelevant here.
+        { userId: user.id, email: null },
+        {
+          petitioner: req.name,
+          classification: req.classification,
+          approvalLikelihood: assessment.likelihood,
+          criteria: assessment.criteria,
+        },
+      );
+      return { caseId: created.ok ? created.value.id : null };
     },
     onPersistError: () => ({ caseId: null }),
   });

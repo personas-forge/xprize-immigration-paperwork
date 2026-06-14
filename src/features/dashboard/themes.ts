@@ -67,8 +67,3 @@ export const ink: Theme = {
   "--danger": "#d96b6f",
   "--danger-soft": "rgba(217, 107, 111, 0.14)",
 };
-
-// Backward-compatible aliases — preserve the original `teal`/`midnight`
-// exports so existing imports in DashboardView keep working.
-export const teal = parchment;
-export const midnight = ink;

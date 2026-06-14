@@ -32,7 +32,6 @@ import { type AdapterResult, err, ok } from "./result";
 
 /** Everything the adapter calls, injected so the unit suite can supply fakes. */
 export interface PetitionDeps extends CaseGateDeps {
-  getCasesForUser(userId: string): Promise<readonly StoredCase[]>;
   createCaseWithCriteria(input: {
     userId: string;
     petitioner: string;
@@ -67,7 +66,6 @@ async function defaultDeps(): Promise<PetitionDeps> {
   cached = {
     getCaseForUser: data.getCaseForUser,
     getCaseAnyOwner: data.getCaseAnyOwner,
-    getCasesForUser: data.getCasesForUser,
     createCaseWithCriteria: data.createCaseWithCriteria,
     getCriteriaForCase: data.getCriteriaForCase,
     saveDraft: data.saveDraft,
@@ -93,20 +91,6 @@ export class PetitionAdapter {
     caseId: string,
   ): Promise<AdapterResult<StoredCase>> {
     return resolveCase(await this.deps(), access, caseId);
-  }
-
-  /** Every case the caller owns. Requires a signed-in user. */
-  async getOwnedCases(
-    access: CaseAccess,
-  ): Promise<AdapterResult<readonly StoredCase[]>> {
-    if (!access.userId) return err("forbidden");
-    const deps = await this.deps();
-    if (!(await deps.storeConfigured())) return err("unconfigured");
-    try {
-      return ok(await deps.getCasesForUser(access.userId));
-    } catch (cause) {
-      return err("store_error", cause);
-    }
   }
 
   /** Persist a qualification as a new owned case + criteria. */

@@ -19,6 +19,7 @@
 import { DISCLAIMER } from "@/features/guidance/guidance";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
+import { str, criterionLine, MAX_PETITIONER, MAX_TEXT, MAX_CRITERIA } from "./criteria-text";
 
 export { DISCLAIMER };
 
@@ -58,18 +59,11 @@ export interface SectionResult {
   source: ModelSource;
 }
 
-const MAX_PETITIONER = 200;
 const MAX_FOCUS = 200;
-const MAX_CRITERIA = 32;
-const MAX_TEXT = 4000;
 
 /** Statuses that earn an argument section in the letter. */
 function isQualifying(status: string): boolean {
   return status === "Met" || status === "Strong";
-}
-
-function str(value: unknown, max: number): string {
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
 /**
@@ -118,11 +112,7 @@ export function parseFocus(value: unknown): string | null {
 // — Prompts ──────────────────────────────────────────────────────────────────
 
 function criteriaLines(req: DraftRequest): string[] {
-  return req.criteria.map(
-    (c) =>
-      `- ${c.name} [${c.status}]: ${c.evidence || "(no specific evidence provided)"}` +
-      (c.rationale ? ` — ${c.rationale}` : ""),
-  );
+  return req.criteria.map(criterionLine);
 }
 
 /**
@@ -191,7 +181,13 @@ export function buildSectionPrompt(req: DraftRequest, focus: string): string {
 
 // — Response parsing ─────────────────────────────────────────────────────────
 
-function toSection(value: unknown): DraftSection | null {
+/**
+ * Coerce one untrusted value into a usable {heading, body} section, trimming
+ * both and rejecting if either is empty. The load-bearing validity gate for
+ * paid work product — shared by drafting, rfe, and the save-recovery parser so
+ * any hardening (length caps, control-char stripping, …) lands in one place.
+ */
+export function toSection(value: unknown): DraftSection | null {
   if (!value || typeof value !== "object") return null;
   const row = value as Record<string, unknown>;
   const heading = typeof row.heading === "string" ? row.heading.trim() : "";
@@ -201,21 +197,31 @@ function toSection(value: unknown): DraftSection | null {
 }
 
 /**
+ * Tolerant parse of a `{ sections: [...] }` model payload into the usable
+ * sections, or `null` when the JSON is unusable or yields no valid section.
+ * Shared by the drafting and RFE strict parsers.
+ */
+export function tryParseSections(text: string): DraftSection[] | null {
+  const parsed = extractJson(text);
+  if (parsed && typeof parsed === "object") {
+    const raw = (parsed as Record<string, unknown>).sections;
+    if (Array.isArray(raw)) {
+      const sections = raw.map(toSection).filter((s): s is DraftSection => s !== null);
+      if (sections.length > 0) return sections;
+    }
+  }
+  return null;
+}
+
+/**
  * Strict parse: return the model's draft ONLY when it produced usable JSON,
  * else `null`. This lets the route distinguish a genuine model draft from a
  * silent fallback, so it can reclaim the token and honestly label the result
  * "mock" instead of charging the user for boilerplate stamped as model output.
  */
 export function tryParseDraftResponse(text: string): PetitionDraft | null {
-  const parsed = extractJson(text);
-  if (parsed && typeof parsed === "object") {
-    const raw = (parsed as Record<string, unknown>).sections;
-    if (Array.isArray(raw)) {
-      const sections = raw.map(toSection).filter((s): s is DraftSection => s !== null);
-      if (sections.length > 0) return { sections };
-    }
-  }
-  return null;
+  const sections = tryParseSections(text);
+  return sections ? { sections } : null;
 }
 
 /** Strict single-section parse: the model's section, or `null` if unusable. */

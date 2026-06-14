@@ -63,10 +63,18 @@ export async function POST(request: NextRequest) {
       id: string;
       order_id?: string;
       orderId?: string;
+      productId?: string;
+      product_id?: string;
       metadata?: Record<string, string>;
     };
     const userId = order.metadata?.userId;
-    const b = order.metadata?.bundle ? bundleByKey(order.metadata.bundle) : undefined;
+    // Mirror the paid path's two-step resolution (metadata.bundle, else product
+    // id) so a refund payload that lost metadata.bundle still claws back instead
+    // of silently no-op'ing while the original purchase WAS credited.
+    const productId = order.productId ?? order.product_id;
+    const b =
+      (order.metadata?.bundle && bundleByKey(order.metadata.bundle)) ||
+      (productId ? bundleByProductId(productId) : undefined);
     // Dedupe on the ORIGINAL order id, not the per-attempt refund id. A
     // refund.created payload's root `id` is the refund id (distinct for each
     // refund attempt), so keying the ref on it would let two refunds against the

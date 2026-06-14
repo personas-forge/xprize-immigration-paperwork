@@ -16,12 +16,11 @@
  */
 
 import { DISCLAIMER } from "@/features/guidance/guidance";
-import { type DraftSection } from "@/features/drafting";
+import { type DraftSection, tryParseSections } from "@/features/drafting";
+import { str, criterionLine, MAX_PETITIONER, MAX_TEXT, MAX_CRITERIA } from "@/features/drafting/criteria-text";
 import { type ModelSource } from "@/lib/llm/label";
-import { extractJson } from "@/lib/llm/json";
 
 export { DISCLAIMER };
-export type { DraftSection as RfeSection };
 
 export interface RfeCriterion {
   name: string;
@@ -47,15 +46,8 @@ export interface RfeResult extends RfeResponse {
   source: ModelSource;
 }
 
-const MAX_PETITIONER = 200;
-const MAX_TEXT = 4000;
 const MAX_RFE = 12000;
 const MIN_RFE = 20;
-const MAX_CRITERIA = 32;
-
-function str(value: unknown, max: number): string {
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
-}
 
 /** Statuses worth reinforcing in a response (an RFE often targets the weak ones,
  *  so Partial is included; only "None" — no evidence at all — is excluded). */
@@ -100,11 +92,7 @@ export function parseRfeRequest(
 
 function criteriaLines(req: RfeRequest): string[] {
   if (req.criteria.length === 0) return ["- (no criteria provided)"];
-  return req.criteria.map(
-    (c) =>
-      `- ${c.name} [${c.status}]: ${c.evidence || "(no specific evidence provided)"}` +
-      (c.rationale ? ` — ${c.rationale}` : ""),
-  );
+  return req.criteria.map(criterionLine);
 }
 
 /**
@@ -149,31 +137,16 @@ export function buildRfePrompt(req: RfeRequest): string {
   ].join("\n");
 }
 
-function toSection(value: unknown): DraftSection | null {
-  if (!value || typeof value !== "object") return null;
-  const row = value as Record<string, unknown>;
-  const heading = typeof row.heading === "string" ? row.heading.trim() : "";
-  const body = typeof row.body === "string" ? row.body.trim() : "";
-  if (heading === "" || body === "") return null;
-  return { heading, body };
-}
-
 /**
  * Strict parse: return the model's response ONLY when it produced usable JSON,
  * else `null`. Lets the route distinguish a real model response from a silent
  * fallback, so it can reclaim the token and label the result "mock" rather than
- * billing for boilerplate stamped (and persisted) as model output.
+ * billing for boilerplate stamped (and persisted) as model output. Shares the
+ * section-coercion gate with drafting via `tryParseSections`.
  */
 export function tryParseRfeResponse(text: string): RfeResponse | null {
-  const parsed = extractJson(text);
-  if (parsed && typeof parsed === "object") {
-    const raw = (parsed as Record<string, unknown>).sections;
-    if (Array.isArray(raw)) {
-      const sections = raw.map(toSection).filter((s): s is DraftSection => s !== null);
-      if (sections.length > 0) return { sections };
-    }
-  }
-  return null;
+  const sections = tryParseSections(text);
+  return sections ? { sections } : null;
 }
 
 /** Normalize a model response, falling back to the deterministic mock. */

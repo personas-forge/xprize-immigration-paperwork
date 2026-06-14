@@ -38,7 +38,8 @@ export function httpStatusForError(kind: AdapterErrorKind): number {
 }
 
 /** Client-safe error body returned to the browser (no `cause`, no PII).
- *  Exported so client fetch wrappers can type a failed adapter response. */
+ *  Exported for testability (http.test.ts asserts the body shape via
+ *  adapterErrorBody); no client fetch wrapper consumes this type today. */
 export type ErrorEnvelope = { error: string; code: AdapterErrorKind };
 
 /** Pure: the JSON body for an adapter error (no `cause`, no PII). */

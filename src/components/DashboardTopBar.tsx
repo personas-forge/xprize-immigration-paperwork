@@ -3,7 +3,6 @@ import Image from "next/image";
 import { Wordmark } from "./brand/Wordmark";
 
 type DashboardTopBarProps = {
-  glyph: string; // accepted for API compat; unused (Wordmark draws the seal)
   product: string;
   context: string;
   actions?: ReactNode;

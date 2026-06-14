@@ -3,12 +3,12 @@
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
-import { costOf } from "@/lib/tokens/economy";
+import { costOf } from "@/lib/tokens/registry";
 import { getForms } from "@/lib/data";
 import { type UscisForm } from "@/features/case-file/types";
 import { DISCLAIMER, type GuidanceResponse } from "../guidance";
 import { isModelSource, sourceLabel } from "@/lib/llm/label";
-import { DisclaimerStamp } from "./DisclaimerStamp";
+import { DisclaimerStamp } from "@/components/legal";
 
 // — Field-guidance panel ─────────────────────────────────────────────────────
 // Pick a USCIS form + field, describe the situation, and request INFORMATIONAL

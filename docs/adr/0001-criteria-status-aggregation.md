@@ -2,7 +2,15 @@
 
 - Status: Accepted
 - Date: 2026-05-27
-- Scope: `src/features/case-file`
+- Scope: `src/features/case-file` (also consumed cross-feature by the qualification
+  report — see note below)
+
+> **2026-06-14 note:** `summarizeCriteria` / `statusTone` / `QUALIFYING_THRESHOLD`
+> are now also consumed by `qualification/components/CriteriaReport.tsx` (the
+> multi-product `/qualify` read-out). Because that surface offers more than O-1A,
+> `summarizeCriteria` takes an optional `threshold` and the report passes its
+> pack's own threshold (`packFor(classification).threshold`) — the qualifying
+> threshold must be pack-driven there, never the hardcoded O-1A `3`.
 
 ## Context
 

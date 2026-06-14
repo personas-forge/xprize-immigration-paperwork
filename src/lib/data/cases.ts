@@ -19,7 +19,6 @@ import {
   type CaseFact,
   type CaseTask,
   type Criterion,
-  type PetitionCase,
 } from "@/features/case-file/types";
 import { getCases } from "./saved-cases";
 
@@ -28,12 +27,6 @@ export { getCases };
 /** Tiny async shim so swapping in a real fetch later is a no-op for callers. */
 function resolve<T>(value: T): Promise<T> {
   return Promise.resolve(value);
-}
-
-/** A single case by id, scoped to the signed-in user, or `null`. */
-export async function getCaseById(id: string): Promise<PetitionCase | null> {
-  const list = await getCases();
-  return list.find((c) => c.id === id) ?? null;
 }
 
 /** The criteria rows for the live case file. */
