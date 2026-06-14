@@ -1,5 +1,4 @@
 export {
-  DISCLAIMER,
   O1A_CRITERIA,
   buildQualifyPrompt,
   buildQualifyResult,

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { DISCLAIMER } from "@/lib/result";
 import {
-  DISCLAIMER,
   O1A_CRITERIA,
   buildQualifyPrompt,
   buildQualifyResult,

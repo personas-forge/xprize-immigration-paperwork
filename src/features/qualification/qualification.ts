@@ -16,13 +16,11 @@
  * determination (UPL risk). The disclaimer is part of the data contract.
  */
 
-import { DISCLAIMER } from "@/features/guidance/guidance";
+import { DISCLAIMER } from "@/lib/result";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
 import { type Classification, packFor, criteriaNames } from "./packs";
 import { isLiveProgram } from "./jurisdictions";
-
-export { DISCLAIMER };
 
 /** The eight O-1A criteria names, kept as a stable export (the default pack). */
 export const O1A_CRITERIA = criteriaNames("O-1A");
