@@ -177,3 +177,17 @@
   pass-rate per op/engine) + step 5 (auto-capture live hard-fails into a
   scenario-candidate store) — both need new infra. rfe/guidance/categorize can
   adopt the hook trivially (not yet wired).
+
+- **2026-06-14 — #19 Adjudicator redline SHIPPED.** Self-critique loop over the
+  draft. `drafting.ts`: `buildCritiquePrompt`/`tryParseCritique` (maps each
+  critique back to a REAL section heading so a renamed heading can't apply to the
+  wrong section)/`mockCritique`/`overallCritiqueScore`. Route
+  `/api/draft/critique` (`critiqueOperation.ts`) grades the CLIENT's current
+  sections (incl. local edits) via `executeAiOperation`. **Billing pattern:**
+  reused the existing heavy `draft_section` op key rather than adding a new
+  metered op — the `OPERATION_REGISTRY` test asserts EXACTLY six ops, so a 7th
+  would break it. `DraftStudio`: score chips per section, redline cards (<80)
+  with the weakness + rewrite, one-click Apply that swaps the body and persists a
+  new version via the existing no-charge `/api/draft/save` (`retrySaveDraft`) —
+  no new persistence code. **Follow-up:** step 6 (attorney triggers critique
+  from the review queue; score as the queue sort key) not built.
