@@ -6,7 +6,7 @@ import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/component
 import { costOf } from "@/lib/tokens/economy";
 import { DISCLAIMER } from "@/lib/result";
 import { type QualifyResult } from "../qualification";
-import { VISA_PACKS, type Classification } from "../packs";
+import { VISA_PACKS, packFor, type Classification } from "../packs";
 import { jurisdictionFor, livePrograms } from "../jurisdictions";
 import { validationFor } from "../validation";
 
@@ -240,7 +240,7 @@ export function QualifyPanel() {
 
       {status === "done" && result ? (
         <div className="space-y-4">
-          <CriteriaReport result={result} />
+          <CriteriaReport result={result} threshold={packFor(classification).threshold} />
           {/* Second wow moment: draft the petition straight from the score. */}
           <DraftStudio
             petitioner={name.trim() || "Applicant"}

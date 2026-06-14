@@ -40,6 +40,18 @@ test("threshold: fewer than QUALIFYING_THRESHOLD qualifying does not meet", () =
   assert.equal(s.meetsThreshold, false);
 });
 
+test("threshold: an explicit pack threshold overrides the O-1A default of 3", () => {
+  const twoQualifying = [make("Met"), make("Strong")];
+  // Default (O-1A, 3): two qualifying does NOT meet.
+  assert.equal(summarizeCriteria(twoQualifying).meetsThreshold, false);
+  // A pack with threshold 2 (e.g. the planned UK-Global-Talent): two DOES meet.
+  assert.equal(summarizeCriteria(twoQualifying, 2).meetsThreshold, true);
+  // A stricter threshold (4): three qualifying does not meet.
+  const threeQualifying = [make("Met"), make("Strong"), make("Met")];
+  assert.equal(summarizeCriteria(threeQualifying, 4).meetsThreshold, false);
+  assert.equal(summarizeCriteria(threeQualifying).meetsThreshold, true);
+});
+
 test("robust against data-shape drift: non-array and unknown statuses", () => {
   // @ts-expect-error — exercising untrusted/malformed input
   assert.deepEqual(summarizeCriteria(null), {

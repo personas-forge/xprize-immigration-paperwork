@@ -61,12 +61,20 @@ export interface CriteriaSummary {
 /**
  * Aggregate criteria into the counts the case-file summary badge renders.
  *
+ * `threshold` is the minimum qualifying count to "meet" — it defaults to the
+ * O-1A {@link QUALIFYING_THRESHOLD} (3) for the case-file dashboard, but the
+ * multi-product qualify report passes its pack's own threshold (e.g. 2 for
+ * UK-Global-Talent) so the read-out is never hardcoded to O-1A (ADR-0001).
+ *
  * Robust against malformed input: a non-array argument yields an empty
  * summary, and rows with an unrecognized/absent status are ignored rather
  * than silently inflating the qualifying count. This keeps the eligibility
  * read-out honest regardless of upstream data-shape drift.
  */
-export function summarizeCriteria(items: readonly Criterion[]): CriteriaSummary {
+export function summarizeCriteria(
+  items: readonly Criterion[],
+  threshold: number = QUALIFYING_THRESHOLD,
+): CriteriaSummary {
   const list = Array.isArray(items) ? items : [];
 
   let qualifying = 0;
@@ -90,6 +98,6 @@ export function summarizeCriteria(items: readonly Criterion[]): CriteriaSummary 
     total,
     qualifying,
     partial,
-    meetsThreshold: qualifying >= QUALIFYING_THRESHOLD,
+    meetsThreshold: qualifying >= threshold,
   };
 }
