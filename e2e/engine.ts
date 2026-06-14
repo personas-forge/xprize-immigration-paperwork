@@ -1,19 +1,13 @@
-// Mirrors src/lib/llm/config.ts `resolveEngine()` so the specs can assert the
-// result `source` matches whatever engine the server was launched with:
-// explicit claude wins (no API key needed); else gemini when GEMINI_API_KEY is
-// set; else the deterministic template fallback.
-
-const ENGINE = (process.env.LLM_ENGINE ?? "").toLowerCase();
-const EXPECT_CLAUDE =
-  ENGINE === "claude" || ENGINE === "claude-cli" || ENGINE === "claude-code";
+// Derive the expected result `source` from the CANONICAL engine resolver
+// (src/lib/llm/config.ts, unit-pinned) rather than re-stating its precedence
+// here — otherwise a change to the engine-selection rule produces zero compile
+// error in this file and the specs quietly assert a stale `source`. The `@/`
+// alias resolves under Playwright via tsconfig paths (as smoke.ts relies on).
+import { resolveEngine } from "@/lib/llm/config";
 
 export type ExpectedSource = "mock" | "gemini" | "claude";
 
-export const EXPECTED_SOURCE: ExpectedSource = EXPECT_CLAUDE
-  ? "claude"
-  : process.env.GEMINI_API_KEY
-    ? "gemini"
-    : "mock";
+export const EXPECTED_SOURCE: ExpectedSource = resolveEngine() ?? "mock";
 
 /** The badge label the UI shows for the active engine. */
 export const EXPECTED_BADGE =
