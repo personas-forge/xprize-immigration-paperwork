@@ -191,3 +191,17 @@
   new version via the existing no-charge `/api/draft/save` (`retrySaveDraft`) —
   no new persistence code. **Follow-up:** step 6 (attorney triggers critique
   from the review queue; score as the queue sort key) not built.
+
+- **2026-06-14 — #20 RFE Risk Radar SHIPPED.** Inverted `rfe.ts` into a pre-filing
+  forecast: `buildRfeForecastPrompt`/`tryParseRfeForecast`/`mockRfeForecast`
+  predict per-criterion RFE risk (ranked; mock ranks Partial highest, drops
+  None). Route `/api/rfe/forecast` (`forecastOperation.ts`) reuses the heavy `rfe`
+  op key (no new metered op — same registry constraint as #19). `RfeRiskRadar`
+  (in `features/rfe/components`) is embedded in DraftStudio; **Reinforce wires
+  straight to DraftStudio's existing `regenerate(criterion)`** (the section
+  headings == criterion names, so `reinforceable = new Set(sections.map(s=>
+  s.heading))`). This is the **canonical RFE-forecast engine** — #11 (pre-adjudicate
+  over criteria+vault+draft) and #8 (qualify-side challenges w/ legal basis) can
+  reuse `buildRfeForecastPrompt`/`tryParseRfeForecast` with their own inputs/
+  surfaces. **Follow-ups:** step 5 (persist a pre-filing risk score per draft
+  version) + step 6 (predicted-vs-actual calibration) need a schema column.
