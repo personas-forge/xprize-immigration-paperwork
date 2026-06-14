@@ -1,5 +1,4 @@
 export {
-  DISCLAIMER,
   O1A_CRITERIA,
   buildQualifyPrompt,
   buildQualifyResult,
@@ -26,23 +25,11 @@ export {
 export {
   JURISDICTIONS,
   jurisdictionFor,
-  liveJurisdictions,
   livePrograms,
   isLiveProgram,
   type Jurisdiction,
   type JurisdictionCode,
 } from "./jurisdictions";
-export {
-  buildQuestionnaire,
-  scoreQuestionnaire,
-  answersToProfile,
-  type Answer,
-  type Answers,
-  type EligibilityOutcome,
-  type EligibilityQuestion,
-  type Questionnaire,
-  type Verdict,
-} from "./questionnaire";
 export {
   PROGRAM_VALIDATIONS,
   COMPLIANCE_VALIDATIONS,
@@ -50,9 +37,8 @@ export {
   REVERIFY_WARN_DAYS,
   validationFor,
   allValidations,
-  isStale,
   freshnessOf,
-  daysBetween,
+  todayIso,
   type Freshness,
   type FreshnessLevel,
   type SourceRef,

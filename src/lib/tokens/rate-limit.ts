@@ -16,7 +16,7 @@
  * the node test runner; it is only ever imported from server route handlers.
  */
 
-import { OPERATION_REGISTRY } from "./tokens/registry";
+import { OPERATION_REGISTRY } from "./registry";
 
 export interface RateLimitResult {
   ok: boolean;
@@ -116,14 +116,28 @@ function isValidIp(value: string): boolean {
 }
 
 /**
+ * The forwarded client IP, VALIDATED, or `null`. `x-forwarded-for` (first hop,
+ * else `x-real-ip`) is client-controlled, so it is only returned when it parses
+ * as a real IPv4/IPv6 literal — garbage / spoofed non-IP values yield `null`.
+ * Shared so every "what's the caller's IP?" site applies the same hardening
+ * (the welcome consent record used to trust the raw header).
+ */
+export function clientIp(headers: Pick<Headers, "get">): string | null {
+  const candidate =
+    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    headers.get("x-real-ip")?.trim() ||
+    "";
+  return isValidIp(candidate) ? candidate : null;
+}
+
+/**
  * Identity for limiting: the authenticated user when known (so a user can't dodge
  * the cap by rotating IPs), else the forwarded client IP, else a shared "anon"
  * bucket. Scoped per route so one endpoint's traffic can't exhaust another's.
  *
- * SECURITY: `x-forwarded-for` is client-controlled, so the first hop is only
- * honoured when it parses as a real IP literal; garbage / spoofed non-IP values
- * (an attacker injecting per-request junk to mint a fresh bucket each call) all
- * collapse into the shared `anon` bucket instead of bypassing the cap.
+ * SECURITY: a garbage / spoofed non-IP `x-forwarded-for` (an attacker injecting
+ * per-request junk to mint a fresh bucket each call) collapses into the shared
+ * `anon` bucket via {@link clientIp} rather than bypassing the cap.
  */
 export function rateLimitKey(
   request: Request,
@@ -131,12 +145,7 @@ export function rateLimitKey(
   userId?: string | null,
 ): string {
   if (userId) return `${scope}:u:${userId}`;
-  const h = request.headers;
-  const candidate =
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    h.get("x-real-ip")?.trim() ||
-    "";
-  return isValidIp(candidate) ? `${scope}:ip:${candidate}` : `${scope}:ip:anon`;
+  return `${scope}:ip:${clientIp(request.headers) ?? "anon"}`;
 }
 
 /** True unless explicitly disabled (e.g. RATE_LIMIT_DISABLED=1 for e2e/load tests). */

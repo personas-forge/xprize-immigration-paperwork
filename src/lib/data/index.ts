@@ -8,11 +8,9 @@
  */
 export {
   getCases,
-  getCaseById,
   getCriteria,
   getCaseFacts,
   getOutstandingTasks,
   getPetitionExcerpt,
 } from "./cases";
-export { getForms, getFormById } from "./forms";
-export { getDocuments } from "./documents";
+export { getForms } from "./forms";

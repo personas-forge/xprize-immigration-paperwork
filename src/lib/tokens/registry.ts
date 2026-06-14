@@ -12,8 +12,7 @@
 export type OpTier = "light" | "medium" | "heavy" | "xl";
 
 // Token weight per tier, reflecting real compute cost. 1 token ≈ 1.0¢ at the
-// baseline bundle. These are the canonical weights `economy.ts` re-exports as
-// OP_COST.
+// baseline bundle. Canonical — import `TIER_COST` from here directly.
 export const TIER_COST: Record<OpTier, number> = {
   light: 1, // short output: categorize, form-field guidance
   medium: 3, // structured/medium: O-1A qualification screening
@@ -30,11 +29,11 @@ export interface OperationDef {
   rateLimit?: number;
 }
 
-// The six metered AI operations. Cost/cap values are byte-identical to the prior
-// inline config (economy.ts OP_COST/OPERATIONS + rate-limit.ts RATE_LIMITS); this
-// is a pure consolidation, NOT a reprice. `draft_section` intentionally has no own
-// cap — it shares the `draft` bucket. `qualify` gained its 40/window cap in the
-// qualify→orchestrator migration (ADR-0005, PR #12); that value now lives here too.
+// The six metered AI operations — the single source of truth for their cost
+// tier and rate-limit cap; `rate-limit.ts` derives RATE_LIMITS from here.
+// `draft_section` intentionally has no own cap — it shares the `draft` bucket.
+// `qualify` gained its 40/window cap in the qualify→orchestrator migration
+// (ADR-0005, PR #12).
 export const OPERATION_REGISTRY = {
   draft: { label: "Petition letter draft", tier: "xl", rateLimit: 20 },
   draft_section: { label: "Petition section regeneration", tier: "heavy" },

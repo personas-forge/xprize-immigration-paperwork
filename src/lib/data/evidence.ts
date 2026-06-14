@@ -14,16 +14,12 @@ import "server-only";
  * owner-or-attorney gate before calling in.
  */
 import { getStore } from "@/lib/db/store";
+import { type StoredDocument } from "@/features/evidence/types";
 
-export interface StoredDocument {
-  id: string;
-  name: string;
-  criterion: string;
-  exhibit: string;
-  status: string;
-  facts: string[];
-  source: string;
-}
+// Re-exported so existing `@/lib/data/evidence` importers (the EvidenceAdapter)
+// keep resolving StoredDocument unchanged; the shape lives in the server-free
+// types module so the client EvidenceVault can share it.
+export type { StoredDocument };
 
 /**
  * Add a document to a case's vault, assigning the next exhibit number. Returns

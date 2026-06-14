@@ -103,3 +103,159 @@
   `/api/draft` focus path merges into the latest stored draft; if none exists yet
   it updates the client only (version stays null). Consider seeding a draft on
   first generate so section regens always persist.
+
+## Moonshot run — Pipeline (2026-06-14)
+
+- **2026-06-14 — #10 Exhibit-cited petitions SHIPPED.** Fused the evidence
+  vault into drafting. `drafting.ts` now: `DraftCriterion.exhibits?[]`,
+  exhibit-aware prompts gated by `hasExhibits()` (inline/demo path stays
+  exhibit-free), `attachExhibits(req, vaultDocs)` (pure, groups `StoredDocument`
+  by criterion via `exhibitNumber("Ex. 3")→3`), and the citation-integrity core
+  `auditCitations(sections, knownNumbers)` → `{cited,resolved,unresolved,uncited,
+  coverage}`. The route (`draftOperation.parse`, DB path) loads vault docs via
+  the `EvidenceAdapter` (best-effort — a vault fault degrades to exhibit-free,
+  never fails a paid gen) and attaches them. `DraftStudio` takes a `documents`
+  prop and renders the exhibit index + `unresolved`→"attorney must verify"
+  quarantine + coverage meter, recomputed live client-side (pure helpers, no
+  extra API field). Packet export (`draftClipboardText`) appends an EXHIBIT
+  INDEX. **Follow-up:** step 6 (persist the citation map per draft version to
+  flag now-broken citations on vault re-file/remove) deferred — needs a schema
+  column on the draft row. The vault→draft binding pattern (load via adapter in
+  `parse`, attach to the request, keep the pure module decoupled via a
+  `VaultDocLike` structural subset) is reusable for #21 (extend to RFE +
+  UNSUPPORTED stamp) and the RFE-forecast moonshots.
+
+- **2026-06-14 — #16 Instant Verdict SHIPPED.** Anonymous hero screener.
+  `/api/qualify/preview` is a standalone route (NOT `executeAiOperation`, which
+  would charge): parse → `mockQualification` → `buildQualifyResult` only — no
+  model, no charge, no DB. Abuse-guarded by a per-IP `checkRateLimit` on its own
+  `qualify_preview` scope with a literal cap (30/min) — deliberately did NOT add
+  a registry op (that would change the metered economy). `<InstantVerdict>`
+  reuses `CriteriaReport` inside a `Seal`+`Guilloche` certificate frame. The
+  landing (`src/app/page.tsx`) is a server component; embedding a client
+  component is fine and `/` stays statically prerendered. Cross-page handoff:
+  `prefill.ts` (one-shot sessionStorage, storage-injectable + tested);
+  `QualifyPanel` reads it on mount. **Lint gotcha:** `react-hooks/set-state-in-
+  effect` is an ERROR in this repo — a one-time browser-API-on-mount read needs
+  an `// eslint-disable-next-line react-hooks/set-state-in-effect` (the FOUC-free
+  alternative is `useSyncExternalStore`, see `usePersistentQuery.ts`).
+  **Follow-up:** step 5 funnel instrumentation (paste→verdict→sign-in metric)
+  not wired — no analytics layer exists yet. Producer for #17 (embeds
+  `<InstantVerdict>`) and #18 (Letters Patent links back).
+
+- **2026-06-14 — #7 Best-path recommender SHIPPED.** `best-path.ts` scores one
+  profile against EVERY `livePrograms()` pack in one pass (`scoreAllPrograms` →
+  `mockQualification` per pack + shared `summarizeCriteria`), `rankPrograms`
+  (clears→margin→gaps→likelihood, stable tie-break on classification),
+  `recommendBestPath` tags the top with `rationaleFor` (flags EB-1A green card).
+  Keyless route `/api/qualify/preview/best-path` (deterministic, IP-limited on
+  `best_path_preview` scope) — same no-charge pattern as #16. UI: `QualifyEntry`
+  toggles `BestPathFinder` (default) ↔ `QualifyPanel`; choosing a path reuses the
+  #16 `writeQualifyPrefill` handoff and mounts the panel pre-filled. **Registry
+  note:** deliberately did NOT add a `best_path` metered op — the registry test
+  asserts EXACTLY the six ops, and a keyless deterministic recommender needs no
+  charge. **Follow-ups:** step 2 (single PAID multi-pack model call —
+  `buildBestPathPrompt`/`parseBestPathResponse` over all packs) and step 5
+  (persist the comparison artifact on the chosen case) not built.
+
+- **2026-06-14 — #1 Live Adjudication-Risk Engine SHIPPED.** Promoted the eval
+  gates into the live path. New `src/lib/llm/adjudication-gates.ts`:
+  `runAdjudication(ctx)` → `{gates, risk: ready|review|blocked, attorneyReady}`.
+  The scenario-FREE leaf scanners (`fabricatedSpecifics`+`stripLegal`,
+  `matchedAdvice` UPL tripwires, `caseLawHits`, `wrongCodes`, `tokens`,
+  `sentenceCount`) were MOVED here and are now imported by
+  `scripts/llm-eval/gates.ts` — single-sourced, so live + offline can't drift
+  (harness behavior verified unchanged via a throwaway `runGates` check). The
+  orchestrator (`operation.ts`) gained an `adjudicate?(output,input,source,body)`
+  hook run after `build` (best-effort, try/caught) that attaches `{adjudication}`
+  to the body; wired for draft + qualify. `AdjudicationBadge` (in
+  `components/legal`) shows attorney-ready/review/blocked + exact reasons.
+  **Gotcha:** `executeAiOperation` already has a local `body` var (the request
+  JSON) — name the response var `responseBody`. **Producer for #2** (provenance
+  ledger enriches DraftGenerated w/ the adjudication verdict) **and #3**
+  (ensemble adjudicates each sample). **Follow-ups:** step 4 (LightTrack
+  pass-rate per op/engine) + step 5 (auto-capture live hard-fails into a
+  scenario-candidate store) — both need new infra. rfe/guidance/categorize can
+  adopt the hook trivially (not yet wired).
+
+- **2026-06-14 — #19 Adjudicator redline SHIPPED.** Self-critique loop over the
+  draft. `drafting.ts`: `buildCritiquePrompt`/`tryParseCritique` (maps each
+  critique back to a REAL section heading so a renamed heading can't apply to the
+  wrong section)/`mockCritique`/`overallCritiqueScore`. Route
+  `/api/draft/critique` (`critiqueOperation.ts`) grades the CLIENT's current
+  sections (incl. local edits) via `executeAiOperation`. **Billing pattern:**
+  reused the existing heavy `draft_section` op key rather than adding a new
+  metered op — the `OPERATION_REGISTRY` test asserts EXACTLY six ops, so a 7th
+  would break it. `DraftStudio`: score chips per section, redline cards (<80)
+  with the weakness + rewrite, one-click Apply that swaps the body and persists a
+  new version via the existing no-charge `/api/draft/save` (`retrySaveDraft`) —
+  no new persistence code. **Follow-up:** step 6 (attorney triggers critique
+  from the review queue; score as the queue sort key) not built.
+
+- **2026-06-14 — #20 RFE Risk Radar SHIPPED.** Inverted `rfe.ts` into a pre-filing
+  forecast: `buildRfeForecastPrompt`/`tryParseRfeForecast`/`mockRfeForecast`
+  predict per-criterion RFE risk (ranked; mock ranks Partial highest, drops
+  None). Route `/api/rfe/forecast` (`forecastOperation.ts`) reuses the heavy `rfe`
+  op key (no new metered op — same registry constraint as #19). `RfeRiskRadar`
+  (in `features/rfe/components`) is embedded in DraftStudio; **Reinforce wires
+  straight to DraftStudio's existing `regenerate(criterion)`** (the section
+  headings == criterion names, so `reinforceable = new Set(sections.map(s=>
+  s.heading))`). This is the **canonical RFE-forecast engine** — #11 (pre-adjudicate
+  over criteria+vault+draft) and #8 (qualify-side challenges w/ legal basis) can
+  reuse `buildRfeForecastPrompt`/`tryParseRfeForecast` with their own inputs/
+  surfaces. **Follow-ups:** step 5 (persist a pre-filing risk score per draft
+  version) + step 6 (predicted-vs-actual calibration) need a schema column.
+
+- **2026-06-14 — #21 Exhibit-bound brief SHIPPED.** Extended #10's exhibit
+  citation discipline to the RFE responder. `RfeCriterion.exhibits?`,
+  `buildRfePrompt` lists exhibits + adds the (Exhibit N) rule, `attachRfeExhibits`
+  binds the vault on the DB path (rfe route now loads docs via EvidenceAdapter
+  best-effort), `mockRfe` cites them. Extracted the `<ExhibitIndex>` UI
+  (citation-integrity meter + UNSUPPORTED quarantine) from DraftStudio into
+  `features/drafting/components/ExhibitIndex.tsx` and `exhibitBullets` from
+  drafting.ts — both studios now share one citation surface. #10 had built the
+  pure helpers (`auditCitations`/`buildExhibitIndex`/`attachExhibits`) generically
+  enough that RfeStudio reuses them verbatim. Net: #10+#21 are one
+  evidence-to-argument graph across draft AND RFE.
+
+- **2026-06-14 — #17 Programmatic SEO atelier SHIPPED.** `professions.ts` (typed
+  content map: profession → tuned evidence example per criterion NAME, falls back
+  to the pack's generic copy). One SSG route
+  `/visa/[classification]/[profession]/page.tsx` via `generateStaticParams` over
+  `livePrograms() × PROFESSIONS` (15 pages: 3 programs × 5 professions) — renders
+  criteria + examples + FAQ/Service JSON-LD + embedded `<InstantVerdict
+  initialClassification>` (added that prop). `sitemap.ts` (force-static) covers
+  the matrix. Extracted `SITE_URL` into `@/lib/site` and pointed layout at it
+  (single-source). All statically prerendered (`●` in build). The matrix scales
+  with the data — add a profession or live program → more pages, zero marginal
+  code.
+
+- **2026-06-14 — #2 Provenance Ledger SHIPPED (step 1).** `src/lib/events/
+  provenance.ts`: hash-chained audit ledger. `createProvenanceChain`/
+  `verifyChain`/`hashAuditRecord` are pure with an injectable `HashFn` (default
+  SHA-256 via node:crypto; canonical key-sorted JSON → stable digest).
+  `registerProvenanceLedger` reuses the SAME `toAuditRecord` projection (can't
+  drift from the audit trail); `getDomainBus` wires it in place of the plain
+  audit log, `getProvenanceChain()` exposes it. Tests prove any mutation/delete/
+  reorder breaks the chain. **This hash-chain primitive is the SHARED producer
+  for #5 (token_ledger cost-of-record) and #13 (consent attestation chain) —
+  both just need to apply `hashAuditRecord`-style chaining at their write seam.**
+  **Follow-ups (need infra):** durable `ChainedAuditSink` (Store ledger table),
+  enriching DraftGenerated w/ the #1 adjudication verdict, the signed PDF
+  appendix, and the public verify endpoint.
+
+- **2026-06-14 — #18 Shareable Letters Patent SHIPPED.** Done WITHOUT a DB by
+  encoding the snapshot in the URL token. `letters-patent.ts`:
+  `encodeSnapshot`/`decodeSnapshot` (runtime-agnostic base64url via
+  `btoa`/`atob`+`TextEncoder` — NO `Buffer`, so it works client-side for the
+  share button AND server-side in the page/OG route). Token carries only
+  name/classification/likelihood/per-criterion-status (never profile text);
+  decode is tamper-guarded (rejects non-live programs + wrong status counts vs
+  the pack). `/c/[token]/page.tsx` renders the engraved certificate;
+  `/c/[token]/opengraph-image.tsx` (next/og, `runtime="nodejs"`, brand palette
+  mirrored as hex since globals.css tokens aren't in Satori). `LettersPatentShare`
+  (copy link + LinkedIn) wired into InstantVerdict + QualifyPanel. **Pattern:**
+  URL-encoded snapshots are a clean way to ship "public shareable artifact"
+  features without persistence. Consumer of #16 (links back to Instant Verdict).
+  **Follow-up:** brand FONT in the OG image (Fraunces) needs a font fetch in the
+  route — currently Georgia/serif fallback.

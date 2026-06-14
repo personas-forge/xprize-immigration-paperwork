@@ -1,11 +1,18 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
-import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
-import { CitationNote } from "@/features/guidance/components/CitationNote";
-import { DISCLAIMER, type DraftSection } from "@/features/drafting";
+import { DisclaimerStamp, CitationNote } from "@/components/legal";
+import {
+  DISCLAIMER,
+  attachExhibits,
+  auditCitations,
+  buildExhibitIndex,
+  type DraftSection,
+  type VaultDocLike,
+} from "@/features/drafting";
+import { ExhibitIndex } from "@/features/drafting/components/ExhibitIndex";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 
 // — RFE response studio ───────────────────────────────────────────────────────
@@ -41,6 +48,7 @@ export function RfeStudio({
   initialSections = null,
   initialRfeText = "",
   initialSource = "mock",
+  documents = [],
 }: {
   caseId: string;
   petitioner: string;
@@ -49,6 +57,8 @@ export function RfeStudio({
   initialSections?: DraftSection[] | null;
   initialRfeText?: string;
   initialSource?: ModelSource;
+  /** The case's vault documents — drives the exhibit index + citation audit. */
+  documents?: readonly VaultDocLike[];
 }) {
   const hasInitial = Boolean(initialSections && initialSections.length > 0);
   const [rfeText, setRfeText] = useState(initialRfeText);
@@ -60,6 +70,33 @@ export function RfeStudio({
   // Synchronous in-flight guard — see DraftStudio. A stale `status` closure can't
   // stop two same-render clicks from both firing a paid POST.
   const busyRef = useRef(false);
+
+  // Exhibit index + live (Exhibit N) citation audit of the RFE response, the
+  // same binding the responder uses to prompt (moonshot #21).
+  const exhibitIndex = useMemo(
+    () =>
+      buildExhibitIndex(
+        attachExhibits(
+          {
+            petitioner: petitioner || "the beneficiary",
+            classification,
+            criteria: criteria.map((c) => ({
+              name: c.name,
+              status: c.status,
+              evidence: c.evidence,
+              rationale: c.rationale,
+            })),
+          },
+          documents,
+        ),
+      ),
+    [documents, classification, petitioner, criteria],
+  );
+  const audit = useMemo(
+    () => auditCitations(sections, exhibitIndex.map((e) => e.number)),
+    [sections, exhibitIndex],
+  );
+  const citedNumbers = useMemo(() => new Set(audit.resolved), [audit]);
 
   async function generate() {
     if (busyRef.current) return; // double-submit guard (charges tokens)
@@ -197,6 +234,14 @@ export function RfeStudio({
           <div className="space-y-4">
             <DisclaimerStamp text={DISCLAIMER} />
             <CitationNote />
+            {exhibitIndex.length > 0 ? (
+              <ExhibitIndex
+                entries={exhibitIndex}
+                citedNumbers={citedNumbers}
+                unresolved={audit.unresolved}
+                coverage={audit.coverage}
+              />
+            ) : null}
             {!isModelSource(source) ? (
               <div
                 className="rounded-control border border-dashed border-border-strong bg-surface-muted/40 px-4 py-2.5"

@@ -6,15 +6,10 @@ if (typeof window !== "undefined") {
   throw new Error("@/lib/firebase/admin must not be imported on the client.");
 }
 
-import { applicationDefault, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
+import { ensureAdminApp } from "./adminApp";
 
 export function adminAuth(): Auth {
-  if (!getApps().length) {
-    initializeApp({
-      credential: applicationDefault(),
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
-  }
+  ensureAdminApp();
   return getAuth();
 }

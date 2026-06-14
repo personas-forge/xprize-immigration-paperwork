@@ -16,8 +16,15 @@ test("extractJson: pulls the object out of surrounding prose", () => {
   assert.deepEqual(extractJson('prefix {"a":3} suffix'), { a: 3 });
 });
 
-test("extractJson: takes the outermost braces (first { to last })", () => {
+test("extractJson: keeps nested objects (balances braces)", () => {
   assert.deepEqual(extractJson('{"a":{"b":2}}'), { a: { b: 2 } });
+});
+
+test("extractJson: stops at the first balanced object, not the last } (no over-grab)", () => {
+  // A naive slice(indexOf('{'), lastIndexOf('}')+1) would sweep in a trailing
+  // second object the model appended in prose and yield unparseable text. The
+  // balanced-brace scan returns only the first object.
+  assert.deepEqual(extractJson('{"a":1} note {"b":2}'), { a: 1 });
 });
 
 test("extractJson: returns null on garbage, broken JSON, or no object", () => {

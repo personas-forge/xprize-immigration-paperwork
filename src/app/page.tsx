@@ -10,11 +10,18 @@ import {
 import { Rise, Stagger, HoverCard } from "@/components/Motion";
 import { PetitionStepper } from "@/components/PetitionStepper";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { BUNDLES, FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
+import { InstantVerdict } from "@/features/qualification/components/InstantVerdict";
 
 // Marketing landing — "The Petition". The page is composed as if the
 // product itself were a formal document: an opening seal, ruled chapter
 // marks, italic display headlines, a watermarked hero, a sealed price block.
-// Same copy as the legacy page (no business changes); fresh chrome.
+//
+// Pricing/positioning reflects what the product ACTUALLY is: a self-serve,
+// token-metered AI drafting tool. The petition is AI-drafted work product that
+// the user's OWN attorney of record reviews and signs — the tool does not
+// provide the attorney or give legal advice. The pricing block is driven from
+// the canonical token BUNDLES (economy.ts) so it can't drift from /billing.
 
 export default function Page() {
   return (
@@ -22,6 +29,7 @@ export default function Page() {
       <SiteHeader />
 
       <Hero />
+      <InstantVerdictSection />
       <PetitionStepper />
       <Promises />
       <Process />
@@ -68,6 +76,31 @@ function SiteHeader() {
 }
 
 /* ── Hero ──────────────────────────────────────────────────────────────── */
+
+/* ── Instant Verdict — the hero screener (moonshot #16) ──────────────────── */
+
+function InstantVerdictSection() {
+  return (
+    <section className="relative border-y border-border bg-surface/40">
+      <div className="mx-auto max-w-3xl px-8 py-16">
+        <Rise>
+          <ChapterMark numeral="0" label="See your verdict now" />
+          <h2 className="display mt-5 text-[clamp(1.8rem,4.4vw,3rem)]">
+            Paste your background. Watch the <em>certificate</em> assemble.
+          </h2>
+          <p className="mt-4 max-w-2xl font-sans text-[16px] leading-relaxed text-muted-strong">
+            The same eight-criteria engine that powers the petition — run it on
+            yourself right here, no signup, in about twenty seconds. It&apos;s a
+            free informational read, never legal advice.
+          </p>
+        </Rise>
+        <Rise className="mt-8">
+          <InstantVerdict />
+        </Rise>
+      </div>
+    </section>
+  );
+}
 
 function Hero() {
   return (
@@ -116,10 +149,11 @@ function Hero() {
             className="mt-8 max-w-2xl font-sans text-[17px] leading-relaxed text-foreground-soft initial"
             style={{ "--delay": "350ms" } as React.CSSProperties}
           >
-            The same petition packet a firm would charge $8,000 to $15,000 to
-            assemble — written by Gemini from your CV, GitHub, press and
-            publications, then reviewed and signed by a licensed immigration
-            attorney before it lands at USCIS.
+            The petition packet a firm would charge $8,000 to $15,000 to
+            assemble — drafted by AI from your CV, GitHub, press and
+            publications, structured across the eight O-1 criteria. It&apos;s
+            work product, ready for <em>your</em> attorney of record to review
+            and sign before filing — informational drafting, never legal advice.
           </p>
 
           <div
@@ -135,7 +169,7 @@ function Hero() {
               <span aria-hidden>→</span>
             </Link>
             <span className="microprint" style={{ color: "var(--muted-strong)" }}>
-              Free if you don&apos;t qualify · 50% upfront, 50% on filing
+              Free 5-min screening · {FREE_SIGNUP_GRANT} tokens on signup · pay only for what you draft
             </span>
           </div>
         </div>
@@ -207,18 +241,18 @@ function Promises() {
   const items = [
     {
       n: "I",
-      t: "70% cheaper",
-      b: "$2,500 flat vs. $8K–15K typical firm. We pass the USCIS fees through at cost. No surprise add-ons.",
+      t: "Pay only for what you draft",
+      b: "Prepaid tokens, not retainers — a fraction of the $8K–15K a firm bills to assemble the same packet. New accounts start free; top up a bundle when you need more.",
     },
     {
       n: "II",
-      t: "Faster — 21 days median",
-      b: "Voice agent does the 45-min discovery; Gemini drafts the petition in hours; attorney reviews & signs within 5 business days.",
+      t: "Drafted in minutes",
+      b: "AI classifies your evidence across the eight O-1 criteria and drafts the petition letter section by section, in one pass. You and your attorney refine from there.",
     },
     {
       n: "III",
-      t: "Real attorney, real bar",
-      b: "Every petition is signed by a licensed U.S. immigration attorney who is on record with USCIS. We are not a DIY tool.",
+      t: "Your attorney signs — you own the filing",
+      b: "Every draft is work product for your own attorney of record to review and sign before it reaches USCIS. We're a drafting tool, not a law firm — and never legal advice.",
     },
   ];
   return (
@@ -245,10 +279,10 @@ function Promises() {
 
 function Process() {
   const steps: [string, string, string][] = [
-    ["I", "Qualify", "5-min self-check + voice interview. Free. We tell you yes/no/maybe with honest reasoning."],
-    ["II", "Assemble", "Upload CV. We pull press, citations, GitHub. Gemini drafts the petition + 28 exhibits + I-129."],
-    ["III", "Sign", "Your attorney of record reviews every word, edits where needed, signs the I-129 and the cover letter."],
-    ["IV", "File", "Premium processing recommended. 15 business days to decision. We pre-draft RFE responses just in case."],
+    ["I", "Qualify", "5-min self-check that scores the eight O-1 criteria. Free. You get a yes/no/maybe with honest reasoning."],
+    ["II", "Assemble", "Upload your CV and evidence. AI sorts each document into a criterion and drafts the petition letter, section by section."],
+    ["III", "Review & sign", "Your own attorney of record reviews every word in the studio, edits where needed, and signs — the tool drafts, your attorney owns the filing."],
+    ["IV", "File", "Your attorney files with USCIS; premium processing is ~15 business days to decision. Draft RFE responses in the studio if more evidence is requested."],
   ];
 
   return (
@@ -290,67 +324,53 @@ function Process() {
 /* ── Pricing ───────────────────────────────────────────────────────────── */
 
 function Pricing() {
+  // One-time top-up bundles (the recurring monthly plan lives on /billing).
+  const bundles = BUNDLES.filter((b) => !b.recurring);
   return (
     <section id="pricing" className="relative border-t border-border bg-background-tint/60">
       <div className="mx-auto max-w-6xl px-8 py-24">
         <Rise>
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
-              <ChapterMark numeral="III" label="Schedule of fees" />
+              <ChapterMark numeral="III" label="Token ledger" />
               <h2 className="display mt-5 max-w-3xl text-[clamp(2.2rem,5.6vw,3.8rem)]">
-                Flat. <em>Honest.</em> No hours billed.
+                Pay for <em>exactly what you draft.</em>
               </h2>
-              <p className="mt-4 font-sans text-[17px] italic text-muted-strong">
-                See the <Link href="/pricing" className="ink-link">full schedule of fees →</Link>
+              <p className="mt-4 max-w-2xl font-sans text-[17px] text-muted-strong">
+                No retainers, no subscriptions. New accounts start with{" "}
+                <span className="doc-number text-foreground">{FREE_SIGNUP_GRANT}</span>{" "}
+                free tokens; top up a bundle when you need more — bigger bundles
+                cost less per token.{" "}
+                <Link
+                  href="/billing"
+                  className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                >
+                  See the token ledger →
+                </Link>
               </p>
             </div>
-            <Stamp label="Bar-licensed" meta="On record · USCIS" tone="seal" rotate={4} />
+            <Stamp label="Start free" meta={`${FREE_SIGNUP_GRANT} tokens`} tone="seal" rotate={4} />
           </div>
         </Rise>
 
-        <Stagger className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
-          <Rise>
-            <Plan
-              title="O-1A"
-              price="$2,500"
-              sub="Extraordinary ability · sciences, business, athletics"
-              lines={[
-                "Voice intake + evidence vault",
-                "Full petition + I-129 drafted",
-                "Attorney sign-off + e-filing",
-                "RFE drafting included",
-              ]}
-              highlight
-            />
-          </Rise>
-          <Rise>
-            <Plan
-              title="O-1B"
-              price="$3,500"
-              sub="Extraordinary achievement · arts"
-              lines={[
-                "Stronger evidence curation",
-                "Industry expert letter drafts",
-                "Everything in O-1A",
-              ]}
-            />
-          </Rise>
-          <Rise>
-            <Plan
-              title="EB-1A"
-              price="$4,500"
-              sub="Green-card self-petition"
-              lines={[
-                "12-month engagement",
-                "RFE & motion handling",
-                "Adjustment-of-status support",
-              ]}
-            />
-          </Rise>
+        <Stagger className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {bundles.map((b) => (
+            <Rise key={b.key}>
+              <BundleCard
+                label={b.label}
+                price={b.priceLabel}
+                tokens={b.tokens}
+                discount={b.discountLabel}
+                highlight={b.key === "pro"}
+              />
+            </Rise>
+          ))}
         </Stagger>
         <p className="microprint mt-10" style={{ color: "var(--muted-strong)" }}>
-          USCIS premium processing fee ($2,805) passthrough at cost. Free
-          qualification call. Attorney on record from day&nbsp;1.
+          Tokens fund the AI drafting tools — a full petition draft spends more
+          than a single form-field answer. USCIS filing fees are paid directly to
+          USCIS. Informational drafting only, never legal advice; your attorney of
+          record reviews before anything is filed.
         </p>
       </div>
     </section>
@@ -405,7 +425,7 @@ function SiteFooter() {
         </div>
         <div className="microprint flex flex-wrap items-center gap-4">
           <a className="ink-link" href="#how">How it works</a>
-          <Link className="ink-link" href="/pricing">Pricing</Link>
+          <Link className="ink-link" href="/billing">Pricing</Link>
           <Link className="ink-link" href="/faq">FAQ</Link>
           <Link className="ink-link" href="/landing-claude">Alt. masthead</Link>
         </div>
@@ -414,53 +434,60 @@ function SiteFooter() {
   );
 }
 
-/* ── Plan card ─────────────────────────────────────────────────────────── */
+/* ── Bundle card ───────────────────────────────────────────────────────── */
 
-function Plan({
-  title,
+// Static marketing view of a token bundle (the interactive buy flow lives on
+// /billing). Driven from economy.ts BUNDLES so the price/tokens can't drift.
+function BundleCard({
+  label,
   price,
-  sub,
-  lines,
+  tokens,
+  discount,
   highlight,
 }: {
-  title: string;
+  label: string;
   price: string;
-  sub: string;
-  lines: string[];
+  tokens: number;
+  discount?: string;
   highlight?: boolean;
 }) {
   return (
     <HoverCard
-      className={`relative flex flex-col rounded-card border bg-surface p-6 ${
+      className={`relative flex h-full flex-col rounded-card border bg-surface p-6 ${
         highlight ? "border-accent/50 shadow-leaf" : "border-border"
       }`}
     >
       {highlight ? (
         <div className="absolute -top-3 left-6">
-          <Stamp label="Most chosen" tone="accent" rotate={-3} />
+          <Stamp label="Best value" tone="accent" rotate={-3} />
         </div>
       ) : null}
       <div className="microprint" style={{ color: "var(--accent-dark)" }}>
-        {title}
+        Bundle · prepaid
       </div>
-      <div className="mt-3 flex items-baseline gap-2">
+      <h3 className="display mt-2 text-3xl text-foreground">{label}</h3>
+      <div className="mt-4 flex items-baseline gap-2">
         <span className="display text-5xl">{price}</span>
-        <span className="microprint" style={{ color: "var(--muted)" }}>
-          flat
-        </span>
+        {discount ? (
+          <span className="microprint" style={{ color: "var(--accent-dark)" }}>
+            {discount}
+          </span>
+        ) : null}
       </div>
-      <div className="font-sans text-[15px] italic text-muted-strong">{sub}</div>
 
       <div className="my-5 perforation h-px" aria-hidden />
 
-      <ul className="space-y-2.5 font-sans text-[16px]">
-        {lines.map((l) => (
-          <li key={l} className="flex items-start gap-3">
-            <span aria-hidden className="mt-1 inline-block h-px w-3 bg-accent-dark" />
-            <span className="leading-snug">{l}</span>
-          </li>
-        ))}
-      </ul>
+      <div className="mt-auto flex items-baseline gap-2">
+        <span
+          className="doc-number text-[18px] text-foreground"
+          style={{ fontVariantNumeric: "tabular-nums" }}
+        >
+          {tokens.toLocaleString()}
+        </span>
+        <span className="microprint" style={{ color: "var(--muted)" }}>
+          tokens
+        </span>
+      </div>
     </HoverCard>
   );
 }

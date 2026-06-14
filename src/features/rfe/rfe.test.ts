@@ -3,12 +3,18 @@ import { test } from "node:test";
 
 import {
   DISCLAIMER,
+  attachRfeExhibits,
   buildRfePrompt,
   buildRfeResult,
+  buildRfeForecastPrompt,
+  buildRfeForecastResult,
   mockRfe,
+  mockRfeForecast,
   parseRfeRequest,
   parseRfeResponse,
+  rfeHasExhibits,
   tryParseRfeResponse,
+  tryParseRfeForecast,
   type RfeRequest,
 } from "./rfe";
 
@@ -117,4 +123,88 @@ test("mockRfe: with no criteria, still returns opening + fallback + closing", ()
   const r = mockRfe({ ...valid, criteria: [] });
   assert.equal(r.sections.length, 3);
   assert.equal(r.sections[1].heading, "Additional evidence");
+});
+
+// — RFE Risk Radar / forecast (moonshot #20) ─────────────────────────────────
+
+test("buildRfeForecastPrompt: asks for ranked per-criterion challenge JSON", () => {
+  const p = buildRfeForecastPrompt(valid);
+  assert.ok(p.toLowerCase().includes("likelihood"));
+  assert.ok(p.includes("suggestedEvidence"));
+  assert.ok(p.toLowerCase().includes("do not invent"));
+  assert.ok(p.includes("<<<CRITERIA>>>"));
+  assert.ok(p.includes("Awards") && p.includes("Judging"));
+});
+
+test("mockRfeForecast: ranks relied-on criteria, Partial highest, drops None", () => {
+  const f = mockRfeForecast(valid);
+  // Only relied-on (Met/Strong/Partial) → Awards + Judging, not Press(None).
+  assert.deepEqual(f.map((c) => c.criterion).sort(), ["Awards", "Judging"]);
+  // Ranked most-likely first; Partial (Judging) outranks Met (Awards).
+  assert.equal(f[0].criterion, "Judging");
+  assert.ok(f[0].likelihood >= f[1].likelihood);
+  assert.ok(f.every((c) => c.likelihood >= 0 && c.likelihood <= 100));
+  assert.ok(f.every((c) => c.why.length > 0 && c.suggestedEvidence.length > 0));
+});
+
+test("tryParseRfeForecast: parses + ranks valid JSON, maps to real criteria", () => {
+  const model = JSON.stringify({
+    challenges: [
+      { criterion: "Awards", likelihood: 30, why: "ok", suggestedEvidence: "more" },
+      { criterion: "Ghost", likelihood: 90, why: "x", suggestedEvidence: "y" }, // dropped
+      { criterion: "Judging", likelihood: 85, why: "thin", suggestedEvidence: "add docs" },
+    ],
+  });
+  const f = tryParseRfeForecast(model, valid);
+  assert.ok(f);
+  assert.deepEqual(f!.map((c) => c.criterion), ["Judging", "Awards"], "ranked + Ghost dropped");
+});
+
+test("tryParseRfeForecast: returns null on garbage / no usable entries", () => {
+  assert.equal(tryParseRfeForecast("not json", valid), null);
+  assert.equal(tryParseRfeForecast(JSON.stringify({ challenges: [] }), valid), null);
+  assert.equal(
+    tryParseRfeForecast(JSON.stringify({ challenges: [{ criterion: "Ghost", likelihood: 9 }] }), valid),
+    null,
+  );
+});
+
+test("buildRfeForecastResult: attaches the disclaimer + source", () => {
+  const r = buildRfeForecastResult(mockRfeForecast(valid), "mock");
+  assert.equal(r.disclaimer, DISCLAIMER);
+  assert.equal(r.source, "mock");
+  assert.ok(r.challenges.length > 0);
+});
+
+// — Exhibit-bound RFE (moonshot #21) ─────────────────────────────────────────
+
+test("attachRfeExhibits + buildRfePrompt: cites exhibits only when present", () => {
+  const docs = [
+    { criterion: "Awards", exhibit: "Ex. 1", name: "Certificate", facts: ["2023"] },
+    { criterion: "Judging", exhibit: "Ex. 2", name: "Reviewer invite", facts: [] },
+  ];
+  assert.equal(rfeHasExhibits(valid), false);
+  const withEx = attachRfeExhibits(valid, docs);
+  assert.equal(rfeHasExhibits(withEx), true);
+  const awards = withEx.criteria.find((c) => c.name === "Awards");
+  assert.deepEqual(awards?.exhibits?.map((e) => e.number), [1]);
+
+  const plain = buildRfePrompt(valid);
+  assert.ok(!plain.includes("(Exhibit N)"), "no citation rule without exhibits");
+  const p = buildRfePrompt(withEx);
+  assert.ok(p.includes("(Exhibit N)"), "citation rule present");
+  assert.ok(p.includes("(Exhibit 1) Certificate"), "lists the exhibit");
+});
+
+test("attachRfeExhibits: no matching docs leaves the request untouched", () => {
+  assert.equal(attachRfeExhibits(valid, []), valid);
+});
+
+test("mockRfe: cites attached exhibits in the addressable sections", () => {
+  const withEx = attachRfeExhibits(valid, [
+    { criterion: "Awards", exhibit: "Ex. 1", name: "Certificate", facts: [] },
+  ]);
+  const r = mockRfe(withEx);
+  const awards = r.sections.find((s) => s.heading === "Re: Awards");
+  assert.ok(awards?.body.includes("(Exhibit 1)"));
 });

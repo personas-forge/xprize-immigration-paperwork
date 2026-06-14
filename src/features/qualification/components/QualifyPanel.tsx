@@ -1,19 +1,23 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
-import { costOf } from "@/lib/tokens/economy";
-import { DISCLAIMER, type QualifyResult } from "../qualification";
-import { VISA_PACKS, type Classification } from "../packs";
+import { costOf } from "@/lib/tokens/registry";
+import { DISCLAIMER } from "@/lib/result";
+import { type QualifyResult } from "../qualification";
+import { VISA_PACKS, isClassification, packFor, type Classification } from "../packs";
+import { readQualifyPrefill } from "../prefill";
 import { jurisdictionFor, livePrograms } from "../jurisdictions";
 import { validationFor } from "../validation";
 
 // Only programs whose jurisdiction is live are offered (US today).
 const PROGRAMS = livePrograms();
-import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
+import { DisclaimerStamp, AdjudicationBadge } from "@/components/legal";
+import { type AdjudicationReport } from "@/lib/llm/adjudication-gates";
 import { DraftStudio } from "@/features/drafting/components/DraftStudio";
 import { CriteriaReport } from "./CriteriaReport";
+import { LettersPatentShare } from "./LettersPatentShare";
 
 // — Qualification panel ───────────────────────────────────────────────────────
 // Paste a CV / bio / list of achievements, get an INFORMATIONAL screening from
@@ -23,7 +27,10 @@ import { CriteriaReport } from "./CriteriaReport";
 
 type Status = "idle" | "loading" | "done" | "error" | "paywall";
 
-type QualifyApiResponse = QualifyResult & { caseId: string | null };
+type QualifyApiResponse = QualifyResult & {
+  caseId: string | null;
+  adjudication?: AdjudicationReport;
+};
 
 const SAMPLE =
   "Senior research engineer. 6 peer-reviewed papers (412 citations), best-paper " +
@@ -37,6 +44,26 @@ export function QualifyPanel() {
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<QualifyApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Hydrate the one-shot Instant-Verdict handoff: if the visitor screened
+  // themselves in the landing hero and clicked "go deeper", carry their
+  // name/profile/visa over so nothing is re-typed. This is the documented
+  // "read a browser-only API once on mount" case — sessionStorage can't be read
+  // during SSR, so a mount effect is the correct seam (not a render-time read,
+  // which would mismatch hydration). The helper clears the stash, so a refresh
+  // starts blank.
+  useEffect(() => {
+    const prefill = readQualifyPrefill();
+    if (!prefill) return;
+    // One-time seed from an external store; the single extra mount render the
+    // lint rule warns about is intended and harmless here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setName(prefill.name);
+    setProfile(prefill.profile);
+    if (isClassification(prefill.classification)) {
+      setClassification(prefill.classification);
+    }
+  }, []);
 
   const nameId = useId();
   const classId = useId();
@@ -239,7 +266,14 @@ export function QualifyPanel() {
 
       {status === "done" && result ? (
         <div className="space-y-4">
-          <CriteriaReport result={result} />
+          {result.adjudication ? <AdjudicationBadge report={result.adjudication} /> : null}
+          <CriteriaReport result={result} threshold={packFor(classification).threshold} />
+          <LettersPatentShare
+            name={name}
+            classification={classification}
+            likelihood={result.likelihood}
+            criteria={result.criteria}
+          />
           {/* Second wow moment: draft the petition straight from the score. */}
           <DraftStudio
             petitioner={name.trim() || "Applicant"}

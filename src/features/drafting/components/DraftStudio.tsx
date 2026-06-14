@@ -1,11 +1,21 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
-import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
-import { CitationNote } from "@/features/guidance/components/CitationNote";
-import { DISCLAIMER, type DraftSection } from "@/features/drafting";
+import { DisclaimerStamp, CitationNote, AdjudicationBadge } from "@/components/legal";
+import { type AdjudicationReport } from "@/lib/llm/adjudication-gates";
+import { RfeRiskRadar } from "@/features/rfe/components/RfeRiskRadar";
+import { ExhibitIndex } from "./ExhibitIndex";
+import {
+  DISCLAIMER,
+  attachExhibits,
+  auditCitations,
+  buildExhibitIndex,
+  type DraftSection,
+  type SectionCritique,
+  type VaultDocLike,
+} from "@/features/drafting";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 import {
   copyDraftToClipboard,
@@ -43,6 +53,8 @@ interface DraftApiResponse {
   version: number | null;
   /** True when the draft was charged + generated but the version failed to save. */
   saveFailed?: boolean;
+  /** Live adjudication-risk verdict (moonshot #1). */
+  adjudication?: AdjudicationReport;
 }
 
 interface SectionApiResponse {
@@ -50,7 +62,18 @@ interface SectionApiResponse {
   disclaimer: string;
   source: ModelSource;
   saveFailed?: boolean;
+  adjudication?: AdjudicationReport;
 }
+
+interface CritiqueApiResponse {
+  critiques: SectionCritique[];
+  overallScore: number;
+  disclaimer: string;
+  source: ModelSource;
+}
+
+/** Below this section score, the adjudicator redline card is offered. */
+const WEAK_SECTION_SCORE = 80;
 
 export function DraftStudio({
   petitioner,
@@ -59,6 +82,7 @@ export function DraftStudio({
   caseId = null,
   initialSections = null,
   initialSource = "mock",
+  documents = [],
 }: {
   petitioner: string;
   classification?: string;
@@ -67,6 +91,8 @@ export function DraftStudio({
   /** Hydrate with an already-saved draft (case detail view). */
   initialSections?: DraftSection[] | null;
   initialSource?: ModelSource;
+  /** The case's vault documents — drives the exhibit index + citation audit. */
+  documents?: readonly VaultDocLike[];
 }) {
   const hasInitial = Boolean(initialSections && initialSections.length > 0);
   const [status, setStatus] = useState<Status>(hasInitial ? "done" : "idle");
@@ -76,6 +102,12 @@ export function DraftStudio({
   const [regenerating, setRegenerating] = useState<string | null>(null);
   const [regenerationError, setRegenerationError] = useState<string | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
+  const [adjudication, setAdjudication] = useState<AdjudicationReport | null>(null);
+  // Adjudicator redline (moonshot #19): per-heading critique + overall score.
+  const [critiques, setCritiques] = useState<Record<string, SectionCritique>>({});
+  const [critiqueScore, setCritiqueScore] = useState<number | null>(null);
+  const [critiqueStatus, setCritiqueStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [applying, setApplying] = useState<string | null>(null);
   // saveFailed recovery UI state (SaveFailedAlert). resolvedCaseId tracks the
   // case the SERVER persisted against (response caseId) — the retry must target
   // it, not just the incoming prop.
@@ -97,6 +129,32 @@ export function DraftStudio({
     })),
     caseId,
   };
+
+  // The exhibit index for THIS case (vault docs grouped per criterion, the same
+  // binding the route uses to prompt) and a live audit of the current draft's
+  // (Exhibit N) citations against it — recomputed as the user edits/regenerates.
+  const exhibitIndex = useMemo(
+    () =>
+      buildExhibitIndex(
+        attachExhibits(
+          { petitioner: payload.petitioner, classification, criteria: payload.criteria },
+          documents,
+        ),
+      ),
+    // payload is rebuilt each render; depend on its stable inputs instead.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [documents, classification, petitioner, criteria],
+  );
+  const audit = useMemo(
+    () => auditCitations(sections, exhibitIndex.map((e) => e.number)),
+    [sections, exhibitIndex],
+  );
+  const citedNumbers = useMemo(() => new Set(audit.resolved), [audit]);
+  // Criteria that have a draft section the radar's Reinforce can regenerate.
+  const reinforceable = useMemo(
+    () => new Set(sections.map((s) => s.heading)),
+    [sections],
+  );
 
   async function generate() {
     if (busyRef.current) return; // double-submit guard (charges tokens)
@@ -126,6 +184,7 @@ export function DraftStudio({
       setSections(data.sections);
       setSource(data.source);
       setSaveFailed(Boolean(data.saveFailed));
+      setAdjudication(data.adjudication ?? null);
       setResolvedCaseId(data.caseId ?? caseId);
       setStatus("done");
     } catch {
@@ -161,6 +220,7 @@ export function DraftStudio({
       );
       setSource(data.source);
       setSaveFailed(Boolean(data.saveFailed));
+      setAdjudication(data.adjudication ?? null);
       setCopyState("idle");
       setRetryState("idle");
     } catch {
@@ -171,8 +231,70 @@ export function DraftStudio({
     }
   }
 
+  async function runCritique() {
+    if (busyRef.current) return; // charges tokens
+    busyRef.current = true;
+    setCritiqueStatus("loading");
+    try {
+      const res = await fetch("/api/draft/critique", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sections,
+          classification,
+          petitioner: payload.petitioner,
+          caseId: resolvedCaseId,
+        }),
+      });
+      if (res.status === 402) {
+        setStatus("paywall");
+        return;
+      }
+      const data = (await res.json()) as CritiqueApiResponse | { error: string };
+      if (!res.ok || "error" in data) {
+        setCritiqueStatus("error");
+        return;
+      }
+      const map: Record<string, SectionCritique> = {};
+      for (const c of data.critiques) map[c.heading] = c;
+      setCritiques(map);
+      setCritiqueScore(data.overallScore);
+      setCritiqueStatus("idle");
+    } catch {
+      setCritiqueStatus("error");
+    } finally {
+      busyRef.current = false;
+    }
+  }
+
+  async function applyRedline(heading: string) {
+    const c = critiques[heading];
+    if (!c || busyRef.current) return;
+    // Swap the improved body in locally and drop the now-resolved critique.
+    const next = sections.map((s) =>
+      s.heading === heading ? { ...s, body: c.improvedBody } : s,
+    );
+    setSections(next);
+    setCritiques((prev) => {
+      const n = { ...prev };
+      delete n[heading];
+      return n;
+    });
+    // Persist the accepted fix as a new version via the no-charge save path.
+    if (!resolvedCaseId) return;
+    busyRef.current = true;
+    setApplying(heading);
+    try {
+      const result = await retrySaveDraft({ caseId: resolvedCaseId, sections: next, source });
+      if (!result.ok) setSaveFailed(true);
+    } finally {
+      setApplying(null);
+      busyRef.current = false;
+    }
+  }
+
   async function copyDraft() {
-    const ok = await copyDraftToClipboard(sections);
+    const ok = await copyDraftToClipboard(sections, exhibitIndex);
     setCopyState(ok ? "copied" : "failed");
   }
 
@@ -285,6 +407,15 @@ export function DraftStudio({
           <div className="space-y-4">
             <DisclaimerStamp text={DISCLAIMER} />
             <CitationNote />
+            {adjudication ? <AdjudicationBadge report={adjudication} /> : null}
+            {exhibitIndex.length > 0 ? (
+              <ExhibitIndex
+                entries={exhibitIndex}
+                citedNumbers={citedNumbers}
+                unresolved={audit.unresolved}
+                coverage={audit.coverage}
+              />
+            ) : null}
             {!isModelSource(source) ? (
               <div
                 className="rounded-control border border-dashed border-border-strong bg-surface-muted/40 px-4 py-2.5"
@@ -314,8 +445,15 @@ export function DraftStudio({
                 }`}
               >
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <span className="display text-[17px] text-foreground">
-                    {s.heading}
+                  <span className="flex items-center gap-2.5">
+                    <span className="display text-[17px] text-foreground">
+                      {s.heading}
+                    </span>
+                    {critiques[s.heading] ? (
+                      <Badge tone={scoreTone(critiques[s.heading].score)}>
+                        {critiques[s.heading].score}/100
+                      </Badge>
+                    ) : null}
                   </span>
                   <button
                     type="button"
@@ -360,6 +498,13 @@ export function DraftStudio({
                   rows={Math.max(3, Math.ceil(s.body.length / 90))}
                   className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-[1.7] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                 />
+                {critiques[s.heading] && critiques[s.heading].score < WEAK_SECTION_SCORE ? (
+                  <RedlineCard
+                    critique={critiques[s.heading]}
+                    applying={applying === s.heading}
+                    onApply={() => applyRedline(s.heading)}
+                  />
+                ) : null}
               </div>
             ))}
             <div className="flex flex-wrap items-center gap-3">
@@ -371,13 +516,98 @@ export function DraftStudio({
               >
                 Regenerate full draft
               </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={runCritique}
+                disabled={critiqueStatus === "loading" || regenerating !== null}
+              >
+                {critiqueStatus === "loading" ? "Reviewing…" : "Adjudicator review"}
+                <span className="ml-2 rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-accent-dark">
+                  5
+                </span>
+              </Button>
+              {critiqueScore !== null ? (
+                <Badge tone={scoreTone(critiqueScore)}>
+                  Draft quality {critiqueScore}/100
+                </Badge>
+              ) : null}
               <span className="microprint" style={{ color: "var(--muted)" }}>
                 Edits are local — your attorney of record finalizes and signs.
               </span>
             </div>
+            {critiqueStatus === "error" ? (
+              <div
+                role="alert"
+                className="rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[14px] text-danger"
+              >
+                Could not run the adjudicator review — please try again.
+              </div>
+            ) : null}
+
+            {/* RFE Risk Radar — predict the challenge before USCIS; Reinforce
+                wires straight to the existing per-section regenerate. */}
+            <RfeRiskRadar
+              criteria={criteria}
+              classification={classification}
+              petitioner={payload.petitioner}
+              caseId={resolvedCaseId}
+              reinforceable={reinforceable}
+              reinforcing={regenerating}
+              onReinforce={regenerate}
+              onPaywall={() => setStatus("paywall")}
+            />
           </div>
         ) : null}
       </CardBody>
     </Card>
+  );
+}
+
+/** Map a 0-100 section/draft score to a badge tone. */
+function scoreTone(score: number): "success" | "warning" | "danger" {
+  if (score >= WEAK_SECTION_SCORE) return "success";
+  if (score >= 60) return "warning";
+  return "danger";
+}
+
+/**
+ * Adjudicator redline card (moonshot #19) — the named weakness plus a one-click
+ * Apply that swaps the improved rewrite into the section and saves it as a new
+ * non-destructive version.
+ */
+function RedlineCard({
+  critique,
+  applying,
+  onApply,
+}: {
+  critique: SectionCritique;
+  applying: boolean;
+  onApply: () => void;
+}) {
+  return (
+    <div className="mt-2 rounded-control border-2 border-double border-seal/40 bg-seal-soft/30 px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="microprint" style={{ color: "var(--seal)" }}>
+          Adjudicator redline — weakness
+        </span>
+        <Button type="button" variant="primary" onClick={onApply} disabled={applying}>
+          {applying ? "Applying…" : "Apply fix"}
+        </Button>
+      </div>
+      <p className="mt-1.5 font-sans text-[14.5px] leading-snug text-foreground-soft">
+        {critique.weakness}
+      </p>
+      {critique.improvedBody ? (
+        <div className="mt-2 rounded-control border border-border-strong bg-surface px-3 py-2">
+          <div className="microprint mb-1" style={{ color: "var(--accent-dark)" }}>
+            Suggested rewrite
+          </div>
+          <p className="font-sans text-[14.5px] leading-[1.6] text-muted-strong">
+            {critique.improvedBody}
+          </p>
+        </div>
+      ) : null}
+    </div>
   );
 }

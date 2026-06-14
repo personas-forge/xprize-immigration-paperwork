@@ -3,7 +3,7 @@
 // Arrival identity (parchment ground, engraved chapter mark, guilloché corner).
 
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/auth/session";
+import { getUser, profileFieldsFromUser } from "@/lib/auth/session";
 import { getProfile } from "@/lib/auth/db";
 import { ConsentForm } from "@/components/ConsentForm";
 import { PageFrame, ChapterMark } from "@/components/brand";
@@ -16,10 +16,7 @@ export default async function WelcomePage() {
   const profile = await getProfile(user.id);
   if (profile?.onboarded_at) redirect("/dashboard");
 
-  const defaultName =
-    (user.user_metadata?.full_name as string | undefined) ??
-    (user.user_metadata?.name as string | undefined) ??
-    "";
+  const { fullName: defaultName } = profileFieldsFromUser(user);
 
   return (
     <PageFrame>

@@ -41,6 +41,19 @@ export const DISCLAIMER =
   "and advise on your situation before anything is filed with USCIS.";
 
 /**
+ * The sign-up / consent variant of the disclaimer. Same UPL safeguard as
+ * {@link DISCLAIMER} but adds the account-creation nuance (no attorney–client
+ * relationship is formed by registering). Lives here, beside the canonical
+ * disclaimer, so every authored UPL string has exactly one audited home — do
+ * not fork this wording into a component again.
+ */
+export const CONSENT_DISCLAIMER =
+  "Creating an account does not form an attorney–client relationship and is " +
+  "not legal advice. Immigration law is fact-specific; an attorney of record " +
+  "licensed to practice law reviews and signs every petition before anything " +
+  "is filed with USCIS.";
+
+/**
  * Wrap a payload in the standard envelope, attaching the shared `DISCLAIMER`.
  * The single chokepoint through which every AI response gains its disclaimer.
  */

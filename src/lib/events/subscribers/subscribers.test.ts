@@ -14,7 +14,6 @@ import {
   toNotification,
   type AttorneyNotification,
 } from "./attorney-notify";
-import { registerAnalytics } from "./analytics";
 
 const AT = "2026-06-04T00:00:00.000Z";
 
@@ -109,55 +108,18 @@ test("attorney-notify fires the sink only for notify-worthy transitions", async 
   assert.equal(sent[0].status, "Filed");
 });
 
-// ── analytics ────────────────────────────────────────────────────────────────
+// ── integration: both default subscribers on one bus ─────────────────────────
 
-test("analytics tallies events by type and forwards to track sink", async () => {
-  const bus = new EventBus();
-  const forwarded: string[] = [];
-  const collector = registerAnalytics(bus, (type) => forwarded.push(type));
-
-  await bus.publish(statusEvent("Filed"));
-  await bus.publish(statusEvent("Approved"));
-  await bus.publish(draftEvent);
-
-  assert.deepEqual(collector.counts, {
-    CaseStatusChanged: 2,
-    DraftGenerated: 1,
-    EvidenceUploaded: 0,
-  });
-  assert.deepEqual(forwarded, [
-    "CaseStatusChanged",
-    "CaseStatusChanged",
-    "DraftGenerated",
-  ]);
-});
-
-test("analytics detach() stops counting", async () => {
-  const bus = new EventBus();
-  const collector = registerAnalytics(bus);
-
-  await bus.publish(draftEvent);
-  collector.detach();
-  await bus.publish(draftEvent);
-
-  assert.equal(collector.counts.DraftGenerated, 1);
-});
-
-// ── integration: all three on one bus ────────────────────────────────────────
-
-test("audit + attorney + analytics coexist on one bus", async () => {
+test("audit + attorney coexist on one bus", async () => {
   const bus = new EventBus();
   const audit: AuditRecord[] = [];
   const notified: AttorneyNotification[] = [];
   registerAuditLog(bus, (r) => audit.push(r));
   registerAttorneyNotify(bus, (n) => notified.push(n));
-  const analytics = registerAnalytics(bus);
 
   await bus.publish(statusEvent("Submitted"));
   await bus.publish(evidenceEvent);
 
   assert.equal(audit.length, 2);
   assert.equal(notified.length, 1);
-  assert.equal(analytics.counts.CaseStatusChanged, 1);
-  assert.equal(analytics.counts.EvidenceUploaded, 1);
 });

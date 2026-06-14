@@ -35,7 +35,6 @@ function deps(over: Partial<PetitionDeps> = {}): PetitionDeps {
   return {
     getCaseForUser: async () => null, // requester owns nothing
     getCaseAnyOwner: async () => CASE, // ...but the case exists under another owner
-    getCasesForUser: async () => [],
     createCaseWithCriteria: async () => null,
     getCriteriaForCase: async () => [],
     saveDraft: async () => 1,

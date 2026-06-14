@@ -19,7 +19,17 @@
 import type { GuardRules, LightTrack } from "@/lib/lighttrack";
 import type { Llm } from "./client";
 
-/** The single output guard applied to every LLM engine: non-empty, bounded length. */
+/**
+ * The single output guard applied to every LLM engine: non-empty, bounded
+ * length. This is a DELIBERATE subset — the vendored `guard()` engine
+ * (`lib/lighttrack.ts`) also supports `json`/`jsonKeys`, `mustInclude`/
+ * `mustMatch`/`mustNotMatch`, `maxWords`, and `noPII` (+ its PII regexes), but
+ * the app opts into length checks only. Those richer branches are therefore
+ * unexercised in this codebase by design (not a coverage gap, and not prunable
+ * — lighttrack is vendored, kept in sync with upstream). To harden, e.g. add
+ * `json: true, jsonKeys: ["sections"]` here or pass a per-route rule to
+ * `withGuards`; that turns the dormant branches into used code.
+ */
 export const LLM_OUTPUT_GUARD: GuardRules = { minWords: 1, maxChars: 50000 };
 
 /**

@@ -8,10 +8,10 @@ import {
   PROGRAM_VALIDATIONS,
   REVALIDATE_AFTER_DAYS,
   REVERIFY_WARN_DAYS,
+  addDays,
   allValidations,
   daysBetween,
   freshnessOf,
-  isStale,
   validationFor,
   type ValidationRecord,
 } from "./validation";
@@ -75,17 +75,9 @@ test("UK is gated (not live) and its model-mismatch is documented", () => {
 
 // — Freshness is a pure, testable function ────────────────────────────────────
 
-test("daysBetween / isStale compute against a fixed reference date", () => {
+test("daysBetween computes whole days between two yyyy-mm-dd dates", () => {
   assert.equal(daysBetween("2026-01-01", "2026-01-31"), 30);
   assert.equal(daysBetween("2026-05-30", "2026-05-30"), 0);
-  const rec = PROGRAM_VALIDATIONS["O-1A"];
-  assert.equal(isStale(rec, rec.lastVerified), false, "fresh on the day it was verified");
-  // One day past the window → stale.
-  const justOver = addDays(rec.lastVerified, REVALIDATE_AFTER_DAYS + 1);
-  assert.equal(isStale(rec, justOver), true);
-  // Inside the window → not stale.
-  const within = addDays(rec.lastVerified, REVALIDATE_AFTER_DAYS - 1);
-  assert.equal(isStale(rec, within), false);
 });
 
 test("no validation record is dated in an impossible format", () => {
@@ -107,8 +99,3 @@ test("freshnessOf classifies fresh / due-soon / stale and reports the due date",
   assert.equal(over.level, "stale");
   assert.equal(over.daysLeft, -5);
 });
-
-function addDays(iso: string, days: number): string {
-  const t = new Date(`${iso}T00:00:00Z`).getTime() + days * 86_400_000;
-  return new Date(t).toISOString().slice(0, 10);
-}

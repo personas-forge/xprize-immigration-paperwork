@@ -13,6 +13,10 @@ test("qualify → draft: clicking through triggers the LLM and renders output", 
   await page.goto("/qualify");
   await expect(page.getByRole("heading", { name: /Do you/i })).toBeVisible();
 
+  // /qualify now leads with the best-path finder; drop into the single-visa
+  // screening so this test drives the qualify → draft LLM path directly.
+  await page.getByRole("button", { name: /I already know my visa/i }).click();
+
   // Fill the screening form (visa type defaults to O-1A) and use the sample CV.
   await page.getByPlaceholder("e.g. Dr. Anya Krishnan").fill("Dr. Test");
   await page.getByRole("button", { name: "Use a sample" }).click();

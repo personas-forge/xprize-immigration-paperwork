@@ -1,6 +1,6 @@
 import { Badge, Card, CardBody, CardHeader } from "@/components/ui";
 import { isModelSource, sourceLabel } from "@/lib/llm/label";
-import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
+import { DisclaimerStamp } from "@/components/legal";
 import {
   QUALIFYING_THRESHOLD,
   statusTone,
@@ -25,11 +25,22 @@ function statusAccent(status: string): string {
       : "border-l-transparent";
 }
 
-export function CriteriaReport({ result }: { result: QualifyResult }) {
+export function CriteriaReport({
+  result,
+  threshold = QUALIFYING_THRESHOLD,
+}: {
+  result: QualifyResult;
+  /** Minimum qualifying criteria for THIS classification's pack (O-1A defaults
+   *  to 3; the caller passes the pack threshold so EB-1A/UK don't misreport). */
+  threshold?: number;
+}) {
   // summarizeCriteria is documented to be robust to arbitrary row shapes; the
   // ScoredCriterion union (which adds "None") is intentionally passed through —
   // "None"/unknown rows are ignored rather than counted (the safe direction).
-  const summary = summarizeCriteria(result.criteria as unknown as readonly Criterion[]);
+  const summary = summarizeCriteria(
+    result.criteria as unknown as readonly Criterion[],
+    threshold,
+  );
 
   return (
     <div className="space-y-4">
@@ -46,7 +57,7 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
             <div className="display mt-1 text-[18px]">
               {summary.qualifying} of {result.criteria.length} criteria supported
               <span className="font-sans text-[15px] italic text-muted-strong">
-                {" "}— need {QUALIFYING_THRESHOLD} to qualify.
+                {" "}— need {threshold} to qualify.
               </span>
             </div>
           </div>

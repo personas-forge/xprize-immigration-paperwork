@@ -18,7 +18,6 @@ function deps(over: Partial<PetitionDeps> = {}): PetitionDeps {
   return {
     getCaseForUser: async () => CASE,
     getCaseAnyOwner: async () => CASE,
-    getCasesForUser: async () => [CASE],
     createCaseWithCriteria: async () => ({ id: "c2", fileNumber: "O1-2000" }),
     getCriteriaForCase: async () => [],
     saveDraft: async () => 3,
@@ -32,18 +31,6 @@ function deps(over: Partial<PetitionDeps> = {}): PetitionDeps {
 }
 
 const OWNER = { userId: "u1", email: "owner@x.com" };
-
-test("getOwnedCases: requires a signed-in user", async () => {
-  const a = new PetitionAdapter(deps());
-  const r = await a.getOwnedCases({ userId: null, email: null });
-  assert.deepEqual(r, { ok: false, error: { kind: "forbidden" } });
-});
-
-test("getOwnedCases: returns the owned cases", async () => {
-  const a = new PetitionAdapter(deps());
-  const r = await a.getOwnedCases(OWNER);
-  assert.deepEqual(r, { ok: true, value: [CASE] });
-});
 
 test("createCase: requires a user, then persists", async () => {
   const a = new PetitionAdapter(deps());

@@ -26,9 +26,21 @@ test("draftClipboardText renders heading/body pairs separated by rules", () => {
   );
 });
 
+test("draftClipboardText appends an Exhibit Index when exhibits are supplied", () => {
+  const text = draftClipboardText(SECTIONS, [
+    { number: 1, name: "Best Paper certificate" },
+    { number: 2, name: "Press release" },
+  ]);
+  assert.ok(text.includes("EXHIBIT INDEX"));
+  assert.ok(text.includes("Exhibit 1 — Best Paper certificate"));
+  assert.ok(text.includes("Exhibit 2 — Press release"));
+  // No appendix when the index is empty (default).
+  assert.ok(!draftClipboardText(SECTIONS).includes("EXHIBIT INDEX"));
+});
+
 test("copyDraftToClipboard resolves true and writes the full draft", async () => {
   let written: string | null = null;
-  const ok = await copyDraftToClipboard(SECTIONS, async (t) => {
+  const ok = await copyDraftToClipboard(SECTIONS, [], async (t) => {
     written = t;
   });
   assert.equal(ok, true);
@@ -36,7 +48,7 @@ test("copyDraftToClipboard resolves true and writes the full draft", async () =>
 });
 
 test("copyDraftToClipboard resolves false when the writer rejects", async () => {
-  const ok = await copyDraftToClipboard(SECTIONS, async () => {
+  const ok = await copyDraftToClipboard(SECTIONS, [], async () => {
     throw new Error("denied");
   });
   assert.equal(ok, false);

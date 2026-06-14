@@ -5,7 +5,7 @@ import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { isDevAuth } from "@/lib/auth/devAuth";
 import { isStoreConfigured } from "@/lib/db/config";
 import { charge, reclaim } from "./ledger";
-import { costOf } from "./economy";
+import { costOf } from "./registry";
 
 export type ChargeResult =
   | { ok: true; cost: number; balance: number; reclaim: () => Promise<unknown> }
