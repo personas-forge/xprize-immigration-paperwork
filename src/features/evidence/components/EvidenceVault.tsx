@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader } from "@/components/ui";
 import { criteriaNames, summarizeVault } from "@/features/evidence";
+import { type StoredDocument } from "@/features/evidence/types";
 import { type ModelSource } from "@/lib/llm/label";
 import { refileDocument, removeDocument } from "../actions";
 
@@ -15,15 +16,10 @@ import { refileDocument, removeDocument } from "../actions";
 // re-file and remove are server actions. (Binary PDF/image OCR via Document AI
 // is the env-gated production extension; this works from text either way.)
 
-export interface DocumentView {
-  id: string;
-  name: string;
-  criterion: string;
-  exhibit: string;
-  status: string;
-  facts: string[];
-  source: string;
-}
+// The client view of a vault document is exactly the stored shape (the
+// server-only boundary is on the accessors, not the type). Alias kept so
+// existing `DocumentView` importers (CaseDetailView) are unchanged.
+export type DocumentView = StoredDocument;
 
 interface CategorizeApiResponse {
   criterion: string;
