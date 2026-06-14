@@ -55,20 +55,6 @@ export async function getReviewEvents(
 }
 
 /**
- * Advance a case's lifecycle status, optionally recording the USCIS receipt
- * number (set when the attorney signs and files). No-op when no store.
- */
-export async function setCaseStatus(
-  caseId: string,
-  status: string,
-  opts: { receiptNumber?: string } = {},
-): Promise<void> {
-  const store = await getStore();
-  if (!store) return;
-  await store.setCaseStatus(caseId, status, opts.receiptNumber);
-}
-
-/**
  * Atomically advance a case's status AND append review events, but ONLY if the
  * current status is one of `fromStatuses` (compare-and-set). Returns true if it
  * applied, false if the precondition failed. The status guard + the same-
