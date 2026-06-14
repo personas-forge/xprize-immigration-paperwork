@@ -7,15 +7,10 @@ if (typeof window !== "undefined") {
   throw new Error("@/lib/firestore/admin must not be imported on the client.");
 }
 
-import { applicationDefault, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { ensureAdminApp } from "@/lib/firebase/adminApp";
 
 export function adminDb(): Firestore {
-  if (!getApps().length) {
-    initializeApp({
-      credential: applicationDefault(),
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
-  }
+  ensureAdminApp();
   return getFirestore();
 }
