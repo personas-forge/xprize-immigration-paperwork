@@ -11,6 +11,7 @@ import {
   auditCitations,
   buildExhibitIndex,
   type DraftSection,
+  type SectionCritique,
   type VaultDocLike,
 } from "@/features/drafting";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
@@ -62,6 +63,16 @@ interface SectionApiResponse {
   adjudication?: AdjudicationReport;
 }
 
+interface CritiqueApiResponse {
+  critiques: SectionCritique[];
+  overallScore: number;
+  disclaimer: string;
+  source: ModelSource;
+}
+
+/** Below this section score, the adjudicator redline card is offered. */
+const WEAK_SECTION_SCORE = 80;
+
 export function DraftStudio({
   petitioner,
   classification = "O-1A",
@@ -90,6 +101,11 @@ export function DraftStudio({
   const [regenerationError, setRegenerationError] = useState<string | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
   const [adjudication, setAdjudication] = useState<AdjudicationReport | null>(null);
+  // Adjudicator redline (moonshot #19): per-heading critique + overall score.
+  const [critiques, setCritiques] = useState<Record<string, SectionCritique>>({});
+  const [critiqueScore, setCritiqueScore] = useState<number | null>(null);
+  const [critiqueStatus, setCritiqueStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [applying, setApplying] = useState<string | null>(null);
   // saveFailed recovery UI state (SaveFailedAlert). resolvedCaseId tracks the
   // case the SERVER persisted against (response caseId) — the retry must target
   // it, not just the incoming prop.
@@ -204,6 +220,68 @@ export function DraftStudio({
       setRegenerationError(heading);
     } finally {
       setRegenerating(null);
+      busyRef.current = false;
+    }
+  }
+
+  async function runCritique() {
+    if (busyRef.current) return; // charges tokens
+    busyRef.current = true;
+    setCritiqueStatus("loading");
+    try {
+      const res = await fetch("/api/draft/critique", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sections,
+          classification,
+          petitioner: payload.petitioner,
+          caseId: resolvedCaseId,
+        }),
+      });
+      if (res.status === 402) {
+        setStatus("paywall");
+        return;
+      }
+      const data = (await res.json()) as CritiqueApiResponse | { error: string };
+      if (!res.ok || "error" in data) {
+        setCritiqueStatus("error");
+        return;
+      }
+      const map: Record<string, SectionCritique> = {};
+      for (const c of data.critiques) map[c.heading] = c;
+      setCritiques(map);
+      setCritiqueScore(data.overallScore);
+      setCritiqueStatus("idle");
+    } catch {
+      setCritiqueStatus("error");
+    } finally {
+      busyRef.current = false;
+    }
+  }
+
+  async function applyRedline(heading: string) {
+    const c = critiques[heading];
+    if (!c || busyRef.current) return;
+    // Swap the improved body in locally and drop the now-resolved critique.
+    const next = sections.map((s) =>
+      s.heading === heading ? { ...s, body: c.improvedBody } : s,
+    );
+    setSections(next);
+    setCritiques((prev) => {
+      const n = { ...prev };
+      delete n[heading];
+      return n;
+    });
+    // Persist the accepted fix as a new version via the no-charge save path.
+    if (!resolvedCaseId) return;
+    busyRef.current = true;
+    setApplying(heading);
+    try {
+      const result = await retrySaveDraft({ caseId: resolvedCaseId, sections: next, source });
+      if (!result.ok) setSaveFailed(true);
+    } finally {
+      setApplying(null);
       busyRef.current = false;
     }
   }
@@ -360,8 +438,15 @@ export function DraftStudio({
                 }`}
               >
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <span className="display text-[17px] text-foreground">
-                    {s.heading}
+                  <span className="flex items-center gap-2.5">
+                    <span className="display text-[17px] text-foreground">
+                      {s.heading}
+                    </span>
+                    {critiques[s.heading] ? (
+                      <Badge tone={scoreTone(critiques[s.heading].score)}>
+                        {critiques[s.heading].score}/100
+                      </Badge>
+                    ) : null}
                   </span>
                   <button
                     type="button"
@@ -406,6 +491,13 @@ export function DraftStudio({
                   rows={Math.max(3, Math.ceil(s.body.length / 90))}
                   className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-[1.7] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                 />
+                {critiques[s.heading] && critiques[s.heading].score < WEAK_SECTION_SCORE ? (
+                  <RedlineCard
+                    critique={critiques[s.heading]}
+                    applying={applying === s.heading}
+                    onApply={() => applyRedline(s.heading)}
+                  />
+                ) : null}
               </div>
             ))}
             <div className="flex flex-wrap items-center gap-3">
@@ -417,14 +509,86 @@ export function DraftStudio({
               >
                 Regenerate full draft
               </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={runCritique}
+                disabled={critiqueStatus === "loading" || regenerating !== null}
+              >
+                {critiqueStatus === "loading" ? "Reviewing…" : "Adjudicator review"}
+                <span className="ml-2 rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-accent-dark">
+                  5
+                </span>
+              </Button>
+              {critiqueScore !== null ? (
+                <Badge tone={scoreTone(critiqueScore)}>
+                  Draft quality {critiqueScore}/100
+                </Badge>
+              ) : null}
               <span className="microprint" style={{ color: "var(--muted)" }}>
                 Edits are local — your attorney of record finalizes and signs.
               </span>
             </div>
+            {critiqueStatus === "error" ? (
+              <div
+                role="alert"
+                className="rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[14px] text-danger"
+              >
+                Could not run the adjudicator review — please try again.
+              </div>
+            ) : null}
           </div>
         ) : null}
       </CardBody>
     </Card>
+  );
+}
+
+/** Map a 0-100 section/draft score to a badge tone. */
+function scoreTone(score: number): "success" | "warning" | "danger" {
+  if (score >= WEAK_SECTION_SCORE) return "success";
+  if (score >= 60) return "warning";
+  return "danger";
+}
+
+/**
+ * Adjudicator redline card (moonshot #19) — the named weakness plus a one-click
+ * Apply that swaps the improved rewrite into the section and saves it as a new
+ * non-destructive version.
+ */
+function RedlineCard({
+  critique,
+  applying,
+  onApply,
+}: {
+  critique: SectionCritique;
+  applying: boolean;
+  onApply: () => void;
+}) {
+  return (
+    <div className="mt-2 rounded-control border-2 border-double border-seal/40 bg-seal-soft/30 px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="microprint" style={{ color: "var(--seal)" }}>
+          Adjudicator redline — weakness
+        </span>
+        <Button type="button" variant="primary" onClick={onApply} disabled={applying}>
+          {applying ? "Applying…" : "Apply fix"}
+        </Button>
+      </div>
+      <p className="mt-1.5 font-sans text-[14.5px] leading-snug text-foreground-soft">
+        {critique.weakness}
+      </p>
+      {critique.improvedBody ? (
+        <div className="mt-2 rounded-control border border-border-strong bg-surface px-3 py-2">
+          <div className="microprint mb-1" style={{ color: "var(--accent-dark)" }}>
+            Suggested rewrite
+          </div>
+          <p className="font-sans text-[14.5px] leading-[1.6] text-muted-strong">
+            {critique.improvedBody}
+          </p>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

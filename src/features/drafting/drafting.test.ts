@@ -6,6 +6,8 @@ import {
   attachExhibits,
   auditCitations,
   auditDraftCitations,
+  buildCritiquePrompt,
+  buildCritiqueResult,
   buildDraftPrompt,
   buildDraftResult,
   buildExhibitIndex,
@@ -14,6 +16,9 @@ import {
   exhibitNumber,
   extractCitedExhibits,
   hasExhibits,
+  mockCritique,
+  overallCritiqueScore,
+  tryParseCritique,
   mockDraft,
   mockSection,
   parseDraftRequest,
@@ -290,4 +295,62 @@ test("attachExhibits: groups vault docs by criterion, skips unknown/unnumbered",
 
 test("attachExhibits: no matching docs leaves the request untouched", () => {
   assert.equal(attachExhibits(valid, []), valid);
+});
+
+// — Adjudicator redline / critique (moonshot #19) ────────────────────────────
+
+const draftSections = [
+  { heading: "Introduction", body: "This petition is submitted on behalf of the beneficiary." },
+  { heading: "Awards", body: "The beneficiary won a best-paper award, documented in the record (Exhibit 1)." },
+];
+
+test("buildCritiquePrompt: grades each section, forbids fabrication, asks for JSON", () => {
+  const p = buildCritiquePrompt(valid, draftSections);
+  assert.ok(p.toLowerCase().includes("score 0-100") || p.includes("Score 0-100"));
+  assert.ok(p.toLowerCase().includes("do not invent") || p.includes("do NOT invent"));
+  assert.ok(p.includes("improvedBody"));
+  assert.ok(p.includes("Introduction") && p.includes("Awards"));
+  assert.ok(p.includes("<<<SECTIONS>>>"));
+});
+
+test("tryParseCritique: parses valid JSON, maps to real headings, clamps score", () => {
+  const model = JSON.stringify({
+    critiques: [
+      { heading: "Awards", score: 140, weakness: "thin", improvedBody: "Stronger awards body." },
+      { heading: "Ghost", score: 50, weakness: "x", improvedBody: "y" }, // no such section → dropped
+      { heading: "Introduction", score: 70, weakness: "ok", improvedBody: "Stronger intro." },
+    ],
+  });
+  const c = tryParseCritique(model, draftSections);
+  assert.ok(c);
+  assert.deepEqual(c!.map((x) => x.heading), ["Awards", "Introduction"]);
+  assert.equal(c![0].score, 100, "score clamped to 100");
+});
+
+test("tryParseCritique: returns null on garbage / empty / no usable entries", () => {
+  assert.equal(tryParseCritique("not json", draftSections), null);
+  assert.equal(tryParseCritique(JSON.stringify({ critiques: [] }), draftSections), null);
+  // An entry with no improvedBody is unusable.
+  assert.equal(
+    tryParseCritique(JSON.stringify({ critiques: [{ heading: "Awards", score: 5 }] }), draftSections),
+    null,
+  );
+});
+
+test("mockCritique + overallCritiqueScore: deterministic, one per section, valid range", () => {
+  const a = mockCritique(draftSections);
+  assert.deepEqual(a, mockCritique(draftSections), "deterministic");
+  assert.equal(a.length, 2);
+  assert.ok(a.every((c) => c.score >= 0 && c.score <= 100));
+  assert.ok(a.every((c) => c.improvedBody.length > 0 && c.weakness.length > 0));
+  const overall = overallCritiqueScore(a);
+  assert.ok(overall >= 0 && overall <= 100);
+  assert.equal(overallCritiqueScore([]), 0);
+});
+
+test("buildCritiqueResult: attaches the disclaimer + overall score", () => {
+  const r = buildCritiqueResult(mockCritique(draftSections), "mock");
+  assert.equal(r.disclaimer, DISCLAIMER);
+  assert.equal(r.source, "mock");
+  assert.equal(r.overallScore, overallCritiqueScore(r.critiques));
 });
