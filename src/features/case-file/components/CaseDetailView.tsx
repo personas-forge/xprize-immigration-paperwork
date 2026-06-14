@@ -197,7 +197,8 @@ export function CaseDetailView({
             />
           </PanelErrorBoundary>
 
-          {/* Drafting Studio — wired to this case, so drafts persist (versioned). */}
+          {/* Drafting Studio — wired to this case, so drafts persist (versioned).
+              `documents` feeds the exhibit index + (Exhibit N) citation audit. */}
           <DraftStudio
             petitioner={petitioner}
             classification={classification}
@@ -205,6 +206,7 @@ export function CaseDetailView({
             caseId={caseId}
             initialSections={initialSections}
             initialSource={initialSource}
+            documents={documents}
           />
 
           {/* Attorney review & filing workflow. */}

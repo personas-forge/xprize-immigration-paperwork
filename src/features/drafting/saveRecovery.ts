@@ -12,7 +12,7 @@
  * with an injected fetch.
  */
 
-import { type DraftSection, toSection } from "./drafting";
+import { type DraftSection, type ExhibitIndexEntry, toSection } from "./drafting";
 import { asModelSource, type ModelSource } from "@/lib/llm/label";
 
 /** The exact copy the recovery alert shows — asserted by the component tests. */
@@ -27,11 +27,21 @@ export interface SaveDraftRequest {
 }
 
 /** Plain-text rendering of the draft for the clipboard: heading, blank line,
- *  body, separated by rules — readable when pasted into any editor. */
-export function draftClipboardText(sections: readonly DraftSection[]): string {
-  return sections
+ *  body, separated by rules — readable when pasted into any editor. When the
+ *  case has exhibits, a numbered Exhibit Index appendix is appended so the
+ *  exported packet carries the same citation map shown in the studio. */
+export function draftClipboardText(
+  sections: readonly DraftSection[],
+  exhibitIndex: readonly ExhibitIndexEntry[] = [],
+): string {
+  const letter = sections
     .map((s) => `${s.heading}\n\n${s.body}`)
     .join("\n\n---\n\n");
+  if (exhibitIndex.length === 0) return letter;
+  const appendix = exhibitIndex
+    .map((e) => `Exhibit ${e.number} — ${e.name}`)
+    .join("\n");
+  return `${letter}\n\n---\n\nEXHIBIT INDEX\n\n${appendix}`;
 }
 
 /**
@@ -42,6 +52,7 @@ export function draftClipboardText(sections: readonly DraftSection[]): string {
  */
 export async function copyDraftToClipboard(
   sections: readonly DraftSection[],
+  exhibitIndex: readonly ExhibitIndexEntry[] = [],
   writeText?: (text: string) => Promise<void>,
 ): Promise<boolean> {
   const write =
@@ -51,7 +62,7 @@ export async function copyDraftToClipboard(
       : undefined);
   if (!write) return false;
   try {
-    await write(draftClipboardText(sections));
+    await write(draftClipboardText(sections, exhibitIndex));
     return true;
   } catch {
     return false;
