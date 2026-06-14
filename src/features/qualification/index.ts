@@ -25,7 +25,6 @@ export {
 export {
   JURISDICTIONS,
   jurisdictionFor,
-  liveJurisdictions,
   livePrograms,
   isLiveProgram,
   type Jurisdiction,
@@ -39,7 +38,6 @@ export {
   validationFor,
   allValidations,
   freshnessOf,
-  daysBetween,
   type Freshness,
   type FreshnessLevel,
   type SourceRef,
