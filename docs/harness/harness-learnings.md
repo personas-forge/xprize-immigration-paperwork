@@ -124,3 +124,21 @@
   `parse`, attach to the request, keep the pure module decoupled via a
   `VaultDocLike` structural subset) is reusable for #21 (extend to RFE +
   UNSUPPORTED stamp) and the RFE-forecast moonshots.
+
+- **2026-06-14 — #16 Instant Verdict SHIPPED.** Anonymous hero screener.
+  `/api/qualify/preview` is a standalone route (NOT `executeAiOperation`, which
+  would charge): parse → `mockQualification` → `buildQualifyResult` only — no
+  model, no charge, no DB. Abuse-guarded by a per-IP `checkRateLimit` on its own
+  `qualify_preview` scope with a literal cap (30/min) — deliberately did NOT add
+  a registry op (that would change the metered economy). `<InstantVerdict>`
+  reuses `CriteriaReport` inside a `Seal`+`Guilloche` certificate frame. The
+  landing (`src/app/page.tsx`) is a server component; embedding a client
+  component is fine and `/` stays statically prerendered. Cross-page handoff:
+  `prefill.ts` (one-shot sessionStorage, storage-injectable + tested);
+  `QualifyPanel` reads it on mount. **Lint gotcha:** `react-hooks/set-state-in-
+  effect` is an ERROR in this repo — a one-time browser-API-on-mount read needs
+  an `// eslint-disable-next-line react-hooks/set-state-in-effect` (the FOUC-free
+  alternative is `useSyncExternalStore`, see `usePersistentQuery.ts`).
+  **Follow-up:** step 5 funnel instrumentation (paste→verdict→sign-in metric)
+  not wired — no analytics layer exists yet. Producer for #17 (embeds
+  `<InstantVerdict>`) and #18 (Letters Patent links back).

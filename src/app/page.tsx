@@ -11,6 +11,7 @@ import { Rise, Stagger, HoverCard } from "@/components/Motion";
 import { PetitionStepper } from "@/components/PetitionStepper";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BUNDLES, FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
+import { InstantVerdict } from "@/features/qualification/components/InstantVerdict";
 
 // Marketing landing — "The Petition". The page is composed as if the
 // product itself were a formal document: an opening seal, ruled chapter
@@ -28,6 +29,7 @@ export default function Page() {
       <SiteHeader />
 
       <Hero />
+      <InstantVerdictSection />
       <PetitionStepper />
       <Promises />
       <Process />
@@ -74,6 +76,31 @@ function SiteHeader() {
 }
 
 /* ── Hero ──────────────────────────────────────────────────────────────── */
+
+/* ── Instant Verdict — the hero screener (moonshot #16) ──────────────────── */
+
+function InstantVerdictSection() {
+  return (
+    <section className="relative border-y border-border bg-surface/40">
+      <div className="mx-auto max-w-3xl px-8 py-16">
+        <Rise>
+          <ChapterMark numeral="0" label="See your verdict now" />
+          <h2 className="display mt-5 text-[clamp(1.8rem,4.4vw,3rem)]">
+            Paste your background. Watch the <em>certificate</em> assemble.
+          </h2>
+          <p className="mt-4 max-w-2xl font-sans text-[16px] leading-relaxed text-muted-strong">
+            The same eight-criteria engine that powers the petition — run it on
+            yourself right here, no signup, in about twenty seconds. It&apos;s a
+            free informational read, never legal advice.
+          </p>
+        </Rise>
+        <Rise className="mt-8">
+          <InstantVerdict />
+        </Rise>
+      </div>
+    </section>
+  );
+}
 
 function Hero() {
   return (
