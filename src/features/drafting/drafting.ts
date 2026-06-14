@@ -307,6 +307,54 @@ export function parseSectionResponse(
   return tryParseSectionResponse(text) ?? mockSection(req, focus);
 }
 
+// — Vault → exhibits binding ─────────────────────────────────────────────────
+
+/** Minimal vault-document shape `attachExhibits` reads — structurally a subset
+ *  of `StoredDocument`, kept here so drafting stays decoupled from the data layer. */
+export interface VaultDocLike {
+  criterion: string;
+  /** Exhibit label, e.g. "Ex. 3". */
+  exhibit: string;
+  name: string;
+  facts: readonly string[];
+}
+
+/** Parse the ordinal out of a vault exhibit label ("Ex. 3" → 3); null if none. */
+export function exhibitNumber(label: string): number | null {
+  const m = /\d+/.exec(label);
+  return m ? Number(m[0]) : null;
+}
+
+/**
+ * Attach each criterion's vault exhibits (grouped by criterion name) onto a
+ * draft request, so the prompt can cite them and the UI can index/audit them.
+ * Documents whose criterion matches no request criterion, or that lack a numeric
+ * exhibit ordinal, are skipped. Exhibits are sorted by ordinal per criterion.
+ */
+export function attachExhibits(
+  req: DraftRequest,
+  documents: readonly VaultDocLike[],
+): DraftRequest {
+  const byCriterion = new Map<string, DraftExhibit[]>();
+  for (const d of documents) {
+    const number = exhibitNumber(d.exhibit);
+    if (number === null) continue;
+    const list = byCriterion.get(d.criterion) ?? [];
+    list.push({ number, name: d.name, facts: d.facts });
+    byCriterion.set(d.criterion, list);
+  }
+  if (byCriterion.size === 0) return req;
+  return {
+    ...req,
+    criteria: req.criteria.map((c) => {
+      const ex = byCriterion.get(c.name);
+      return ex && ex.length
+        ? { ...c, exhibits: [...ex].sort((a, b) => a.number - b.number) }
+        : c;
+    }),
+  };
+}
+
 // — Citation integrity ───────────────────────────────────────────────────────
 
 /** Matches an inline exhibit citation token: `(Exhibit 3)`, `(Exhibits 3, 4)`,

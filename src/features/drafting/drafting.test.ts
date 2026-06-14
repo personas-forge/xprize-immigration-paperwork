@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   DISCLAIMER,
+  attachExhibits,
   auditCitations,
   auditDraftCitations,
   buildDraftPrompt,
@@ -10,6 +11,7 @@ import {
   buildExhibitIndex,
   buildSectionPrompt,
   buildSectionResult,
+  exhibitNumber,
   extractCitedExhibits,
   hasExhibits,
   mockDraft,
@@ -258,4 +260,34 @@ test("auditDraftCitations: the deterministic mock cites only resolvable exhibits
   const a = auditDraftCitations(draft.sections, withExhibits);
   assert.deepEqual(a.unresolved, [], "mock never invents an exhibit");
   assert.ok(a.resolved.length > 0, "mock cites the on-file exhibits");
+});
+
+test("exhibitNumber: parses the ordinal out of a vault label", () => {
+  assert.equal(exhibitNumber("Ex. 3"), 3);
+  assert.equal(exhibitNumber("12"), 12);
+  assert.equal(exhibitNumber("none"), null);
+});
+
+test("attachExhibits: groups vault docs by criterion, skips unknown/unnumbered", () => {
+  const docs = [
+    { criterion: "Awards", exhibit: "Ex. 2", name: "Press release", facts: [] },
+    { criterion: "Awards", exhibit: "Ex. 1", name: "Certificate", facts: ["2023"] },
+    { criterion: "Scholarly articles", exhibit: "Ex. 3", name: "Scholar", facts: [] },
+    { criterion: "Nonexistent", exhibit: "Ex. 4", name: "Orphan", facts: [] },
+    { criterion: "Awards", exhibit: "no-number", name: "Skipped", facts: [] },
+  ];
+  const out = attachExhibits(valid, docs);
+  const awards = out.criteria.find((c) => c.name === "Awards");
+  // Sorted by ordinal; the unnumbered doc is dropped; the orphan criterion never lands.
+  assert.deepEqual(awards?.exhibits?.map((e) => e.number), [1, 2]);
+  assert.equal(out.criteria.find((c) => c.name === "Judging")?.exhibits, undefined);
+  assert.deepEqual(buildExhibitIndex(out), [
+    { number: 1, name: "Certificate" },
+    { number: 2, name: "Press release" },
+    { number: 3, name: "Scholar" },
+  ]);
+});
+
+test("attachExhibits: no matching docs leaves the request untouched", () => {
+  assert.equal(attachExhibits(valid, []), valid);
 });

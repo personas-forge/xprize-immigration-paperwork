@@ -22,6 +22,7 @@
 
 import { NextResponse } from "next/server";
 import {
+  attachExhibits,
   buildDraftPrompt,
   buildDraftResult,
   buildSectionPrompt,
@@ -37,6 +38,7 @@ import {
   type PetitionDraft,
 } from "./index";
 import { petitions } from "@/lib/data/adapters/petition";
+import { evidence } from "@/lib/data/adapters/evidence";
 import { type CaseAccess } from "@/lib/data/adapters/access";
 import { toErrorResponse } from "@/lib/data/adapters/http";
 import { type AiOperationSpec } from "@/lib/ai/operation";
@@ -110,7 +112,12 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
       if (!parsed.ok) {
         return { ok: false, response: NextResponse.json({ error: parsed.error }, { status: 400 }) };
       }
-      return { ok: true, value: { req: parsed.value, focus, caseId } };
+      // Fuse the evidence vault into the request so the draft cites real
+      // exhibits (moonshot #10). Best-effort: a vault read fault degrades to an
+      // exhibit-free draft rather than failing a payable generation.
+      const docs = await evidence.getDocuments(access, caseId);
+      const req = docs.ok ? attachExhibits(parsed.value, docs.value) : parsed.value;
+      return { ok: true, value: { req, focus, caseId } };
     }
 
     // Inline/demo path (caseId-less): validate the supplied payload.
