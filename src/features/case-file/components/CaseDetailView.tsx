@@ -77,7 +77,6 @@ export function CaseDetailView({
   return (
     <ThemeScope theme={dark ? ink : parchment}>
       <DashboardTopBar
-        glyph="✦"
         product="Immigration Concierge"
         context={`${fileNumber} · ${petitioner} · ${classification}`}
         actions={

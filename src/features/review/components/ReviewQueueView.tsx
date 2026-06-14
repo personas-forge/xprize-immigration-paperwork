@@ -29,7 +29,6 @@ export function ReviewQueueView({
   return (
     <ThemeScope theme={dark ? ink : parchment}>
       <DashboardTopBar
-        glyph="✦"
         product="Immigration Concierge"
         context="Attorney review queue"
         actions={

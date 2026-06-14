@@ -28,7 +28,6 @@ export function DashboardView({
     <ThemeScope theme={dark ? ink : parchment}>
       {balance !== null && <TokenExplainerBanner balance={balance} />}
       <DashboardTopBar
-        glyph="✦"
         product="Immigration Concierge"
         context="O1-241 · Krishnan · O-1A"
         actions={
