@@ -142,3 +142,18 @@
   **Follow-up:** step 5 funnel instrumentation (paste→verdict→sign-in metric)
   not wired — no analytics layer exists yet. Producer for #17 (embeds
   `<InstantVerdict>`) and #18 (Letters Patent links back).
+
+- **2026-06-14 — #7 Best-path recommender SHIPPED.** `best-path.ts` scores one
+  profile against EVERY `livePrograms()` pack in one pass (`scoreAllPrograms` →
+  `mockQualification` per pack + shared `summarizeCriteria`), `rankPrograms`
+  (clears→margin→gaps→likelihood, stable tie-break on classification),
+  `recommendBestPath` tags the top with `rationaleFor` (flags EB-1A green card).
+  Keyless route `/api/qualify/preview/best-path` (deterministic, IP-limited on
+  `best_path_preview` scope) — same no-charge pattern as #16. UI: `QualifyEntry`
+  toggles `BestPathFinder` (default) ↔ `QualifyPanel`; choosing a path reuses the
+  #16 `writeQualifyPrefill` handoff and mounts the panel pre-filled. **Registry
+  note:** deliberately did NOT add a `best_path` metered op — the registry test
+  asserts EXACTLY the six ops, and a keyless deterministic recommender needs no
+  charge. **Follow-ups:** step 2 (single PAID multi-pack model call —
+  `buildBestPathPrompt`/`parseBestPathResponse` over all packs) and step 5
+  (persist the comparison artifact on the chosen case) not built.
