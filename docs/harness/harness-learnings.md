@@ -217,3 +217,15 @@
   pure helpers (`auditCitations`/`buildExhibitIndex`/`attachExhibits`) generically
   enough that RfeStudio reuses them verbatim. Net: #10+#21 are one
   evidence-to-argument graph across draft AND RFE.
+
+- **2026-06-14 — #17 Programmatic SEO atelier SHIPPED.** `professions.ts` (typed
+  content map: profession → tuned evidence example per criterion NAME, falls back
+  to the pack's generic copy). One SSG route
+  `/visa/[classification]/[profession]/page.tsx` via `generateStaticParams` over
+  `livePrograms() × PROFESSIONS` (15 pages: 3 programs × 5 professions) — renders
+  criteria + examples + FAQ/Service JSON-LD + embedded `<InstantVerdict
+  initialClassification>` (added that prop). `sitemap.ts` (force-static) covers
+  the matrix. Extracted `SITE_URL` into `@/lib/site` and pointed layout at it
+  (single-source). All statically prerendered (`●` in build). The matrix scales
+  with the data — add a profession or live program → more pages, zero marginal
+  code.
