@@ -9,6 +9,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { DISCLAIMER } from "@/features/guidance/guidance";
 import type { GenerateOptions } from "@/lib/llm/client";
+import type { AdjudicationReport } from "@/lib/llm/adjudication-gates";
 import {
   RATE_LIMITS,
   checkRateLimit,
@@ -126,6 +127,17 @@ export interface AiOperationSpec<TInput, TOutput> {
   mock: (input: TInput) => TOutput;
   /** Shape the JSON response body from the domain value + its source label. */
   build: (output: TOutput, source: string, input: TInput) => Record<string, unknown>;
+  /**
+   * Live adjudication-risk gate (moonshot #1). Score the just-built response
+   * against adjudicator-shaped invariants; the report is attached to the body as
+   * `{ adjudication }`. Best-effort — a throw never fails the paid response.
+   */
+  adjudicate?: (
+    output: TOutput,
+    input: TInput,
+    source: string,
+    body: Record<string, unknown>,
+  ) => AdjudicationReport | null;
   /** Best-effort persistence. Returns fields merged into the response body.
    *  Receives the resolved `source` ("mock" | engine name) so it can record the
    *  provenance of what it persists (e.g. the document's categorization source). */
@@ -323,5 +335,22 @@ export async function executeAiOperation<TInput, TOutput>(
 
   // 7. Respond. `build` owns the domain body (incl. its own DISCLAIMER); persist
   //    fields (caseId / version / saveFailed) are merged on top.
-  return NextResponse.json({ ...spec.build(output, source, input), ...persisted });
+  const responseBody = spec.build(output, source, input);
+
+  // 8. Live adjudication-risk gate — score the built body and attach the report.
+  //    Best-effort: a throw here must never fail a generation the user paid for.
+  let adjudication: AdjudicationReport | null = null;
+  if (spec.adjudicate) {
+    try {
+      adjudication = spec.adjudicate(output, input, source, responseBody) ?? null;
+    } catch {
+      adjudication = null;
+    }
+  }
+
+  return NextResponse.json({
+    ...responseBody,
+    ...persisted,
+    ...(adjudication ? { adjudication } : {}),
+  });
 }

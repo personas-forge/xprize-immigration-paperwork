@@ -10,6 +10,7 @@ import {
 } from "@/features/qualification";
 import { petitions } from "@/lib/data/adapters/petition";
 import { executeAiOperation } from "@/lib/ai/operation";
+import { runAdjudication } from "@/lib/llm/adjudication-gates";
 
 // O-1A qualification screening endpoint (migrated to the shared orchestrator,
 // ADR-0004 task 4/6).
@@ -66,6 +67,20 @@ export function POST(request: Request): Promise<NextResponse> {
         assessment,
         source as Parameters<typeof buildQualifyResult>[1],
       ) as unknown as Record<string, unknown>,
+    // Live adjudication: canonical criteria, valid statuses, likelihood range,
+    // and the UPL tripwire over the screening's own evidence/rationale/gaps text.
+    adjudicate: (assessment, req, source, body) =>
+      runAdjudication({
+        operation: "qualify",
+        classification: req.classification,
+        source,
+        result: body,
+        inputText: req.profile,
+        outputText:
+          assessment.criteria.map((c) => `${c.evidence} ${c.rationale}`).join(" ") +
+          " " +
+          assessment.gaps.join(" "),
+      }),
     // Persist as a case for the signed-in user (no-op when no DB / no user).
     // Best-effort: a storage hiccup must not fail the screening already paid for.
     persist: async (assessment, req, user) => {

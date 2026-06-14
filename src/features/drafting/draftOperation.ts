@@ -40,6 +40,7 @@ import {
 import { petitions } from "@/lib/data/adapters/petition";
 import { evidence } from "@/lib/data/adapters/evidence";
 import { type CaseAccess } from "@/lib/data/adapters/access";
+import { runAdjudication } from "@/lib/llm/adjudication-gates";
 import { toErrorResponse } from "@/lib/data/adapters/http";
 import { type AiOperationSpec } from "@/lib/ai/operation";
 
@@ -160,6 +161,26 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
           output.draft,
           source as Parameters<typeof buildDraftResult>[1],
         ) as unknown as Record<string, unknown>),
+
+  // Live adjudication: score the drafted letter against the same invariants the
+  // eval asserts (no fabricated specifics, no leaked visa code, case-law flagged).
+  adjudicate: (output, input, source, body) => {
+    const sections =
+      output.kind === "draft" ? output.draft.sections : [output.section];
+    const outputText = sections.map((s) => `${s.heading} ${s.body}`).join("\n");
+    const inputText =
+      input.req.criteria
+        .map((c) => `${c.name} ${c.evidence} ${c.rationale}`)
+        .join(" ") + ` ${input.req.petitioner}`;
+    return runAdjudication({
+      operation: input.focus ? "draft_section" : "draft",
+      classification: input.req.classification,
+      source,
+      result: body,
+      inputText,
+      outputText,
+    });
+  },
 
   // Best-effort persistence (owner-only gate). The user already paid, so a save
   // failure is SURFACED (saveFailed), never swallowed. No caseId (inline path) →
