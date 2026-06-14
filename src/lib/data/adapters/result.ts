@@ -58,10 +58,3 @@ export function err<T = never>(
     error: cause === undefined ? { kind } : { kind, cause },
   };
 }
-
-/** Type guard: narrows an {@link AdapterResult} to its success branch. */
-export function isOk<T>(
-  result: AdapterResult<T>,
-): result is { ok: true; value: T } {
-  return result.ok;
-}
