@@ -103,3 +103,24 @@
   `/api/draft` focus path merges into the latest stored draft; if none exists yet
   it updates the client only (version stays null). Consider seeding a draft on
   first generate so section regens always persist.
+
+## Moonshot run — Pipeline (2026-06-14)
+
+- **2026-06-14 — #10 Exhibit-cited petitions SHIPPED.** Fused the evidence
+  vault into drafting. `drafting.ts` now: `DraftCriterion.exhibits?[]`,
+  exhibit-aware prompts gated by `hasExhibits()` (inline/demo path stays
+  exhibit-free), `attachExhibits(req, vaultDocs)` (pure, groups `StoredDocument`
+  by criterion via `exhibitNumber("Ex. 3")→3`), and the citation-integrity core
+  `auditCitations(sections, knownNumbers)` → `{cited,resolved,unresolved,uncited,
+  coverage}`. The route (`draftOperation.parse`, DB path) loads vault docs via
+  the `EvidenceAdapter` (best-effort — a vault fault degrades to exhibit-free,
+  never fails a paid gen) and attaches them. `DraftStudio` takes a `documents`
+  prop and renders the exhibit index + `unresolved`→"attorney must verify"
+  quarantine + coverage meter, recomputed live client-side (pure helpers, no
+  extra API field). Packet export (`draftClipboardText`) appends an EXHIBIT
+  INDEX. **Follow-up:** step 6 (persist the citation map per draft version to
+  flag now-broken citations on vault re-file/remove) deferred — needs a schema
+  column on the draft row. The vault→draft binding pattern (load via adapter in
+  `parse`, attach to the request, keep the pure module decoupled via a
+  `VaultDocLike` structural subset) is reusable for #21 (extend to RFE +
+  UNSUPPORTED stamp) and the RFE-forecast moonshots.
