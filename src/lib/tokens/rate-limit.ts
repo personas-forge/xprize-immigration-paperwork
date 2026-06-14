@@ -16,7 +16,7 @@
  * the node test runner; it is only ever imported from server route handlers.
  */
 
-import { OPERATION_REGISTRY } from "./tokens/registry";
+import { OPERATION_REGISTRY } from "./registry";
 
 export interface RateLimitResult {
   ok: boolean;

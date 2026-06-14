@@ -9,7 +9,7 @@ import {
   type OperationKey,
 } from "./registry";
 import { OP_COST, costOf as economyCostOf } from "./economy";
-import { RATE_LIMITS } from "../rate-limit";
+import { RATE_LIMITS } from "./rate-limit";
 
 // The six metered AI operations and their grounded, must-not-drift values
 // (ADR-0007 table). This table is the contract the registry must preserve.

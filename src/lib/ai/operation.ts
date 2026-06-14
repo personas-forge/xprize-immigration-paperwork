@@ -14,7 +14,7 @@ import {
   checkRateLimit,
   isRateLimitEnabled,
   rateLimitKey,
-} from "@/lib/rate-limit";
+} from "@/lib/tokens/rate-limit";
 
 /**
  * Generic orchestrator for the token-charged AI routes (ADR-0004).

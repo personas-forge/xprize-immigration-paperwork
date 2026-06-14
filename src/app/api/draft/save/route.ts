@@ -10,7 +10,7 @@ import {
   checkRateLimit,
   isRateLimitEnabled,
   rateLimitKey,
-} from "@/lib/rate-limit";
+} from "@/lib/tokens/rate-limit";
 
 // Persistence-only rescue endpoint for a draft that was charged + generated
 // but whose version save failed (/api/draft responded `saveFailed: true`).
