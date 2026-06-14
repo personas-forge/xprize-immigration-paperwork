@@ -11,13 +11,8 @@
 
 import { useActionState } from "react";
 import { submitConsent, type ConsentState } from "@/app/welcome/actions";
+import { CONSENT_DISCLAIMER } from "@/lib/result";
 import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
-
-const ATTORNEY_DISCLAIMER =
-  "Creating an account does not form an attorney–client relationship and is " +
-  "not legal advice. Immigration law is fact-specific; an attorney of record " +
-  "licensed to practice law reviews and signs every petition before anything " +
-  "is filed with USCIS.";
 
 export function ConsentForm({
   defaultName,
@@ -34,7 +29,7 @@ export function ConsentForm({
   return (
     <form action={action} className="space-y-7">
       {/* Attorney-of-record / not-legal-advice safeguard, visible at sign-up. */}
-      <DisclaimerStamp text={ATTORNEY_DISCLAIMER} />
+      <DisclaimerStamp text={CONSENT_DISCLAIMER} />
 
       <div className="space-y-2">
         <label

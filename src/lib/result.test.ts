@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { wrapResult, DISCLAIMER, type Result } from "@/lib/result";
+import { wrapResult, DISCLAIMER, CONSENT_DISCLAIMER, type Result } from "@/lib/result";
 import { DISCLAIMER as GUIDANCE_DISCLAIMER } from "@/features/guidance/guidance";
 
 test("wrapResult nests the payload under .data and attaches disclaimer + source", () => {
@@ -44,4 +44,15 @@ test("DISCLAIMER carries the UPL safeguard (not-legal-advice + attorney-of-recor
 
 test("relocated DISCLAIMER is byte-identical to the guidance re-export (back-compat)", () => {
   assert.equal(GUIDANCE_DISCLAIMER, DISCLAIMER);
+});
+
+test("CONSENT_DISCLAIMER carries the UPL safeguard + the account-creation nuance", () => {
+  const d = CONSENT_DISCLAIMER.toLowerCase();
+  assert.ok(d.includes("not legal advice"), "must state it is not legal advice");
+  assert.ok(d.includes("attorney"), "must reference an attorney of record");
+  assert.ok(
+    d.includes("does not form an attorney") && d.includes("relationship"),
+    "must state account creation forms no attorney–client relationship",
+  );
+  assert.ok(CONSENT_DISCLAIMER.length > 80);
 });
