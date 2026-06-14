@@ -8,6 +8,92 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-06-14
+
+Pre-1.0 **minor** bump — batches the vibeman UI polish series (#75–#83): visual
+improvements across drafting, qualification, evidence, billing, and guidance
+surfaces, plus a large security-and-hardening batch (#75) covering double-submit
+guards, rate-limit hardening, auth cookie prefix, prompt-injection strip, and
+token-lifecycle fixes. No API-contract or persisted-field semantics changed.
+
+### Added
+
+- **Distinct visual treatment for mock/placeholder AI output in DraftStudio
+  (#83).** AI sections generated from mock/seed data now render with a clear
+  visual distinction so users can immediately tell which content is real vs.
+  placeholder.
+- **Responsive O-1A criteria report — table on desktop, cards on mobile (#82).**
+  The qualification criteria summary adapts its layout to the viewport: a full
+  table on wide screens and a stacked-card view on mobile, improving readability
+  at any screen size.
+- **Purchase-success toast when Polar redirects back after checkout (#81).** A
+  confirmation toast is now shown on successful token-bundle purchase, giving
+  users clear feedback that their credits were added.
+- **Regenerate-button restyle + cascade section cards in DraftStudio (#80).**
+  The section-level regeneration controls have been restyled and the section
+  cards now cascade visually, improving scanability of the drafting canvas.
+- **Coverage progress bar on the Evidence Vault replaces the fraction badge
+  (#79).** The evidence coverage indicator now uses a progress bar instead of a
+  raw fraction (e.g. "3/8"), making coverage status faster to parse at a glance.
+- **Parchment shimmer skeleton replaces the generic `animate-pulse` placeholder
+  (#79).** Loading skeletons now use the app's parchment theme shimmer animation
+  instead of the default grey pulse, keeping the visual language consistent while
+  data loads.
+- **Left-border status accent on O-1A criteria rows (#77).** Each criterion row
+  in the qualification report now shows a coloured left border reflecting its
+  assessment status (strong/weak/neutral), adding a fast visual status scan.
+- **Freshness progress bar with days-remaining countdown on the transparency page
+  (#77).** The document-freshness indicator now shows a progress bar and a
+  "N days remaining" label alongside the tier label, making expiry timing
+  concrete for users.
+- **Token-cost labels on the 'Get field guidance' and 'Screen my profile'
+  buttons (#77).** Both action buttons now show the token cost inline (e.g.
+  "2 tokens") so users know the charge before clicking. A live character-count
+  helper is also shown on the qualification form.
+- **Humanized error messages for adapter fetch failures (#76).** When an API
+  adapter returns an error envelope, the message shown to users is now
+  human-readable rather than a raw HTTP status string. `ErrorEnvelope` is
+  exported as a typed client type for consistent error handling across the UI.
+
+### Fixed
+
+- **BundleGrid hardened against double-submit and stuck back-button (#76).**
+  Rapid double-clicks on a purchase button no longer fire duplicate checkout
+  requests; browser back-button state after a Polar redirect no longer leaves the
+  UI in a stuck loading state.
+- **In-memory rate-limit bucket map is now bounded to prevent a memory leak
+  (#76).** The server-side fixed-window rate limiter now caps its bucket map
+  size, preventing unbounded growth on long-running instances.
+- **`pgcrypto` PGlite extension loaded so the dev DB initialises correctly
+  (#78).** Local development database now loads the `pgcrypto` extension on
+  startup, fixing a crash when the dev schema uses `gen_random_uuid()`.
+- **`__Host-` session-cookie prefix used in production for CSRF hardening
+  (#75).** The session cookie is now set with the `__Host-` prefix in production,
+  enforcing Secure + path=/ constraints and tightening CSRF posture.
+- **Control-character strip on guidance fields to block prompt-injection (#75).**
+  Input fields used in LLM guidance prompts now have control characters stripped
+  before sending, preventing prompt-injection via crafted field values.
+- **Double-submit guards on QualifyPanel and Evidence 'Add & categorize' (#75).**
+  Both actions are now guarded against concurrent submissions, preventing
+  duplicate charges or duplicate evidence rows.
+- **Sign-up token grant happens before the profile is marked onboarded (#75).**
+  Fixes a race where a user was marked onboarded before their initial token grant
+  landed, leaving them with zero balance on first dashboard visit.
+- **Forwarded IP validated before keying the rate limiter on it (#75).** The
+  rate-limit middleware now validates the `X-Forwarded-For` header value before
+  using it as a key, preventing spoofed IPs from bypassing limits.
+- **Token reclaim ledger scoped by user id (#75).** Prevents one user's reclaim
+  from being attributed to another when concurrent reclaims race on the same
+  session.
+- **Polar refund deduplication keyed on original order id (#75).** Duplicate
+  `order.refunded` webhook deliveries no longer trigger a double clawback of
+  token credits.
+- **Additional hardening:** `getStore()` memoized to prevent double-init races;
+  CSV blob URL freed even if `click()` throws; RFE inline edits keyed by index
+  (not heading) to survive heading renames; `saveFailed` surfaced when a section
+  regen has no base draft; `transitionCase` reports failure when no store is
+  configured; `extractJson` balances braces instead of grabbing first-to-last.
+
 ## [0.10.1] - 2026-06-14
 
 Pre-1.0 **patch** bump — a single critical copy fix, no API or persisted-field
