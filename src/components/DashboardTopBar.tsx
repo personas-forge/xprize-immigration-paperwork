@@ -42,7 +42,7 @@ export function DashboardTopBar({
             <span className="microprint" style={{ color: "var(--muted)" }}>
               Active file
             </span>
-            <span className="doc-number text-[12px] text-foreground">{context}</span>
+            <span className="doc-number text-[14px] text-foreground">{context}</span>
           </div>
         </div>
 

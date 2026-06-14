@@ -84,7 +84,7 @@ export function ReviewPanel({
             <span className="microprint" style={{ color: "var(--accent-dark)" }}>
               USCIS receipt
             </span>
-            <span className="doc-number text-[14px] text-foreground">{receiptNumber}</span>
+            <span className="doc-number text-[16px] text-foreground">{receiptNumber}</span>
           </div>
         ) : null}
 
@@ -94,7 +94,7 @@ export function ReviewPanel({
             <div className="microprint" style={{ color: "var(--accent-dark)" }}>
               Outcome
             </div>
-            <p className="mt-1 font-sans text-[14px] text-foreground-soft">
+            <p className="mt-1 font-sans text-[16px] text-foreground-soft">
               This petition has been approved. 🎉
             </p>
           </div>
@@ -115,7 +115,7 @@ export function ReviewPanel({
 
         {inReview && !isAttorney ? (
           <div className="rounded-control border border-accent/30 bg-accent-soft/30 px-5 py-4">
-            <p className="font-sans text-[14px] text-foreground-soft">
+            <p className="font-sans text-[16px] text-foreground-soft">
               Awaiting attorney review. You&apos;ll see feedback or a filing
               confirmation here.
             </p>
@@ -137,7 +137,7 @@ export function ReviewPanel({
                 name="feedback"
                 rows={3}
                 placeholder="Required changes for the applicant…"
-                className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[13.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
               />
               <Button type="submit" variant="secondary">
                 Return with changes
@@ -155,7 +155,7 @@ export function ReviewPanel({
               <span className="microprint">USCIS decision</span>
               <select
                 name="decision"
-                className="mt-1.5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="mt-1.5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
               >
                 <option value="Approved">Approved</option>
                 <option value="RFE issued">RFE issued</option>
@@ -174,7 +174,7 @@ export function ReviewPanel({
             Review thread
           </div>
           {events.length === 0 ? (
-            <p className="font-sans text-[13.5px] italic text-muted-strong">
+            <p className="font-sans text-[15.5px] italic text-muted-strong">
               No activity yet.
             </p>
           ) : (
@@ -193,7 +193,7 @@ export function ReviewPanel({
                     </span>
                   </div>
                   {ev.body ? (
-                    <p className="mt-1.5 font-sans text-[13.5px] leading-relaxed text-foreground-soft">
+                    <p className="mt-1.5 font-sans text-[15.5px] leading-relaxed text-foreground-soft">
                       {ev.body}
                     </p>
                   ) : null}
@@ -210,7 +210,7 @@ export function ReviewPanel({
               name="body"
               rows={2}
               placeholder="Add a note to the thread…"
-              className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[13.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+              className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
             />
             <Button type="submit" variant="ghost" size="sm">
               Add note

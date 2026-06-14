@@ -54,7 +54,7 @@ export function PanelFallback({
 }) {
   return (
     <div className="flex min-h-[120px] flex-col items-center justify-center gap-4 rounded-card border border-border bg-surface px-6 py-8 text-center">
-      <p className="font-sans text-[14px] text-muted-strong">
+      <p className="font-sans text-[16px] text-muted-strong">
         Could not load {label} — retry
       </p>
       <Button variant="secondary" onClick={onRetry}>

@@ -17,7 +17,7 @@ export function PurchaseToast() {
   return (
     <div
       role="status"
-      className="mb-8 flex items-center justify-between gap-4 rounded-control border border-success/40 bg-success-soft/50 px-5 py-3.5 font-sans text-[14px] text-foreground"
+      className="mb-8 flex items-center justify-between gap-4 rounded-control border border-success/40 bg-success-soft/50 px-5 py-3.5 font-sans text-[16px] text-foreground"
     >
       <span className="flex items-center gap-2.5">
         <svg
@@ -40,7 +40,7 @@ export function PurchaseToast() {
         type="button"
         onClick={() => setShow(false)}
         aria-label="Dismiss"
-        className="shrink-0 font-mono text-[11px] uppercase tracking-document text-muted-strong transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+        className="shrink-0 font-mono text-[13px] uppercase tracking-document text-muted-strong transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
       >
         Dismiss
       </button>

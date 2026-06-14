@@ -71,7 +71,7 @@ export default function LoginPage() {
               <h1 className="display text-[clamp(2.1rem,7vw,3rem)] text-foreground">
                 Sign in to your <em>case file</em>.
               </h1>
-              <p className="font-sans text-[15px] leading-relaxed text-muted-strong">
+              <p className="font-sans text-[17px] leading-relaxed text-muted-strong">
                 One secure door to your petition, your evidence vault, and your
                 attorney of record.
               </p>
@@ -83,7 +83,7 @@ export default function LoginPage() {
               <div className="space-y-3">
                 <Link
                   href="/dashboard"
-                  className="group inline-flex items-center justify-center gap-3 rounded-control border border-foreground bg-foreground px-6 py-3.5 font-mono text-[12px] uppercase tracking-document text-background transition-[transform,background-color] hover:-translate-y-[1px] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="group inline-flex items-center justify-center gap-3 rounded-control border border-foreground bg-foreground px-6 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-[transform,background-color] hover:-translate-y-[1px] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                 >
                   Continue as developer →
                 </Link>
@@ -96,7 +96,7 @@ export default function LoginPage() {
                 <button
                   onClick={signInWithGoogleFirebase}
                   disabled={busy}
-                  className="group inline-flex items-center justify-center gap-3 rounded-control border border-foreground bg-foreground px-6 py-3.5 font-mono text-[12px] uppercase tracking-document text-background transition-[transform,background-color] hover:-translate-y-[1px] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 disabled:opacity-60"
+                  className="group inline-flex items-center justify-center gap-3 rounded-control border border-foreground bg-foreground px-6 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-[transform,background-color] hover:-translate-y-[1px] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 disabled:opacity-60"
                 >
                   <GoogleGlyph />
                   {busy ? "Signing in…" : "Continue with Google"}
@@ -110,21 +110,21 @@ export default function LoginPage() {
             ) : (
               <div
                 role="note"
-                className="rounded-control border border-dashed border-border-strong bg-surface-muted/60 px-4 py-3 font-sans text-[13px] leading-relaxed text-muted-strong"
+                className="rounded-control border border-dashed border-border-strong bg-surface-muted/60 px-4 py-3 font-sans text-[15px] leading-relaxed text-muted-strong"
               >
                 <span className="microprint mb-1 block" style={{ color: "var(--accent-dark)" }}>
                   Sign-in not yet configured
                 </span>
                 Set{" "}
-                <code className="font-mono text-[11px] text-foreground">
+                <code className="font-mono text-[13px] text-foreground">
                   NEXT_PUBLIC_FIREBASE_API_KEY
                 </code>{" "}
                 and{" "}
-                <code className="font-mono text-[11px] text-foreground">
+                <code className="font-mono text-[13px] text-foreground">
                   NEXT_PUBLIC_FIREBASE_PROJECT_ID
                 </code>{" "}
                 in{" "}
-                <code className="font-mono text-[11px] text-foreground">
+                <code className="font-mono text-[13px] text-foreground">
                   .env.local
                 </code>{" "}
                 to enable Google sign-in.

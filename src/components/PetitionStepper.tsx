@@ -43,7 +43,7 @@ export function PetitionStepper() {
             <h2 className="display mt-4 text-[clamp(2rem,5vw,3.4rem)]">
               Every stage <em>sealed</em>, on the record.
             </h2>
-            <p className="mt-3 max-w-xl font-sans text-[15.5px] leading-relaxed text-muted-strong">
+            <p className="mt-3 max-w-xl font-sans text-[17.5px] leading-relaxed text-muted-strong">
               Five passes from intake to approval — each one stamped, dated, and
               visible to you and your attorney from the moment it&apos;s pressed.
             </p>
@@ -53,7 +53,7 @@ export function PetitionStepper() {
               type="button"
               onClick={next}
               aria-label="Advance to the next petition stage"
-              className="inline-flex items-center gap-2 rounded-control bg-foreground px-5 py-2.5 font-mono text-[11.5px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+              className="inline-flex items-center gap-2 rounded-control bg-foreground px-5 py-2.5 font-mono text-[13.5px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
             >
               Next stage
               <span aria-hidden>→</span>
@@ -108,7 +108,7 @@ export function PetitionStepper() {
                             initial={reduce ? false : "hidden"}
                             animate="show"
                             exit={reduce ? undefined : { opacity: 0, scale: 0.85, rotate: 6, transition: { duration: 0.2 } }}
-                            className="grid h-10 w-10 place-items-center rounded-pill border-2 border-double border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-mono text-[10px] uppercase tracking-tight text-accent-dark shadow-leaf"
+                            className="grid h-10 w-10 place-items-center rounded-pill border-2 border-double border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-mono text-[12px] uppercase tracking-tight text-accent-dark shadow-leaf"
                           >
                             {String(i + 1).padStart(2, "0")}
                           </motion.span>
@@ -117,12 +117,12 @@ export function PetitionStepper() {
                             key="past"
                             initial={false}
                             animate={{ opacity: 1 }}
-                            className="grid h-10 w-10 place-items-center rounded-pill border border-[color:var(--accent-dark)]/50 bg-transparent font-mono text-[10px] uppercase tracking-tight text-accent-dark"
+                            className="grid h-10 w-10 place-items-center rounded-pill border border-[color:var(--accent-dark)]/50 bg-transparent font-mono text-[12px] uppercase tracking-tight text-accent-dark"
                           >
                             ✓
                           </motion.span>
                         ) : (
-                          <span className="font-mono text-[11px] uppercase tracking-document text-muted">
+                          <span className="font-mono text-[13px] uppercase tracking-document text-muted">
                             {String(i + 1).padStart(2, "0")}
                           </span>
                         )}
@@ -133,7 +133,7 @@ export function PetitionStepper() {
                   <div className="mt-4 microprint">{`Stage ${String(i + 1).padStart(2, "0")}`}</div>
                   <div
                     className={cn(
-                      "display mt-1 text-[15px]",
+                      "display mt-1 text-[17px]",
                       isActive ? "text-foreground" : "text-muted-strong",
                     )}
                   >
@@ -160,7 +160,7 @@ export function PetitionStepper() {
               <span className="microprint" style={{ color: "var(--muted)" }}>
                 {`Stage ${String(stage + 1).padStart(2, "0")}`}
               </span>
-              <span className="font-sans text-[14px] italic text-foreground">
+              <span className="font-sans text-[16px] italic text-foreground">
                 {current.status}
               </span>
               <span className="hidden sm:inline-block h-3 w-px bg-border-strong" aria-hidden />

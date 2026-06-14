@@ -39,7 +39,7 @@ export function StatCard({
         {value}
       </div>
       {delta ? (
-        <div className={cn("mt-2 font-mono text-[11px] uppercase tracking-document", deltaClass[tone])}>
+        <div className={cn("mt-2 font-mono text-[13px] uppercase tracking-document", deltaClass[tone])}>
           {delta}
         </div>
       ) : null}

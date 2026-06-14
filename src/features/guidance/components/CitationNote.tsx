@@ -14,14 +14,14 @@ export function CitationNote() {
     >
       <span
         aria-hidden
-        className="mt-[1px] shrink-0 font-mono text-[9px] font-semibold uppercase leading-tight tracking-document text-accent-dark"
+        className="mt-[1px] shrink-0 font-mono text-[11px] font-semibold uppercase leading-tight tracking-document text-accent-dark"
       >
         Verify
         <br />
         cites
       </span>
       <span className="block h-auto w-px self-stretch bg-accent/25" aria-hidden />
-      <p className="font-sans text-[12.5px] leading-snug text-muted-strong">
+      <p className="font-sans text-[14.5px] leading-snug text-muted-strong">
         Confirm every statutory and regulatory citation (e.g. INA / 8 C.F.R.
         sections) against the current code before filing — generated text can
         reference the wrong provision. The attorney of record adds and verifies

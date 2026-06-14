@@ -33,7 +33,7 @@ export function SectionHeader({
           {title}
         </h2>
         {subtitle ? (
-          <p className="mt-3 max-w-2xl font-sans text-[15.5px] leading-relaxed text-muted-strong">
+          <p className="mt-3 max-w-2xl font-sans text-[17.5px] leading-relaxed text-muted-strong">
             {subtitle}
           </p>
         ) : null}

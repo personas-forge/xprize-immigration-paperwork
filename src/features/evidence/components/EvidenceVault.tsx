@@ -154,7 +154,7 @@ export function EvidenceVault({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. ICML 2024 Best Paper certificate"
-                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
               />
             </label>
             <label className="block">
@@ -164,7 +164,7 @@ export function EvidenceVault({
                 onChange={(e) => setContent(e.target.value)}
                 rows={3}
                 placeholder="Paste the document text or describe what it shows…"
-                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[13.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
               />
             </label>
           </div>
@@ -177,16 +177,16 @@ export function EvidenceVault({
             </span>
           </div>
           {status === "error" && error ? (
-            <div role="alert" className="rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[13px] text-danger">
+            <div role="alert" className="rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[15px] text-danger">
               {error}
             </div>
           ) : null}
           {status === "paywall" ? (
             <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-control border-2 border-double border-seal/50 bg-seal-soft/40 px-4 py-3">
-              <span className="font-sans text-[13.5px] text-foreground-soft">
+              <span className="font-sans text-[15.5px] text-foreground-soft">
                 Out of tokens — top up to keep adding evidence.
               </span>
-              <Link href="/billing" className="font-mono text-[11px] uppercase tracking-document text-seal ink-link">
+              <Link href="/billing" className="font-mono text-[13px] uppercase tracking-document text-seal ink-link">
                 Buy more →
               </Link>
             </div>
@@ -219,13 +219,13 @@ export function EvidenceVault({
             return (
               <div key={bucket} className="rounded-control border border-border px-4 py-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="font-sans text-[14px] text-foreground">{bucket}</span>
+                  <span className="font-sans text-[16px] text-foreground">{bucket}</span>
                   <Badge tone={docs.length > 0 ? "neutral" : "warning"}>
                     {docs.length || "none"}
                   </Badge>
                 </div>
                 {docs.length === 0 ? (
-                  <p className="font-sans text-[13px] italic text-muted-strong">
+                  <p className="font-sans text-[15px] italic text-muted-strong">
                     No evidence yet.
                   </p>
                 ) : (
@@ -235,13 +235,13 @@ export function EvidenceVault({
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="flex items-baseline gap-2">
-                              <span className="doc-number text-[11px] text-muted">{d.exhibit}</span>
-                              <span className="truncate font-sans text-[13.5px] text-foreground">{d.name}</span>
+                              <span className="doc-number text-[13px] text-muted">{d.exhibit}</span>
+                              <span className="truncate font-sans text-[15.5px] text-foreground">{d.name}</span>
                             </div>
                             {d.facts.length > 0 ? (
                               <ul className="mt-1 space-y-0.5">
                                 {d.facts.map((f, i) => (
-                                  <li key={i} className="font-sans text-[12.5px] italic leading-snug text-muted-strong">
+                                  <li key={i} className="font-sans text-[14.5px] italic leading-snug text-muted-strong">
                                     — {f}
                                   </li>
                                 ))}
@@ -256,7 +256,7 @@ export function EvidenceVault({
                               id={`refile-${d.id}`}
                               value={d.criterion}
                               onChange={(e) => onRefile(d.id, e.target.value)}
-                              className="rounded-control border border-border-strong bg-surface px-2 py-1 font-mono text-[10px] uppercase tracking-document text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                              className="rounded-control border border-border-strong bg-surface px-2 py-1 font-mono text-[12px] uppercase tracking-document text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                             >
                               {BUCKETS.map((b) => (
                                 <option key={b} value={b}>
@@ -268,7 +268,7 @@ export function EvidenceVault({
                               type="button"
                               onClick={() => onRemove(d.id)}
                               aria-label={`Remove ${d.name}`}
-                              className="rounded-control border border-border-strong px-2 py-1 font-mono text-[11px] text-muted-strong hover:border-seal hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                              className="rounded-control border border-border-strong px-2 py-1 font-mono text-[13px] text-muted-strong hover:border-seal hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                             >
                               ×
                             </button>

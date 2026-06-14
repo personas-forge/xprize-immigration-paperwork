@@ -50,15 +50,12 @@ function SiteHeader() {
           />
           <Wordmark context="Petition Atelier · est. 2026" />
         </div>
-        <nav className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-document text-muted-strong">
-          <a href="#how" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">How it works</a>
-          <Link href="/pricing" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">Pricing</Link>
-          <Link href="/faq" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">FAQ</Link>
-          <Link href="/dashboard" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">Live case file</Link>
-          <Link href="/login" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">Sign in</Link>
+        <nav className="flex flex-nowrap items-center gap-5 font-mono text-[13px] uppercase tracking-document text-muted-strong">
+          <Link href="/dashboard" className="ink-link whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">Live case file</Link>
+          <Link href="/login" className="ink-link whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">Sign in</Link>
           <Link
             href="/qualify"
-            className="rounded-control border border-foreground bg-foreground px-4 py-2 text-background transition-[background-color] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="whitespace-nowrap rounded-control border border-foreground bg-foreground px-4 py-2 text-background transition-[background-color] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
           >
             Free qualification
           </Link>
@@ -132,7 +129,7 @@ function Hero() {
           >
             <Link
               href="/qualify"
-              className="inline-flex items-center gap-2 rounded-control bg-foreground px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+              className="inline-flex items-center gap-2 rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
             >
               Take the 5-min qualification
               <span aria-hidden>→</span>
@@ -172,21 +169,21 @@ function Hero() {
               <div className="space-y-1.5">
                 <div className="flex items-baseline justify-between border-b border-dotted border-rule pb-1">
                   <span className="microprint">Petitioner</span>
-                  <span className="font-sans text-[13px] italic">Dr. A. Krishnan</span>
+                  <span className="font-sans text-[15px] italic">Dr. A. Krishnan</span>
                 </div>
                 <div className="flex items-baseline justify-between border-b border-dotted border-rule pb-1">
                   <span className="microprint">Classification</span>
-                  <span className="doc-number text-[12px]">O-1A · Sciences</span>
+                  <span className="doc-number text-[14px]">O-1A · Sciences</span>
                 </div>
                 <div className="flex items-baseline justify-between border-b border-dotted border-rule pb-1">
                   <span className="microprint">Status</span>
-                  <span className="font-mono text-[11px] uppercase tracking-document text-success">
+                  <span className="font-mono text-[13px] uppercase tracking-document text-success">
                     Filing-ready
                   </span>
                 </div>
                 <div className="flex items-baseline justify-between border-b border-dotted border-rule pb-1">
                   <span className="microprint">Attorney</span>
-                  <span className="font-sans text-[13px] italic">J. Park, Esq.</span>
+                  <span className="font-sans text-[15px] italic">J. Park, Esq.</span>
                 </div>
               </div>
 
@@ -233,7 +230,7 @@ function Promises() {
               <span className="display block text-2xl italic text-accent-dark">{b.n}</span>
               <div className="mt-2 h-px w-10 bg-accent-dark/60" />
               <h3 className="display mt-4 text-3xl">{b.t}</h3>
-              <p className="mt-3 font-sans text-[15px] leading-relaxed text-muted-strong">
+              <p className="mt-3 font-sans text-[17px] leading-relaxed text-muted-strong">
                 {b.b}
               </p>
             </article>
@@ -280,7 +277,7 @@ function Process() {
               </span>
             </div>
             <h3 className="display mt-6 text-2xl">{t}</h3>
-            <p className="mt-2 font-sans text-[14px] leading-relaxed text-muted-strong">
+            <p className="mt-2 font-sans text-[16px] leading-relaxed text-muted-strong">
               {b}
             </p>
           </Rise>
@@ -303,7 +300,7 @@ function Pricing() {
               <h2 className="display mt-5 max-w-3xl text-[clamp(2.2rem,5.6vw,3.8rem)]">
                 Flat. <em>Honest.</em> No hours billed.
               </h2>
-              <p className="mt-4 font-sans text-[15px] italic text-muted-strong">
+              <p className="mt-4 font-sans text-[17px] italic text-muted-strong">
                 See the <Link href="/pricing" className="ink-link">full schedule of fees →</Link>
               </p>
             </div>
@@ -381,13 +378,13 @@ function Closing() {
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
           <Link
             href="/qualify"
-            className="rounded-control bg-seal px-8 py-4 font-mono text-[12px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="rounded-control bg-seal px-8 py-4 font-mono text-[14px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
           >
             Begin qualification
           </Link>
           <Link
             href="/dashboard"
-            className="rounded-control border border-border-strong px-8 py-4 font-mono text-[12px] uppercase tracking-document text-foreground hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="rounded-control border border-border-strong px-8 py-4 font-mono text-[14px] uppercase tracking-document text-foreground hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
           >
             See the case file
           </Link>
@@ -406,10 +403,11 @@ function SiteFooter() {
         <div className="microprint">
           © Immigration Concierge · XPrize hackathon · 90-day MVP
         </div>
-        <div className="microprint flex gap-4">
-          <Link className="ink-link" href="/landing-claude">
-            Alt. masthead
-          </Link>
+        <div className="microprint flex flex-wrap items-center gap-4">
+          <a className="ink-link" href="#how">How it works</a>
+          <Link className="ink-link" href="/pricing">Pricing</Link>
+          <Link className="ink-link" href="/faq">FAQ</Link>
+          <Link className="ink-link" href="/landing-claude">Alt. masthead</Link>
         </div>
       </div>
     </footer>
@@ -451,11 +449,11 @@ function Plan({
           flat
         </span>
       </div>
-      <div className="font-sans text-[13px] italic text-muted-strong">{sub}</div>
+      <div className="font-sans text-[15px] italic text-muted-strong">{sub}</div>
 
       <div className="my-5 perforation h-px" aria-hidden />
 
-      <ul className="space-y-2.5 font-sans text-[14px]">
+      <ul className="space-y-2.5 font-sans text-[16px]">
         {lines.map((l) => (
           <li key={l} className="flex items-start gap-3">
             <span aria-hidden className="mt-1 inline-block h-px w-3 bg-accent-dark" />

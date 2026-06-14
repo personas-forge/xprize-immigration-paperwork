@@ -15,7 +15,7 @@ export function DisclaimerStamp({ text }: { text: string }) {
     >
       <span
         aria-hidden
-        className="mt-[1px] shrink-0 font-mono text-[9px] font-semibold uppercase leading-tight tracking-document"
+        className="mt-[1px] shrink-0 font-mono text-[11px] font-semibold uppercase leading-tight tracking-document"
       >
         Not
         <br />
@@ -24,7 +24,7 @@ export function DisclaimerStamp({ text }: { text: string }) {
         advice
       </span>
       <span className="block h-auto w-px self-stretch bg-seal/30" aria-hidden />
-      <p className="font-sans text-[12.5px] leading-snug text-seal">{text}</p>
+      <p className="font-sans text-[14.5px] leading-snug text-seal">{text}</p>
     </div>
   );
 }

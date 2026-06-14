@@ -49,7 +49,7 @@ export function ConsentForm({
           name="full_name"
           defaultValue={defaultName}
           required
-          className="w-full rounded-control border border-border-strong bg-surface px-3.5 py-2.5 font-sans text-[15px] text-foreground placeholder:text-muted focus-visible:border-accent-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+          className="w-full rounded-control border border-border-strong bg-surface px-3.5 py-2.5 font-sans text-[17px] text-foreground placeholder:text-muted focus-visible:border-accent-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
         />
         {email && (
           <p className="microprint" style={{ color: "var(--muted)" }}>
@@ -83,7 +83,7 @@ export function ConsentForm({
       {state.error && (
         <p
           role="alert"
-          className="rounded-control border border-seal/40 bg-seal-soft/50 px-3.5 py-2.5 font-sans text-[13px] text-seal"
+          className="rounded-control border border-seal/40 bg-seal-soft/50 px-3.5 py-2.5 font-sans text-[15px] text-seal"
         >
           {state.error}
         </p>
@@ -92,7 +92,7 @@ export function ConsentForm({
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-seal px-6 py-3.5 font-mono text-[12px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-seal px-6 py-3.5 font-mono text-[14px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 disabled:opacity-60"
       >
         {pending ? "Stamping…" : "Agree & open my case file"}
         <span aria-hidden>→</span>
@@ -111,7 +111,7 @@ function Checkbox({
   required?: boolean;
 }) {
   return (
-    <label className="flex items-start gap-3 font-sans text-[14px] text-foreground-soft">
+    <label className="flex items-start gap-3 font-sans text-[16px] text-foreground-soft">
       <input
         type="checkbox"
         name={name}
