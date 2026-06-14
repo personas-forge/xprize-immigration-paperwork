@@ -202,7 +202,7 @@ export function DraftStudio({
   }
 
   async function copyDraft() {
-    const ok = await copyDraftToClipboard(sections);
+    const ok = await copyDraftToClipboard(sections, exhibitIndex);
     setCopyState(ok ? "copied" : "failed");
   }
 
