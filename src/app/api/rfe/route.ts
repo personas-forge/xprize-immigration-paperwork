@@ -13,7 +13,9 @@ import {
 import { chargeForOperation } from "@/lib/tokens/guard";
 import { getLlm } from "@/lib/llm/client";
 import { authorizeRoute } from "@/lib/auth/authorizeRoute";
-import { getCriteriaForCase, saveRfeResponse } from "@/lib/data/petitions";
+import { petitions } from "@/lib/data/adapters/petition";
+import { type CaseAccess } from "@/lib/data/adapters/access";
+import { toErrorResponse } from "@/lib/data/adapters/http";
 import {
   RATE_LIMITS,
   checkRateLimit,
@@ -70,6 +72,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   // user (possibly null on the inline/demo path) keys the rate limit.
   const user = auth.user;
 
+  // Owner-or-configured-attorney access context for the PetitionAdapter
+  // (ADR-0010). RFE honors the attorney-of-record fallback (authorizeRoute ran
+  // with requiresAttorney:true), so `email` is passed — the adapter's resolveCase
+  // gate then re-resolves the same owner-or-attorney decision before the criteria
+  // read + RFE persist, replacing this route's hand-rolled try/catch + 503 mapping
+  // and closing the previously-ungated data-layer read.
+  const access: CaseAccess = { userId: user?.id ?? null, email: user?.email ?? null };
+
   // Rate limit BEFORE charging or any model work.
   if (isRateLimitEnabled()) {
     const rl = checkRateLimit(rateLimitKey(request, "rfe", user?.id), RATE_LIMITS.rfe);
@@ -87,27 +97,18 @@ export async function POST(request: Request): Promise<NextResponse> {
   let resolvedCaseId: string | null = null;
 
   if (auth.status === "ok") {
-    // Loading the case criteria can throw if the store errors mid-query (a
-    // configured store does NOT degrade to []). Catch it here — before any
-    // charge — so it returns a structured, disclaimer-bearing error instead of a
-    // raw Next.js 500, matching the rest of this route's contract.
-    let criteria: Awaited<ReturnType<typeof getCriteriaForCase>>;
-    try {
-      criteria = await getCriteriaForCase(auth.case.id);
-    } catch (err) {
-      console.error("[/api/rfe] failed to load case criteria", err);
-      return NextResponse.json(
-        {
-          error: "We couldn't load the case criteria. Please try again.",
-          disclaimer: DISCLAIMER,
-        },
-        { status: 503 },
-      );
+    // Criteria read through the adapter: a store fault / lost backend / access
+    // failure becomes a typed AdapterError mapped to its own status (503/500/403)
+    // via toErrorResponse — instead of a raw 503 — mirroring /api/draft. The
+    // gate re-validates owner-or-attorney access before the read.
+    const criteriaResult = await petitions.getCriteria(access, auth.case.id);
+    if (!criteriaResult.ok) {
+      return toErrorResponse(criteriaResult.error);
     }
     const parsed = parseRfeRequest({
       petitioner: auth.case.petitioner,
       classification: auth.case.classification,
-      criteria,
+      criteria: criteriaResult.value,
       rfeText: record.rfeText,
     });
     if (!parsed.ok) {
@@ -171,11 +172,18 @@ export async function POST(request: Request): Promise<NextResponse> {
   let version: number | null = null;
   let saveFailed = false;
   if (resolvedCaseId) {
-    try {
-      version = await saveRfeResponse(resolvedCaseId, req.rfeText, result.sections, result.source);
-    } catch (err) {
+    const saved = await petitions.saveRfeResponse(
+      access,
+      resolvedCaseId,
+      req.rfeText,
+      result.sections,
+      result.source,
+    );
+    if (!saved.ok) {
       saveFailed = true;
-      console.error("[/api/rfe] failed to persist RFE response version", err);
+      console.error("[/api/rfe] failed to persist RFE response version", saved.error);
+    } else {
+      version = saved.value;
     }
   }
 
