@@ -157,3 +157,23 @@
   charge. **Follow-ups:** step 2 (single PAID multi-pack model call —
   `buildBestPathPrompt`/`parseBestPathResponse` over all packs) and step 5
   (persist the comparison artifact on the chosen case) not built.
+
+- **2026-06-14 — #1 Live Adjudication-Risk Engine SHIPPED.** Promoted the eval
+  gates into the live path. New `src/lib/llm/adjudication-gates.ts`:
+  `runAdjudication(ctx)` → `{gates, risk: ready|review|blocked, attorneyReady}`.
+  The scenario-FREE leaf scanners (`fabricatedSpecifics`+`stripLegal`,
+  `matchedAdvice` UPL tripwires, `caseLawHits`, `wrongCodes`, `tokens`,
+  `sentenceCount`) were MOVED here and are now imported by
+  `scripts/llm-eval/gates.ts` — single-sourced, so live + offline can't drift
+  (harness behavior verified unchanged via a throwaway `runGates` check). The
+  orchestrator (`operation.ts`) gained an `adjudicate?(output,input,source,body)`
+  hook run after `build` (best-effort, try/caught) that attaches `{adjudication}`
+  to the body; wired for draft + qualify. `AdjudicationBadge` (in
+  `components/legal`) shows attorney-ready/review/blocked + exact reasons.
+  **Gotcha:** `executeAiOperation` already has a local `body` var (the request
+  JSON) — name the response var `responseBody`. **Producer for #2** (provenance
+  ledger enriches DraftGenerated w/ the adjudication verdict) **and #3**
+  (ensemble adjudicates each sample). **Follow-ups:** step 4 (LightTrack
+  pass-rate per op/engine) + step 5 (auto-capture live hard-fails into a
+  scenario-candidate store) — both need new infra. rfe/guidance/categorize can
+  adopt the hook trivially (not yet wired).
