@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/auth/session";
+import { getUser, profileFieldsFromUser } from "@/lib/auth/session";
 import { upsertProfileWithConsent } from "@/lib/auth/db";
 import { CONSENT_VERSION } from "@/lib/auth/consent";
 import { grantSignupTokens } from "@/lib/tokens/ledger";
@@ -50,7 +50,7 @@ export async function submitConsent(
       userId: user.id,
       email: user.email ?? null,
       fullName,
-      avatarUrl: (user.user_metadata?.avatar_url as string | undefined) ?? null,
+      avatarUrl: profileFieldsFromUser(user).avatarUrl,
       consentVersion: CONSENT_VERSION,
       terms,
       privacy,

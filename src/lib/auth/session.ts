@@ -44,6 +44,23 @@ async function ensureDevSeeded(): Promise<void> {
   }
 }
 
+/**
+ * Profile/display fields derived from an AppUser's provider metadata — in one
+ * place so the welcome page (default name) and the consent action (avatar URL)
+ * apply the same metadata-key fallbacks (`full_name` ?? `name`) rather than each
+ * reaching into `user_metadata` independently.
+ */
+export function profileFieldsFromUser(user: AppUser): {
+  fullName: string;
+  avatarUrl: string | null;
+} {
+  const meta = user.user_metadata;
+  return {
+    fullName: meta?.full_name ?? meta?.name ?? "",
+    avatarUrl: meta?.avatar_url ?? null,
+  };
+}
+
 /** Current user, or null. Dispatches by provider: dev-auth → Firebase. */
 export async function getUser(): Promise<AppUser | null> {
   if (isDevAuth()) {
