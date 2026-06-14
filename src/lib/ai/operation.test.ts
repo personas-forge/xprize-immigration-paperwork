@@ -265,15 +265,22 @@ test("persist failure → onPersistError merged, response still 200", async () =
 // ---------------------------------------------------------------------------
 // 11. persist success → returned fields merged into the body
 // ---------------------------------------------------------------------------
-test("persist success → fields merged into the response body", async () => {
+test("persist success → fields merged into the body; receives the source label", async () => {
+  let persistSource = "";
   const res = await executeAiOperation(
     jsonRequest({ text: "hi" }),
-    baseSpec({ persist: async () => ({ caseId: "case-123", version: 2 }) }),
-    deps({ getLlm: () => llmReturning("REAL ANSWER") }),
+    baseSpec({
+      persist: async (_output, _input, _user, source) => {
+        persistSource = source;
+        return { caseId: "case-123", version: 2 };
+      },
+    }),
+    deps({ getLlm: () => llmReturning("REAL ANSWER", "gemini") }),
   );
   const body = await res.json();
   assert.equal(body.caseId, "case-123");
   assert.equal(body.version, 2);
+  assert.equal(persistSource, "gemini", "persist receives the resolved source label");
 });
 
 // ---------------------------------------------------------------------------

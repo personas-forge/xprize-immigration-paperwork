@@ -53,6 +53,10 @@ import {
 /** Minimal auth shape the orchestrator needs (structurally an `AppUser`). */
 export interface AuthUser {
   id: string;
+  /** The signed-in user's email — drives the configured-attorney access leg in
+   *  a `persist` hook that gates through the adapter. Optional so test fakes can
+   *  supply just `id`; the real `getUser()` always provides it. */
+  email?: string | null;
 }
 
 /** Mirror of `ChargeResult` from `@/lib/tokens/guard`, decoupled for testing. */
@@ -122,11 +126,14 @@ export interface AiOperationSpec<TInput, TOutput> {
   mock: (input: TInput) => TOutput;
   /** Shape the JSON response body from the domain value + its source label. */
   build: (output: TOutput, source: string, input: TInput) => Record<string, unknown>;
-  /** Best-effort persistence. Returns fields merged into the response body. */
+  /** Best-effort persistence. Returns fields merged into the response body.
+   *  Receives the resolved `source` ("mock" | engine name) so it can record the
+   *  provenance of what it persists (e.g. the document's categorization source). */
   persist?: (
     output: TOutput,
     input: TInput,
     user: AuthUser | null,
+    source: string,
   ) => Promise<Record<string, unknown>>;
   /** Fields merged into the body when `persist` throws (e.g. `{ saveFailed: true }`). */
   onPersistError?: (input: TInput) => Record<string, unknown>;
@@ -308,7 +315,7 @@ export async function executeAiOperation<TInput, TOutput>(
   let persisted: Record<string, unknown> = {};
   if (spec.persist) {
     try {
-      persisted = await spec.persist(output, input, await resolveUser());
+      persisted = await spec.persist(output, input, await resolveUser(), source);
     } catch {
       persisted = spec.onPersistError?.(input) ?? {};
     }
