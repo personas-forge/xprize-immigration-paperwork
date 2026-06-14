@@ -38,6 +38,7 @@ export {
   validationFor,
   allValidations,
   freshnessOf,
+  todayIso,
   type Freshness,
   type FreshnessLevel,
   type SourceRef,

@@ -11,6 +11,7 @@ import {
   REVALIDATE_AFTER_DAYS,
   VISA_PACKS,
   freshnessOf,
+  todayIso,
   type Classification,
   type JurisdictionCode,
   type SourceRef,
@@ -26,10 +27,6 @@ export const metadata: Metadata = {
 
 // Request-time so the freshness read-out reflects today, not the build date.
 export const dynamic = "force-dynamic";
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 const STATUS_TONE: Record<ValidationStatus, BadgeTone> = {
   verified: "success",

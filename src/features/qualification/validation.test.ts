@@ -8,6 +8,7 @@ import {
   PROGRAM_VALIDATIONS,
   REVALIDATE_AFTER_DAYS,
   REVERIFY_WARN_DAYS,
+  addDays,
   allValidations,
   daysBetween,
   freshnessOf,
@@ -98,8 +99,3 @@ test("freshnessOf classifies fresh / due-soon / stale and reports the due date",
   assert.equal(over.level, "stale");
   assert.equal(over.daysLeft, -5);
 });
-
-function addDays(iso: string, days: number): string {
-  const t = new Date(`${iso}T00:00:00Z`).getTime() + days * 86_400_000;
-  return new Date(t).toISOString().slice(0, 10);
-}

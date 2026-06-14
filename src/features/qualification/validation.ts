@@ -221,6 +221,19 @@ export function daysBetween(aIso: string, bIso: string): number {
   return Math.floor((b - a) / 86_400_000);
 }
 
+/** Today as a yyyy-mm-dd string (UTC) — the reference date for freshness checks.
+ *  Single home so the page, the CI freshness script, and the freshness math don't
+ *  each re-inline `new Date().toISOString().slice(0, 10)`. */
+export function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Shift a yyyy-mm-dd date by N whole days, returning yyyy-mm-dd (UTC). */
+export function addDays(iso: string, days: number): string {
+  const t = new Date(`${iso}T00:00:00Z`).getTime() + days * 86_400_000;
+  return new Date(t).toISOString().slice(0, 10);
+}
+
 /** Warn this many days before a record is due, so re-verification can be planned. */
 export const REVERIFY_WARN_DAYS = 30;
 
@@ -240,6 +253,5 @@ export function freshnessOf(record: ValidationRecord, todayIso: string): Freshne
   const daysLeft = REVALIDATE_AFTER_DAYS - elapsed;
   const level: FreshnessLevel =
     daysLeft < 0 ? "stale" : daysLeft <= REVERIFY_WARN_DAYS ? "due-soon" : "fresh";
-  const due = new Date(`${record.lastVerified}T00:00:00Z`).getTime() + REVALIDATE_AFTER_DAYS * 86_400_000;
-  return { daysLeft, level, dueBy: new Date(due).toISOString().slice(0, 10) };
+  return { daysLeft, level, dueBy: addDays(record.lastVerified, REVALIDATE_AFTER_DAYS) };
 }
