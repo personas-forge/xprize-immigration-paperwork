@@ -18,7 +18,8 @@ import {
   isRateLimitEnabled,
   rateLimitKey,
 } from "@/lib/rate-limit";
-import { addCaseDocument } from "@/lib/data/evidence";
+import { evidence } from "@/lib/data/adapters/evidence";
+import { type CaseAccess } from "@/lib/data/adapters/access";
 
 // Evidence categorization endpoint.
 //
@@ -124,22 +125,27 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   }
 
-  // Persist to the case vault when the caller can access the case (resolved
-  // above by authorizeRoute: owner, or the configured attorney of record).
-  // Best-effort — a storage failure just yields no document, never an error.
+  // Persist to the case vault through the EvidenceAdapter (ADR-0010), so the
+  // WRITE path gates owner-or-attorney through the SAME resolveCase seam as the
+  // vault's remove/refile actions — no longer a second gate via raw
+  // addCaseDocument + the route-level authorizeRoute alone. access carries email
+  // so the configured-attorney leg is honored, matching authorizeRoute above.
+  // Best-effort — any adapter error (forbidden / store fault) just yields no
+  // document, never a hard error on this side-effect path.
   let document = null;
   if (auth?.status === "ok") {
-    try {
-      document = await addCaseDocument({
-        caseId: auth.case.id,
-        name: req.name,
-        criterion: result.criterion,
-        facts: result.facts,
-        source: result.source,
-      });
-    } catch {
-      document = null;
-    }
+    const access: CaseAccess = {
+      userId: auth.user?.id ?? null,
+      email: auth.user?.email ?? null,
+    };
+    const saved = await evidence.addDocument(access, {
+      caseId: auth.case.id,
+      name: req.name,
+      criterion: result.criterion,
+      facts: result.facts,
+      source: result.source,
+    });
+    document = saved.ok ? saved.value : null;
   }
 
   return NextResponse.json({ ...result, document });
