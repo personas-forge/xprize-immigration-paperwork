@@ -28,7 +28,10 @@ export async function POST(request: NextRequest) {
       successUrl: `${origin}/billing?status=success`,
       customerEmail: user.email ?? undefined,
       // Echoed back on the order webhook so we credit the right user/bundle.
-      metadata: { userId: user.id, bundle: b.key, tokens: String(b.tokens) },
+      // Only userId + bundle are read; the webhook re-derives the credited
+      // amount from the SERVER-side Bundle.tokens (never from echoed metadata),
+      // so no `tokens` field rides here — Bundle.tokens stays the single source.
+      metadata: { userId: user.id, bundle: b.key },
     });
   } catch (cause) {
     console.error("[checkout] polar checkout creation failed", cause);
