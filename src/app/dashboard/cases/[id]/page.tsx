@@ -3,12 +3,11 @@ import { requireOnboardedUser } from "@/lib/auth/session";
 import { isConfiguredAttorney } from "@/lib/auth/roles";
 import { getBalance } from "@/lib/tokens/ledger";
 import {
-  getCaseAnyOwner,
-  getCaseForUser,
   getCriteriaForCase,
   getLatestDraft,
   getLatestRfeResponse,
 } from "@/lib/data/petitions";
+import { petitions } from "@/lib/data/adapters/petition";
 import { getReviewEvents } from "@/lib/data/reviews";
 import { getCaseDocuments } from "@/lib/data/evidence";
 import { asModelSource } from "@/lib/llm/label";
@@ -35,17 +34,30 @@ export default async function CaseDetailPage({
 }) {
   const { id } = await params;
   const { user } = await requireOnboardedUser();
-  // Cross-tenant read + the attorney affordances must fail closed: only a
-  // CONFIGURED attorney (ATTORNEY_EMAILS) may open a case they don't own.
-  // isAttorney here would let anyone load any applicant's full case by guessing
-  // its id, and would show sign/file buttons the server actions now reject.
-  const attorney = isConfiguredAttorney(user.email);
 
-  // Owner sees their own case; a configured attorney may open any case.
-  const owned = await getCaseForUser(user.id, id);
-  const stored = owned ?? (attorney ? await getCaseAnyOwner(id) : null);
-  if (!stored) notFound();
-  const isOwner = Boolean(owned);
+  // Cross-tenant read + the attorney affordances fail closed through the single
+  // resolveCase gate (ADR-0010): the owner, or a CONFIGURED attorney
+  // (ATTORNEY_EMAILS) for a case they don't own. Routing through the adapter —
+  // instead of re-inlining the owner-or-attorney expression here — means this
+  // last inline copy of the gate can't drift from the one the API routes and
+  // server actions use (the drift that would reopen the closed cross-tenant
+  // IDOR class). isAttorney here would let anyone load any applicant's case by
+  // guessing its id; resolveCase uses the strict isConfiguredAttorney leg.
+  const gate = await petitions.resolveCase({ userId: user.id, email: user.email ?? null }, id);
+  if (!gate.ok) {
+    // not-found / forbidden → 404 (never reveal a case exists to a non-owner);
+    // a store fault surfaces to the dashboard error boundary, not a masked 404.
+    if (gate.error.kind === "forbidden" || gate.error.kind === "not_found") notFound();
+    throw new Error(`case-detail unavailable: ${gate.error.kind}`);
+  }
+  const stored = gate.value;
+
+  // isOwner drives owner-only UI; StoredCase carries no owner field, so re-resolve
+  // owner-only (email: null) — the pattern review/actions.ts uses. `attorney`
+  // drives the sign/file affordances and must stay isConfiguredAttorney.
+  const ownerGate = await petitions.resolveCase({ userId: user.id, email: null }, id);
+  const isOwner = ownerGate.ok;
+  const attorney = isConfiguredAttorney(user.email);
 
   const [criteria, draft, balance, events, rfe, documents] = await Promise.all([
     getCriteriaForCase(id),
