@@ -27,14 +27,8 @@ export interface GuidanceResponse {
   source: ModelSource;
 }
 
-/**
- * The not-legal-advice / attorney-of-record disclaimer. MUST accompany every
- * AI output. Do not weaken or drop this string — it is the UPL safeguard.
- *
- * Canonical home is now `@/lib/result` (ADR-0011); re-exported here so the
- * existing `@/features/guidance` importers (drafting, evidence, jurisdictions)
- * keep working unchanged.
- */
+// `DISCLAIMER` re-exported for back-compat. Canonical home + authoritative
+// docstring: `@/lib/result` (ADR-0011). Do not duplicate the prose here.
 export { DISCLAIMER };
 
 const MAX_FIELD = 4000;
