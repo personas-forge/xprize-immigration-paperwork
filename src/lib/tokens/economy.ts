@@ -1,23 +1,14 @@
 // ── Token economy config ──────────────────────────────────────────────
 // "Tokens" is the product term; internally these are app CREDITS, not LLM
-// tokens. EVERY tunable number lives here — change pricing/grants in one place.
-// 1 token ≈ 1.0¢ at the baseline bundle.
+// tokens. This module owns the PURCHASE side of the economy — the free signup
+// grant, the metering-bypass switch, and the purchasable bundles. 1 token ≈
+// 1.0¢ at the baseline bundle.
 //
-// Per-operation cost/tier config now lives in the OperationRegistry
-// (`registry.ts`, the single source of truth); the exports below DERIVE from it
-// and keep the same public surface (OP_COST, OpTier, costOf) so guard.ts, the
-// routes, and the existing tests stay green unchanged.
-
-import { TIER_COST } from "./registry";
-
-export type { OpTier } from "./registry";
-export { costOf } from "./registry";
+// Per-operation cost/tier/rate-limit config lives in the OperationRegistry
+// (`registry.ts`, the single source of truth) — import `costOf` / `TIER_COST` /
+// `OpTier` from there directly.
 
 export const FREE_SIGNUP_GRANT = 150; // granted once, at first onboarding
-
-// Per-operation cost, weighted to reflect real compute cost. Sourced from the
-// registry's TIER_COST so the weights live in exactly one place.
-export const OP_COST = TIER_COST;
 
 /**
  * True when the token economy is NOT enforced and AI routes should run as a

@@ -8,7 +8,6 @@ import {
   labelOf,
   type OperationKey,
 } from "./registry";
-import { OP_COST, costOf as economyCostOf } from "./economy";
 import { RATE_LIMITS } from "./rate-limit";
 
 // The six metered AI operations and their grounded, must-not-drift values
@@ -67,18 +66,7 @@ test("costOf: unknown operations default to the light tier (never free/throw)", 
   assert.equal(costOf(""), TIER_COST.light);
 });
 
-// — Derivation invariants: economy.ts + rate-limit.ts must mirror the registry ─
-
-test("economy.ts OP_COST is the registry's TIER_COST (single source of truth)", () => {
-  assert.deepEqual(OP_COST, TIER_COST);
-});
-
-test("economy.ts costOf is the registry costOf (re-export, identical results)", () => {
-  assert.equal(economyCostOf, costOf);
-  for (const op of Object.keys(EXPECTED)) {
-    assert.equal(economyCostOf(op), costOf(op), `${op}`);
-  }
-});
+// — Derivation invariant: rate-limit.ts must mirror the registry ──────────────
 
 test("rate-limit.ts RATE_LIMITS keeps the five route buckets, sourced from the registry", () => {
   assert.deepEqual(Object.keys(RATE_LIMITS).sort(), [

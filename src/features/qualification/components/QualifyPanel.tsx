@@ -3,7 +3,7 @@
 import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
-import { costOf } from "@/lib/tokens/economy";
+import { costOf } from "@/lib/tokens/registry";
 import { DISCLAIMER } from "@/lib/result";
 import { type QualifyResult } from "../qualification";
 import { VISA_PACKS, packFor, type Classification } from "../packs";
