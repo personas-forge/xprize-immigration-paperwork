@@ -42,6 +42,26 @@ function formField(formData: FormData, name: string, max = 4000): string {
   return String(formData.get(name) ?? "").trim().slice(0, max);
 }
 
+/** Resolve the caller and require the CONFIGURED-attorney role (fail-closed —
+ *  see the module note; NOT `isAttorney`). Returns the user for the privileged
+ *  sign-off/filing actions, or null. The single gate those three actions share,
+ *  so a future change (rate-limit, audit) lands here once, not in three copies. */
+async function requireAttorney(): Promise<Awaited<ReturnType<typeof getUser>>> {
+  const user = await getUser();
+  if (!user || !isConfiguredAttorney(user.email)) return null;
+  return user;
+}
+
+/** Run an atomic status transition and revalidate the case views ONLY when it
+ *  actually applied — a no-op compare-and-set (stale tab / double-submit) must
+ *  not trigger a revalidation. The shared tail of every status-changing action. */
+async function applyTransition(
+  input: Parameters<typeof transitionCase>[0],
+): Promise<void> {
+  const applied = await transitionCase(input);
+  if (applied) revalidateCase(input.caseId);
+}
+
 /** Applicant submits a drafted case to the attorney of record for review. */
 export async function submitForReview(caseId: string): Promise<void> {
   const user = await getUser();
@@ -52,7 +72,7 @@ export async function submitForReview(caseId: string): Promise<void> {
   // `getCaseForUser` semantics while the adapter owns null/store-error handling.
   const gate = await petitions.resolveCase({ userId: user.id, email: null }, caseId);
   if (!gate.ok) return; // only the owner may submit their case
-  const applied = await transitionCase({
+  await applyTransition({
     caseId,
     fromStatuses: ["Intake", "Drafting"],
     toStatus: "Attorney Review",
@@ -65,7 +85,6 @@ export async function submitForReview(caseId: string): Promise<void> {
       },
     ],
   });
-  if (applied) revalidateCase(caseId);
 }
 
 /** Owner OR a configured attorney adds a free-form note to the review thread. */
@@ -101,11 +120,11 @@ export async function attorneyRequestChanges(
   caseId: string,
   formData: FormData,
 ): Promise<void> {
-  const user = await getUser();
-  if (!user || !isConfiguredAttorney(user.email)) return;
+  const user = await requireAttorney();
+  if (!user) return;
   const body = formField(formData, "feedback") || "Please revise and resubmit.";
   // Only from Attorney Review — can't bounce an already-Filed case to Drafting.
-  const applied = await transitionCase({
+  await applyTransition({
     caseId,
     fromStatuses: ["Attorney Review"],
     toStatus: "Drafting",
@@ -118,18 +137,17 @@ export async function attorneyRequestChanges(
       },
     ],
   });
-  if (applied) revalidateCase(caseId);
 }
 
 /** Attorney signs the petition (e-sign stub) and files it with USCIS (stub),
  *  recording a receipt number and advancing the case to "Filed". */
 export async function attorneySignAndFile(caseId: string): Promise<void> {
-  const user = await getUser();
-  if (!user || !isConfiguredAttorney(user.email)) return;
+  const user = await requireAttorney();
+  if (!user) return;
   const receipt = newReceiptNumber();
   // Compare-and-set from Attorney Review → a second (double-click / stale tab)
   // call finds status already Filed, does NOT apply, and mints no second receipt.
-  const applied = await transitionCase({
+  await applyTransition({
     caseId,
     fromStatuses: ["Attorney Review"],
     toStatus: "Filed",
@@ -150,7 +168,6 @@ export async function attorneySignAndFile(caseId: string): Promise<void> {
       },
     ],
   });
-  if (applied) revalidateCase(caseId);
 }
 
 /** Attorney records the USCIS decision once it comes back. */
@@ -158,8 +175,8 @@ export async function attorneyRecordDecision(
   caseId: string,
   formData: FormData,
 ): Promise<void> {
-  const user = await getUser();
-  if (!user || !isConfiguredAttorney(user.email)) return;
+  const user = await requireAttorney();
+  if (!user) return;
   const decision = String(formData.get("decision") ?? "Approved");
   // Server-side allowlist: the ReviewPanel <select> only offers these three, but
   // a crafted POST could otherwise write an arbitrary string into the append-only
@@ -167,7 +184,7 @@ export async function attorneyRecordDecision(
   if (!["Approved", "RFE issued", "Denied"].includes(decision)) return;
   // Only a Filed case can receive a decision. "Approved" is terminal; any other
   // decision keeps the case "Filed" (the decision is recorded in the thread).
-  const applied = await transitionCase({
+  await applyTransition({
     caseId,
     fromStatuses: ["Filed"],
     toStatus: decision === "Approved" ? "Approved" : "Filed",
@@ -180,5 +197,4 @@ export async function attorneyRecordDecision(
       },
     ],
   });
-  if (applied) revalidateCase(caseId);
 }
