@@ -8,11 +8,12 @@ import {
   ChapterMark,
   Stamp,
 } from "@/components/brand";
+import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
 
 export const metadata: Metadata = {
   title: "Immigration Concierge — extraordinary ability, on the record",
   description:
-    "AI-drafted, attorney-signed O-1 visa petitions at one-third the cost. $2,500 flat.",
+    "AI-drafted O-1 visa petitions, ready for your attorney of record to review and sign. Start free — prepaid tokens, no retainers.",
 };
 
 // Alt landing — narrow editorial column. The page is composed as a printed
@@ -56,8 +57,9 @@ export default function LandingClaude() {
             className="mx-auto mt-8 max-w-xl font-sans text-[16.5px] leading-relaxed text-muted-strong"
           >
             The visa petition a firm bills $8,000–$15,000 to assemble — drafted
-            by AI from your CV, citations and press, then reviewed and signed
-            by a licensed immigration attorney. One flat fee:&nbsp;$2,500.
+            by AI from your CV, citations and press, then handed to <em>your</em>
+            attorney of record to review and sign. Start free; pay only for the
+            tokens you use — never legal advice.
           </p>
           <div
             data-animate="ink-rise"
@@ -121,10 +123,10 @@ export default function LandingClaude() {
           <ChapterMark numeral="II" label="How the petition is built" />
           <ol className="mt-8 space-y-7">
             {[
-              ["I", "Qualify", "A five-minute self-check, then a 45-minute voice interview. Free. We tell you yes, no, or maybe — honestly."],
-              ["II", "Assemble", "Upload your CV. AI gathers press, citations and GitHub, then drafts the petition letter, I-129 and 28 exhibits."],
-              ["III", "Sign", "Your attorney of record reviews every word, edits where judgment is needed, and signs."],
-              ["IV", "File", "E-filed with premium processing. RFE responses are pre-drafted and included at no charge."],
+              ["I", "Qualify", "A five-minute self-check that scores the eight criteria. Free. We tell you yes, no, or maybe — honestly."],
+              ["II", "Assemble", "Upload your CV and evidence. AI sorts each document by criterion, then drafts the petition letter section by section."],
+              ["III", "Sign", "Your own attorney of record reviews every word, edits where judgment is needed, and signs — you own the filing."],
+              ["IV", "File", "Your attorney files with premium processing. Draft RFE responses in the studio if USCIS asks for more evidence."],
             ].map(([num, title, body]) => (
               <li key={num} className="flex gap-6">
                 <span className="display w-12 shrink-0 text-5xl italic text-accent-dark">
@@ -147,9 +149,9 @@ export default function LandingClaude() {
         <section className="py-16">
           <div className="grid gap-8 sm:grid-cols-3">
             {[
-              ["$2,500", "Flat fee — no billable hours, ever. USCIS fees passed through at cost."],
-              ["21 days", "Median time from intake to a filing-ready petition."],
-              ["Attorney", "of record on every case. AI gathers and drafts; the lawyer judges and signs."],
+              [`${FREE_SIGNUP_GRANT} free`, "tokens on signup — no card to start. Prepaid tokens after, no retainers, no subscriptions."],
+              ["Minutes", "from upload to a drafted petition letter, in a single AI pass."],
+              ["Your attorney", "of record reviews and signs. We draft; your lawyer owns the filing — never legal advice."],
             ].map(([big, small]) => (
               <div key={big} className="text-center">
                 <div className="display text-4xl italic text-accent-dark">
@@ -188,7 +190,7 @@ export default function LandingClaude() {
             >
               Begin qualification
             </Link>
-            <Stamp label="Notarized" meta="On file" tone="indigo" rotate={5} />
+            <Stamp label="Start free" meta={`${FREE_SIGNUP_GRANT} tokens`} tone="indigo" rotate={5} />
           </div>
         </section>
 
@@ -196,7 +198,7 @@ export default function LandingClaude() {
 
         <footer className="py-8 text-center">
           <div className="microprint" style={{ color: "var(--muted-strong)" }}>
-            Immigration Concierge · attorney-owned · 2026
+            Immigration Concierge · AI drafting for O-1 / EB-1 · 2026
           </div>
           <div className="mt-2 inline-flex items-center gap-2 text-accent-dark opacity-60">
             <Guilloche size={28} rings={4} />

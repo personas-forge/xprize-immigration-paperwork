@@ -32,9 +32,9 @@ const plexMono = IBM_Plex_Mono({
 });
 
 const siteTitle =
-  "Immigration Concierge — AI-drafted, attorney-signed O-1 petitions";
+  "Immigration Concierge — AI-drafted O-1 petitions, ready for your attorney";
 const siteDescription =
-  "$2,500 flat for an O-1A petition. AI assembles, attorney signs, USCIS files.";
+  "AI drafts your O-1 / EB-1 petition from your evidence — start free, pay per token. Work product for your attorney of record to review and sign; never legal advice.";
 
 // Canonical production URL — Phase 3 set this so OG cards, sitemaps, and any
 // relative metadata URL resolve to the right origin even in build sandboxes
