@@ -229,3 +229,17 @@
   (single-source). All statically prerendered (`●` in build). The matrix scales
   with the data — add a profession or live program → more pages, zero marginal
   code.
+
+- **2026-06-14 — #2 Provenance Ledger SHIPPED (step 1).** `src/lib/events/
+  provenance.ts`: hash-chained audit ledger. `createProvenanceChain`/
+  `verifyChain`/`hashAuditRecord` are pure with an injectable `HashFn` (default
+  SHA-256 via node:crypto; canonical key-sorted JSON → stable digest).
+  `registerProvenanceLedger` reuses the SAME `toAuditRecord` projection (can't
+  drift from the audit trail); `getDomainBus` wires it in place of the plain
+  audit log, `getProvenanceChain()` exposes it. Tests prove any mutation/delete/
+  reorder breaks the chain. **This hash-chain primitive is the SHARED producer
+  for #5 (token_ledger cost-of-record) and #13 (consent attestation chain) —
+  both just need to apply `hashAuditRecord`-style chaining at their write seam.**
+  **Follow-ups (need infra):** durable `ChainedAuditSink` (Store ledger table),
+  enriching DraftGenerated w/ the #1 adjudication verdict, the signed PDF
+  appendix, and the public verify endpoint.
