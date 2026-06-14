@@ -17,6 +17,7 @@
 
 import { DISCLAIMER } from "@/features/guidance/guidance";
 import { type DraftSection, tryParseSections } from "@/features/drafting";
+import { str, criterionLine, MAX_PETITIONER, MAX_TEXT, MAX_CRITERIA } from "@/features/drafting/criteria-text";
 import { type ModelSource } from "@/lib/llm/label";
 
 export { DISCLAIMER };
@@ -45,15 +46,8 @@ export interface RfeResult extends RfeResponse {
   source: ModelSource;
 }
 
-const MAX_PETITIONER = 200;
-const MAX_TEXT = 4000;
 const MAX_RFE = 12000;
 const MIN_RFE = 20;
-const MAX_CRITERIA = 32;
-
-function str(value: unknown, max: number): string {
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
-}
 
 /** Statuses worth reinforcing in a response (an RFE often targets the weak ones,
  *  so Partial is included; only "None" — no evidence at all — is excluded). */
@@ -98,11 +92,7 @@ export function parseRfeRequest(
 
 function criteriaLines(req: RfeRequest): string[] {
   if (req.criteria.length === 0) return ["- (no criteria provided)"];
-  return req.criteria.map(
-    (c) =>
-      `- ${c.name} [${c.status}]: ${c.evidence || "(no specific evidence provided)"}` +
-      (c.rationale ? ` — ${c.rationale}` : ""),
-  );
+  return req.criteria.map(criterionLine);
 }
 
 /**

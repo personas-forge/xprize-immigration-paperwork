@@ -19,6 +19,7 @@
 import { DISCLAIMER } from "@/features/guidance/guidance";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
+import { str, criterionLine, MAX_PETITIONER, MAX_TEXT, MAX_CRITERIA } from "./criteria-text";
 
 export { DISCLAIMER };
 
@@ -58,18 +59,11 @@ export interface SectionResult {
   source: ModelSource;
 }
 
-const MAX_PETITIONER = 200;
 const MAX_FOCUS = 200;
-const MAX_CRITERIA = 32;
-const MAX_TEXT = 4000;
 
 /** Statuses that earn an argument section in the letter. */
 function isQualifying(status: string): boolean {
   return status === "Met" || status === "Strong";
-}
-
-function str(value: unknown, max: number): string {
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
 /**
@@ -118,11 +112,7 @@ export function parseFocus(value: unknown): string | null {
 // — Prompts ──────────────────────────────────────────────────────────────────
 
 function criteriaLines(req: DraftRequest): string[] {
-  return req.criteria.map(
-    (c) =>
-      `- ${c.name} [${c.status}]: ${c.evidence || "(no specific evidence provided)"}` +
-      (c.rationale ? ` — ${c.rationale}` : ""),
-  );
+  return req.criteria.map(criterionLine);
 }
 
 /**
