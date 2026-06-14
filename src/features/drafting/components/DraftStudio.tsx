@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { DisclaimerStamp, CitationNote, AdjudicationBadge } from "@/components/legal";
 import { type AdjudicationReport } from "@/lib/llm/adjudication-gates";
+import { RfeRiskRadar } from "@/features/rfe/components/RfeRiskRadar";
 import {
   DISCLAIMER,
   attachExhibits,
@@ -148,6 +149,11 @@ export function DraftStudio({
     [sections, exhibitIndex],
   );
   const citedNumbers = useMemo(() => new Set(audit.resolved), [audit]);
+  // Criteria that have a draft section the radar's Reinforce can regenerate.
+  const reinforceable = useMemo(
+    () => new Set(sections.map((s) => s.heading)),
+    [sections],
+  );
 
   async function generate() {
     if (busyRef.current) return; // double-submit guard (charges tokens)
@@ -537,6 +543,19 @@ export function DraftStudio({
                 Could not run the adjudicator review — please try again.
               </div>
             ) : null}
+
+            {/* RFE Risk Radar — predict the challenge before USCIS; Reinforce
+                wires straight to the existing per-section regenerate. */}
+            <RfeRiskRadar
+              criteria={criteria}
+              classification={classification}
+              petitioner={payload.petitioner}
+              caseId={resolvedCaseId}
+              reinforceable={reinforceable}
+              reinforcing={regenerating}
+              onReinforce={regenerate}
+              onPaywall={() => setStatus("paywall")}
+            />
           </div>
         ) : null}
       </CardBody>
