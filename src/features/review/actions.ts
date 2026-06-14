@@ -36,6 +36,12 @@ function newReceiptNumber(): string {
   return `EAC${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`;
 }
 
+/** Read a free-text form field from untrusted FormData: coerce to string, trim,
+ *  and cap length. The cap lives here so every review-note/feedback field shares it. */
+function formField(formData: FormData, name: string, max = 4000): string {
+  return String(formData.get(name) ?? "").trim().slice(0, max);
+}
+
 /** Applicant submits a drafted case to the attorney of record for review. */
 export async function submitForReview(caseId: string): Promise<void> {
   const user = await getUser();
@@ -69,7 +75,7 @@ export async function addReviewNote(
 ): Promise<void> {
   const user = await getUser();
   if (!user) return;
-  const body = String(formData.get("body") ?? "").trim().slice(0, 4000);
+  const body = formField(formData, "body");
   if (!body) return;
   // Owner-or-attorney note gate. Ownership resolves through the adapter
   // (email omitted ⇒ owner-only, fail-closed) so it gets the centralized
@@ -97,9 +103,7 @@ export async function attorneyRequestChanges(
 ): Promise<void> {
   const user = await getUser();
   if (!user || !isConfiguredAttorney(user.email)) return;
-  const body =
-    String(formData.get("feedback") ?? "").trim().slice(0, 4000) ||
-    "Please revise and resubmit.";
+  const body = formField(formData, "feedback") || "Please revise and resubmit.";
   // Only from Attorney Review — can't bounce an already-Filed case to Drafting.
   const applied = await transitionCase({
     caseId,
