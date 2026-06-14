@@ -11,27 +11,35 @@
 import type { Store } from "../db/store";
 import { EventBus } from "./bus";
 import { withEvents } from "./store-events";
-import { registerAuditLog } from "./subscribers/audit-log";
 import { registerAttorneyNotify } from "./subscribers/attorney-notify";
+import { registerProvenanceLedger, type ProvenanceChain } from "./provenance";
 
 // Process-lifetime singleton: there is no reset/teardown export and none is
 // needed — tests that want a clean bus construct `new EventBus()` directly (and
 // use EventBus.clear()); nothing exercises this singleton across test cases.
 let bus: EventBus | null = null;
+let provenance: ProvenanceChain | null = null;
 
 /** The process-wide domain bus, lazily created with default subscribers. */
 export function getDomainBus(): EventBus {
   if (!bus) {
     bus = new EventBus();
-    // HONESTY: both subscribers run with their LOG-ONLY default sinks (console.info)
-    // — no production delivery is wired. The "append-only audit trail" and the
-    // attorney notifications are stdout lines today (and vanish in serverless),
-    // NOT durable/delivered. Inject a real AuditSink / NotifyFn here (e.g. a Store
-    // audit table, an email/queue) before relying on either for compliance.
-    registerAuditLog(bus);
+    // HONESTY: the sinks run with their LOG-ONLY default sinks (console.info) —
+    // no DURABLE delivery is wired. The provenance ledger hash-chains every
+    // record so the trail is tamper-EVIDENT (moonshot #2), but it lives in
+    // process memory and vanishes in serverless. Inject a durable ChainedAuditSink
+    // (a Store ledger table) here before relying on it across requests/instances.
+    provenance = registerProvenanceLedger(bus).chain;
     registerAttorneyNotify(bus);
   }
   return bus;
+}
+
+/** The process-wide provenance chain (tamper-evident audit ledger), for
+ *  verification/export. Null until the bus is first created. */
+export function getProvenanceChain(): ProvenanceChain | null {
+  getDomainBus();
+  return provenance;
 }
 
 /** Wrap a resolved Store so its mutations publish domain events. */
