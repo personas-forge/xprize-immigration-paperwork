@@ -7,6 +7,7 @@ import { upsertProfileWithConsent } from "@/lib/auth/db";
 import { CONSENT_VERSION } from "@/lib/auth/consent";
 import { grantSignupTokens } from "@/lib/tokens/ledger";
 import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
+import { clientIp } from "@/lib/tokens/rate-limit";
 
 export type ConsentState = { error?: string };
 
@@ -32,8 +33,9 @@ export async function submitConsent(
     return { error: "You must accept the Terms and Privacy Policy to continue." };
 
   const h = await headers();
-  const ip =
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? null;
+  // Validated — an invalid/spoofed forwarded header is stored as null rather than
+  // trusted into the consent record (shared with the rate limiter's hardening).
+  const ip = clientIp(h);
 
   // Wrap ONLY the DB writes — NOT the redirect below, which signals via a thrown
   // NEXT_REDIRECT that must propagate. A persistence failure here becomes a
