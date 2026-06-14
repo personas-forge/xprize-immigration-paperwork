@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  attachRfeExhibits,
   buildRfePrompt,
   buildRfeResult,
   mockRfe,
@@ -10,6 +11,7 @@ import {
 } from "@/features/rfe";
 import { executeAiOperation } from "@/lib/ai/operation";
 import { petitions } from "@/lib/data/adapters/petition";
+import { evidence } from "@/lib/data/adapters/evidence";
 import { type CaseAccess } from "@/lib/data/adapters/access";
 import { toErrorResponse } from "@/lib/data/adapters/http";
 
@@ -92,7 +94,11 @@ export function POST(request: Request): Promise<NextResponse> {
         if (!parsed.ok) {
           return { ok: false, response: NextResponse.json({ error: parsed.error }, { status: 400 }) };
         }
-        return { ok: true, value: { req: parsed.value, caseId } };
+        // Fuse the evidence vault so the RFE response cites real exhibits
+        // (moonshot #21). Best-effort: a vault fault degrades to exhibit-free.
+        const docs = await evidence.getDocuments(access, caseId);
+        const req = docs.ok ? attachRfeExhibits(parsed.value, docs.value) : parsed.value;
+        return { ok: true, value: { req, caseId } };
       }
 
       // Inline/demo path (caseId-less): validate the supplied payload.

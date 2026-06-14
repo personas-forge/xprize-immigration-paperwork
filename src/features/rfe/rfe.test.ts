@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   DISCLAIMER,
+  attachRfeExhibits,
   buildRfePrompt,
   buildRfeResult,
   buildRfeForecastPrompt,
@@ -11,6 +12,7 @@ import {
   mockRfeForecast,
   parseRfeRequest,
   parseRfeResponse,
+  rfeHasExhibits,
   tryParseRfeResponse,
   tryParseRfeForecast,
   type RfeRequest,
@@ -172,4 +174,37 @@ test("buildRfeForecastResult: attaches the disclaimer + source", () => {
   assert.equal(r.disclaimer, DISCLAIMER);
   assert.equal(r.source, "mock");
   assert.ok(r.challenges.length > 0);
+});
+
+// — Exhibit-bound RFE (moonshot #21) ─────────────────────────────────────────
+
+test("attachRfeExhibits + buildRfePrompt: cites exhibits only when present", () => {
+  const docs = [
+    { criterion: "Awards", exhibit: "Ex. 1", name: "Certificate", facts: ["2023"] },
+    { criterion: "Judging", exhibit: "Ex. 2", name: "Reviewer invite", facts: [] },
+  ];
+  assert.equal(rfeHasExhibits(valid), false);
+  const withEx = attachRfeExhibits(valid, docs);
+  assert.equal(rfeHasExhibits(withEx), true);
+  const awards = withEx.criteria.find((c) => c.name === "Awards");
+  assert.deepEqual(awards?.exhibits?.map((e) => e.number), [1]);
+
+  const plain = buildRfePrompt(valid);
+  assert.ok(!plain.includes("(Exhibit N)"), "no citation rule without exhibits");
+  const p = buildRfePrompt(withEx);
+  assert.ok(p.includes("(Exhibit N)"), "citation rule present");
+  assert.ok(p.includes("(Exhibit 1) Certificate"), "lists the exhibit");
+});
+
+test("attachRfeExhibits: no matching docs leaves the request untouched", () => {
+  assert.equal(attachRfeExhibits(valid, []), valid);
+});
+
+test("mockRfe: cites attached exhibits in the addressable sections", () => {
+  const withEx = attachRfeExhibits(valid, [
+    { criterion: "Awards", exhibit: "Ex. 1", name: "Certificate", facts: [] },
+  ]);
+  const r = mockRfe(withEx);
+  const awards = r.sections.find((s) => s.heading === "Re: Awards");
+  assert.ok(awards?.body.includes("(Exhibit 1)"));
 });

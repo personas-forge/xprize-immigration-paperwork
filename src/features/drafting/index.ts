@@ -13,6 +13,7 @@ export {
   mockCritique,
   overallCritiqueScore,
   tryParseCritique,
+  exhibitBullets,
   exhibitNumber,
   extractCitedExhibits,
   hasExhibits,
