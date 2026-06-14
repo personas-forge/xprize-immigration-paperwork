@@ -20,7 +20,6 @@ import { type DraftSection, tryParseSections } from "@/features/drafting";
 import { type ModelSource } from "@/lib/llm/label";
 
 export { DISCLAIMER };
-export type { DraftSection as RfeSection };
 
 export interface RfeCriterion {
   name: string;
