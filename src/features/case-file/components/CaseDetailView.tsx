@@ -230,6 +230,7 @@ export function CaseDetailView({
               initialSections={rfeInitialSections}
               initialRfeText={rfeInitialText}
               initialSource={rfeInitialSource}
+              documents={documents}
             />
           ) : null}
         </div>

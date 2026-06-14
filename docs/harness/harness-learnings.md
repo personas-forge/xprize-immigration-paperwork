@@ -205,3 +205,15 @@
   reuse `buildRfeForecastPrompt`/`tryParseRfeForecast` with their own inputs/
   surfaces. **Follow-ups:** step 5 (persist a pre-filing risk score per draft
   version) + step 6 (predicted-vs-actual calibration) need a schema column.
+
+- **2026-06-14 — #21 Exhibit-bound brief SHIPPED.** Extended #10's exhibit
+  citation discipline to the RFE responder. `RfeCriterion.exhibits?`,
+  `buildRfePrompt` lists exhibits + adds the (Exhibit N) rule, `attachRfeExhibits`
+  binds the vault on the DB path (rfe route now loads docs via EvidenceAdapter
+  best-effort), `mockRfe` cites them. Extracted the `<ExhibitIndex>` UI
+  (citation-integrity meter + UNSUPPORTED quarantine) from DraftStudio into
+  `features/drafting/components/ExhibitIndex.tsx` and `exhibitBullets` from
+  drafting.ts — both studios now share one citation surface. #10 had built the
+  pure helpers (`auditCitations`/`buildExhibitIndex`/`attachExhibits`) generically
+  enough that RfeStudio reuses them verbatim. Net: #10+#21 are one
+  evidence-to-argument graph across draft AND RFE.

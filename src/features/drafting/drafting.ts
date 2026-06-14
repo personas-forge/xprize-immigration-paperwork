@@ -129,9 +129,10 @@ export function parseFocus(value: unknown): string | null {
 
 // — Prompts ──────────────────────────────────────────────────────────────────
 
-/** Render one criterion's exhibits as indented `(Exhibit N) name — facts`
- *  bullets, or `[]` when the criterion has none on file. */
-function exhibitLines(c: DraftCriterion): string[] {
+/** Render a criterion's exhibits as indented `(Exhibit N) name — facts` bullets,
+ *  or `[]` when it has none on file. Exported so the RFE responder renders
+ *  exhibits identically (moonshot #21). */
+export function exhibitBullets(c: { exhibits?: readonly DraftExhibit[] }): string[] {
   if (!c.exhibits || c.exhibits.length === 0) return [];
   return c.exhibits.map((ex) => {
     const facts = ex.facts.length ? `: ${ex.facts.join("; ")}` : "";
@@ -141,7 +142,7 @@ function exhibitLines(c: DraftCriterion): string[] {
 
 /** Criterion bullet plus any exhibit sub-bullets. */
 function criterionBlock(c: DraftCriterion): string[] {
-  return [criterionLine(c), ...exhibitLines(c)];
+  return [criterionLine(c), ...exhibitBullets(c)];
 }
 
 function criteriaLines(req: DraftRequest): string[] {

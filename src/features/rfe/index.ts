@@ -1,5 +1,6 @@
 export {
   DISCLAIMER,
+  attachRfeExhibits,
   buildRfePrompt,
   buildRfeResult,
   buildRfeForecastPrompt,
@@ -8,8 +9,10 @@ export {
   mockRfeForecast,
   parseRfeRequest,
   parseRfeResponse,
+  rfeHasExhibits,
   tryParseRfeResponse,
   tryParseRfeForecast,
+  type DraftExhibit,
   type RfeChallenge,
   type RfeCriterion,
   type RfeForecastResult,
