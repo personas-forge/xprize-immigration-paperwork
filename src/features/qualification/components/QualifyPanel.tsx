@@ -1,12 +1,13 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { costOf } from "@/lib/tokens/registry";
 import { DISCLAIMER } from "@/lib/result";
 import { type QualifyResult } from "../qualification";
-import { VISA_PACKS, packFor, type Classification } from "../packs";
+import { VISA_PACKS, isClassification, packFor, type Classification } from "../packs";
+import { readQualifyPrefill } from "../prefill";
 import { jurisdictionFor, livePrograms } from "../jurisdictions";
 import { validationFor } from "../validation";
 
@@ -38,6 +39,26 @@ export function QualifyPanel() {
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<QualifyApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Hydrate the one-shot Instant-Verdict handoff: if the visitor screened
+  // themselves in the landing hero and clicked "go deeper", carry their
+  // name/profile/visa over so nothing is re-typed. This is the documented
+  // "read a browser-only API once on mount" case — sessionStorage can't be read
+  // during SSR, so a mount effect is the correct seam (not a render-time read,
+  // which would mismatch hydration). The helper clears the stash, so a refresh
+  // starts blank.
+  useEffect(() => {
+    const prefill = readQualifyPrefill();
+    if (!prefill) return;
+    // One-time seed from an external store; the single extra mount render the
+    // lint rule warns about is intended and harmless here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setName(prefill.name);
+    setProfile(prefill.profile);
+    if (isClassification(prefill.classification)) {
+      setClassification(prefill.classification);
+    }
+  }, []);
 
   const nameId = useId();
   const classId = useId();
