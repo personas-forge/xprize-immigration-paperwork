@@ -1,10 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { DisclaimerStamp, CitationNote } from "@/components/legal";
-import { DISCLAIMER, type DraftSection } from "@/features/drafting";
+import {
+  DISCLAIMER,
+  attachExhibits,
+  auditCitations,
+  buildExhibitIndex,
+  type DraftSection,
+  type VaultDocLike,
+} from "@/features/drafting";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 import {
   copyDraftToClipboard,
@@ -58,6 +65,7 @@ export function DraftStudio({
   caseId = null,
   initialSections = null,
   initialSource = "mock",
+  documents = [],
 }: {
   petitioner: string;
   classification?: string;
@@ -66,6 +74,8 @@ export function DraftStudio({
   /** Hydrate with an already-saved draft (case detail view). */
   initialSections?: DraftSection[] | null;
   initialSource?: ModelSource;
+  /** The case's vault documents — drives the exhibit index + citation audit. */
+  documents?: readonly VaultDocLike[];
 }) {
   const hasInitial = Boolean(initialSections && initialSections.length > 0);
   const [status, setStatus] = useState<Status>(hasInitial ? "done" : "idle");
@@ -96,6 +106,27 @@ export function DraftStudio({
     })),
     caseId,
   };
+
+  // The exhibit index for THIS case (vault docs grouped per criterion, the same
+  // binding the route uses to prompt) and a live audit of the current draft's
+  // (Exhibit N) citations against it — recomputed as the user edits/regenerates.
+  const exhibitIndex = useMemo(
+    () =>
+      buildExhibitIndex(
+        attachExhibits(
+          { petitioner: payload.petitioner, classification, criteria: payload.criteria },
+          documents,
+        ),
+      ),
+    // payload is rebuilt each render; depend on its stable inputs instead.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [documents, classification, petitioner, criteria],
+  );
+  const audit = useMemo(
+    () => auditCitations(sections, exhibitIndex.map((e) => e.number)),
+    [sections, exhibitIndex],
+  );
+  const citedNumbers = useMemo(() => new Set(audit.resolved), [audit]);
 
   async function generate() {
     if (busyRef.current) return; // double-submit guard (charges tokens)
@@ -284,6 +315,14 @@ export function DraftStudio({
           <div className="space-y-4">
             <DisclaimerStamp text={DISCLAIMER} />
             <CitationNote />
+            {exhibitIndex.length > 0 ? (
+              <ExhibitIndex
+                entries={exhibitIndex}
+                citedNumbers={citedNumbers}
+                unresolved={audit.unresolved}
+                coverage={audit.coverage}
+              />
+            ) : null}
             {!isModelSource(source) ? (
               <div
                 className="rounded-control border border-dashed border-border-strong bg-surface-muted/40 px-4 py-2.5"
@@ -378,5 +417,76 @@ export function DraftStudio({
         ) : null}
       </CardBody>
     </Card>
+  );
+}
+
+/**
+ * Auto-generated exhibit index + citation-integrity meter. Lists every vault
+ * exhibit on file, marks which the letter cites, and quarantines any
+ * `(Exhibit N)` citation with no matching document — the "you can never ship a
+ * letter that cites evidence you don't have" guarantee made visible.
+ */
+function ExhibitIndex({
+  entries,
+  citedNumbers,
+  unresolved,
+  coverage,
+}: {
+  entries: readonly { number: number; name: string }[];
+  citedNumbers: ReadonlySet<number>;
+  unresolved: readonly number[];
+  coverage: number;
+}) {
+  const pct = Math.round(coverage * 100);
+  return (
+    <div className="rounded-control border border-accent/25 bg-surface px-4 py-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="microprint" style={{ color: "var(--accent-dark)" }}>
+          Exhibit index · citation integrity
+        </span>
+        <Badge tone={unresolved.length > 0 ? "danger" : "accent"}>
+          {citedNumbers.size}/{entries.length} exhibits cited · {pct}%
+        </Badge>
+      </div>
+
+      {unresolved.length > 0 ? (
+        <div
+          role="alert"
+          className="mb-3 rounded-control border-2 border-double border-seal/50 bg-seal-soft/40 px-3 py-2"
+        >
+          <span className="microprint" style={{ color: "var(--seal)" }}>
+            Unsupported citation — attorney must verify
+          </span>
+          <p className="mt-1 font-sans text-[14.5px] leading-snug text-foreground-soft">
+            The draft cites{" "}
+            {unresolved.map((n) => `Exhibit ${n}`).join(", ")}, which{" "}
+            {unresolved.length === 1 ? "has" : "have"} no matching document in the
+            vault. Remove the citation or add the exhibit before filing.
+          </p>
+        </div>
+      ) : null}
+
+      <ol className="space-y-1.5">
+        {entries.map((e) => {
+          const cited = citedNumbers.has(e.number);
+          return (
+            <li key={e.number} className="flex items-baseline gap-3">
+              <span className="doc-number text-[12px] text-muted">
+                Ex. {e.number}
+              </span>
+              <span className="font-sans text-[15px] text-foreground-soft">
+                {e.name}
+              </span>
+              <span
+                className="microprint ml-auto"
+                style={{ color: cited ? "var(--accent-dark)" : "var(--muted)" }}
+              >
+                {cited ? "cited" : "not cited"}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
