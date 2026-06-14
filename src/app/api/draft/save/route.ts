@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { DISCLAIMER } from "@/lib/result";
 import { parseSaveDraftRequest } from "@/features/drafting/saveRecovery";
 import { authorizeRoute } from "@/lib/auth/authorizeRoute";
 import { petitions } from "@/lib/data/adapters/petition";
@@ -72,7 +73,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
     if (!rl.ok) {
       return NextResponse.json(
-        { error: "rate_limited", retryAfterSec: rl.retryAfterSec },
+        { error: "rate_limited", retryAfterSec: rl.retryAfterSec, disclaimer: DISCLAIMER },
         { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
       );
     }
