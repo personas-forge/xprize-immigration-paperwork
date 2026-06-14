@@ -17,15 +17,15 @@ export interface GuidanceRequest {
   situation: string;
 }
 
-import { type ModelSource } from "@/lib/llm/label";
-import { DISCLAIMER } from "@/lib/result";
+import { wrapResult, DISCLAIMER, type Result } from "@/lib/result";
 
-export interface GuidanceResponse {
-  guidance: string;
-  disclaimer: string;
-  /** "mock" (template) or the engine that generated it ("gemini" | "claude"). */
-  source: ModelSource;
-}
+/**
+ * The guidance API envelope. Shares Result<T>'s disclaimer/source envelope — the
+ * canonical UPL chokepoint (`wrapResult`) — but names the payload `guidance` (the
+ * client contract) rather than the generic `data`, so the envelope can't drift
+ * from every other AI response while keeping the field the panel/route expect.
+ */
+export type GuidanceResponse = Omit<Result<string>, "data"> & { guidance: string };
 
 // `DISCLAIMER` re-exported for back-compat. Canonical home + authoritative
 // docstring: `@/lib/result` (ADR-0011). Do not duplicate the prose here.
@@ -135,10 +135,13 @@ export function mockGuidance(req: GuidanceRequest): string {
   ].join(" ");
 }
 
-/** Wrap raw guidance text in the response contract, always attaching the disclaimer. */
+/** Wrap raw guidance text in the response contract. The disclaimer is attached
+ *  via the canonical `wrapResult` chokepoint (so it can never be forgotten or
+ *  drift); the payload is then exposed under the `guidance` key. */
 export function buildGuidanceResponse(
   guidance: string,
   source: GuidanceResponse["source"],
 ): GuidanceResponse {
-  return { guidance: guidance.trim(), disclaimer: DISCLAIMER, source };
+  const wrapped = wrapResult(guidance.trim(), source);
+  return { guidance: wrapped.data, disclaimer: wrapped.disclaimer, source: wrapped.source };
 }
