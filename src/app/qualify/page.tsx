@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageFrame, Wordmark, ChapterMark } from "@/components/brand";
 import { Rise } from "@/components/Motion";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { QualifyPanel } from "@/features/qualification/components/QualifyPanel";
+import { QualifyEntry } from "@/features/qualification/components/QualifyEntry";
 
 export const metadata: Metadata = {
   title: "Do you qualify? — Immigration Concierge",
@@ -28,18 +28,18 @@ export default function QualifyPage() {
             Do you <em>qualify</em>?
           </h1>
           <p className="mt-6 max-w-2xl font-sans text-[16px] leading-relaxed text-muted-strong">
-            Pick your visa type — <strong>O-1A</strong>, <strong>O-1B</strong>,
-            or <strong>EB-1A</strong> — describe your background, and we&apos;ll
-            map it onto that classification&apos;s extraordinary-ability
-            criteria, with an estimated likelihood and the gaps worth closing.
-            This is general information to help you screen yourself; it is never
-            legal advice, and an attorney of record reviews everything before
-            anything is filed.
+            Not sure which to pursue? Describe your background once and we&apos;ll
+            score it against every program — <strong>O-1A</strong>,{" "}
+            <strong>O-1B</strong>, and <strong>EB-1A</strong> — then recommend the
+            strongest, fastest path with the gaps worth closing. Already know your
+            visa? Screen it directly. This is general information to help you
+            screen yourself; it is never legal advice, and an attorney of record
+            reviews everything before anything is filed.
           </p>
         </Rise>
 
         <Rise className="mt-10">
-          <QualifyPanel />
+          <QualifyEntry />
         </Rise>
       </section>
 
