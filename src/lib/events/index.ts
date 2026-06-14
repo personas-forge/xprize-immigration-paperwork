@@ -13,10 +13,8 @@ import { EventBus } from "./bus";
 import { withEvents } from "./store-events";
 import { registerAuditLog } from "./subscribers/audit-log";
 import { registerAttorneyNotify } from "./subscribers/attorney-notify";
-import { registerAnalytics, type AnalyticsCollector } from "./subscribers/analytics";
 
 let bus: EventBus | null = null;
-let analytics: AnalyticsCollector | null = null;
 
 /** The process-wide domain bus, lazily created with default subscribers. */
 export function getDomainBus(): EventBus {
@@ -24,14 +22,8 @@ export function getDomainBus(): EventBus {
     bus = new EventBus();
     registerAuditLog(bus);
     registerAttorneyNotify(bus);
-    analytics = registerAnalytics(bus);
   }
   return bus;
-}
-
-/** Live analytics tally (events counted since the bus was created). */
-export function getAnalytics(): AnalyticsCollector | null {
-  return analytics;
 }
 
 /** Wrap a resolved Store so its mutations publish domain events. */
