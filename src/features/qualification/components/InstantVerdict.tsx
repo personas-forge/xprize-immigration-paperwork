@@ -29,9 +29,14 @@ const SAMPLE =
 
 type Status = "idle" | "loading" | "done" | "error";
 
-export function InstantVerdict() {
+export function InstantVerdict({
+  initialClassification = "O-1A",
+}: {
+  /** Pre-select a visa (e.g. on a /visa/[classification]/[profession] page). */
+  initialClassification?: Classification;
+} = {}) {
   const [name, setName] = useState("");
-  const [classification, setClassification] = useState<Classification>("O-1A");
+  const [classification, setClassification] = useState<Classification>(initialClassification);
   const [profile, setProfile] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<QualifyResult | null>(null);

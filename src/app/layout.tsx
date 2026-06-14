@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Newsreader, IBM_Plex_Mono } from "next/font/google";
 import { themeInitScript } from "@/components/ThemeToggle";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 // — Typography ────────────────────────────────────────────────────────────
@@ -36,14 +37,10 @@ const siteTitle =
 const siteDescription =
   "AI drafts your O-1 / EB-1 petition from your evidence — start free, pay per token. Work product for your attorney of record to review and sign; never legal advice.";
 
-// Canonical production URL — Phase 3 set this so OG cards, sitemaps, and any
-// relative metadata URL resolve to the right origin even in build sandboxes
+// Canonical production URL — shared via @/lib/site so OG cards, sitemaps, and
+// any relative metadata URL resolve to the right origin even in build sandboxes
 // where NEXT_PUBLIC_SITE_URL isn't injected.
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "https://immigration-paperwork.app");
+const siteUrl = SITE_URL;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
