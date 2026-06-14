@@ -9,6 +9,7 @@ import { VISA_PACKS, packFor, type Classification } from "../packs";
 import { livePrograms } from "../jurisdictions";
 import { type QualifyResult } from "../qualification";
 import { CriteriaReport } from "./CriteriaReport";
+import { LettersPatentShare } from "./LettersPatentShare";
 import { writeQualifyPrefill } from "../prefill";
 
 // — Instant Verdict (moonshot #16) ────────────────────────────────────────────
@@ -197,6 +198,12 @@ export function InstantVerdict({
               threshold={packFor(classification).threshold}
             />
           </Certificate>
+          <LettersPatentShare
+            name={name}
+            classification={classification}
+            likelihood={result.likelihood}
+            criteria={result.criteria}
+          />
           <SoftGate
             classification={classification}
             likelihood={result.likelihood}

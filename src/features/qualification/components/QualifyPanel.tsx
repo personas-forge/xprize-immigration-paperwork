@@ -17,6 +17,7 @@ import { DisclaimerStamp, AdjudicationBadge } from "@/components/legal";
 import { type AdjudicationReport } from "@/lib/llm/adjudication-gates";
 import { DraftStudio } from "@/features/drafting/components/DraftStudio";
 import { CriteriaReport } from "./CriteriaReport";
+import { LettersPatentShare } from "./LettersPatentShare";
 
 // — Qualification panel ───────────────────────────────────────────────────────
 // Paste a CV / bio / list of achievements, get an INFORMATIONAL screening from
@@ -267,6 +268,12 @@ export function QualifyPanel() {
         <div className="space-y-4">
           {result.adjudication ? <AdjudicationBadge report={result.adjudication} /> : null}
           <CriteriaReport result={result} threshold={packFor(classification).threshold} />
+          <LettersPatentShare
+            name={name}
+            classification={classification}
+            likelihood={result.likelihood}
+            criteria={result.criteria}
+          />
           {/* Second wow moment: draft the petition straight from the score. */}
           <DraftStudio
             petitioner={name.trim() || "Applicant"}

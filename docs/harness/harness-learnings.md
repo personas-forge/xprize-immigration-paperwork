@@ -243,3 +243,19 @@
   **Follow-ups (need infra):** durable `ChainedAuditSink` (Store ledger table),
   enriching DraftGenerated w/ the #1 adjudication verdict, the signed PDF
   appendix, and the public verify endpoint.
+
+- **2026-06-14 — #18 Shareable Letters Patent SHIPPED.** Done WITHOUT a DB by
+  encoding the snapshot in the URL token. `letters-patent.ts`:
+  `encodeSnapshot`/`decodeSnapshot` (runtime-agnostic base64url via
+  `btoa`/`atob`+`TextEncoder` — NO `Buffer`, so it works client-side for the
+  share button AND server-side in the page/OG route). Token carries only
+  name/classification/likelihood/per-criterion-status (never profile text);
+  decode is tamper-guarded (rejects non-live programs + wrong status counts vs
+  the pack). `/c/[token]/page.tsx` renders the engraved certificate;
+  `/c/[token]/opengraph-image.tsx` (next/og, `runtime="nodejs"`, brand palette
+  mirrored as hex since globals.css tokens aren't in Satori). `LettersPatentShare`
+  (copy link + LinkedIn) wired into InstantVerdict + QualifyPanel. **Pattern:**
+  URL-encoded snapshots are a clean way to ship "public shareable artifact"
+  features without persistence. Consumer of #16 (links back to Instant Verdict).
+  **Follow-up:** brand FONT in the OG image (Fraunces) needs a font fetch in the
+  route — currently Georgia/serif fallback.
