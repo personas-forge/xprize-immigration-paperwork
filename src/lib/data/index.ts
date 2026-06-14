@@ -15,4 +15,3 @@ export {
   getPetitionExcerpt,
 } from "./cases";
 export { getForms, getFormById } from "./forms";
-export { getDocuments } from "./documents";
