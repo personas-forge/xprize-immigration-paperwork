@@ -11,7 +11,6 @@ import {
   allValidations,
   daysBetween,
   freshnessOf,
-  isStale,
   validationFor,
   type ValidationRecord,
 } from "./validation";
@@ -75,17 +74,9 @@ test("UK is gated (not live) and its model-mismatch is documented", () => {
 
 // — Freshness is a pure, testable function ────────────────────────────────────
 
-test("daysBetween / isStale compute against a fixed reference date", () => {
+test("daysBetween computes whole days between two yyyy-mm-dd dates", () => {
   assert.equal(daysBetween("2026-01-01", "2026-01-31"), 30);
   assert.equal(daysBetween("2026-05-30", "2026-05-30"), 0);
-  const rec = PROGRAM_VALIDATIONS["O-1A"];
-  assert.equal(isStale(rec, rec.lastVerified), false, "fresh on the day it was verified");
-  // One day past the window → stale.
-  const justOver = addDays(rec.lastVerified, REVALIDATE_AFTER_DAYS + 1);
-  assert.equal(isStale(rec, justOver), true);
-  // Inside the window → not stale.
-  const within = addDays(rec.lastVerified, REVALIDATE_AFTER_DAYS - 1);
-  assert.equal(isStale(rec, within), false);
 });
 
 test("no validation record is dated in an impossible format", () => {

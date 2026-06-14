@@ -221,11 +221,6 @@ export function daysBetween(aIso: string, bIso: string): number {
   return Math.floor((b - a) / 86_400_000);
 }
 
-/** True when a record is overdue for re-verification as of `todayIso`. */
-export function isStale(record: ValidationRecord, todayIso: string): boolean {
-  return daysBetween(record.lastVerified, todayIso) > REVALIDATE_AFTER_DAYS;
-}
-
 /** Warn this many days before a record is due, so re-verification can be planned. */
 export const REVERIFY_WARN_DAYS = 30;
 

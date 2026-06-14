@@ -39,7 +39,6 @@ export {
   REVERIFY_WARN_DAYS,
   validationFor,
   allValidations,
-  isStale,
   freshnessOf,
   daysBetween,
   type Freshness,
