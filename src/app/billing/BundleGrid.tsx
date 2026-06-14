@@ -63,7 +63,7 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
       {status.error ? (
         <div
           role="alert"
-          className="mb-6 rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[13px] text-danger"
+          className="mb-6 rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[15px] text-danger"
         >
           {status.error}
         </div>
@@ -106,10 +106,10 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
 
               <div className="perforation my-5 h-px" aria-hidden />
 
-              <ul className="flex-1 space-y-2 font-sans text-[13.5px] leading-snug text-foreground-soft">
+              <ul className="flex-1 space-y-2 font-sans text-[15.5px] leading-snug text-foreground-soft">
                 <li className="flex items-baseline gap-2">
                   <span
-                    className="doc-number text-[15px] text-foreground"
+                    className="doc-number text-[17px] text-foreground"
                     style={{ fontVariantNumeric: "tabular-nums" }}
                   >
                     {b.tokens.toLocaleString()}
@@ -130,7 +130,7 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
                 type="button"
                 onClick={() => buy(b.key)}
                 disabled={loading}
-                className={`mt-6 inline-flex items-center justify-center gap-2 rounded-control px-5 py-3 font-mono text-[12px] uppercase tracking-document transition-[background-color,border-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px] disabled:opacity-60 ${
+                className={`mt-6 inline-flex items-center justify-center gap-2 rounded-control px-5 py-3 font-mono text-[14px] uppercase tracking-document transition-[background-color,border-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px] disabled:opacity-60 ${
                   isBest
                     ? "bg-seal text-background hover:bg-[color:var(--accent-dark)]"
                     : "border border-border-strong bg-transparent text-foreground hover:border-foreground"

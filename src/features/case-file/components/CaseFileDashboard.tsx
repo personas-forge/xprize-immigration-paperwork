@@ -44,7 +44,7 @@ export function CaseFileDashboard({
               <h1 className="display mt-5 text-[clamp(2rem,4.2vw,3rem)]">
                 Dr. <em>Anya</em> Krishnan
               </h1>
-              <p className="font-sans text-[15px] italic text-muted-strong">
+              <p className="font-sans text-[17px] italic text-muted-strong">
                 Senior Research Engineer · India → United States · O-1A
               </p>
 
@@ -65,7 +65,7 @@ export function CaseFileDashboard({
                 : caseFacts.map((fact) => (
                     <div key={fact.label} className="bg-surface px-4 py-4">
                       <div className="microprint">{fact.label}</div>
-                      <div className="mt-2 doc-number text-[14px] text-foreground">
+                      <div className="mt-2 doc-number text-[16px] text-foreground">
                         {fact.value}
                       </div>
                     </div>
@@ -118,12 +118,12 @@ function EmptyCasesCallout() {
         </div>
       </CardHeader>
       <CardBody className="flex flex-col items-center gap-4 py-10 text-center">
-        <p className="font-sans text-[15px] text-muted-strong max-w-sm">
+        <p className="font-sans text-[17px] text-muted-strong max-w-sm">
           Your case file will appear here — begin by qualifying your profile
         </p>
         <Link
           href="/qualify"
-          className="inline-flex items-center justify-center gap-2 rounded-control font-mono uppercase tracking-document transition-[background-color,border-color,color,transform] duration-300 ease-out focus-visible:outline-none active:translate-y-[1px] bg-foreground text-background border border-foreground hover:bg-foreground-soft px-5 py-2.5 text-[13px]"
+          className="inline-flex items-center justify-center gap-2 rounded-control font-mono uppercase tracking-document transition-[background-color,border-color,color,transform] duration-300 ease-out focus-visible:outline-none active:translate-y-[1px] bg-foreground text-background border border-foreground hover:bg-foreground-soft px-5 py-2.5 text-[15px]"
         >
           Qualify your profile
         </Link>
@@ -150,15 +150,15 @@ function YourCasesCard({ cases }: { cases: readonly SavedCaseSummary[] }) {
               className="flex items-center justify-between gap-4 px-5 py-3.5 transition-[background-color] duration-200 hover:bg-accent-soft/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
             >
               <div className="flex items-baseline gap-3">
-                <span className="doc-number text-[11px] text-muted">{c.fileNumber}</span>
-                <span className="font-sans text-[14.5px] text-foreground">{c.petitioner}</span>
+                <span className="doc-number text-[13px] text-muted">{c.fileNumber}</span>
+                <span className="font-sans text-[16.5px] text-foreground">{c.petitioner}</span>
                 <span className="microprint" style={{ color: "var(--muted)" }}>
                   {c.classification}
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <Badge tone="neutral">{c.status}</Badge>
-                <span className="doc-number text-[12px] text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                <span className="doc-number text-[14px] text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                   {c.approvalLikelihood}%
                 </span>
                 <span aria-hidden className="text-accent-dark">→</span>

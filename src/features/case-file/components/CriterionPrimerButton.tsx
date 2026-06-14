@@ -65,7 +65,7 @@ export function CriterionPrimerButton({ criterionName }: { criterionName: string
         onClick={() => setOpen((v) => !v)}
         className={[
           "ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full",
-          "border text-[10px] font-semibold leading-none",
+          "border text-[12px] font-semibold leading-none",
           "transition-colors duration-150",
           open
             ? "border-accent-dark bg-accent-dark/10 text-accent-dark"
@@ -102,12 +102,12 @@ export function CriterionPrimerButton({ criterionName }: { criterionName: string
           <p className="microprint mb-1 font-medium uppercase tracking-document text-accent-dark">
             {criterionName}
           </p>
-          <p className="font-sans text-[13px] leading-snug text-foreground">
+          <p className="font-sans text-[15px] leading-snug text-foreground">
             {primer.definition}
           </p>
           <div className="mt-3 border-t border-dotted border-rule pt-3">
             <p className="microprint mb-1 text-muted">Example evidence</p>
-            <p className="font-sans text-[12.5px] italic leading-snug text-muted-strong">
+            <p className="font-sans text-[14.5px] italic leading-snug text-muted-strong">
               {primer.example}
             </p>
           </div>

@@ -107,7 +107,7 @@ export function CaseList() {
           </div>
           <div className="display mt-1 text-[18px]">
             {load === "ready" ? `${visible.length} of ${cases?.length ?? 0}` : "—"}
-            <span className="font-sans text-[13px] italic text-muted-strong">
+            <span className="font-sans text-[15px] italic text-muted-strong">
               {" "}petition files
             </span>
           </div>
@@ -136,7 +136,7 @@ export function CaseList() {
             onChange={(e) => setQuery({ search: e.target.value })}
             placeholder="Search petitioner, file №, attorney…"
             aria-label="Search cases"
-            className="md:col-span-5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="md:col-span-5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
           />
           <select
             value={query.classification}
@@ -144,7 +144,7 @@ export function CaseList() {
               setQuery({ classification: e.target.value as VisaClassification | "all" })
             }
             aria-label="Filter by classification"
-            className="md:col-span-2 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="md:col-span-2 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
           >
             {CLASSIFICATIONS.map((c) => (
               <option key={c} value={c}>
@@ -156,7 +156,7 @@ export function CaseList() {
             value={query.status}
             onChange={(e) => setQuery({ status: e.target.value as CaseStatus | "all" })}
             aria-label="Filter by status"
-            className="md:col-span-3 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="md:col-span-3 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -168,7 +168,7 @@ export function CaseList() {
             value={query.sortKey}
             onChange={(e) => setQuery({ sortKey: e.target.value as CaseSortKey })}
             aria-label="Sort by"
-            className="md:col-span-2 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="md:col-span-2 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
           >
             {SORTS.map((s) => (
               <option key={s.key} value={s.key}>
@@ -210,13 +210,13 @@ export function CaseList() {
         ) : load === "error" ? (
           <div
             role="alert"
-            className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-6 text-center font-sans text-[14px] text-danger"
+            className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-6 text-center font-sans text-[16px] text-danger"
           >
             Could not load cases. Please refresh.
           </div>
         ) : visible.length === 0 ? (
           <div className="rounded-control border border-dashed border-border-strong px-4 py-10 text-center">
-            <p className="font-sans text-[15px] italic text-muted-strong">
+            <p className="font-sans text-[17px] italic text-muted-strong">
               No cases match these filters.
             </p>
             {filtersActive ? (
@@ -227,7 +227,7 @@ export function CaseList() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-base">
               <thead className="bg-background-tint/40 text-left">
                 <tr>
                   <th className="px-4 py-2.5 microprint font-medium">File №</th>
@@ -248,10 +248,10 @@ export function CaseList() {
                     key={c.id}
                     className="border-t border-dotted border-rule transition-[background-color] duration-200 hover:bg-accent-soft/35"
                   >
-                    <td className="px-4 py-3 doc-number text-[12px] text-foreground">
+                    <td className="px-4 py-3 doc-number text-[14px] text-foreground">
                       {c.fileNumber}
                     </td>
-                    <td className="px-4 py-3 font-sans text-[14px] text-foreground">
+                    <td className="px-4 py-3 font-sans text-[16px] text-foreground">
                       {c.petitioner}
                     </td>
                     <td className="px-4 py-3">
@@ -260,10 +260,10 @@ export function CaseList() {
                     <td className="px-4 py-3">
                       <Badge tone={statusTone(c.status)}>{c.status}</Badge>
                     </td>
-                    <td className="px-4 py-3 text-right doc-number text-[12px] text-foreground">
+                    <td className="px-4 py-3 text-right doc-number text-[14px] text-foreground">
                       {c.approvalLikelihood}%
                     </td>
-                    <td className="px-4 py-3 text-right font-sans text-[13px] text-muted-strong">
+                    <td className="px-4 py-3 text-right font-sans text-[15px] text-muted-strong">
                       {c.targetFileDate}
                     </td>
                   </tr>

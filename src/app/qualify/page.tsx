@@ -55,7 +55,7 @@ function SiteHeader() {
     <header className="relative">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-6">
         <Wordmark context="Petition Atelier · est. 2026" />
-        <nav className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-document text-muted-strong">
+        <nav className="flex items-center gap-6 font-mono text-[13px] uppercase tracking-document text-muted-strong">
           <Link
             href="/"
             className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"

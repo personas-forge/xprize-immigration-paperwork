@@ -105,7 +105,7 @@ export default async function BillingPage({
               <h2 className="display mt-2 text-2xl text-foreground">
                 High-volume firms &amp; partners
               </h2>
-              <p className="mt-2 font-sans text-[14px] leading-relaxed text-muted-strong">
+              <p className="mt-2 font-sans text-[16px] leading-relaxed text-muted-strong">
                 Premium model tier, custom token limits, SSO, and invoiced
                 billing for law firms and institutional partners. We tailor the
                 ledger and terms to your caseload.
@@ -113,7 +113,7 @@ export default async function BillingPage({
             </div>
             <a
               href={ENTERPRISE_CONTACT}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-6 py-3 font-mono text-[12px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-6 py-3 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
             >
               Contact sales
               <span aria-hidden>→</span>
@@ -154,7 +154,7 @@ function Footnote({ eyebrow, body }: { eyebrow: string; body: string }) {
       <div className="microprint" style={{ color: "var(--accent-dark)" }}>
         {eyebrow}
       </div>
-      <p className="mt-2 font-sans text-[13.5px] leading-relaxed text-muted-strong">
+      <p className="mt-2 font-sans text-[15.5px] leading-relaxed text-muted-strong">
         {body}
       </p>
     </div>
@@ -168,7 +168,7 @@ function SiteHeader() {
     <header className="relative">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-6">
         <Wordmark context="Petition Atelier · est. 2026" />
-        <nav className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-document text-muted-strong">
+        <nav className="flex items-center gap-6 font-mono text-[13px] uppercase tracking-document text-muted-strong">
           <Link href="/" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40">
             Home
           </Link>

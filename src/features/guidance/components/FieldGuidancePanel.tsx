@@ -121,7 +121,7 @@ export function FieldGuidancePanel() {
         {formsError ? (
           <div
             role="alert"
-            className="flex flex-col gap-3 rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[13px] text-danger sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-3 rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[15px] text-danger sm:flex-row sm:items-center sm:justify-between"
           >
             <span>Could not load the USCIS form list — please try again.</span>
             <Button type="button" variant="secondary" onClick={onRetryForms}>
@@ -139,7 +139,7 @@ export function FieldGuidancePanel() {
                   id={formSelectId}
                   value={formId}
                   onChange={(e) => onFormChange(e.target.value)}
-                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                 >
                   {forms.map((f) => (
                     <option key={f.id} value={f.number}>
@@ -155,7 +155,7 @@ export function FieldGuidancePanel() {
                   id={fieldSelectId}
                   value={fieldLabel}
                   onChange={(e) => setFieldLabel(e.target.value)}
-                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                 >
                   {(activeForm?.commonFields ?? []).map((field) => (
                     <option key={field} value={field}>
@@ -174,7 +174,7 @@ export function FieldGuidancePanel() {
                 onChange={(e) => setSituation(e.target.value)}
                 rows={3}
                 placeholder="e.g. I'm an O-1A researcher with 6 papers and a granted patent…"
-                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[14px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
               />
             </label>
 
@@ -185,7 +185,7 @@ export function FieldGuidancePanel() {
                 ) : (
                   <>
                     Get field guidance
-                    <span className="ml-2 rounded-full bg-background/15 px-1.5 py-0.5 font-mono text-[10px] tracking-document">
+                    <span className="ml-2 rounded-full bg-background/15 px-1.5 py-0.5 font-mono text-[12px] tracking-document">
                       {costOf("guidance")} token
                     </span>
                   </>
@@ -203,7 +203,7 @@ export function FieldGuidancePanel() {
         {status === "error" && error ? (
           <div
             role="alert"
-            className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[13px] text-danger"
+            className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[15px] text-danger"
           >
             {error}
           </div>
@@ -221,14 +221,14 @@ export function FieldGuidancePanel() {
                 <div className="microprint" style={{ color: "var(--seal)" }}>
                   Out of tokens
                 </div>
-                <p className="mt-1 font-sans text-[13.5px] leading-snug text-foreground-soft">
+                <p className="mt-1 font-sans text-[15.5px] leading-snug text-foreground-soft">
                   You&apos;ve used your token balance. Buy more to keep
                   generating informational field guidance.
                 </p>
               </div>
               <Link
                 href="/billing"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[12px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
               >
                 Buy more
                 <span aria-hidden>→</span>
@@ -251,7 +251,7 @@ export function FieldGuidancePanel() {
                   {sourceLabel(result.source)}
                 </Badge>
               </div>
-              <p className="font-sans text-[14px] leading-[1.7] text-foreground-soft">
+              <p className="font-sans text-[16px] leading-[1.7] text-foreground-soft">
                 {result.guidance}
               </p>
               <div className="absolute inset-x-0 bottom-0 perforation h-px" aria-hidden />

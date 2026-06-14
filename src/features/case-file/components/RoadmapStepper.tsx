@@ -42,12 +42,12 @@ export function RoadmapStepper({
               <div className="flex items-center gap-2">
                 <span
                   aria-hidden
-                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border text-[10px] ${DOT[s.state]}`}
+                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border text-[12px] ${DOT[s.state]}`}
                 >
                   {s.state === "done" ? "✓" : s.state === "current" ? "•" : ""}
                 </span>
                 <span
-                  className={`font-mono text-[10.5px] uppercase tracking-document ${LABEL[s.state]}`}
+                  className={`font-mono text-[12.5px] uppercase tracking-document ${LABEL[s.state]}`}
                 >
                   {s.label}
                 </span>

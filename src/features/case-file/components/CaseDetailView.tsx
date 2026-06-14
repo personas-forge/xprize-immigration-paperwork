@@ -93,7 +93,7 @@ export function CaseDetailView({
             <ChapterMark numeral="I" label="Petition case file" />
             <Link
               href="/dashboard"
-              className="font-mono text-[11px] uppercase tracking-document text-muted-strong ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+              className="font-mono text-[13px] uppercase tracking-document text-muted-strong ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
             >
               ← All cases
             </Link>
@@ -112,7 +112,7 @@ export function CaseDetailView({
                 <h1 className="display mt-5 text-[clamp(2rem,4.2vw,3rem)]">
                   {petitioner}
                 </h1>
-                <p className="font-sans text-[15px] italic text-muted-strong">
+                <p className="font-sans text-[17px] italic text-muted-strong">
                   {jurisdiction.label} · {classification}
                 </p>
               </div>
@@ -146,12 +146,12 @@ export function CaseDetailView({
             </CardHeader>
             {criteria.length === 0 ? (
               <CardBody>
-                <p className="font-sans text-[14px] italic text-muted-strong">
+                <p className="font-sans text-[16px] italic text-muted-strong">
                   No scored criteria on file for this case.
                 </p>
               </CardBody>
             ) : (
-              <table className="w-full text-sm">
+              <table className="w-full text-base">
                 <thead className="bg-background-tint/40 text-left">
                   <tr>
                     <th className="px-5 py-3 microprint font-medium">Criterion</th>
@@ -167,10 +167,10 @@ export function CaseDetailView({
                     >
                       <td className="px-5 py-3.5">
                         <div className="flex items-baseline gap-3">
-                          <span className="doc-number text-[10px] text-muted">
+                          <span className="doc-number text-[12px] text-muted">
                             {String(i + 1).padStart(2, "0")}
                           </span>
-                          <span className="font-sans text-[14.5px] text-foreground">
+                          <span className="font-sans text-[16.5px] text-foreground">
                             {c.name}
                           </span>
                         </div>
@@ -178,7 +178,7 @@ export function CaseDetailView({
                       <td className="px-5 py-3.5">
                         <Badge tone={statusTone(c.status)}>{c.status}</Badge>
                       </td>
-                      <td className="px-5 py-3.5 font-sans text-[13.5px] italic text-muted-strong">
+                      <td className="px-5 py-3.5 font-sans text-[15.5px] italic text-muted-strong">
                         {c.evidence || c.rationale || "—"}
                       </td>
                     </tr>
@@ -240,7 +240,7 @@ function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-surface px-4 py-4">
       <div className="microprint">{label}</div>
-      <div className="mt-2 doc-number text-[14px] text-foreground">{value}</div>
+      <div className="mt-2 doc-number text-[16px] text-foreground">{value}</div>
     </div>
   );
 }
@@ -251,7 +251,7 @@ function BalancePill({ balance }: { balance: number | null }) {
     <Link
       href="/billing"
       aria-label={`Token balance: ${label}. Buy more tokens.`}
-      className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+      className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[12.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
     >
       <span aria-hidden style={{ color: "var(--accent-dark)" }}>
         ◈
@@ -270,7 +270,7 @@ function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }
       type="button"
       onClick={onToggle}
       aria-label={dark ? "Switch to parchment theme" : "Switch to ink theme"}
-      className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted"
+      className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[12.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted"
     >
       <span aria-hidden>{dark ? "☾" : "☼"}</span>
       {dark ? "Ink" : "Parchment"}

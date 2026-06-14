@@ -86,7 +86,7 @@ export default function ValidationPage() {
         {/* Compliance claims that underpin the US market */}
         <Rise className="mt-10">
           <h2 className="display text-2xl">Compliance basis</h2>
-          <p className="mt-1 font-sans text-[14px] italic text-muted-strong">
+          <p className="mt-1 font-sans text-[16px] italic text-muted-strong">
             The legal claims the US market rests on.
           </p>
           <div className="mt-4 space-y-4">
@@ -125,7 +125,7 @@ function JurisdictionBlock({ code, now }: { code: JurisdictionCode; now: string 
           {j.status === "live" ? "Live" : "Planned"}
         </Badge>
       </div>
-      <p className="mt-1 font-sans text-[13.5px] leading-relaxed text-muted-strong">
+      <p className="mt-1 font-sans text-[15.5px] leading-relaxed text-muted-strong">
         Representation: {j.representationRole}. {j.representationNote}
       </p>
       <div className="mt-4 space-y-4">
@@ -200,7 +200,7 @@ function ValidationCard({
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex-wrap gap-y-2 bg-surface-muted/60">
-        <div className="font-sans text-[15px] text-foreground">{title}</div>
+        <div className="font-sans text-[17px] text-foreground">{title}</div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={STATUS_TONE[record.status]}>{record.status}</Badge>
           <Badge tone={record.counselApproved ? "success" : "neutral"}>
@@ -211,7 +211,7 @@ function ValidationCard({
       <CardBody className="space-y-3">
         <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
           <Field label="Legal basis">
-            <span className="doc-number text-[12.5px] text-foreground">
+            <span className="doc-number text-[14.5px] text-foreground">
               {record.legalBasis}
             </span>
           </Field>
@@ -240,7 +240,7 @@ function ValidationCard({
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ink-link font-sans text-[13.5px] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="ink-link font-sans text-[15.5px] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                 >
                   {s.title}
                 </a>
@@ -250,7 +250,7 @@ function ValidationCard({
         </div>
 
         {record.notes ? (
-          <p className="rounded-control border border-border bg-background-tint/40 px-3 py-2 font-sans text-[12.5px] leading-relaxed text-muted-strong">
+          <p className="rounded-control border border-border bg-background-tint/40 px-3 py-2 font-sans text-[14.5px] leading-relaxed text-muted-strong">
             {record.notes}
           </p>
         ) : null}
@@ -263,7 +263,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return (
     <div className="flex items-baseline gap-2">
       <span className="microprint shrink-0">{label}:</span>
-      <span className="font-sans text-[13.5px] text-foreground-soft">{children}</span>
+      <span className="font-sans text-[15.5px] text-foreground-soft">{children}</span>
     </div>
   );
 }
@@ -286,7 +286,7 @@ function LegendItem({ tone, label }: { tone: BadgeTone; label: string }) {
   return (
     <span className="inline-flex items-center gap-2">
       <Badge tone={tone}>•</Badge>
-      <span className="font-sans text-[12.5px] text-muted-strong">{label}</span>
+      <span className="font-sans text-[14.5px] text-muted-strong">{label}</span>
     </span>
   );
 }
@@ -298,7 +298,7 @@ function SiteHeader() {
     <header className="relative">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-6">
         <Wordmark context="Petition Atelier · est. 2026" />
-        <nav className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-document text-muted-strong">
+        <nav className="flex items-center gap-6 font-mono text-[13px] uppercase tracking-document text-muted-strong">
           <Link
             href="/"
             className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"

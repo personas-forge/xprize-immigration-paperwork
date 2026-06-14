@@ -26,7 +26,7 @@ export default function DashboardError({
         <h1 className="display mt-4 text-[clamp(1.8rem,4vw,2.6rem)]">
           The file could not be <em>opened</em>.
         </h1>
-        <p className="mt-4 font-sans text-[15px] leading-relaxed text-muted-strong">
+        <p className="mt-4 font-sans text-[17px] leading-relaxed text-muted-strong">
           Something interrupted loading this case file. No data was changed.
           Try opening it again.
         </p>

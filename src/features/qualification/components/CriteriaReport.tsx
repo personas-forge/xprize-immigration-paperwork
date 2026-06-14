@@ -45,7 +45,7 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
             </div>
             <div className="display mt-1 text-[18px]">
               {summary.qualifying} of {result.criteria.length} criteria supported
-              <span className="font-sans text-[13px] italic text-muted-strong">
+              <span className="font-sans text-[15px] italic text-muted-strong">
                 {" "}— need {QUALIFYING_THRESHOLD} to qualify.
               </span>
             </div>
@@ -96,7 +96,7 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
       {/* Criteria rows */}
       <Card className="overflow-hidden">
         {/* Desktop: a 3-column table. Mobile: stacked cards (below). */}
-        <table className="hidden w-full text-sm md:table">
+        <table className="hidden w-full text-base md:table">
           <thead className="bg-background-tint/40 text-left">
             <tr>
               <th className="px-5 py-3 microprint font-medium">Criterion</th>
@@ -114,10 +114,10 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
               >
                 <td className="px-5 py-3.5">
                   <div className="flex items-baseline gap-3">
-                    <span className="doc-number text-[10px] text-muted">
+                    <span className="doc-number text-[12px] text-muted">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="font-sans text-[14.5px] text-foreground">
+                    <span className="font-sans text-[16.5px] text-foreground">
                       {c.name}
                     </span>
                   </div>
@@ -129,11 +129,11 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
                   {/* Evidence = what we found; rationale = why this score / what
                       would strengthen it. Show BOTH when present (the rationale is
                       the actionable read-out the model already returns). */}
-                  <div className="font-sans text-[13.5px] italic text-muted-strong">
+                  <div className="font-sans text-[15.5px] italic text-muted-strong">
                     {c.evidence || c.rationale || "—"}
                   </div>
                   {c.evidence && c.rationale ? (
-                    <div className="mt-1 font-sans text-[12px] not-italic text-muted">
+                    <div className="mt-1 font-sans text-[14px] not-italic text-muted">
                       {c.rationale}
                     </div>
                   ) : null}
@@ -155,20 +155,20 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-baseline gap-2.5">
-                  <span className="doc-number text-[10px] text-muted">
+                  <span className="doc-number text-[12px] text-muted">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <span className="font-sans text-[14.5px] text-foreground">
+                  <span className="font-sans text-[16.5px] text-foreground">
                     {c.name}
                   </span>
                 </div>
                 <Badge tone={statusTone(c.status)}>{c.status}</Badge>
               </div>
-              <div className="mt-2 font-sans text-[13px] italic leading-snug text-muted-strong">
+              <div className="mt-2 font-sans text-[15px] italic leading-snug text-muted-strong">
                 {c.evidence || c.rationale || "—"}
               </div>
               {c.evidence && c.rationale ? (
-                <div className="mt-1 font-sans text-[12px] not-italic leading-snug text-muted">
+                <div className="mt-1 font-sans text-[14px] not-italic leading-snug text-muted">
                   {c.rationale}
                 </div>
               ) : null}
@@ -191,7 +191,7 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
               {result.gaps.map((g, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-3 font-sans text-[13.5px] leading-relaxed text-foreground-soft"
+                  className="flex items-start gap-3 font-sans text-[15.5px] leading-relaxed text-foreground-soft"
                 >
                   <span aria-hidden className="mt-[2px] text-accent-dark">
                     ▢

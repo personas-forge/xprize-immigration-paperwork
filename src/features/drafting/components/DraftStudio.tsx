@@ -222,7 +222,7 @@ export function DraftStudio({
       <CardBody className="space-y-4">
         {status === "idle" || status === "error" ? (
           <div className="space-y-3">
-            <p className="font-sans text-[14px] leading-relaxed text-muted-strong">
+            <p className="font-sans text-[16px] leading-relaxed text-muted-strong">
               Draft a full O-1A petition letter from your scored criteria — an
               introduction, an argument for each qualifying criterion, and a
               conclusion. You can edit any section and regenerate it.
@@ -238,7 +238,7 @@ export function DraftStudio({
             {status === "error" && error ? (
               <div
                 role="alert"
-                className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[13px] text-danger"
+                className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[15px] text-danger"
               >
                 {error}
               </div>
@@ -265,14 +265,14 @@ export function DraftStudio({
                 <div className="microprint" style={{ color: "var(--seal)" }}>
                   Out of tokens
                 </div>
-                <p className="mt-1 font-sans text-[13.5px] leading-snug text-foreground-soft">
+                <p className="mt-1 font-sans text-[15.5px] leading-snug text-foreground-soft">
                   Drafting a petition needs tokens. Top up to generate and revise
                   your letter.
                 </p>
               </div>
               <Link
                 href="/billing"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[12px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
               >
                 Buy more
                 <span aria-hidden>→</span>
@@ -314,14 +314,14 @@ export function DraftStudio({
                 }`}
               >
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <span className="display text-[15px] text-foreground">
+                  <span className="display text-[17px] text-foreground">
                     {s.heading}
                   </span>
                   <button
                     type="button"
                     onClick={() => regenerate(s.heading)}
                     disabled={regenerating !== null}
-                    className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                    className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                   >
                     <svg
                       width="11"
@@ -340,7 +340,7 @@ export function DraftStudio({
                     </svg>
                     {regenerating === s.heading ? "Regenerating…" : "Regenerate"}
                     {regenerating !== s.heading ? (
-                      <span className="rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[9px] tracking-normal text-accent-dark">
+                      <span className="rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-accent-dark">
                         5
                       </span>
                     ) : null}
@@ -349,7 +349,7 @@ export function DraftStudio({
                 {regenerationError === s.heading ? (
                   <div
                     role="alert"
-                    className="mb-2 rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[12px] text-danger"
+                    className="mb-2 rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[14px] text-danger"
                   >
                     Regeneration failed — your previous text was kept
                   </div>
@@ -358,7 +358,7 @@ export function DraftStudio({
                   value={s.body}
                   onChange={(e) => editBody(s.heading, e.target.value)}
                   rows={Math.max(3, Math.ceil(s.body.length / 90))}
-                  className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[13.5px] leading-[1.7] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-[1.7] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                 />
               </div>
             ))}

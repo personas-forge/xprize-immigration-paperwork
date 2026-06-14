@@ -119,7 +119,7 @@ export default function RootLayout({
             users bypass the masthead and jump straight to <main id="main"> */}
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-control focus:bg-foreground focus:px-4 focus:py-2 focus:font-mono focus:text-[12px] focus:uppercase focus:tracking-document focus:text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-control focus:bg-foreground focus:px-4 focus:py-2 focus:font-mono focus:text-[14px] focus:uppercase focus:tracking-document focus:text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
         >
           Skip to content
         </a>

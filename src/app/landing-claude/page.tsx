@@ -66,13 +66,13 @@ export default function LandingClaude() {
           >
             <Link
               href="/qualify"
-              className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-background hover:bg-foreground-soft"
+              className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background hover:bg-foreground-soft"
             >
               Take the free qualification
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-control border border-border-strong px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-foreground hover:border-foreground"
+              className="rounded-control border border-border-strong px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-foreground hover:border-foreground"
             >
               See the case file
             </Link>
@@ -102,10 +102,10 @@ export default function LandingClaude() {
                 key={c}
                 className="flex items-baseline gap-3 border-b border-dotted border-rule pb-3"
               >
-                <span className="doc-number text-[11px] text-muted">
+                <span className="doc-number text-[13px] text-muted">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <span className="flex-1 font-sans text-[14.5px] leading-snug">
+                <span className="flex-1 font-sans text-[16.5px] leading-snug">
                   {c}
                 </span>
                 <span className="text-success">✓</span>
@@ -132,7 +132,7 @@ export default function LandingClaude() {
                 </span>
                 <div className="border-l border-rule pl-6">
                   <h3 className="display text-2xl">{title}</h3>
-                  <p className="mt-1.5 font-sans text-[15px] leading-relaxed text-muted-strong">
+                  <p className="mt-1.5 font-sans text-[17px] leading-relaxed text-muted-strong">
                     {body}
                   </p>
                 </div>
@@ -156,7 +156,7 @@ export default function LandingClaude() {
                   {big}
                 </div>
                 <div className="mx-auto mt-2 h-px w-8 bg-accent-dark/50" />
-                <p className="mt-3 font-sans text-[13.5px] leading-relaxed text-muted-strong">
+                <p className="mt-3 font-sans text-[15.5px] leading-relaxed text-muted-strong">
                   {small}
                 </p>
               </div>
@@ -177,14 +177,14 @@ export default function LandingClaude() {
           <h2 className="display text-[clamp(2rem,6vw,3.6rem)]">
             Find out if you qualify — <em>today,</em> for free.
           </h2>
-          <p className="mx-auto mt-5 max-w-md font-sans text-[15.5px] leading-relaxed text-muted-strong">
+          <p className="mx-auto mt-5 max-w-md font-sans text-[17.5px] leading-relaxed text-muted-strong">
             If the answer is no, you pay nothing and you&apos;ll know exactly
             what would change it.
           </p>
           <div className="mt-9 flex items-center justify-center gap-4">
             <Link
               href="/qualify"
-              className="rounded-control bg-seal px-7 py-3.5 font-mono text-[12px] uppercase tracking-document text-background shadow-seal hover:bg-[color:var(--accent-dark)]"
+              className="rounded-control bg-seal px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background shadow-seal hover:bg-[color:var(--accent-dark)]"
             >
               Begin qualification
             </Link>

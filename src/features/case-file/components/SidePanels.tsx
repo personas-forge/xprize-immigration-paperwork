@@ -20,7 +20,7 @@ export function TasksCard({ tasks }: { tasks: readonly CaseTask[] | null }) {
             ))}
           </div>
         ) : tasks.length === 0 ? (
-          <p className="py-3 font-sans text-[14px] italic text-muted-strong">
+          <p className="py-3 font-sans text-[16px] italic text-muted-strong">
             No outstanding tasks — the file is clear.
           </p>
         ) : (
@@ -30,10 +30,10 @@ export function TasksCard({ tasks }: { tasks: readonly CaseTask[] | null }) {
               className="flex items-baseline justify-between gap-3 border-b border-dotted border-rule py-2.5 last:border-b-0"
             >
               <div className="flex items-baseline gap-3">
-                <span className="doc-number text-[10px] text-muted">
+                <span className="doc-number text-[12px] text-muted">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <span className="font-sans text-[14px] text-foreground">
+                <span className="font-sans text-[16px] text-foreground">
                   {task.label}
                 </span>
               </div>
@@ -69,7 +69,7 @@ export function PetitionDraftCard({ excerpt }: { excerpt: string | null }) {
               <Skeleton className="h-4 w-3/4" />
             </div>
           ) : (
-            <p className="font-sans text-[13.5px] leading-[1.7] text-foreground-soft initial">
+            <p className="font-sans text-[15.5px] leading-[1.7] text-foreground-soft initial">
               {excerpt}
             </p>
           )}

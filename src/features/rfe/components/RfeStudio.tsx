@@ -139,7 +139,7 @@ export function RfeStudio({
             onChange={(e) => setRfeText(e.target.value)}
             rows={4}
             placeholder="The evidence does not establish that the beneficiary satisfies…"
-            className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[13.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
           />
         </label>
 
@@ -166,7 +166,7 @@ export function RfeStudio({
         {status === "error" && error ? (
           <div
             role="alert"
-            className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[13px] text-danger"
+            className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[15px] text-danger"
           >
             {error}
           </div>
@@ -179,12 +179,12 @@ export function RfeStudio({
               role="alert"
               className="flex flex-col gap-3 rounded-control border-2 border-double border-seal/50 bg-seal-soft/40 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
             >
-              <p className="font-sans text-[13.5px] leading-snug text-foreground-soft">
+              <p className="font-sans text-[15.5px] leading-snug text-foreground-soft">
                 Drafting an RFE response needs tokens. Top up to continue.
               </p>
               <Link
                 href="/billing"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[12px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
               >
                 Buy more
                 <span aria-hidden>→</span>
@@ -211,9 +211,9 @@ export function RfeStudio({
             {saveFailed ? (
               <div
                 role="alert"
-                className="rounded-control border border-seal/50 bg-seal-soft/40 px-4 py-3 font-sans text-[13px] leading-snug text-foreground-soft"
+                className="rounded-control border border-seal/50 bg-seal-soft/40 px-4 py-3 font-sans text-[15px] leading-snug text-foreground-soft"
               >
-                <span className="font-mono text-[10px] uppercase tracking-document text-seal">
+                <span className="font-mono text-[12px] uppercase tracking-document text-seal">
                   Not saved
                 </span>
                 <span className="ml-2">
@@ -230,12 +230,12 @@ export function RfeStudio({
                   isModelSource(source) ? "border-seal/25" : "border-dashed border-border-strong"
                 }`}
               >
-                <div className="mb-2 display text-[15px] text-foreground">{s.heading}</div>
+                <div className="mb-2 display text-[17px] text-foreground">{s.heading}</div>
                 <textarea
                   value={s.body}
                   onChange={(e) => editBody(i, e.target.value)}
                   rows={Math.max(3, Math.ceil(s.body.length / 90))}
-                  className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[13.5px] leading-[1.7] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-[1.7] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
                 />
               </div>
             ))}

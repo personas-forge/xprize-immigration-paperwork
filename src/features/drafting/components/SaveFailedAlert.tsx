@@ -30,10 +30,10 @@ export function SaveFailedAlert({
   return (
     <div
       role="alert"
-      className="rounded-control border border-seal/50 bg-seal-soft/40 px-4 py-3 font-sans text-[13px] leading-snug text-foreground-soft"
+      className="rounded-control border border-seal/50 bg-seal-soft/40 px-4 py-3 font-sans text-[15px] leading-snug text-foreground-soft"
     >
       <div>
-        <span className="font-mono text-[10px] uppercase tracking-document text-seal">
+        <span className="font-mono text-[12px] uppercase tracking-document text-seal">
           Not saved
         </span>
         <span className="ml-2">{SAVE_FAILED_MESSAGE}</span>
@@ -42,7 +42,7 @@ export function SaveFailedAlert({
         <button
           type="button"
           onClick={onCopy}
-          className="rounded-control border border-seal/50 px-3 py-1.5 font-mono text-[10px] uppercase tracking-document text-seal transition-colors hover:bg-seal-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+          className="rounded-control border border-seal/50 px-3 py-1.5 font-mono text-[12px] uppercase tracking-document text-seal transition-colors hover:bg-seal-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
         >
           {copyState === "copied"
             ? "Copied ✓"
@@ -55,13 +55,13 @@ export function SaveFailedAlert({
             type="button"
             onClick={onRetry}
             disabled={retryState === "saving"}
-            className="rounded-control bg-seal px-3 py-1.5 font-mono text-[10px] uppercase tracking-document text-background transition-colors hover:bg-[color:var(--accent-dark)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="rounded-control bg-seal px-3 py-1.5 font-mono text-[12px] uppercase tracking-document text-background transition-colors hover:bg-[color:var(--accent-dark)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
           >
             {retryState === "saving" ? "Saving…" : "Retry saving"}
           </button>
         ) : null}
         {retryState === "failed" ? (
-          <span className="font-sans text-[12px] text-danger">
+          <span className="font-sans text-[14px] text-danger">
             Saving failed again — your draft is still unsaved.
           </span>
         ) : null}

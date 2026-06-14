@@ -25,7 +25,7 @@ export function TokenExplainerBanner({ balance }: { balance: number }) {
     <aside
       role="note"
       aria-label="Token economy explainer"
-      className="flex items-start justify-between gap-4 border-b border-border-strong bg-surface-muted px-6 py-3 font-mono text-[10.5px] uppercase tracking-document text-foreground"
+      className="flex items-start justify-between gap-4 border-b border-border-strong bg-surface-muted px-6 py-3 font-mono text-[12.5px] uppercase tracking-document text-foreground"
     >
       <p>
         <span style={{ color: "var(--accent-dark)" }} aria-hidden>

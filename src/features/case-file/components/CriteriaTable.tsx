@@ -32,7 +32,7 @@ export function CriteriaTable({
           </div>
           <div className="display mt-1 text-[18px]">
             {summary.total} of {criteria?.length ?? 0} evaluated
-            <span className="font-sans text-[13px] italic text-muted-strong">
+            <span className="font-sans text-[15px] italic text-muted-strong">
               {" "}— need {QUALIFYING_THRESHOLD} to qualify, AI-scored from CV + evidence vault.
             </span>
           </div>
@@ -50,7 +50,7 @@ export function CriteriaTable({
           ))}
         </div>
       ) : (
-        <table className="w-full text-sm">
+        <table className="w-full text-base">
           <thead className="bg-background-tint/40 text-left">
             <tr>
               <th scope="col" className="px-5 py-3 microprint font-medium">Criterion</th>
@@ -67,10 +67,10 @@ export function CriteriaTable({
               >
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-3">
-                    <span className="doc-number text-[10px] text-muted">
+                    <span className="doc-number text-[12px] text-muted">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="font-sans text-[14.5px] text-foreground">
+                    <span className="font-sans text-[16.5px] text-foreground">
                       {c.name}
                     </span>
                     <CriterionPrimerButton criterionName={c.name} />
@@ -79,10 +79,10 @@ export function CriteriaTable({
                 <td className="px-5 py-3.5">
                   <Badge tone={statusTone(c.status)}>{c.status}</Badge>
                 </td>
-                <td className="px-5 py-3.5 font-sans text-[13.5px] italic text-muted-strong">
+                <td className="px-5 py-3.5 font-sans text-[15.5px] italic text-muted-strong">
                   {c.evidence}
                 </td>
-                <td className="px-5 py-3.5 text-right doc-number text-[11px] text-muted">
+                <td className="px-5 py-3.5 text-right doc-number text-[13px] text-muted">
                   {c.exhibit}
                 </td>
               </tr>

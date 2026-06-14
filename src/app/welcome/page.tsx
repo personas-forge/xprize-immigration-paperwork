@@ -32,17 +32,17 @@ export default async function WelcomePage() {
           <h1 className="display text-[clamp(2rem,6vw,3.2rem)] text-foreground">
             Welcome — <em>let&apos;s open your file</em>.
           </h1>
-          <p className="font-sans text-[15px] leading-relaxed text-muted-strong">
+          <p className="font-sans text-[17px] leading-relaxed text-muted-strong">
             A couple of details and your consent, then your case file is ready.
           </p>
           <div className="perforation h-px" aria-hidden />
         </header>
         <div
-          className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-document text-muted-strong"
+          className="flex items-center gap-2 font-mono text-[13px] uppercase tracking-document text-muted-strong"
           aria-label="Step 2 of 2: Confirm your details"
         >
           <span
-            className="flex h-5 w-5 items-center justify-center rounded-full border border-border-strong text-[10px]"
+            className="flex h-5 w-5 items-center justify-center rounded-full border border-border-strong text-[12px]"
             aria-hidden
           >
             2

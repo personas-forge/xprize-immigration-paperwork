@@ -23,9 +23,9 @@ const variantClass: Record<Variant, string> = {
 };
 
 const sizeClass: Record<Size, string> = {
-  sm: "px-3 py-1.5 text-[12px]",
-  md: "px-5 py-2.5 text-[13px]",
-  lg: "px-7 py-3.5 text-[14px]",
+  sm: "px-3 py-1.5 text-[14px]",
+  md: "px-5 py-2.5 text-[15px]",
+  lg: "px-7 py-3.5 text-[16px]",
 };
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
