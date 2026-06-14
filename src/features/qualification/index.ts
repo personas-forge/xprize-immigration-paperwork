@@ -33,17 +33,6 @@ export {
   type JurisdictionCode,
 } from "./jurisdictions";
 export {
-  buildQuestionnaire,
-  scoreQuestionnaire,
-  answersToProfile,
-  type Answer,
-  type Answers,
-  type EligibilityOutcome,
-  type EligibilityQuestion,
-  type Questionnaire,
-  type Verdict,
-} from "./questionnaire";
-export {
   PROGRAM_VALIDATIONS,
   COMPLIANCE_VALIDATIONS,
   REVALIDATE_AFTER_DAYS,
