@@ -3,8 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
-import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
-import { CitationNote } from "@/features/guidance/components/CitationNote";
+import { DisclaimerStamp, CitationNote } from "@/components/legal";
 import { DISCLAIMER, type DraftSection } from "@/features/drafting";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 import {

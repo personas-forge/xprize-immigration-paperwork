@@ -12,7 +12,7 @@
 import { useActionState } from "react";
 import { submitConsent, type ConsentState } from "@/app/welcome/actions";
 import { CONSENT_DISCLAIMER } from "@/lib/result";
-import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
+import { DisclaimerStamp } from "@/components/legal";
 
 export function ConsentForm({
   defaultName,

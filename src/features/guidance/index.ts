@@ -1,5 +1,4 @@
 export { FieldGuidancePanel } from "./components/FieldGuidancePanel";
-export { DisclaimerStamp } from "./components/DisclaimerStamp";
 export {
   DISCLAIMER,
   buildGuidancePrompt,

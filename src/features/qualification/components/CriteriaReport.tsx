@@ -1,6 +1,6 @@
 import { Badge, Card, CardBody, CardHeader } from "@/components/ui";
 import { isModelSource, sourceLabel } from "@/lib/llm/label";
-import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
+import { DisclaimerStamp } from "@/components/legal";
 import {
   QUALIFYING_THRESHOLD,
   statusTone,

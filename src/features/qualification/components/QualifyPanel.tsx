@@ -11,7 +11,7 @@ import { validationFor } from "../validation";
 
 // Only programs whose jurisdiction is live are offered (US today).
 const PROGRAMS = livePrograms();
-import { DisclaimerStamp } from "@/features/guidance/components/DisclaimerStamp";
+import { DisclaimerStamp } from "@/components/legal";
 import { DraftStudio } from "@/features/drafting/components/DraftStudio";
 import { CriteriaReport } from "./CriteriaReport";
 

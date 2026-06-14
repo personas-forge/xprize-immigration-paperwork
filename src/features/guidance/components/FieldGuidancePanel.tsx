@@ -8,7 +8,7 @@ import { getForms } from "@/lib/data";
 import { type UscisForm } from "@/features/case-file/types";
 import { DISCLAIMER, type GuidanceResponse } from "../guidance";
 import { isModelSource, sourceLabel } from "@/lib/llm/label";
-import { DisclaimerStamp } from "./DisclaimerStamp";
+import { DisclaimerStamp } from "@/components/legal";
 
 // — Field-guidance panel ─────────────────────────────────────────────────────
 // Pick a USCIS form + field, describe the situation, and request INFORMATIONAL
