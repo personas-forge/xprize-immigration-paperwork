@@ -121,6 +121,12 @@ file are real; AI, billing, and filing integrations are mocked.
 - **Exhibit-bound RFE responses** — RFE section responses are now exhibit-bound
   via the same vault integration as draft; the Exhibit Index is shared across
   the draft and RFE flows.
+- **Queue-age badges and staleness warnings on the attorney review queue
+  (`/dashboard/review`)** — each petition card shows elapsed time since draft
+  submission as a colored badge: green (fresh, < 12 h), amber (warning, 12–24 h),
+  red (overdue, > 24 h). The queue is sorted oldest-first so overdue cases rise
+  to the top; badges refresh every 60 seconds. Gated by `isConfiguredAttorney`
+  (`ATTORNEY_EMAILS` env var) — non-attorneys see an empty queue.
 
 ## Tech stack
 
@@ -215,6 +221,7 @@ After upgrading from 0.1.x: `rm -rf node_modules && npm install` — see
 | `/dashboard` | The case file — O-1A criteria audit with compliance-risk badges, DraftStudio with adjudicator redline + RFE Risk Radar, tasks, petition draft preview. Empty-state CTA links to `/qualify` when no cases exist. |
 | `/billing` | Token store — four one-off Polar bundles plus the recurring monthly subscription (`BundleGrid` → `/api/checkout`). |
 | `/welcome` | Post-screening account/consent step — "Step 2 of 2" onboarding progress indicator before the case file opens. |
+| `/dashboard/review` | Attorney review queue — all cases awaiting sign-off, sorted oldest-first with queue-age badges (fresh / warning / overdue); gated by `ATTORNEY_EMAILS`. |
 
 ## Data access — the Adapter layer
 
