@@ -32,6 +32,7 @@ export default async function ReviewQueuePage() {
         classification: c.classification,
         status: c.status,
         approvalLikelihood: c.approvalLikelihood,
+        submittedAt: c.createdAt,
       }))}
     />
   );

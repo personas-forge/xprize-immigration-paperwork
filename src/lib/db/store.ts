@@ -69,6 +69,8 @@ export interface StoredCase {
   status: string;
   approvalLikelihood: number;
   receiptNumber: string | null;
+  /** ISO timestamp of case creation — used as queue age proxy on the review board. */
+  createdAt: string | null;
 }
 
 export interface StoredCriterion {

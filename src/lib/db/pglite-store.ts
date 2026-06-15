@@ -184,7 +184,7 @@ const num = (v: unknown): number => Number(v ?? 0);
 const str = (v: unknown): string => (v == null ? "" : String(v));
 
 const CASE_COLUMNS =
-  "id, file_number, petitioner, classification, status, approval_likelihood, receipt_number";
+  "id, file_number, petitioner, classification, status, approval_likelihood, receipt_number, created_at";
 
 interface CaseRow {
   id: string;
@@ -194,6 +194,7 @@ interface CaseRow {
   status: string;
   approval_likelihood: number;
   receipt_number: string | null;
+  created_at: string | null;
 }
 
 function toStoredCase(row: CaseRow): StoredCase {
@@ -205,6 +206,9 @@ function toStoredCase(row: CaseRow): StoredCase {
     status: row.status,
     approvalLikelihood: Number(row.approval_likelihood ?? 0),
     receiptNumber: row.receipt_number ?? null,
+    createdAt: row.created_at
+      ? new Date(row.created_at).toISOString()
+      : null,
   };
 }
 

@@ -76,6 +76,8 @@ export interface SavedCaseSummary {
   classification: string;
   status: string;
   approvalLikelihood: number;
+  /** ISO timestamp of case creation; null when unknown. Used for queue-age badges. */
+  submittedAt: string | null;
 }
 
 export type DocumentStatus = "Received" | "Pending" | "Needs review";
