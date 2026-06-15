@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge, Card, CardBody, CardHeader } from "@/components/ui";
 import { ChapterMark } from "@/components/brand";
@@ -9,6 +9,7 @@ import { ThemeScope } from "@/features/dashboard/ThemeScope";
 import { ink, parchment } from "@/features/dashboard/themes";
 import { BalancePill, LocalThemeToggle } from "@/features/dashboard/DashboardChrome";
 import { type SavedCaseSummary } from "@/features/case-file/types";
+import { ageBucket, formatAge, sortOldestFirst, BUCKET_TONE } from "@/features/review/queue-age";
 
 // — Attorney review queue ─────────────────────────────────────────────────────
 // Every case awaiting the attorney of record. Gated by ATTORNEY_EMAILS (empty =
@@ -25,6 +26,22 @@ export function ReviewQueueView({
   isAttorney: boolean;
 }) {
   const [dark, setDark] = useState(false);
+  // Null on first render (SSR) to avoid hydration mismatch from clock skew.
+  const [nowMs, setNowMs] = useState<number | null>(null);
+  // Set clock on mount and refresh every 60s so badges stay current.
+  // Initial tick is deferred via setTimeout so setState is in a callback
+  // (not synchronous in the effect body) — satisfies react-hooks/set-state-in-effect.
+  useEffect(() => {
+    const tick = () => setNowMs(Date.now());
+    const initId = setTimeout(tick, 0);
+    const id = setInterval(tick, 60_000);
+    return () => {
+      clearTimeout(initId);
+      clearInterval(id);
+    };
+  }, []);
+
+  const sorted = sortOldestFirst(cases as SavedCaseSummary[]);
 
   return (
     <ThemeScope theme={dark ? ink : parchment}>
@@ -78,28 +95,38 @@ export function ReviewQueueView({
                 <Badge tone="accent">{cases.length} in queue</Badge>
               </CardHeader>
               <ul>
-                {cases.map((c) => (
-                  <li key={c.id} className="border-t border-dotted border-rule first:border-t-0">
-                    <Link
-                      href={`/dashboard/cases/${c.id}`}
-                      className="flex items-center justify-between gap-4 px-5 py-3.5 transition-[background-color] duration-200 hover:bg-accent-soft/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
-                    >
-                      <div className="flex items-baseline gap-3">
-                        <span className="doc-number text-[13px] text-muted">{c.fileNumber}</span>
-                        <span className="font-sans text-[16.5px] text-foreground">{c.petitioner}</span>
-                        <span className="microprint" style={{ color: "var(--muted)" }}>
-                          {c.classification}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="doc-number text-[14px] text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
-                          {c.approvalLikelihood}%
-                        </span>
-                        <span aria-hidden className="text-accent-dark">→</span>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
+                {sorted.map((c) => {
+                  const bucket = nowMs !== null ? ageBucket(c.submittedAt, nowMs) : null;
+                  const label = nowMs !== null ? formatAge(c.submittedAt, nowMs) : null;
+                  const tone = bucket ? BUCKET_TONE[bucket] : "neutral";
+                  return (
+                    <li key={c.id} className="border-t border-dotted border-rule first:border-t-0">
+                      <Link
+                        href={`/dashboard/cases/${c.id}`}
+                        className="flex items-center justify-between gap-4 px-5 py-3.5 transition-[background-color] duration-200 hover:bg-accent-soft/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                      >
+                        <div className="flex items-baseline gap-3">
+                          <span className="doc-number text-[13px] text-muted">{c.fileNumber}</span>
+                          <span className="font-sans text-[16.5px] text-foreground">{c.petitioner}</span>
+                          <span className="microprint" style={{ color: "var(--muted)" }}>
+                            {c.classification}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {label !== null && (
+                            <Badge tone={tone} aria-label={`In queue ${label}`}>
+                              {label}
+                            </Badge>
+                          )}
+                          <span className="doc-number text-[14px] text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                            {c.approvalLikelihood}%
+                          </span>
+                          <span aria-hidden className="text-accent-dark">→</span>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </Card>
           )}

@@ -25,7 +25,15 @@ export default async function DashboardPage() {
     attorney = isConfiguredAttorney(user.email);
     // The user's real, persisted cases (from the qualification flow). Empty in
     // the keyless/no-DB demo, where only the mock case file shows.
-    cases = [...(await getCasesForUser(user.id))];
+    cases = (await getCasesForUser(user.id)).map((c) => ({
+      id: c.id,
+      fileNumber: c.fileNumber,
+      petitioner: c.petitioner,
+      classification: c.classification,
+      status: c.status,
+      approvalLikelihood: c.approvalLikelihood,
+      submittedAt: c.createdAt,
+    }));
   }
   return <DashboardView balance={balance} cases={cases} isAttorney={attorney} />;
 }

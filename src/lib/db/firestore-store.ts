@@ -60,6 +60,7 @@ interface CaseDoc {
   status?: string;
   approval_likelihood?: number;
   receipt_number?: string | null;
+  created_at?: unknown;
 }
 
 function toStoredCase(id: string, d: CaseDoc): StoredCase {
@@ -71,6 +72,7 @@ function toStoredCase(id: string, d: CaseDoc): StoredCase {
     status: d.status ?? "Intake",
     approvalLikelihood: Number(d.approval_likelihood ?? 0),
     receiptNumber: (d.receipt_number as string | null) ?? null,
+    createdAt: tsToIso(d.created_at),
   };
 }
 

@@ -13,6 +13,7 @@ const CASE: StoredCase = {
   status: "draft",
   approvalLikelihood: 70,
   receiptNumber: null,
+  createdAt: null,
 };
 
 const DOC: StoredDocument = {
