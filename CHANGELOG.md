@@ -8,6 +8,21 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-06-15
+
+Pre-1.0 **minor** bump — attorney review queue now surfaces queue-age badges
+and staleness warnings so reviewers can prioritise overdue petitions at a
+glance. No API-contract or persisted-field semantics changed.
+
+### Added
+
+- **Queue-age badges and staleness warnings on attorney petition review list
+  (#87).** Each petition card in the attorney review queue now displays elapsed
+  time since draft submission as a visible badge; cards older than a configured
+  threshold turn amber/red to signal staleness. Requires an explicit
+  `submittedAt` mapping from `StoredCase → SavedCaseSummary` at the dashboard
+  data layer (resolves prior TS2322 blocker on `dashboard/page.tsx`).
+
 ## [0.12.0] - 2026-06-15
 
 Pre-1.0 **minor** bump — moonshot batch: 8 major features spanning the AI
@@ -717,6 +732,9 @@ Backward-compatible feature + bug fix. No reinstall or migration required.
 - Criteria badge tone is now dynamic: `success` when the qualifying count meets
   the threshold, `warning` otherwise (previously always `success`).
 
+[0.13.0]: #
+[0.12.0]: #
+[0.11.0]: #
 [0.10.1]: #
 [0.10.0]: #
 [0.9.1]: #
