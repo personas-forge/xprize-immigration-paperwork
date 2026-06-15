@@ -12,6 +12,7 @@ const CASE: StoredCase = {
   status: "draft",
   approvalLikelihood: 70,
   receiptNumber: null,
+  createdAt: null,
 };
 
 /** Build gate deps with sensible no-op defaults; override per test. */

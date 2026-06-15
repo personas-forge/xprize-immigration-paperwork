@@ -12,6 +12,7 @@ const CASE: StoredCase = {
   status: "draft",
   approvalLikelihood: 70,
   receiptNumber: null,
+  createdAt: null,
 };
 
 function deps(over: Partial<PetitionDeps> = {}): PetitionDeps {

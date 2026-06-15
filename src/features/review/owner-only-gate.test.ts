@@ -26,6 +26,7 @@ const CASE: StoredCase = {
   status: "Drafting",
   approvalLikelihood: 70,
   receiptNumber: null,
+  createdAt: null,
 };
 
 /** Deps where the requesting user owns NO case, but IS a configured attorney

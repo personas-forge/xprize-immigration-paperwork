@@ -19,6 +19,7 @@ const CASE: StoredCase = {
   status: "draft",
   approvalLikelihood: 0.8,
   receiptNumber: null,
+  createdAt: null,
 };
 
 /** A POST request carrying `body` as JSON, shaped like the real AI routes. */
