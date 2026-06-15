@@ -8,6 +8,93 @@ While pre-1.0 (`0.x`), breaking changes increment the **minor** version.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-06-15
+
+Pre-1.0 **minor** bump — moonshot batch: 8 major features spanning the AI
+advocacy engine (adjudication-risk, adjudicator redline, RFE Risk Radar,
+exhibit-cited petitions, exhibit-bound RFE), qualification UX (Instant Verdict
+landing screener, best-path recommender), and viral sharing (Letters Patent
+certificate). Accompanied by a full dead-code + adapter-migration refactor
+(ADR-0010, ADR-0004 completion) and a +2 px typography pass. No
+API-contract or persisted-field semantics changed.
+
+### Added
+
+- **Shareable Letters Patent sealed certificate (#18).** Mint a screening result
+  into a public "Letters Patent of Extraordinary Ability" with no database
+  requirement — the snapshot is encoded in an unguessable URL token; `/c/[token]`
+  renders an engraved certificate and `/opengraph-image` draws a unique 1200×630
+  Open Graph card for LinkedIn/X sharing.
+- **Exhibit-cited petitions — evidence vault bound into draft route (#10).**
+  Draft prompts are now exhibit-aware; the evidence vault is wired into the draft
+  API; an Exhibit Index with citation-integrity meter appears in DraftStudio; and
+  the full Exhibit Index is appended to the packet export.
+- **Instant Verdict anonymous screener on the landing hero (#16).** An
+  anonymous "Instant Verdict" certificate screener appears on the landing page;
+  results pre-fill the full qualification form via a handoff route — zero-friction
+  funnel entry.
+- **Best-path recommender engine + comparison UI on /qualify (#7).** A keyless
+  best-path route evaluates all visa categories and the `/qualify` page now leads
+  with a "Find my best path" visa comparison UI; the qualify→draft E2E flow is
+  updated accordingly.
+- **Live adjudication-risk engine + per-document compliance-risk badges (#1).**
+  A live adjudication-risk LLM gate runs in the orchestrator (single-sourced with
+  the eval harness) and each evidence document now shows a compliance-risk badge.
+- **Adjudicator critique/redline for draft sections (#19).** A new
+  `/api/draft/critique` route scores and redlines each petition section;
+  DraftStudio surfaces score chips, redline cards, and an Apply button.
+- **RFE Risk Radar forecast engine + one-click Reinforce (#20).** A Risk Radar
+  panel in DraftStudio forecasts RFE likelihood per section and offers one-click
+  Reinforce to tighten the weakest points.
+- **Exhibit-bound RFE responses + shared Exhibit Index (#21).** RFE section
+  responses are now exhibit-bound (same vault integration as draft); the Exhibit
+  Index is shared across draft and RFE.
+
+### Fixed
+
+- **Include DISCLAIMER on 429 rate-limited draft-save response.** Rate-limited
+  saves now carry the UPL disclaimer so the client can surface the correct error
+  copy.
+- **Mirror paid-path bundle resolution on refund clawback (webhook).** The
+  webhook refund path now resolves the token bundle the same way the purchase
+  path does, closing a divergence that could leave credits un-clawed.
+- **Drive qualify eligibility threshold from the pack, not a hardcoded 3.** The
+  pass/fail cutoff now reads from the visa-pack definition, making it configurable
+  per visa type.
+- **Stop LLM eval harness engine copies drifting from canonical.** The harness
+  now imports the shared engine core instead of maintaining a separate copy.
+
+### Changed
+
+- **+2 px typography promotion + single-row homepage header (#85).** Every
+  sub-base font size is promoted +2 px app-wide; the homepage nav is now
+  single-row (no overflow/wrap).
+- **Large dead-code deletion batch (wave 1–4, −677+ LOC).** Removed dead
+  modules: questionnaire, format helpers (currency/number), documents mock layer,
+  non-atomic `setCaseStatus` wrapper, `isStale` (superseded by `freshnessOf`),
+  `getCaseById`/`getFormById`, `StatCard`/`SectionHeader` UI kit components,
+  `getOwnedCases` adapter method, `OPERATIONS` export, `getAnalytics`
+  subscriber path, `RfeSection` type re-export, `getOwnedCases` dep chain.
+- **Adapter migration complete — ADR-0010 (PetitionAdapter + EvidenceAdapter).**
+  `/api/rfe`, case-detail gate, evidence categorize write, and qualify
+  `createCase` all now route through the respective adapter's
+  `resolveCase`/`createCase`/`addDocument` methods; removes the last inline
+  owner-or-attorney gate copies.
+- **AI orchestrator route migration complete — ADR-0004 (executeAiOperation).**
+  `/api/draft`, `/api/rfe`, `/api/evidence/categorize`, and `/api/guidance` all
+  run through `executeAiOperation`; orchestrator now receives `AuthUser.email`
+  and persists the source.
+- **Legal UPL primitives centralised.** `DisclaimerStamp` and `CitationNote`
+  moved from `@/features/guidance` to `@/components/legal`; `DISCLAIMER` and new
+  `CONSENT_DISCLAIMER` consolidated in `@/lib/result` with content-regression
+  tests; `qualification.ts` re-targets canonical `@/lib/result` import.
+- **Shared helpers extracted.** `toSection`/`tryParseSections`, `str()`/
+  `criterionLine()`/cap constants, `todayIso()`/`addDays()`, `clientIp()`,
+  `requireAttorney`/`applyTransition` spine, `profileFieldsFromUser`, and the
+  firebase-admin initializer are now single-sourced across their consumers.
+- **Pricing surface aligned with the token model** (removes attacker-influenceable
+  `tokens` metadata field from checkout; pricing copy reflects actual pack sizes).
+
 ## [0.11.0] - 2026-06-14
 
 Pre-1.0 **minor** bump — batches the vibeman UI polish series (#75–#83): visual
