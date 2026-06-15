@@ -27,10 +27,12 @@ file are real; AI, billing, and filing integrations are mocked.
 - **Engraved-document marketing site** — hero with a watermarked I-129
   certificate vignette, three-promise strip, four-step process band, schedule
   of fees, closing seal.
-- **O-1A qualification screener (`/qualify`)** — criteria form with AI scoring;
-  after a positive result a "§ What happens next" panel lists the three ordered
-  steps (Create account → Upload evidence → Attorney reviews) and a "Get
-  started →" CTA that links to `/login`.
+- **O-1A qualification screener (`/qualify`)** — paste your background once and
+  the engine scores it against every live programme (O-1A, O-1B, EB-1A); the
+  page leads with a "Find my best path" visa comparison UI, then a single-visa
+  screener; after a positive result a "§ What happens next" panel lists the
+  three ordered steps (Create account → Upload evidence → Attorney reviews) and
+  a "Get started →" CTA that links to `/login`.
 - **Working case file dashboard** — O-1A criteria audit table, evidence list,
   task panel, petition draft preview, all themable. Empty-state shows a
   **'Start your case'** callout that routes new users straight to the
@@ -91,6 +93,34 @@ file are real; AI, billing, and filing integrations are mocked.
 - **PWA-ready** — full icon set, web app manifest, OG card, themed status bar.
 - **Accessibility** — skip-to-content link, focus-visible rings, `aria-current`
   on the stepper, reduced-motion across every animation.
+- **Instant Verdict screener on the landing hero** — an anonymous
+  screening widget (`InstantVerdict`) sits above the petition stepper on the
+  marketing landing page; results pre-fill the full qualification form via a
+  keyless handoff route (`/api/qualify/preview`), providing a zero-friction
+  top-of-funnel entry point.
+- **Shareable Letters Patent certificate (`/c/[token]`)** — a passing screening
+  result can be minted into a public "Letters Patent of Extraordinary Ability"
+  page; the snapshot is encoded in an unguessable URL token (no database
+  required) and a per-result 1200×630 Open Graph card (`/c/[token]/opengraph-image`)
+  unfurls on LinkedIn/X.
+- **Exhibit-cited petitions — evidence vault wired into drafting** — draft
+  prompts are exhibit-aware; the evidence vault is wired into the draft API
+  route; an Exhibit Index with a citation-integrity meter appears in
+  DraftStudio; and the full Exhibit Index is appended to the packet export.
+- **Live adjudication-risk engine + per-document compliance-risk badges** — a
+  live adjudication-risk LLM gate runs in the AI orchestrator (single-sourced
+  with the eval harness); each evidence document in the vault now shows a
+  per-document compliance-risk badge.
+- **Adjudicator critique/redline in DraftStudio** — `/api/draft/critique`
+  scores and redlines each petition section from an adjudicator's perspective;
+  DraftStudio surfaces score chips, redline cards, and an Apply button to fold
+  the suggested edits back in.
+- **RFE Risk Radar forecast + one-click Reinforce** — a Risk Radar panel in
+  DraftStudio forecasts RFE likelihood per section (`/api/rfe/forecast`) and
+  offers one-click Reinforce to tighten the weakest points.
+- **Exhibit-bound RFE responses** — RFE section responses are now exhibit-bound
+  via the same vault integration as draft; the Exhibit Index is shared across
+  the draft and RFE flows.
 
 ## Tech stack
 
@@ -180,8 +210,9 @@ After upgrading from 0.1.x: `rm -rf node_modules && npm install` — see
 | `/pricing` | Schedule of fees — three petition tiers as perforated document bands |
 | `/faq` | Eight petition-styled FAQ entries (form compatibility, RFE, refunds, security) |
 | `/landing-claude` | Alternate masthead — narrow editorial column, printed-pamphlet treatment |
-| `/qualify` | O-1A qualification screener — criteria form, AI scoring, and the "What happens next" panel with a "Get started →" CTA once a positive result is returned. |
-| `/dashboard` | The case file — O-1A criteria audit, tasks, petition draft preview. Empty-state CTA links to `/qualify` when no cases exist. |
+| `/qualify` | Multi-visa qualification funnel — "Find my best path" comparison UI (O-1A / O-1B / EB-1A) followed by the single-visa screener; "What happens next" panel with a "Get started →" CTA once a positive result is returned. |
+| `/c/[token]` | Shareable "Letters Patent of Extraordinary Ability" — engraved certificate minted from a screening result encoded in the URL token (no DB); per-result Open Graph card at `/c/[token]/opengraph-image`. |
+| `/dashboard` | The case file — O-1A criteria audit with compliance-risk badges, DraftStudio with adjudicator redline + RFE Risk Radar, tasks, petition draft preview. Empty-state CTA links to `/qualify` when no cases exist. |
 | `/billing` | Token store — four one-off Polar bundles plus the recurring monthly subscription (`BundleGrid` → `/api/checkout`). |
 | `/welcome` | Post-screening account/consent step — "Step 2 of 2" onboarding progress indicator before the case file opens. |
 
