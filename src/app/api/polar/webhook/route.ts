@@ -2,6 +2,8 @@ import { type NextRequest } from "next/server";
 import { validateEvent } from "@polar-sh/sdk/webhooks";
 import { credit } from "@/lib/tokens/ledger";
 import { bundleByKey, bundleByProductId } from "@/lib/tokens/economy";
+import { polarEventToRevenue } from "./relay-revenue";
+import { trackRevenue } from "@/lib/cost-telemetry";
 
 // Polar -> us. On a paid one-time order, credit the buyer's token balance.
 // Idempotent: credit() de-dupes by the Polar order id.
@@ -86,6 +88,12 @@ export async function POST(request: NextRequest) {
       await credit(userId, -b.tokens, "refund", `refund:${originalOrderId}`, { bundle: b.key });
     }
   }
+
+  // Pattern 3: relay the settled order/refund to LightTrack as revenue (profit/margin). We already
+  // verified the signature above, so no secret is shared with LightTrack — it trusts this project-keyed
+  // relay. Best-effort: trackRevenue swallows its own errors, so Polar still gets its 200 regardless.
+  const revenue = polarEventToRevenue(event);
+  if (revenue) await trackRevenue(revenue);
 
   return new Response("ok", { status: 200 });
 }
