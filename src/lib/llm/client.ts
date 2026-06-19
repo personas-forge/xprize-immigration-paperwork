@@ -26,6 +26,7 @@ import "server-only";
  */
 
 import { LightTrack } from "@/lib/lighttrack";
+import { trackLlm } from "@/lib/cost-telemetry";
 import { withGuards, LLM_OUTPUT_GUARD } from "./guards";
 import { claudeModel } from "./config";
 import {
@@ -65,7 +66,20 @@ function geminiClient(): Llm {
       // engines.callGemini measures the generateContent latency itself (around
       // the call only), so the tracked latency matches the prior measurement.
       const { text, response, model, latencyMs } = await callGemini(prompt, options);
-      lt.trackGemini(response, model, { latencyMs });
+      // LLM /v1/events emission → external LightTrack (cost netted against Polar revenue), tagged to the
+      // ambient billing customer set by executeAiOperation's runWithBilling. Real usage from the Gemini
+      // SDK's usageMetadata (promptTokenCount / candidatesTokenCount); fire-and-forget, never blocks.
+      // (Sole emission per call — the old SDK-client `lt.trackGemini` path was removed to avoid double
+      // counting; `lt` is retained here only for the output-guard score via `withGuards`.)
+      const usage = (response as { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } })
+        .usageMetadata;
+      void trackLlm({
+        provider: "google",
+        model,
+        inputTokens: usage?.promptTokenCount ?? 0,
+        outputTokens: usage?.candidatesTokenCount ?? 0,
+        latencyMs,
+      });
       return text;
     },
   };
@@ -81,13 +95,25 @@ function claudeClient(): Llm {
       const startedAt = Date.now();
       try {
         const out = await runClaudeCli(prompt);
-        lt.track("anthropic", claudeModel(), { latencyMs: Date.now() - startedAt });
+        // LLM /v1/events emission → external LightTrack. The text-mode CLI gives no token usage, so cost
+        // is tracked as a zero-token call (latency + model only). Sole emission per call — the old SDK-
+        // client `lt.track` path was removed to avoid double counting.
+        void trackLlm({
+          provider: "anthropic",
+          model: claudeModel(),
+          inputTokens: 0,
+          outputTokens: 0,
+          latencyMs: Date.now() - startedAt,
+        });
         return out;
       } catch (err) {
-        lt.track("anthropic", claudeModel(), {
+        void trackLlm({
+          provider: "anthropic",
+          model: claudeModel(),
+          inputTokens: 0,
+          outputTokens: 0,
           latencyMs: Date.now() - startedAt,
           status: "error",
-          error: String(err),
         });
         throw err;
       }

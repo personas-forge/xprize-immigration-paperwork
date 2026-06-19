@@ -10,15 +10,17 @@ import { type SavedCaseSummary } from "@/features/case-file/types";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  // The token balance for the header pill. "∞" (null) when the economy isn't
-  // enforced — no store or TOKENS_BYPASS=1 — matching the guard's free pass.
-  const bypass = process.env.TOKENS_BYPASS === "1" || !isStoreConfigured();
+  // Decouple the case-list load from the metering bypass (a user's real cases
+  // must show even under TOKENS_BYPASS=1): resolve the user + their cases whenever
+  // PERSISTENCE exists (dev-auth or Firebase). Only the balance pill depends on the
+  // economy actually being enforced — it reads "∞" (null) under bypass / no store.
+  const storeConfigured = isStoreConfigured();
+  const economyEnforced = storeConfigured && process.env.TOKENS_BYPASS !== "1";
   let balance: number | null = null;
   let cases: SavedCaseSummary[] = [];
   let attorney = false;
-  if (!bypass) {
+  if (storeConfigured) {
     const { user } = await requireOnboardedUser();
-    balance = await getBalance(user.id);
     // Use the fail-closed check: the review queue / case actions this affordance
     // links to are now gated on isConfiguredAttorney, so don't surface the nav
     // to users who'd only hit an empty queue.
@@ -34,6 +36,8 @@ export default async function DashboardPage() {
       approvalLikelihood: c.approvalLikelihood,
       submittedAt: c.createdAt,
     }));
+    // Balance only when the economy is enforced; otherwise the pill shows "∞".
+    if (economyEnforced) balance = await getBalance(user.id);
   }
   return <DashboardView balance={balance} cases={cases} isAttorney={attorney} />;
 }

@@ -61,9 +61,12 @@ const JUDGING: PackCriterion = {
 };
 const ORIGINAL: PackCriterion = {
   name: "Original contribution",
-  match: /\b(patent|invention|invented|novel|original|breakthrough|pioneered)\b/i,
-  evidence: "Mentions a patent or original/novel contribution.",
-  gap: "Describe patents or original contributions and their impact.",
+  // Beyond patents/research-novelty, recognize founder/engineer originality signals
+  // (open-source, a shipped product, wide adoption) so the keyless preview doesn't
+  // under-score a product/GitHub founder. The authenticated model is the real read.
+  match: /\b(patent|invention|invented|novel|original|breakthrough|pioneered|open[- ]?source|github|shipped|launched|product|framework|library|widely[- ]?used|adopted|downloads?|stars?)\b/i,
+  evidence: "Mentions a patent, shipped product, open-source project, or original contribution.",
+  gap: "Describe patents, shipped products, or original contributions and their impact.",
 };
 const SCHOLARLY: PackCriterion = {
   name: "Scholarly articles",

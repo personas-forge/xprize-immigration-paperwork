@@ -140,6 +140,20 @@ test("mockQualification: deterministic, full eight, likelihood in range", () => 
   assert.ok(sparse.gaps.length === 8, "every unmet criterion produces a gap hint");
 });
 
+test("mockQualification: a product/GitHub founder keys Original contribution (keyless free-read calibration)", () => {
+  const founder = mockQualification({
+    name: "x",
+    classification: "O-1A",
+    profile:
+      "Founder who shipped a widely-adopted open-source framework on GitHub with 20k stars.",
+  });
+  const original = founder.criteria.find((c) => c.name === "Original contribution");
+  assert.ok(
+    original && original.status !== "None",
+    "GitHub / open-source / shipped-product signals should key Original contribution on the keyless preview",
+  );
+});
+
 // — Multi-product (classification packs) ─────────────────────────────────────
 
 test("parseQualifyRequest: defaults classification to O-1A; accepts known, rejects unknown", () => {

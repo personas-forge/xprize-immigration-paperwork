@@ -1,0 +1,240 @@
+[
+  {
+    "id": "dc-draft-01",
+    "journey": "draft-petition-letter",
+    "character": "devin-cruz-paralegal",
+    "cert_level": "L1",
+    "type": "broken-flow",
+    "severity": "major",
+    "dimension": "trust",
+    "title": "Single-section regenerate persists by merging into the LAST STORED draft, silently dropping unsaved edits to other sections",
+    "expected": "Per-section regenerate preserves the rest of the letter AND my edits — the version it saves should reflect every section as it currently stands, including textarea edits I made to other sections.",
+    "got": "On a single-section regenerate, the server merges the new section into getLatestDraft (the last STORED version), not into the sections the client currently holds. Plain textarea edits are local-only (editBody updates state, no save; there is no autosave and no standalone Save button). So if I edit Section A, then regenerate Section B, the persisted version merges new-B into a stored draft that never had my A edit. The client UI keeps A for the session, but on reopen the case hydrates initialSections from getLatestDraft — my A edit is gone. Silent loss on a paid path.",
+    "evidence": [
+      "src/features/drafting/draftOperation.ts:205",
+      "src/features/drafting/draftOperation.ts:217",
+      "src/features/drafting/components/DraftStudio.tsx:325",
+      "src/features/drafting/components/DraftStudio.tsx:218",
+      "src/app/dashboard/cases/[id]/page.tsx:89"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Either (a) send the client's full current sections with the focus regenerate and merge server-side against THOSE, or (b) auto-persist textarea edits (debounced no-charge save) before a regenerate, or (c) add an explicit Save edits button and block regenerate on unsaved edits. The persisted version must never silently lose a section edit.",
+    "l2_priority": "Live: edit section A, regenerate section B, reload the case — assert section A's edit survives in the hydrated draft (currently predicted to be lost)."
+  },
+  {
+    "id": "dc-draft-02",
+    "journey": "draft-petition-letter",
+    "character": "devin-cruz-paralegal",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "senior-quality",
+    "title": "Per-section regenerate prompt does not receive the rest of the letter, so it can't keep narrative continuity with the other sections",
+    "expected": "When I regenerate one section, the model should see the surrounding letter (at least the intro/adjacent sections) so the regenerated prose doesn't repeat or contradict the rest.",
+    "got": "buildSectionPrompt is fed ONLY the focus criterion's data (name/status/evidence/rationale + that criterion's exhibits) — not the other sections' bodies. The regenerated section is coherent with its own criterion and cites the right exhibits, but cannot reference or stay consistent with the rest of the letter. The persistence layer DOES preserve the other sections (merge-by-heading), so this is a prose-continuity gap, not structural loss.",
+    "evidence": [
+      "src/features/drafting/drafting.ts:211",
+      "src/features/drafting/drafting.ts:230",
+      "src/features/drafting/draftOperation.ts:132"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Optionally include the headings (and trimmed bodies) of the other sections in the section prompt as read-only context, so the regenerated section stays continuous with the letter.",
+    "l2_priority": "Live: judge whether a regenerated section reads as part of one letter or as a standalone blurb that repeats the intro."
+  },
+  {
+    "id": "dc-rfe-01",
+    "journey": "respond-to-rfe",
+    "character": "devin-cruz-paralegal",
+    "cert_level": "L1",
+    "type": "missing-feature",
+    "severity": "minor",
+    "dimension": "trust",
+    "title": "RFE response generation has NO live adjudication gate (drafts do) — no fabrication/case-law/wrong-code scan on RFE output",
+    "expected": "An RFE response is paid, attorney-signed work product on a 60-90 day clock; it should get the same live adjudication-risk scan (fabricated specifics, case-law flag, wrong visa code) that the draft path attaches.",
+    "got": "The /api/draft spec wires an adjudicate hook (runAdjudication over draft output); the /api/rfe spec has no adjudicate field, so RFE responses carry the DISCLAIMER but get no AdjudicationReport. A hallucinated number or a leaked case-law cite in an RFE response is not surfaced to me the way it is in a draft.",
+    "evidence": [
+      "src/app/api/rfe/route.ts:44",
+      "src/features/drafting/draftOperation.ts:167",
+      "src/lib/llm/adjudication-gates.ts:296"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Add an adjudicate hook to the RFE spec (operation 'rfe' already has gates: classification/fabrication/caselaw in runAdjudication) so RFE output gets the same risk badge as a draft.",
+    "l2_priority": "Live: generate an RFE response with a number not in the record and confirm whether anything flags it (predicted: nothing does)."
+  },
+  {
+    "id": "dc-rfe-02",
+    "journey": "respond-to-rfe",
+    "character": "devin-cruz-paralegal",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "senior-quality",
+    "title": "RFE prompt grounds on the scored criteria + evidence + exhibits, but NOT on the actual drafted petition-letter prose",
+    "expected": "A point-by-point RFE response should reference the original petition. Ideally that includes the letter I actually filed, not only the criteria structure.",
+    "got": "buildRfePrompt receives the petition CRITERIA (name/status/evidence/rationale) + the fused vault exhibits + the RFE notice text — a real, grounded crosswalk to the criterion at issue. It does NOT receive getLatestDraft's letter sections. For most RFEs the criteria+evidence is the right grounding (it IS the petition's argument), but a senior crosswalk to 'the original petition' would also want the filed prose. Net: structurally strong, one rung short of full fidelity.",
+    "evidence": [
+      "src/features/rfe/rfe.ts:147",
+      "src/features/rfe/rfe.ts:176",
+      "src/app/api/rfe/route.ts:86",
+      "src/app/api/rfe/route.ts:99"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Optionally fuse the latest stored draft sections into the RFE prompt as the 'as-filed petition' context, so the response can quote/track the letter's own language.",
+    "l2_priority": "Live: confirm the RFE response actually names the petition's specific evidence + criterion (it should, from the criteria grounding) and judge whether missing the letter prose hurts."
+  },
+  {
+    "id": "dc-rfe-03",
+    "journey": "respond-to-rfe",
+    "character": "devin-cruz-paralegal",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "completion",
+    "title": "RfeStudio is correctly gated to Filed cases only (reachability confirmed)",
+    "expected": "Per the journey, the RFE studio should appear only on a Filed case.",
+    "got": "CaseDetailView renders RfeStudio only when status === 'Filed'. The /api/rfe DB path additionally resolves the case owner-or-configured-attorney before any charge. Reachability for Devin (operating as owner or demo-unlocked attorney) is sound.",
+    "evidence": [
+      "src/features/case-file/components/CaseDetailView.tsx:224",
+      "src/app/api/rfe/route.ts:60"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep the Filed-only gate.",
+    "l2_priority": "n-a"
+  },
+  {
+    "id": "dc-evidence-01",
+    "journey": "organize-evidence",
+    "character": "devin-cruz-paralegal",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Exhibit numbering is monotonic and never-reused; misfits go to Unsorted, not a fabricated bucket",
+    "expected": "Monotonic exhibit index that stays sane across refile/remove; no silent wrong-bucketing.",
+    "got": "addCaseDocument assigns Ex. N from a transactional high-water mark (greatest(doc_seq, max(ord)) + 1), so deleting the top exhibit never frees its number for reuse and refile keeps the exhibit with its document. coerceBucket forces any out-of-pack label to 'Unsorted'; the live evidence-bucket adjudication gate fails a bucket not in the pack. The gap read (summarizeVault) is derived from real per-criterion coverage. The categorize prompt receives the real document name + content and the actual classification's criteria.",
+    "evidence": [
+      "src/lib/db/pglite-store.ts:646",
+      "src/features/evidence/evidence.ts:107",
+      "src/features/evidence/evidence.ts:188",
+      "src/features/evidence/evidence.ts:80",
+      "src/lib/llm/adjudication-gates.ts:271"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Do not touch the high-water-mark exhibit assignment or the Unsorted coercion.",
+    "l2_priority": "Live: confirm the model buckets a real award/press/publication into the CORRECT criterion (not just a valid one) — bucketing accuracy is the L2 quality question."
+  },
+  {
+    "id": "dc-evidence-02",
+    "journey": "organize-evidence",
+    "character": "devin-cruz-paralegal",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "clarity",
+    "title": "Refile to a wrong bucket is unvalidated and silently allowed; the gap read can then misreport coverage",
+    "expected": "If I refile a document to a criterion it doesn't support, the tool should at least not present that as a real coverage win — and ideally warn.",
+    "got": "onRefile just changes the document's criterion via a server action with no re-categorization or sanity check; summarizeVault then counts the (possibly wrong) bucket as covering that criterion and clears the gap badge. This is a manual-override convenience, but a mis-refile silently inflates coverage, which is exactly the kind of false 'criterion covered' read Devin distrusts.",
+    "evidence": [
+      "src/features/evidence/components/EvidenceVault.tsx:113",
+      "src/lib/data/evidence.ts:61",
+      "src/features/evidence/evidence.ts:199"
+    ],
+    "code_check": "by-design",
+    "verdict": "uncertain",
+    "suggested_acceptance": "Refile is a legitimate manual override; acceptable as-is for an MVP. If hardened, flag a refiled doc whose facts don't match the new bucket, or keep coverage as 'documents present' rather than 'criterion proven'.",
+    "l2_priority": "n-a"
+  },
+  {
+    "id": "dc-track-01",
+    "journey": "track-case-progress",
+    "character": "devin-cruz-paralegal",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "clarity",
+    "title": "Roadmap derives from real case state; real cases list above the mock demo and deep-link correctly",
+    "expected": "Dashboard shows my real cases above any mock; case detail shows an accurate stage stepper and a next action.",
+    "got": "caseRoadmap(status, {hasEvidence, hasDraft}) computes done/current/upcoming from real status + real evidence/draft flags. The dashboard renders YourCasesCard (real, DB-backed) above the illustrative mock masthead; empty state CTAs to /qualify; each case deep-links to /dashboard/cases/[id], hydrated from stored criteria/draft/rfe/documents/events behind the IDOR-closed resolveCase gate.",
+    "evidence": [
+      "src/features/case-file/roadmap.ts:38",
+      "src/features/case-file/components/CaseFileDashboard.tsx:31",
+      "src/app/dashboard/cases/[id]/page.tsx:46"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep the real-cases-above-mock ordering and the state-derived stepper.",
+    "l2_priority": "n-a"
+  },
+  {
+    "id": "dc-track-02",
+    "journey": "track-case-progress",
+    "character": "devin-cruz-paralegal",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "clarity",
+    "title": "A fixed mock 'Dr. Anya Krishnan / O1-241' case is the visual hero of the dashboard, below the real cases",
+    "expected": "As a paralegal with 20-30 real matters, my dashboard should foreground MY cases, not a hardcoded sample one with its own Open/Voice-intake buttons.",
+    "got": "Below YourCasesCard, the dashboard always renders the mock masthead (O1-241, Krishnan), CriteriaTable, TasksCard, PetitionDraftCard, and CaseList from lib/data/cases.ts. This is the accepted illustrative demo portfolio, but it competes visually with the real list and its 'Open petition letter' button is non-functional. Noted as scope, not a defect (accepted-gaps: mock demo case file).",
+    "evidence": [
+      "src/features/case-file/components/CaseFileDashboard.tsx:34",
+      "src/features/case-file/components/CaseFileDashboard.tsx:52"
+    ],
+    "code_check": "by-design",
+    "verdict": "refuted",
+    "suggested_acceptance": "Out of scope per accepted-gaps (mock demo portfolio). If revisited, collapse/hide the demo masthead once the user has real cases.",
+    "l2_priority": "n-a"
+  },
+  {
+    "id": "dc-qualify-01",
+    "journey": "qualify-verdict",
+    "character": "devin-cruz-paralegal",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Qualify is grounded on the real pasted profile, returns the full canonical 8 criteria, honours the >=3 threshold, never renders None green",
+    "expected": "Verdict reflects what I pasted; 8 CFR 214.2(o)(3)(iii) criteria represented; >=3 threshold honoured; unscored criteria never green; DISCLAIMER present.",
+    "got": "buildQualifyPrompt embeds the real profile text + the pack's exact criterion names with an explicit 'don't let one criterion satisfy another' rule. parseQualifyResponse always returns the pack's full canonical criteria set in order, filling omissions with 'None'; coerceStatus defaults unknown to 'None'. summarizeCriteria counts only Met/Strong toward the threshold and statusTone renders None neutral. O-1A pack threshold = 3. DISCLAIMER renders first and non-dismissible; a live qualify adjudication gate checks canonical criteria/valid statuses/likelihood range/UPL tripwire.",
+    "evidence": [
+      "src/features/qualification/qualification.ts:120",
+      "src/features/qualification/qualification.ts:202",
+      "src/features/qualification/packs.ts:91",
+      "src/features/qualification/components/CriteriaReport.tsx:40",
+      "src/app/api/qualify/route.ts:72"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep the canonical-fill + None-never-green + threshold-from-pack invariants.",
+    "l2_priority": "Live: confirm the verdict names the lead's REAL evidence (not placeholders) and that scoring is calibrated, not inflated."
+  },
+  {
+    "id": "dc-cross-01",
+    "journey": "draft-petition-letter",
+    "character": "devin-cruz-paralegal",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Citation discipline is enforced end-to-end: exhibits bound from the real vault, inline (Exhibit N) audited, hallucinated cites quarantined, fabricated specifics scanned live",
+    "expected": "Drafts cite only supplied evidence; zero fabricated exhibits/citations; DISCLAIMER on every AI payload; a mock is never billed as model output.",
+    "got": "attachExhibits binds (Exhibit N) only to real vault documents (route-side, never from the inline body); the prompt forbids inventing exhibits and citing case law; auditCitations surfaces unresolved (hallucinated) citation numbers and a coverage meter; the live adjudication gate scans output for specifics not traceable to the criteria text (shared single-source-of-truth with the eval harness), case-law cites, wrong visa codes, and disclaimer presence; the orchestrator reclaims the charge and labels source 'mock' when JSON is unusable, so boilerplate is never billed as model output. DISCLAIMER rides on every AI build envelope (wrapResult / buildXResult).",
+    "evidence": [
+      "src/features/drafting/drafting.ts:472",
+      "src/features/drafting/drafting.ts:556",
+      "src/lib/llm/adjudication-gates.ts:122",
+      "src/lib/ai/operation.ts:312",
+      "src/lib/result.ts:37"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "This is the spine that earns a burned-by-AI paralegal's trust — do not weaken the exhibit binding, the citation audit, or the live fabrication gate.",
+    "l2_priority": "Live: feed real evidence, assert the draft cites the supplied exhibits by number, names no exhibit not on file, and the adjudication badge reflects a clean run."
+  }
+]

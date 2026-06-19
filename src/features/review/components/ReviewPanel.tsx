@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Badge, Button, Card, CardBody, CardHeader, type BadgeTone } from "@/components/ui";
 import {
   addReviewNote,
@@ -127,11 +128,7 @@ export function ReviewPanel({
             <div className="microprint" style={{ color: "var(--seal)" }}>
               Attorney of record · console
             </div>
-            <form action={attorneySignAndFile.bind(null, caseId)}>
-              <Button type="submit" variant="seal">
-                Sign &amp; file with USCIS
-              </Button>
-            </form>
+            <SignAndFileAction caseId={caseId} />
             <form action={attorneyRequestChanges.bind(null, caseId)} className="space-y-2">
               <textarea
                 name="feedback"
@@ -219,5 +216,57 @@ export function ReviewPanel({
         ) : null}
       </CardBody>
     </Card>
+  );
+}
+
+/**
+ * Sign & file — the single most consequential action under the attorney's bar
+ * license, so it is deliberately a TWO-STEP gesture: the first click reveals a
+ * statement of effect (what it signs, what it files, where the case moves) and a
+ * Confirm before the server action runs. No bare one-click submit, no surprise.
+ */
+function SignAndFileAction({ caseId }: { caseId: string }) {
+  const [confirming, setConfirming] = useState(false);
+
+  if (!confirming) {
+    return (
+      <div className="space-y-2">
+        <Button type="button" variant="seal" onClick={() => setConfirming(true)}>
+          Sign &amp; file with USCIS
+        </Button>
+        <p className="microprint" style={{ color: "var(--muted)" }}>
+          Signs the petition under your name and files it with USCIS — you&apos;ll
+          confirm first.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="group"
+      aria-label="Confirm sign and file"
+      className="space-y-3 rounded-control border-2 border-double border-seal/50 bg-seal-soft/40 px-4 py-3"
+    >
+      <div className="microprint" style={{ color: "var(--seal)" }}>
+        Confirm — attorney of record
+      </div>
+      <p className="font-sans text-[15.5px] leading-snug text-foreground-soft">
+        You are about to <strong>sign this petition under your name and file it
+        with USCIS</strong>. The case moves to <strong>Filed</strong> and receives
+        a receipt number. Confirm only after you have reviewed the full draft and
+        exhibits — this is your attorney-of-record action.
+      </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <form action={attorneySignAndFile.bind(null, caseId)}>
+          <Button type="submit" variant="seal">
+            Confirm — sign &amp; file
+          </Button>
+        </form>
+        <Button type="button" variant="secondary" onClick={() => setConfirming(false)}>
+          Cancel
+        </Button>
+      </div>
+    </div>
   );
 }

@@ -1,0 +1,200 @@
+[
+  {
+    "id": "PN-PROS-01",
+    "journey": "evaluate-as-prospect",
+    "character": "priya-nair-researcher",
+    "cert_level": "L1",
+    "type": "trust",
+    "severity": "major",
+    "dimension": "trust",
+    "title": "FAQ describes a full-service law firm, contradicting the site-wide 'drafting tool, not a law firm / your own attorney signs' positioning",
+    "expected": "Positioning consistent across landing/FAQ/pricing: a self-serve drafting tool whose output is work product for the USER'S OWN attorney of record to review and sign; not legal advice.",
+    "got": "The FAQ presents a managed legal service: 'a licensed U.S. immigration attorney - the same attorney listed as counsel of record - reads the petition line by line ... and signs the I-129 themselves'; flat fees; 'pre-drafted RFE responses are included on every ... packet'; biometrics scheduling; premium-processing pass-through; an ATA translator bench; 'we comply with attorney-client privilege.' This is the opposite of the landing/billing model (your own attorney signs; we are not a law firm).",
+    "evidence": [
+      "src/app/faq/page.tsx:22",
+      "src/app/faq/page.tsx:26",
+      "src/app/faq/page.tsx:30",
+      "src/app/faq/page.tsx:50",
+      "src/app/page.tsx:147",
+      "src/app/page.tsx:254",
+      "src/app/billing/page.tsx:134"
+    ],
+    "code_check": "confirmed-present",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Rewrite the FAQ so it describes the actual product: the AI drafts work product; the user's own attorney of record (not a firm attorney supplied by the product) reviews, edits, and signs; tokens (not flat fees) are the price model; RFE responses are a drafting feature, not an included service; remove biometrics/translator/privilege claims that imply a law firm. Add a CI/lint check or shared positioning copy so FAQ can't drift from the landing's UPL line.",
+    "l2_priority": "Confirm live that the FAQ copy is reachable from the prospect funnel and still contradicts the landing; check /landing-claude for the same drift."
+  },
+  {
+    "id": "PN-DRAFT-01",
+    "journey": "draft-petition-letter",
+    "character": "priya-nair-researcher",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "senior-quality",
+    "title": "Draft is grounded on qualify-time per-criterion paraphrases + vault exhibit facts, not the full pasted CV",
+    "expected": "The draft prompt should be able to argue from the petitioner's full supplied record (her rich pasted CV), not just short paraphrases.",
+    "got": "The DB draft path loads each criterion's persisted evidence/rationale (the model's SHORT paraphrase captured at screening) and fuses in evidence-vault exhibit facts; it never re-reads the original pasted profile text. A rich CV pasted at qualify but not re-entered into the Evidence Vault yields a thin per-criterion grounding payload. Machinery is correct and anti-fabrication; grounding depth is bounded by what's persisted/vaulted.",
+    "evidence": [
+      "src/features/drafting/draftOperation.ts:106",
+      "src/features/drafting/draftOperation.ts:119",
+      "src/features/drafting/drafting.ts:195",
+      "src/app/api/qualify/route.ts:98",
+      "src/lib/data/petitions.ts:43"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Either prompt the user to populate the Evidence Vault before drafting (so exhibit facts enrich the prompt), or persist/optionally pass the original profile text as additional grounding context, so the draft can argue from her full record rather than a one-line paraphrase per criterion.",
+    "l2_priority": "Fill a real rich CV + a populated vault and assert the live draft NAMES her specific evidence and cites the right exhibits per section - vs. generic filler when the vault is empty."
+  },
+  {
+    "id": "PN-PROS-02",
+    "journey": "evaluate-as-prospect",
+    "character": "priya-nair-researcher",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "clarity",
+    "title": "/billing copy 'one token = one AI form-field guidance answer' understates the real per-operation cost",
+    "expected": "The cost story a careful prospect reads should match the real metering (qualify=3, draft=12, section/rfe=5, categorize=1).",
+    "got": "/billing repeatedly frames a token as 'one AI form-field guidance answer' / 'each AI form-field answer costs a single token', legacy copy from the old form-field product. The real registry meters a full draft at 12 tokens. The LANDING footnote already self-corrects ('a full petition draft spends more than a single form-field answer'), so the inconsistency is internal to /billing.",
+    "evidence": [
+      "src/app/billing/page.tsx:56",
+      "src/app/billing/page.tsx:130",
+      "src/lib/tokens/registry.ts:37",
+      "src/app/page.tsx:369"
+    ],
+    "code_check": "present-but-missed",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Align /billing's 'what a token buys' copy with the registry (show per-op costs, e.g. draft = 12 tokens), matching the landing footnote.",
+    "l2_priority": "Low - copy alignment; verify the per-op cost chips render on the live billing/qualify/draft surfaces."
+  },
+  {
+    "id": "PN-EVID-01",
+    "journey": "organize-evidence",
+    "character": "priya-nair-researcher",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "missing",
+    "title": "Categorization sees one document at a time, with no cross-vault context",
+    "expected": "Filing-quality organization might consider documents together (de-dupe, group related exhibits, avoid splitting one piece of evidence across buckets).",
+    "got": "buildCategorizePrompt is fed only the single document's name + text; it cannot see other already-filed documents. Exhibit-number monotonicity is handled correctly at the store, and refile is available to correct a mis-bucket, but the model has no whole-vault view.",
+    "evidence": [
+      "src/features/evidence/evidence.ts:98",
+      "src/app/api/evidence/categorize/route.ts:62",
+      "src/lib/db/pglite-store.ts:646"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Acceptable for MVP. If hardened: pass a compact summary of existing buckets so the model can place a doc consistently with siblings.",
+    "l2_priority": "Categorize several related docs live and check each lands in the correct one of the eight buckets with accurate extracted facts and a sane exhibit index."
+  },
+  {
+    "id": "PN-QUAL-02",
+    "journey": "qualify-verdict",
+    "character": "priya-nair-researcher",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "clarity",
+    "title": "Anonymous hero verdict + best-path run the keyword mock, not the model (labelled, by design)",
+    "expected": "A 'free read' that reflects what she pasted with adjudicator-grade reasoning.",
+    "got": "/api/qualify/preview and .../best-path deliberately run only the deterministic keyword mock (no model, no charge, no DB) for anonymous traffic; results are labelled source:'mock' and 'instant read', and the SoftGate invites the real screening behind sign-in. The real, model-backed scoring is the authenticated /api/qualify path she reaches after sign-in. Honest and clearly labelled - recorded so L2 confirms she lands on the model path, not so it is treated as a defect.",
+    "evidence": [
+      "src/app/api/qualify/preview/route.ts:18",
+      "src/features/qualification/components/InstantVerdict.tsx:20",
+      "src/features/qualification/components/QualifyPanel.tsx:89"
+    ],
+    "code_check": "by-design",
+    "verdict": "refuted",
+    "suggested_acceptance": "None needed (by design + labelled). Optionally make the hero's 'instant read vs full screening' distinction even more explicit so a rigorous user doesn't mistake the keyword read for the model verdict.",
+    "l2_priority": "Confirm the authenticated /qualify screening returns source:'claude' (real model) and names her pasted evidence, distinct from the hero's mock read."
+  },
+  {
+    "id": "PN-QUAL-01",
+    "journey": "qualify-verdict",
+    "character": "priya-nair-researcher",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "'Certificate of Extraordinary Ability' / 'Approved' framing skirts her horoscope pet peeve",
+    "expected": "An evidence-minded user wants a sober, defensible read - not award-ceremony theater.",
+    "got": "The hero renders the screening as an engraved 'Certificate of Extraordinary Ability' with a Seal/Guilloche, and the static hero card shows a sample 'Status: Filing-ready / Stamp: Approved / 92% likelihood'. The underlying content is her real scored criteria + honest gaps and the live read is labelled 'free informational read, never legal advice', so it is styling over honest data, not a fabricated verdict.",
+    "evidence": [
+      "src/features/qualification/components/InstantVerdict.tsx:220",
+      "src/app/page.tsx:214",
+      "src/app/page.tsx:228"
+    ],
+    "code_check": "by-design",
+    "verdict": "uncertain",
+    "suggested_acceptance": "Optional: tone the 'Approved/Certificate' branding toward 'informational screening' for high-rigor segments; keep the honest data underneath untouched.",
+    "l2_priority": "Subjective - judge live whether the certificate theater undermines or aids credibility for a researcher persona."
+  },
+  {
+    "id": "PN-QUAL-S1",
+    "journey": "qualify-verdict",
+    "character": "priya-nair-researcher",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Unmet ('None') criteria never render green; tone and threshold counts are single-sourced",
+    "expected": "Nothing she didn't claim shows as 'Met'; unscored criteria never render green.",
+    "got": "classifyStatus maps 'None'/unknown to 'other' -> neutral tone, excluded from the qualifying count; statusTone and summarizeCriteria both derive from it so badge and count can't disagree (ADR-0002). Met/Strong count toward threshold, Partial does not.",
+    "evidence": [
+      "src/features/case-file/criteria.ts:27",
+      "src/features/case-file/criteria.ts:74",
+      "src/features/qualification/components/CriteriaReport.tsx:20"
+    ],
+    "code_check": "confirmed-present",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect: do not let any surface paint a row green off an unscored status.",
+    "l2_priority": "Verify live a 'None' criterion renders neutral and is excluded from the qualifying count."
+  },
+  {
+    "id": "PN-DRAFT-S1",
+    "journey": "draft-petition-letter",
+    "character": "priya-nair-researcher",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Real case + real vault exhibits fed in <<<CASE_DATA>>>; hallucinated exhibit citations are quarantined",
+    "expected": "Zero fabricated awards/citations/exhibits; each section crosswalks to the correct criterion.",
+    "got": "buildDraftPrompt embeds the real persisted criteria + fused vault exhibits inside <<<CASE_DATA>>> markers with hard anti-fabrication + injection-defense rules and a listed-exhibit-only citation rule; auditCitations flags any (Exhibit N) with no matching on-file document as 'unresolved'; the live adjudication gate runs the fabricated-specifics scan and case-law flag on every draft.",
+    "evidence": [
+      "src/features/drafting/drafting.ts:174",
+      "src/features/drafting/drafting.ts:556",
+      "src/features/drafting/draftOperation.ts:119",
+      "src/features/drafting/draftOperation.ts:167"
+    ],
+    "code_check": "confirmed-present",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect: keep the CASE_DATA fencing, citation-only-from-listed rule, and the unresolved-citation quarantine.",
+    "l2_priority": "Confirm a live draft cites only real exhibits and flags any hallucinated (Exhibit N)."
+  },
+  {
+    "id": "PN-PROS-S1",
+    "journey": "evaluate-as-prospect",
+    "character": "priya-nair-researcher",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "/validation shows primary-source evidence and self-flags its own paraphrasing + the UK model mismatch",
+    "expected": "The validation page shows evidence, not adjectives; criteria represented honestly.",
+    "got": "Each program/compliance claim carries a legal basis (8 CFR 214.2(o)(3)(iii), 204.5(h)(3)), primary-law + USCIS Policy Manual source links, review date + 180-day freshness. Notes openly state O-1A/O-1B labels are 'paraphrased ... verbatim wording + counsel sign-off pending' and flag the UK pack as a 'MODEL MISMATCH ... the model is wrong for the UK' (correctly gated planned). This honesty directly answers her 'criteria summarized wrong' worry.",
+    "evidence": [
+      "src/features/qualification/validation.ts:54",
+      "src/features/qualification/validation.ts:75",
+      "src/features/qualification/validation.ts:141",
+      "src/app/validation/page.tsx:228"
+    ],
+    "code_check": "confirmed-present",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect: keep the cited-source + freshness + self-disclosed-paraphrase model; it is a major trust asset for rigorous users.",
+    "l2_priority": "Verify the live source links resolve and the freshness/last-reviewed dates render."
+  }
+]

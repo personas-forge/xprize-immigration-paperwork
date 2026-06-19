@@ -8,46 +8,51 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export const metadata: Metadata = {
   title: "Frequently asked — Immigration Concierge",
   description:
-    "USCIS form compatibility, attorney review, RFE handling, document translation, biometrics, expedited processing, refund policy, and data security.",
+    "What the AI drafting tool does, who reviews and signs (your own attorney of record), token pricing, RFE handling, accuracy, refunds, and data security. A drafting tool, not a law firm — never legal advice.",
 };
 
 // — FAQ — eight entries, sober and specific ────────────────────────────────
 // Native <details>/<summary> styled as petition entries; the open animation
 // (height + opacity on the inner panel) lives in <FaqEntry>, the only client
 // component on the page. Everything else is server-rendered.
+//
+// Positioning invariant: these answers MUST match the landing/billing/validation
+// line — a self-serve, token-metered AI DRAFTING TOOL whose output is work
+// product the user's OWN attorney of record reviews and signs. We are not a law
+// firm, do not supply counsel, and never give legal advice.
 
 const QA: { q: string; a: string }[] = [
   {
-    q: "Which USCIS forms do you prepare and file?",
-    a: "Every Attorney-Assisted and Family Reunification engagement files the I-129 (with the O-supplement) for nonimmigrant petitions, plus the I-907 for premium processing. Family bundles include the I-130, I-485 adjustment package, I-765 employment authorization, and the I-864 affidavit of support. Self-File supports I-129; we do not file pro se on family bundles.",
+    q: "What exactly does Immigration Concierge do?",
+    a: "It's a self-serve AI drafting tool — not a law firm. You describe your background and evidence; the AI screens you against the eight O-1/EB-1A criteria, sorts your exhibits, and drafts the petition letter (the I-129 O-supplement narrative) section by section. What you get is work product: a draft your own attorney of record reviews, edits, and signs before filing. We don't supply the attorney, file on your behalf, or give legal advice.",
   },
   {
-    q: "How does the attorney review actually work?",
-    a: "Once Gemini drafts your petition letter and assembles the exhibits, a licensed U.S. immigration attorney — the same attorney listed as counsel of record — reads the petition line by line. They rewrite paragraphs that need legal judgment, verify every exhibit citation, and sign the I-129 themselves. Median turnaround is five business days; you can request changes before they sign.",
+    q: "Who reviews and signs the petition?",
+    a: "Your own attorney of record — the licensed U.S. immigration attorney you bring, or your firm's. They review every word in the drafting studio, request changes, and when it's ready they sign the I-129 and file it. The studio gives your attorney the review workflow (request changes, sign & file, record the USCIS decision); it does not act as your lawyer or supply one. We're a drafting tool, not a law firm — and nothing here is legal advice.",
   },
   {
     q: "What happens if USCIS issues a Request for Evidence (RFE)?",
-    a: "Pre-drafted RFE responses are included on every Attorney-Assisted and Family Reunification packet. If an RFE arrives, your attorney refines the draft to match the adjudicator's specific concerns and files within the 87-day USCIS window. There is no separate billing for RFE response — it's part of the flat fee.",
+    a: "The studio includes an RFE response drafter: paste the RFE and the AI drafts a point-by-point response grounded in your petition's criteria and exhibits. Like every AI operation it's priced in tokens (an RFE response costs 5), and — like the petition draft — it's work product your attorney of record reviews and signs before filing within the USCIS deadline. There's no separate legal-service fee because we don't provide the legal service; your attorney does.",
   },
   {
-    q: "Do you handle document translation?",
-    a: "We don't translate documents in-house, but we review every certified translation our clients provide and flag wording that could trigger an RFE. We maintain a vetted bench of ATA-certified translators for Mandarin, Spanish, Portuguese, Hindi, Russian, and Arabic — pricing is theirs, not ours, and you contract with them directly.",
+    q: "How much does it cost?",
+    a: "You pay in prepaid tokens — not retainers or flat legal fees — and only for the AI work you actually run. New accounts start with 150 free tokens. A qualification screening costs 3 tokens, a full petition-letter draft 12, a single-section regenerate or an RFE response 5, and evidence categorization 1. Top up with a bundle from $5 (bigger bundles cost less per token). USCIS filing fees are paid by you directly to USCIS, never through us.",
   },
   {
-    q: "Who handles biometrics scheduling and how long does it take?",
-    a: "After USCIS issues a biometrics notice (typically 4–6 weeks post-filing), we coordinate the Application Support Center appointment, prep you on what to bring, and confirm completion against your file. If you're abroad at filing, we route the appointment to your nearest U.S. consulate. The appointment itself is short — usually under 30 minutes.",
+    q: "Is any of this legal advice?",
+    a: "No. The AI produces general informational drafting only — never legal advice — and we are not a law firm. Every AI output carries that disclaimer, and an attorney of record must review and sign your petition before anything is filed with USCIS. The legal judgment is your attorney's; the drafting is ours.",
   },
   {
-    q: "Can you file with premium processing?",
-    a: "Yes, and we recommend it on most O-1 petitions. The USCIS premium processing fee ($2,805) is passed through at cost; we don't mark it up. With premium, USCIS commits to a decision in 15 business days. We file on the same day the attorney signs.",
+    q: "How current and accurate are the criteria you screen against?",
+    a: "The O-1A/O-1B and EB-1A criteria we screen and draft against are mapped to their primary sources (8 CFR 214.2(o)(3)(iii), 204.5(h)(3)) and the USCIS Policy Manual, each with a legal basis, a last-reviewed date, and a freshness check — and a CI gate blocks any program from going live unverified. You can see the citations, legal basis, and review dates yourself on our validation page (/validation).",
   },
   {
     q: "What is your refund policy?",
-    a: "Full refund any time before the attorney signs your I-129 — this includes refunds after intake, after the AI draft is delivered, and even after attorney review begins. Once the attorney signs, the attorney portion of the flat fee is non-refundable, but USCIS filing fees (whether or not we've already submitted them) are returned to you if the case has not yet been filed.",
+    a: "Tokens are prepaid credits: a purchase can be reversed on a refund or chargeback, and unused tokens stay in your balance (the one-time free signup grant is one per account). Because we don't charge a legal fee or file on your behalf, there's no attorney retainer to refund — and USCIS filing fees are paid by you directly to USCIS.",
   },
   {
     q: "How is my personal and immigration data protected?",
-    a: "All client documents are stored in encrypted vaults (AES-256 at rest, TLS 1.3 in transit) on U.S.-based servers. Access is logged and limited to your attorney of record and the AI drafting pipeline. We do not train models on your data, we do not sell anonymized exhibits, and you can request a complete export or hard-delete at any time. We comply with attorney-client privilege under the Model Rules of Professional Conduct.",
+    a: "Documents are stored encrypted (AES-256 at rest, TLS 1.3 in transit) on U.S.-based servers. Access is limited to you, the attorney of record you designate, and the AI drafting pipeline, and every access is logged. We don't train models on your data and we don't sell anonymized exhibits; you can export or hard-delete everything at any time.",
   },
 ];
 
@@ -63,9 +68,13 @@ export default function FaqPage() {
             What clients ask <em>before signing.</em>
           </h1>
           <p className="mt-6 font-sans text-[16px] leading-relaxed text-muted-strong">
-            The eight questions we hear on every qualification call. If yours
-            isn&apos;t here, reply to any email — your attorney of record
-            answers directly, in writing.
+            What people ask most about what the tool does, who signs, and what
+            it costs. For how we keep the criteria source-cited and current, see
+            the{" "}
+            <Link href="/validation" className="ink-link">
+              validation page
+            </Link>
+            .
           </p>
         </Rise>
 
@@ -148,6 +157,7 @@ function SiteFooter() {
         <div className="microprint flex gap-4">
           <Link className="ink-link" href="/">Home</Link>
           <Link className="ink-link" href="/billing">Pricing</Link>
+          <Link className="ink-link" href="/validation">Validation</Link>
           <Link className="ink-link" href="/dashboard">Live case</Link>
         </div>
       </div>

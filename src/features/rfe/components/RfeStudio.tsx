@@ -3,7 +3,8 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
-import { DisclaimerStamp, CitationNote } from "@/components/legal";
+import { DisclaimerStamp, CitationNote, AdjudicationBadge } from "@/components/legal";
+import { type AdjudicationReport } from "@/lib/llm/adjudication-gates";
 import {
   DISCLAIMER,
   attachExhibits,
@@ -38,6 +39,8 @@ interface RfeApiResponse {
   version: number | null;
   /** True when the response was charged + generated but the version failed to save. */
   saveFailed?: boolean;
+  /** Live adjudication-risk verdict — parity with the draft route. */
+  adjudication?: AdjudicationReport;
 }
 
 export function RfeStudio({
@@ -67,6 +70,7 @@ export function RfeStudio({
   const [source, setSource] = useState<ModelSource>(initialSource);
   const [error, setError] = useState<string | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
+  const [adjudication, setAdjudication] = useState<AdjudicationReport | null>(null);
   // Synchronous in-flight guard — see DraftStudio. A stale `status` closure can't
   // stop two same-render clicks from both firing a paid POST.
   const busyRef = useRef(false);
@@ -139,6 +143,7 @@ export function RfeStudio({
       setSections(data.sections);
       setSource(data.source);
       setSaveFailed(Boolean(data.saveFailed));
+      setAdjudication(data.adjudication ?? null);
       setStatus("done");
     } catch {
       setError("Network error — please try again.");
@@ -234,6 +239,7 @@ export function RfeStudio({
           <div className="space-y-4">
             <DisclaimerStamp text={DISCLAIMER} />
             <CitationNote />
+            {adjudication ? <AdjudicationBadge report={adjudication} /> : null}
             {exhibitIndex.length > 0 ? (
               <ExhibitIndex
                 entries={exhibitIndex}

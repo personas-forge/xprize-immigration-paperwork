@@ -270,8 +270,10 @@ function SoftGate({
           Go deeper — free to start
         </div>
         <p className="mt-1 font-sans text-[15.5px] leading-snug text-foreground-soft">
-          This was the instant read. Run the full {classification} screening with
-          evidence, a gap plan, and a draftable petition — your answers carry over.
+          This was an instant keyword read. The full {classification} screening
+          reads your whole record in depth — catching strengths a quick scan
+          misses — with evidence, a gap plan, and a draftable petition. Your
+          answers carry over.
         </p>
       </div>
       <Link

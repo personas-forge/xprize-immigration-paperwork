@@ -114,6 +114,9 @@ export function DraftStudio({
   const [copyState, setCopyState] = useState<CopyState>("idle");
   const [retryState, setRetryState] = useState<RetryState>("idle");
   const [resolvedCaseId, setResolvedCaseId] = useState<string | null>(caseId);
+  // Explicit no-charge "Save edits" of the current sections (so plain textarea
+  // edits aren't local-only). "saved" reverts to "idle" on the next edit.
+  const [editSaveState, setEditSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   // Synchronous in-flight guard: a stale-closure `status` check can't stop two
   // clicks in the same render from both firing a paid POST. A ref can.
   const busyRef = useRef(false);
@@ -204,7 +207,10 @@ export function DraftStudio({
       const res = await fetch("/api/draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, focus: heading }),
+        // Send the sections the user is CURRENTLY holding so the server merges the
+        // regenerated section into THESE (preserving unsaved edits to other
+        // sections), not into the last stored version.
+        body: JSON.stringify({ ...payload, focus: heading, sections }),
       });
       if (res.status === 402) {
         setStatus("paywall");
@@ -322,8 +328,28 @@ export function DraftStudio({
     }
   }
 
+  async function saveEdits() {
+    // No-charge persistence of the current sections via /api/draft/save (never
+    // re-generates). Only meaningful for a persisted case; inline/demo has no caseId.
+    if (busyRef.current || !resolvedCaseId) return;
+    busyRef.current = true;
+    setEditSaveState("saving");
+    try {
+      const result = await retrySaveDraft({ caseId: resolvedCaseId, sections, source });
+      if (result.ok) {
+        setEditSaveState("saved");
+      } else {
+        setEditSaveState("error");
+        setSaveFailed(true);
+      }
+    } finally {
+      busyRef.current = false;
+    }
+  }
+
   function editBody(heading: string, body: string) {
     setRegenerationError(null);
+    setEditSaveState("idle"); // a new edit means there are unsaved changes again
     setSections((prev) => prev.map((s) => (s.heading === heading ? { ...s, body } : s)));
   }
 
@@ -349,6 +375,16 @@ export function DraftStudio({
               introduction, an argument for each qualifying criterion, and a
               conclusion. You can edit any section and regenerate it.
             </p>
+            {caseId && documents.length === 0 ? (
+              <p
+                className="rounded-control border border-dashed border-border-strong bg-surface-muted/40 px-4 py-2.5 font-sans text-[14.5px] leading-snug"
+                style={{ color: "var(--muted-strong)" }}
+              >
+                Tip: add your CV and evidence to the Evidence Vault first — the
+                draft then cites your real exhibits and argues from your actual
+                record, not just the screening summary.
+              </p>
+            ) : null}
             <div className="flex flex-wrap items-center gap-3">
               <Button type="button" variant="primary" onClick={generate}>
                 Draft the petition
@@ -527,13 +563,29 @@ export function DraftStudio({
                   5
                 </span>
               </Button>
+              {resolvedCaseId ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={saveEdits}
+                  disabled={regenerating !== null || editSaveState === "saving"}
+                >
+                  {editSaveState === "saving"
+                    ? "Saving…"
+                    : editSaveState === "saved"
+                      ? "Saved ✓"
+                      : "Save edits"}
+                </Button>
+              ) : null}
               {critiqueScore !== null ? (
                 <Badge tone={scoreTone(critiqueScore)}>
                   Draft quality {critiqueScore}/100
                 </Badge>
               ) : null}
               <span className="microprint" style={{ color: "var(--muted)" }}>
-                Edits are local — your attorney of record finalizes and signs.
+                {resolvedCaseId
+                  ? "Edits stay local until you Save (or regenerate a section); your attorney of record finalizes and signs."
+                  : "Edits are local in this preview — your attorney of record finalizes and signs."}
               </span>
             </div>
             {critiqueStatus === "error" ? (

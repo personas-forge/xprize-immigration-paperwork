@@ -163,6 +163,16 @@ export interface AiOperationDeps {
     limits: typeof RATE_LIMITS;
   };
   newRequestId: () => string;
+  /**
+   * Establish the LightTrack cost/margin billing context (customer + feature) around the model
+   * call, so the `trackLlm` emission deep in the LLM client is attributed to the metered user.
+   * Optional + defaults to a passthrough — the unit suite (which doesn't exercise telemetry) omits
+   * it, and the lazy `defaultDeps()` wires the real `runWithBilling` from `@/lib/cost-telemetry`.
+   */
+  runWithBilling?: <T>(
+    ctx: { customerId?: string; feature?: string },
+    fn: () => Promise<T>,
+  ) => Promise<T>;
 }
 
 let cachedDefaults: AiOperationDeps | null = null;
@@ -170,10 +180,11 @@ let cachedDefaults: AiOperationDeps | null = null;
 /** Lazily wire the real server-only infra. Never called from the unit suite. */
 async function defaultDeps(): Promise<AiOperationDeps> {
   if (cachedDefaults) return cachedDefaults;
-  const [{ chargeForOperation }, { getLlm }, { getUser }] = await Promise.all([
+  const [{ chargeForOperation }, { getLlm }, { getUser }, { runWithBilling }] = await Promise.all([
     import("@/lib/tokens/guard"),
     import("@/lib/llm/client"),
     import("@/lib/auth/session"),
+    import("@/lib/cost-telemetry"),
   ]);
   cachedDefaults = {
     charge: chargeForOperation,
@@ -186,6 +197,7 @@ async function defaultDeps(): Promise<AiOperationDeps> {
       limits: RATE_LIMITS,
     },
     newRequestId: randomUUID,
+    runWithBilling,
   };
   return cachedDefaults;
 }
@@ -287,7 +299,15 @@ export async function executeAiOperation<TInput, TOutput>(
     } else {
       try {
         const { text, options } = spec.prompt(input);
-        const raw = await llm.generate(text, options);
+        // Attribute the LLM cost emitted by this generate() (via the client's `trackLlm` seam) to the
+        // metered user, so LightTrack can net it against revenue for margin. No-op telemetry-side when
+        // unconfigured; the user id may be undefined on the keyless/dev free-pass path.
+        const billing = d.runWithBilling ?? ((_ctx, fn) => fn());
+        const customerId = (await resolveUser())?.id;
+        const raw = await billing(
+          { customerId, feature: operationKey },
+          () => llm.generate(text, options),
+        );
         const guarded = spec.guard(raw, input);
         if (guarded === null) {
           reclaimed = true;
