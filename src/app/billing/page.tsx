@@ -8,14 +8,26 @@ import { getBalance } from "@/lib/tokens/ledger";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { isDevAuth } from "@/lib/auth/devAuth";
 import { BUNDLES, ENTERPRISE_CONTACT, FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
+import { costOf, labelOf, type OperationKey } from "@/lib/tokens/registry";
 import { BundleGrid } from "./BundleGrid";
 import { PurchaseToast } from "./PurchaseToast";
 
 export const metadata: Metadata = {
   title: "Token ledger — Immigration Concierge",
   description:
-    "Prepaid tokens fund AI form-field guidance. Top up with a bundle — bigger bundles cost less per token. Enterprise is contact-only.",
+    "Prepaid tokens fund the AI drafting tools — qualification, petition drafting, evidence categorization, RFE responses. Top up with a bundle — bigger bundles cost less per token. Enterprise is contact-only.",
 };
+
+// "What a token buys" — driven from the OperationRegistry so the per-op prices on
+// this page can never drift from what the metering actually charges (registry.ts
+// is the single source of truth). Order: cheapest job to the premium full draft.
+const PER_OP_COSTS: OperationKey[] = [
+  "categorize",
+  "qualify",
+  "draft_section",
+  "rfe",
+  "draft",
+];
 
 // Node runtime — getBalance() uses `pg`.
 export const runtime = "nodejs";
@@ -52,8 +64,9 @@ export default async function BillingPage({
             Pay for <em>exactly what you use</em>.
           </h1>
           <p className="mt-6 max-w-2xl font-sans text-[16px] leading-relaxed text-muted-strong">
-            No subscriptions. Each AI form-field answer costs a single token;
-            you keep what you don&apos;t spend. New accounts start with{" "}
+            No subscriptions. Different AI operations cost different amounts — a
+            quick screening is a few tokens, a full petition draft more — and you
+            keep what you don&apos;t spend. New accounts start with{" "}
             <span className="doc-number text-foreground">{FREE_SIGNUP_GRANT}</span>{" "}
             free tokens. Top up with a bundle below — larger bundles cost less
             per token.
@@ -125,17 +138,34 @@ export default async function BillingPage({
         <Rise className="mt-14">
           <div className="perforation h-px" aria-hidden />
           <div className="mt-6 grid gap-6 sm:grid-cols-3">
-            <Footnote
-              eyebrow="What a token buys"
-              body="One token = one AI form-field guidance answer. Tokens are prepaid credits — non-transferable, no cash-out — not legal tender."
-            />
+            <div>
+              <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+                What a token buys — cost per AI operation
+              </div>
+              <ul className="mt-2 space-y-1 font-sans text-[15.5px] leading-relaxed text-muted-strong">
+                {PER_OP_COSTS.map((op) => (
+                  <li key={op} className="flex items-baseline justify-between gap-3 border-b border-dotted border-rule pb-1">
+                    <span>{labelOf(op)}</span>
+                    <span
+                      className="doc-number text-foreground"
+                      style={{ fontVariantNumeric: "tabular-nums" }}
+                    >
+                      {costOf(op)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="microprint mt-2" style={{ color: "var(--muted)" }}>
+                Prepaid credits — non-transferable, no cash-out.
+              </p>
+            </div>
             <Footnote
               eyebrow="Not legal advice"
-              body="AI guidance is general information only, never legal advice. An attorney of record must review your petition before anything is filed with USCIS."
+              body="AI drafting is general information only, never legal advice — we're a drafting tool, not a law firm. Your own attorney of record must review and sign your petition before anything is filed with USCIS."
             />
             <Footnote
               eyebrow="Refunds"
-              body="Purchased tokens may be reversed on a refund or chargeback. Free signup tokens are one-per-account and may expire."
+              body="Purchased tokens may be reversed on a refund or chargeback. The free signup grant is one per account."
             />
           </div>
         </Rise>
@@ -196,6 +226,7 @@ function SiteFooter() {
         <div className="microprint flex gap-4">
           <Link className="ink-link" href="/">Home</Link>
           <Link className="ink-link" href="/faq">FAQ</Link>
+          <Link className="ink-link" href="/validation">Validation</Link>
           <Link className="ink-link" href="/dashboard">Live case</Link>
         </div>
       </div>

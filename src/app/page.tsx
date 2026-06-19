@@ -427,6 +427,7 @@ function SiteFooter() {
           <a className="ink-link" href="#how">How it works</a>
           <Link className="ink-link" href="/billing">Pricing</Link>
           <Link className="ink-link" href="/faq">FAQ</Link>
+          <Link className="ink-link" href="/validation">Validation</Link>
           <Link className="ink-link" href="/landing-claude">Alt. masthead</Link>
         </div>
       </div>

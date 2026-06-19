@@ -10,6 +10,7 @@ import {
   type RfeResponse,
 } from "@/features/rfe";
 import { executeAiOperation } from "@/lib/ai/operation";
+import { runAdjudication } from "@/lib/llm/adjudication-gates";
 import { petitions } from "@/lib/data/adapters/petition";
 import { evidence } from "@/lib/data/adapters/evidence";
 import { type CaseAccess } from "@/lib/data/adapters/access";
@@ -116,6 +117,26 @@ export function POST(request: Request): Promise<NextResponse> {
         response,
         source as Parameters<typeof buildRfeResult>[1],
       ) as unknown as Record<string, unknown>,
+    // Live adjudication PARITY with /api/draft (moonshot #1): an RFE response is
+    // equally signable, attorney-of-record work product, so it gets the same
+    // runtime fabricated-specifics / leaked-case-law / wrong-classification scan.
+    // The grounding text includes the RFE notice itself so specifics the response
+    // legitimately quotes from the RFE aren't flagged as fabricated.
+    adjudicate: (response, input, source, body) => {
+      const outputText = response.sections.map((s) => `${s.heading} ${s.body}`).join("\n");
+      const inputText =
+        input.req.criteria
+          .map((c) => `${c.name} ${c.evidence} ${c.rationale}`)
+          .join(" ") + ` ${input.req.petitioner} ${input.req.rfeText}`;
+      return runAdjudication({
+        operation: "rfe",
+        classification: input.req.classification,
+        source,
+        result: body,
+        inputText,
+        outputText,
+      });
+    },
     // Persist a new RFE response version through the adapter (gated). The user
     // already paid, so a storage failure is SURFACED (saveFailed), never swallowed.
     persist: async (response, input, user, source) => {

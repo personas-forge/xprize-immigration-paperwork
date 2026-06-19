@@ -31,6 +31,7 @@ import {
   mockSection,
   parseDraftRequest,
   parseFocus,
+  toSection,
   tryParseDraftResponse,
   tryParseSectionResponse,
   type DraftRequest,
@@ -44,12 +45,17 @@ import { runAdjudication } from "@/lib/llm/adjudication-gates";
 import { toErrorResponse } from "@/lib/data/adapters/http";
 import { type AiOperationSpec } from "@/lib/ai/operation";
 
-/** Validated input: the draft request, the optional single-section focus, and
- *  the case it persists to (null = inline/demo payload, no persistence). */
+/** Validated input: the draft request, the optional single-section focus, the
+ *  case it persists to (null = inline/demo payload, no persistence), and — on a
+ *  single-section regenerate — the client's CURRENT sections, so unsaved edits
+ *  to OTHER sections survive the merge (see `pickMergeBase`). */
 export interface DraftInput {
   req: DraftRequest;
   focus: string | null;
   caseId: string | null;
+  /** The sections the client is currently holding (regenerate path). Absent on a
+   *  full draft and on legacy clients that don't send it. */
+  clientSections?: DraftSection[] | null;
 }
 
 /** Either a full letter or one regenerated section — the two shapes the route
@@ -57,6 +63,34 @@ export interface DraftInput {
 export type DraftOutput =
   | { kind: "draft"; draft: PetitionDraft }
   | { kind: "section"; section: DraftSection };
+
+/**
+ * Choose the base set of sections to merge a regenerated section into. Prefer the
+ * client's CURRENT sections — so unsaved edits to OTHER sections survive the
+ * regenerate (the persisted version must reflect what the user is looking at, not
+ * the last stored version). Returns null when the client didn't send a usable set
+ * (legacy clients, or a set missing the focused heading), so `persist` falls back
+ * to the last stored draft instead. Pure + unit-tested.
+ */
+export function pickMergeBase(
+  clientSections: readonly DraftSection[] | null | undefined,
+  focus: string,
+): DraftSection[] | null {
+  if (!clientSections || clientSections.length === 0) return null;
+  // Only trust the client set if it actually contains the section being
+  // regenerated — otherwise the merge-by-heading would silently drop the new one.
+  if (!clientSections.some((s) => s.heading === focus)) return null;
+  return clientSections.map((s) => ({ heading: s.heading, body: s.body }));
+}
+
+/** Replace the focused section's body in `base`, preserving every other section. */
+export function mergeRegeneratedSection(
+  base: readonly DraftSection[],
+  focus: string,
+  body: string,
+): DraftSection[] {
+  return base.map((s) => (s.heading === focus ? { heading: focus, body } : s));
+}
 
 export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
   // Full letter bills "draft" (xl); a single-section regenerate bills the
@@ -74,6 +108,13 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
       typeof record.caseId === "string" && record.caseId.trim() !== ""
         ? record.caseId.trim()
         : null;
+    // The client's current sections (regenerate path) — sanitized with the same
+    // toSection validator the save route uses. Used only to pick the merge base
+    // in persist; null when absent so legacy clients keep the stored-draft merge.
+    const sanitizedSections = Array.isArray(record.sections)
+      ? record.sections.map(toSection).filter((s): s is DraftSection => s !== null)
+      : [];
+    const clientSections = sanitizedSections.length > 0 ? sanitizedSections : null;
 
     // DB path: resolve the case OWNER-ONLY (a supplied caseId the caller can't
     // access never degrades to the inline payload) and load its criteria, all
@@ -118,7 +159,7 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
       // exhibit-free draft rather than failing a payable generation.
       const docs = await evidence.getDocuments(access, caseId);
       const req = docs.ok ? attachExhibits(parsed.value, docs.value) : parsed.value;
-      return { ok: true, value: { req, focus, caseId } };
+      return { ok: true, value: { req, focus, caseId, clientSections } };
     }
 
     // Inline/demo path (caseId-less): validate the supplied payload.
@@ -126,7 +167,7 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
     if (!parsed.ok) {
       return { ok: false, response: NextResponse.json({ error: parsed.error }, { status: 400 }) };
     }
-    return { ok: true, value: { req: parsed.value, focus, caseId: null } };
+    return { ok: true, value: { req: parsed.value, focus, caseId: null, clientSections } };
   },
 
   prompt: (input) =>
@@ -200,23 +241,28 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
       return { caseId: input.caseId, version: saved.value, saveFailed: false };
     }
 
-    // Single section: merge it into the latest stored draft as a NEW version, so
-    // a paid regenerate doesn't diverge from (or get lost against) the stored draft.
-    const latest = await petitions.getLatestDraft(access, input.caseId);
-    if (!latest.ok) {
-      console.error("[/api/draft] failed to load latest draft for merge", latest.error);
-      return { caseId: input.caseId, version: null, saveFailed: true };
+    // Single section: merge it into the user's CURRENT sections (sent by the
+    // client) so unsaved edits to OTHER sections survive the regenerate. Fall back
+    // to the latest stored draft only when the client didn't send a usable set
+    // (legacy clients) — the old behavior, which silently dropped those edits.
+    const focusHeading = input.focus as string;
+    let mergeBase = pickMergeBase(input.clientSections, focusHeading);
+    if (!mergeBase) {
+      const latest = await petitions.getLatestDraft(access, input.caseId);
+      if (!latest.ok) {
+        console.error("[/api/draft] failed to load latest draft for merge", latest.error);
+        return { caseId: input.caseId, version: null, saveFailed: true };
+      }
+      if (!latest.value) {
+        // No stored base draft to merge into (e.g. the initial full save failed).
+        console.error("[/api/draft] section regenerate has no stored draft to merge into", {
+          caseId: input.caseId,
+        });
+        return { caseId: input.caseId, version: null, saveFailed: true };
+      }
+      mergeBase = latest.value.sections;
     }
-    if (!latest.value) {
-      // No stored base draft to merge into (e.g. the initial full save failed).
-      console.error("[/api/draft] section regenerate has no stored draft to merge into", {
-        caseId: input.caseId,
-      });
-      return { caseId: input.caseId, version: null, saveFailed: true };
-    }
-    const merged = latest.value.sections.map((s) =>
-      s.heading === input.focus ? { heading: input.focus as string, body: output.section.body } : s,
-    );
+    const merged = mergeRegeneratedSection(mergeBase, focusHeading, output.section.body);
     const saved = await petitions.saveDraft(access, input.caseId, merged, source);
     if (!saved.ok) {
       console.error("[/api/draft] failed to persist regenerated section", saved.error);

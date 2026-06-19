@@ -198,7 +198,12 @@ export default function LandingClaude() {
 
         <footer className="py-8 text-center">
           <div className="microprint" style={{ color: "var(--muted-strong)" }}>
-            Immigration Concierge · AI drafting for O-1 / EB-1 · 2026
+            Immigration Concierge · AI drafting for O-1 / EB-1 · not a law firm, never legal advice · 2026
+          </div>
+          <div className="microprint mt-3 flex flex-wrap items-center justify-center gap-4">
+            <Link className="ink-link" href="/faq">FAQ</Link>
+            <Link className="ink-link" href="/billing">Pricing</Link>
+            <Link className="ink-link" href="/validation">Validation</Link>
           </div>
           <div className="mt-2 inline-flex items-center gap-2 text-accent-dark opacity-60">
             <Guilloche size={28} rings={4} />

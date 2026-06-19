@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { DISCLAIMER, mockDraft, type DraftRequest } from "./index";
-import { draftSpec, type DraftInput } from "./draftOperation";
+import { DISCLAIMER, mockDraft, type DraftRequest, type DraftSection } from "./index";
+import {
+  draftSpec,
+  mergeRegeneratedSection,
+  pickMergeBase,
+  type DraftInput,
+} from "./draftOperation";
 
 // Unit coverage for the /api/draft operation spec's TWO-PATH DISPATCH — the new
 // risk in moving draft onto the orchestrator. The orchestrator itself (rate-limit
@@ -81,4 +86,50 @@ test("build: dispatches to the right envelope, always attaching DISCLAIMER + sou
   assert.ok((sectionBody as { section?: unknown }).section, "section → .section");
   assert.equal(sectionBody.disclaimer, DISCLAIMER);
   assert.equal(sectionBody.source, "mock");
+});
+
+// Regenerate-merge: the persisted version must reflect the user's CURRENT edits to
+// OTHER sections, not the last stored draft (regression for the silent edit-loss).
+const clientHeld: DraftSection[] = [
+  { heading: "Introduction", body: "MY UNSAVED EDIT to the intro." },
+  { heading: "Awards", body: "old awards body (about to be regenerated)" },
+  { heading: "Conclusion", body: "MY UNSAVED EDIT to the conclusion." },
+];
+
+test("pickMergeBase: prefers the client's current sections when they include the focus heading", () => {
+  const base = pickMergeBase(clientHeld, "Awards");
+  assert.ok(base, "client set is used as the merge base");
+  assert.deepEqual(
+    base?.map((s) => s.heading),
+    ["Introduction", "Awards", "Conclusion"],
+  );
+  // It's a copy of {heading, body} — not the same references.
+  assert.notEqual(base, clientHeld);
+});
+
+test("pickMergeBase: falls back to null for legacy clients (no/empty sections) or a set missing the focus", () => {
+  assert.equal(pickMergeBase(null, "Awards"), null);
+  assert.equal(pickMergeBase(undefined, "Awards"), null);
+  assert.equal(pickMergeBase([], "Awards"), null);
+  // A set that doesn't contain the section being regenerated can't be trusted.
+  assert.equal(pickMergeBase(clientHeld, "Press Coverage"), null);
+});
+
+test("mergeRegeneratedSection: replaces only the focus body, preserving every other section's (edited) body", () => {
+  const merged = mergeRegeneratedSection(clientHeld, "Awards", "FRESH regenerated awards prose.");
+  assert.deepEqual(merged, [
+    { heading: "Introduction", body: "MY UNSAVED EDIT to the intro." },
+    { heading: "Awards", body: "FRESH regenerated awards prose." },
+    { heading: "Conclusion", body: "MY UNSAVED EDIT to the conclusion." },
+  ]);
+});
+
+test("regenerate merge end-to-end (pure): the unsaved intro/conclusion edits survive a section regenerate", () => {
+  // What persist does: pick the client base, then merge the new section into it.
+  const base = pickMergeBase(clientHeld, "Awards");
+  assert.ok(base);
+  const persisted = mergeRegeneratedSection(base!, "Awards", "FRESH awards prose.");
+  assert.equal(persisted.find((s) => s.heading === "Introduction")?.body, "MY UNSAVED EDIT to the intro.");
+  assert.equal(persisted.find((s) => s.heading === "Conclusion")?.body, "MY UNSAVED EDIT to the conclusion.");
+  assert.equal(persisted.find((s) => s.heading === "Awards")?.body, "FRESH awards prose.");
 });
