@@ -1,0 +1,102 @@
+[
+  {
+    "id": "L2-A-positioning",
+    "package": "A",
+    "cert_level": "L2",
+    "type": "strength",
+    "verdict": "confirmed",
+    "dimension": "trust",
+    "title": "FAQ + billing + validation read as the real product live (drafting tool, token pricing, /validation reachable)",
+    "got": "Live FAQ: 'not a law firm' + 'your own attorney' present; flat-fee/counsel-of-record/biometrics/attorney-client-privilege/Gemini all absent (raw-HTML grep: flat fee=0, Gemini=0, prepaid tokens=1, 150 free tokens=1). /validation linked from landing + faq + billing footers. Billing per-op cost list renders (Petition letter draft).",
+    "evidence": ["uat/runs/2026-06-19-l2/_marketing.mjs", "uat/runs/2026-06-19-l2/shots/faq.png", "uat/runs/2026-06-19-l2/shots/billing.png"]
+  },
+  {
+    "id": "L2-B-edit-persistence",
+    "package": "B",
+    "cert_level": "L2",
+    "type": "broken-flow",
+    "verdict": "confirmed",
+    "dimension": "trust",
+    "title": "Per-section regenerate now preserves unsaved edits to other sections (dc-draft-01 fixed, verified live)",
+    "expected": "Editing the Awards section then regenerating the Press section must keep the Awards edit in the persisted draft.",
+    "got": "Marker ZZMARKER_KEEP_AWARDS injected into the Awards body survived in the persisted draft (read back via the case detail page) after a real-Claude Press regenerate that advanced the draft to v2; Press body changed (862->869). Pre-fix this edit was silently dropped.",
+    "evidence": ["uat/runs/2026-06-19-l2/regen-claude.json", "uat/runs/2026-06-19-l2/casepage.html"]
+  },
+  {
+    "id": "L2-C-sign-ceremony",
+    "package": "C",
+    "cert_level": "L2",
+    "type": "confusion",
+    "verdict": "confirmed",
+    "dimension": "clarity",
+    "title": "Sign & file is a two-step confirm with a statement of effect (mo-review-02 fixed, verified live)",
+    "got": "First click on 'Sign & file with USCIS' revealed 'Confirm - attorney of record' + 'You are about to sign this petition... and file it with USCIS' and the case remained in Attorney Review (NOT filed); the explicit Confirm advanced it to Filed.",
+    "evidence": ["uat/runs/2026-06-19-l2/shots/c-2-confirm-step.png", "uat/runs/2026-06-19-l2/shots/c-3-filed.png", "uat/runs/2026-06-19-l2/review_rfe.log"]
+  },
+  {
+    "id": "L2-D-rfe-adjudication",
+    "package": "D",
+    "cert_level": "L2",
+    "type": "missing-feature",
+    "verdict": "confirmed",
+    "dimension": "trust",
+    "title": "RFE response now carries the adjudication 'Compliance check' badge (dc-rfe-01/mo-rfe-01 fixed, verified live)",
+    "got": "On the Filed case, a real-Claude RFE response (27s) rendered the AdjudicationBadge ('Compliance check'), matching the draft path. Pre-fix the RFE response had no adjudication report.",
+    "evidence": ["uat/runs/2026-06-19-l2/shots/d-rfe-result.png"]
+  },
+  {
+    "id": "L2-E-founder-calibration",
+    "package": "E",
+    "cert_level": "L2",
+    "type": "quality-gap",
+    "verdict": "confirmed",
+    "dimension": "senior-quality",
+    "title": "Live model maps founder GitHub/open-source/product evidence to Original contribution (kw-qual-01/SR-QV-01)",
+    "got": "Authenticated qualify (source: claude) scored 'Original contribution: Met' citing 'US patent 11,902,114 ... FoldX2 framework (18,000 GitHub stars, adopted by 40+ labs)'. The model path reads the founder/engineer signals the widened keyless heuristic also now catches.",
+    "evidence": ["uat/runs/2026-06-19-l2/qualify-claude.json"]
+  },
+  {
+    "id": "L2-F-dashboard-bypass",
+    "package": "F",
+    "cert_level": "L2",
+    "type": "broken-flow",
+    "verdict": "confirmed",
+    "dimension": "completion",
+    "title": "Dashboard lists real cases under TOKENS_BYPASS=1; only the balance pill is gated on the economy (SR-TP-01 fixed)",
+    "got": "On a TOKENS_BYPASS=1 server, /dashboard listed the real case (Priya Nair) with the balance pill showing the unmetered marker; pre-fix the case list was suppressed entirely under bypass.",
+    "evidence": ["uat/runs/2026-06-19-l2/dash-bypass.html"]
+  },
+  {
+    "id": "L2-quality-qualify",
+    "package": "AI-quality",
+    "cert_level": "L2",
+    "type": "strength",
+    "verdict": "confirmed",
+    "dimension": "senior-quality",
+    "title": "Real-Claude qualify is grounded: names every supplied specific and crosswalks the correct criteria",
+    "got": "source: claude, likelihood 88, DISCLAIMER present; verdict names FoldX2, RECOMB 2022, Nature Methods, Quanta, patent 11,902,114, 4,200 citations, NeurIPS, GitHub stars and maps each to the right criterion. No placeholders, no fabrication.",
+    "evidence": ["uat/runs/2026-06-19-l2/qualify-claude.json"]
+  },
+  {
+    "id": "L2-quality-draft",
+    "package": "AI-quality",
+    "cert_level": "L2",
+    "type": "strength",
+    "verdict": "confirmed",
+    "dimension": "senior-quality",
+    "title": "Real-Claude draft is grounded + attorney-ready; the live adjudication gate did not false-positive on supplied numbers",
+    "got": "source: claude, 10 criterion-structured sections, persisted v1, adjudication attorneyReady=true; names the supplied evidence. No (Exhibit N) citations because the vault was empty (PN-DRAFT-01 by-design; addressed by the new populate-the-vault nudge).",
+    "evidence": ["uat/runs/2026-06-19-l2/draft-claude.json"]
+  },
+  {
+    "id": "L2-note-faq-accordion",
+    "package": "surface-model",
+    "cert_level": "L2",
+    "type": "confusion",
+    "verdict": "uncertain",
+    "dimension": "clarity",
+    "title": "Surface-model note (driver, not product): FAQ <details> accordion hides answer text from innerText scrapes",
+    "got": "A naive innerText read under-reports collapsed FAQ answers; the copy IS server-rendered (raw HTML confirms). Future L2 scrapes should expand <details> or read page.content(). Not a product defect.",
+    "evidence": ["src/components/FaqEntry.tsx", "uat/runs/2026-06-19-l2/_marketing.mjs"]
+  }
+]
