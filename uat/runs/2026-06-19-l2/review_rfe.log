@@ -1,0 +1,10 @@
+→ Submitting for attorney review…
+Status after submit contains 'Attorney Review': true
+Sign&file button present: true
+PACKAGE C — first click reveals confirm + statement of effect, does NOT file: true  [confirmHeading=1, effect=1, stillReview=true]
+→ After Confirm, case is Filed: true
+RFE studio present on Filed case: true
+→ Generating RFE response (real Claude)…
+PACKAGE D — RFE response shows the adjudication 'Compliance check' badge: true  (waited 27s)
+
+SUMMARY: C=PASS  D=PASS

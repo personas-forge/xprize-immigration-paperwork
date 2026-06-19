@@ -9,6 +9,7 @@ export {
   parseCategorizeResponse,
   tryParseCategorizeResponse,
   summarizeVault,
+  summarizeVaultBuckets,
   type Bucket,
   type CategorizeAssessment,
   type CategorizeRequest,

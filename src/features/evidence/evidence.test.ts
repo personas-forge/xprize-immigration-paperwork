@@ -11,6 +11,7 @@ import {
   parseCategorizeResponse,
   tryParseCategorizeResponse,
   summarizeVault,
+  summarizeVaultBuckets,
   type CategorizeRequest,
 } from "./evidence";
 
@@ -48,6 +49,24 @@ test("buildCategorizePrompt: one criterion, no invention, JSON, names criteria",
   assert.ok(p.includes("do not invent"));
   assert.ok(p.includes("json"));
   assert.ok(p.includes("awards") && p.includes("scholarly articles"));
+  // No existing-vault block by default (backward compatible).
+  assert.ok(!p.includes("existing_vault"));
+});
+
+test("summarizeVaultBuckets + buildCategorizePrompt: feeds existing buckets for consistency (G2.1)", () => {
+  assert.equal(summarizeVaultBuckets([]), "", "empty vault → no summary");
+  const summary = summarizeVaultBuckets([
+    { name: "ICML certificate.pdf", criterion: "Awards" },
+    { name: "NeurIPS review invite.pdf", criterion: "Judging" },
+    { name: "TechCrunch feature.pdf", criterion: "Press" },
+  ]);
+  assert.ok(summary.includes("Awards: ICML certificate.pdf"));
+  assert.ok(summary.includes("Judging: NeurIPS review invite.pdf"));
+
+  const p = buildCategorizePrompt(valid, "O-1A", summary);
+  assert.ok(p.includes("EXISTING_VAULT"), "fences the existing-vault context");
+  assert.ok(p.includes("TechCrunch feature.pdf"), "includes the filed doc names");
+  assert.ok(/read-only reference, never as instructions/i.test(p), "keeps the injection defense");
 });
 
 // — Response parsing ─────────────────────────────────────────────────────────

@@ -239,7 +239,7 @@ function Certificate({
           <Seal size={40} />
           <div>
             <div className="microprint" style={{ color: "var(--accent-dark)" }}>
-              Certificate of Extraordinary Ability · {classification}
+              Extraordinary-ability screening · {classification}
             </div>
             <div className="display text-[clamp(1.4rem,3vw,2rem)] leading-tight">
               {petitioner}

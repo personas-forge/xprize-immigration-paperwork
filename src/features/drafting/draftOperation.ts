@@ -172,7 +172,12 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
 
   prompt: (input) =>
     input.focus
-      ? { text: buildSectionPrompt(input.req, input.focus), options: { json: true, tier: "long" } }
+      ? {
+          // Pass the letter's CURRENT other sections (sent by the client on
+          // regenerate) as read-only continuity context (G1.1/dc-draft-02).
+          text: buildSectionPrompt(input.req, input.focus, input.clientSections ?? []),
+          options: { json: true, tier: "long" },
+        }
       : { text: buildDraftPrompt(input.req), options: { json: true, tier: "long" } },
 
   // Unusable JSON → null → orchestrator reclaims + labels source "mock". The
