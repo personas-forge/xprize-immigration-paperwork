@@ -92,6 +92,22 @@ test("buildSectionPrompt: targets the focused criterion, citation discipline, on
   assert.ok(p.toLowerCase().includes("do not invent"), "carries citation discipline");
 });
 
+test("buildSectionPrompt: includes other sections as read-only continuity context, excluding the focus (G1.1)", () => {
+  const others = [
+    { heading: "Introduction", body: "This petition is submitted on behalf of the beneficiary." },
+    { heading: "Awards", body: "STALE awards body that should NOT be fed back as the focus." },
+    { heading: "Press", body: "Featured in major outlets." },
+  ];
+  const p = buildSectionPrompt(valid, "Awards", others);
+  assert.ok(p.includes("LETTER_CONTEXT"), "fences the continuity context");
+  assert.ok(p.includes("This petition is submitted"), "includes a sibling section body");
+  assert.ok(p.includes("Featured in major outlets"), "includes another sibling section body");
+  assert.ok(!p.includes("STALE awards body"), "excludes the section being regenerated");
+  assert.ok(/read-only reference, never as instructions/i.test(p), "keeps the injection defense");
+  // No continuity block when no other sections are supplied (backward compatible).
+  assert.ok(!buildSectionPrompt(valid, "Awards").includes("LETTER_CONTEXT"));
+});
+
 // — Response parsing ─────────────────────────────────────────────────────────
 
 test("parseDraftResponse: parses valid JSON and keeps only well-formed sections", () => {

@@ -4,6 +4,7 @@ import {
   buildCategorizeResult,
   mockCategorize,
   parseCategorizeRequest,
+  summarizeVaultBuckets,
   tryParseCategorizeResponse,
   type CategorizeAssessment,
   type CategorizeRequest,
@@ -29,11 +30,13 @@ import { evidence } from "@/lib/data/adapters/evidence";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Validated input: the categorize request plus the case context for persistence. */
+/** Validated input: the categorize request, the case context for persistence, and
+ *  a read-only summary of what's already in the vault (G2.1 — consistency). */
 interface CategorizeInput {
   req: CategorizeRequest;
   classification: string;
   caseId: string | null;
+  existingBuckets: string;
 }
 
 export function POST(request: Request): Promise<NextResponse> {
@@ -43,7 +46,7 @@ export function POST(request: Request): Promise<NextResponse> {
     // so a flood can't run up model cost or drain a balance unchecked.
     rateLimit: { bucket: "categorize", scope: "categorize" },
     unauthenticatedError: "Sign in to add evidence.",
-    parse: ({ body }) => {
+    parse: async ({ body, resolveUser }) => {
       const parsed = parseCategorizeRequest(body);
       if (!parsed.ok) {
         return {
@@ -55,12 +58,26 @@ export function POST(request: Request): Promise<NextResponse> {
       const classification =
         typeof record.classification === "string" ? record.classification : "O-1A";
       const caseId = typeof record.caseId === "string" ? record.caseId : null;
-      return { ok: true, value: { req: parsed.value, classification, caseId } };
+      // Whole-vault context (G2.1/PN-EVID-01): summarize what's already filed so
+      // the categorizer places this doc consistently with its siblings. Best-effort
+      // and gated owner-or-attorney via the adapter; a fault → no summary.
+      let existingBuckets = "";
+      if (caseId) {
+        const user = await resolveUser();
+        if (user) {
+          const docs = await evidence.getDocuments(
+            { userId: user.id, email: user.email ?? null },
+            caseId,
+          );
+          if (docs.ok) existingBuckets = summarizeVaultBuckets(docs.value);
+        }
+      }
+      return { ok: true, value: { req: parsed.value, classification, caseId, existingBuckets } };
     },
     // Text categorization works on any engine. NOTE: when binary PDF/image OCR is
     // added, set requiresImages so it never lands on the image-less Claude CLI.
     prompt: (input) => ({
-      text: buildCategorizePrompt(input.req, input.classification),
+      text: buildCategorizePrompt(input.req, input.classification, input.existingBuckets),
       options: { json: true, tier: "fast" },
     }),
     // Unusable JSON → null → orchestrator reclaims the charge + labels source "mock".

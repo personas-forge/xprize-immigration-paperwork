@@ -135,7 +135,7 @@ export function EvidenceVault({
             ))}
           </div>
           <span className="microprint" style={{ color: "var(--muted)" }}>
-            {summary.covered}/{summary.total} criteria covered
+            {summary.covered}/{summary.total} criteria with evidence on file
           </span>
         </div>
       </CardHeader>
@@ -203,9 +203,17 @@ export function EvidenceVault({
           </div>
         ) : (
           <p className="microprint" style={{ color: "var(--success)" }}>
-            Every criterion has at least one exhibit.
+            Every criterion has at least one exhibit on file.
           </p>
         )}
+
+        {/* Honest coverage framing (dc-evidence-02): documents present is not the
+            same as a criterion proven, and refile is a manual move, not a re-check. */}
+        <p className="microprint" style={{ color: "var(--muted)" }}>
+          Evidence on file means documents are present — not that a criterion is proven; your
+          attorney of record verifies each. Refiling moves a document to another bucket without
+          re-checking its fit.
+        </p>
 
         {/* Buckets */}
         <div className="space-y-3">

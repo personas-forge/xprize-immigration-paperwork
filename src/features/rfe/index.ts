@@ -1,5 +1,6 @@
 export {
   DISCLAIMER,
+  attachFiledPetition,
   attachRfeExhibits,
   buildRfePrompt,
   buildRfeResult,

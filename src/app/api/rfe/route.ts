@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  attachFiledPetition,
   attachRfeExhibits,
   buildRfePrompt,
   buildRfeResult,
@@ -98,7 +99,11 @@ export function POST(request: Request): Promise<NextResponse> {
         // Fuse the evidence vault so the RFE response cites real exhibits
         // (moonshot #21). Best-effort: a vault fault degrades to exhibit-free.
         const docs = await evidence.getDocuments(access, caseId);
-        const req = docs.ok ? attachRfeExhibits(parsed.value, docs.value) : parsed.value;
+        let req = docs.ok ? attachRfeExhibits(parsed.value, docs.value) : parsed.value;
+        // Fuse the as-filed petition letter so the response tracks its own language
+        // (G1.2/dc-rfe-02). Best-effort: no stored draft → criteria-only grounding.
+        const latest = await petitions.getLatestDraft(access, caseId);
+        if (latest.ok && latest.value) req = attachFiledPetition(req, latest.value.sections);
         return { ok: true, value: { req, caseId } };
       }
 
