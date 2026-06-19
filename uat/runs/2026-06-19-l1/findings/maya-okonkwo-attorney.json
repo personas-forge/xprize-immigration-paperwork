@@ -1,0 +1,162 @@
+[
+  {
+    "id": "mo-review-01",
+    "journey": "attorney-review-and-file",
+    "character": "maya-okonkwo-attorney",
+    "cert_level": "L1",
+    "type": "broken-flow",
+    "severity": "major",
+    "dimension": "completion",
+    "title": "With ATTORNEY_EMAILS empty, developer@localhost is denied the entire attorney workflow — contradicting the journey/fixture/accepted-gaps demo-unlock premise",
+    "expected": "Per env.md fixture + accepted-gaps + the journey reachability note: empty ATTORNEY_EMAILS = demo-unlock, so developer@localhost reaches the review queue and can request-changes / sign & file / record decision.",
+    "got": "Every attorney gate now uses the STRICT isConfiguredAttorney, which fails CLOSED on an empty allowlist (roles.ts:45 returns false). Result for developer@localhost with ATTORNEY_EMAILS unset: no 'Review queue' nav link (DashboardView.tsx:35 gated on dashboard/page.tsx:25), the queue page renders 'Your account isn't on the attorney allowlist' (review/page.tsx:17 -> ReviewQueueView.tsx:71-79), ReviewPanel renders zero attorney action blocks (CaseDetailView passes attorney=isConfiguredAttorney, ReviewPanel.tsx:125/149 hidden), and even a forged POST is rejected by requireAttorney (actions.ts:51). The journey is unreachable as the fixtures instruct.",
+    "evidence": [
+      "src/lib/auth/roles.ts:40",
+      "src/lib/auth/roles.ts:45",
+      "src/features/review/actions.ts:49",
+      "src/features/review/actions.ts:51",
+      "src/app/dashboard/review/page.tsx:17",
+      "src/features/review/components/ReviewQueueView.tsx:71",
+      "src/app/dashboard/cases/[id]/page.tsx:60",
+      "src/app/dashboard/page.tsx:25",
+      "src/features/dashboard/DashboardView.tsx:35",
+      "uat/env.md:75",
+      "uat/accepted-gaps.md:18"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Either (a) update env.md/accepted-gaps/journey to instruct setting ATTORNEY_EMAILS=developer@localhost as the demo fixture (the code is correctly fail-closed and the README/comments already say so), or (b) add a dev-only allowlist default. Without one of these the J1/J5 attorney journeys cannot be exercised by the documented dev user.",
+    "l2_priority": "Set ATTORNEY_EMAILS=developer@localhost, then verify the whole round-trip lives: queue lists oldest-first with truthful age badges, request-changes returns to Drafting with the note visible in the thread, sign & file advances to Filed + mints a receipt, record decision -> Approved."
+  },
+  {
+    "id": "mo-review-02",
+    "journey": "attorney-review-and-file",
+    "character": "maya-okonkwo-attorney",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "major",
+    "dimension": "clarity",
+    "title": "'Sign & file with USCIS' is a bare one-click submit — no confirmation, no statement of effect, for the single most consequential action under the attorney's bar license",
+    "expected": "The action that signs the petition under counsel's name and files it with USCIS should make its effect clear and intentional — a confirmation step or an explicit 'this signs and files; the case advances to Filed and gets a receipt number' so it is never a surprise click.",
+    "got": "The button is a plain form submit bound directly to attorneySignAndFile (ReviewPanel.tsx:130-134) with no confirm dialog, no effect description, and no irreversibility/intentionality note (grep for confirm/irreversible in the panel finds none). The adjacent applicant 'Submit for review' has explanatory microprint; the far more consequential attorney action has none.",
+    "evidence": [
+      "src/features/review/components/ReviewPanel.tsx:130",
+      "src/features/review/components/ReviewPanel.tsx:131",
+      "src/features/review/actions.ts:144"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Add a confirmation affordance (a confirm step or an inline 'This signs the petition and files it with USCIS — the case moves to Filed and receives a receipt number') before attorneySignAndFile runs.",
+    "l2_priority": "Confirm live there is no interstitial; judge whether the one-click filing reads as intentional to an attorney whose signature is on the line."
+  },
+  {
+    "id": "mo-rfe-01",
+    "journey": "respond-to-rfe",
+    "character": "maya-okonkwo-attorney",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "trust",
+    "title": "The RFE response route does NOT run the live adjudication gate that the draft route runs — fabrication/case-law/wrong-code signals are surfaced on drafts but not on RFE responses",
+    "expected": "Parity: the same runtime fabrication / case-law-flag / wrong-classification adjudication report that rides the draft response (draftOperation.ts:167 -> runAdjudication) should also ride the RFE response the attorney signs, since the RFE is an equally signable USCIS filing.",
+    "got": "The RFE spec (api/rfe/route.ts:45-140) defines parse/prompt/guard/mock/build/persist but NO adjudicate hook, so executeAiOperation attaches no adjudication report to the RFE body (operation.ts:362-369 runs only when spec.adjudicate exists). The citation-discipline PROMPT is present and equivalent, but the runtime safety net that catches a hallucinated cite for the attorney is absent on this surface.",
+    "evidence": [
+      "src/app/api/rfe/route.ts:45",
+      "src/features/drafting/draftOperation.ts:167",
+      "src/lib/ai/operation.ts:362",
+      "src/lib/llm/adjudication-gates.ts:294"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Add an `adjudicate` hook to the RFE spec wiring runAdjudication({ operation: 'rfe', ... }) — the gate already has an 'rfe' branch (adjudication-gates.ts:299), so it is a few lines for parity.",
+    "l2_priority": "Confirm live the RFE response body lacks an adjudication report while the draft has one; assess whether the missing runtime fabrication flag matters once the prompt discipline holds on the grounded path."
+  },
+  {
+    "id": "mo-draft-01",
+    "journey": "draft-petition-letter",
+    "character": "maya-okonkwo-attorney",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Citation discipline + UPL line are load-bearing and enforced at three layers — prompt, envelope, and a live adjudication gate",
+    "expected": "An attorney needs the tool to never fabricate authority and to never present output as legal advice.",
+    "got": "Prompt forbids inventing awards/publications/exhibits and bars case-law ('the attorney of record will add any case-law authorities') with prompt-injection data markers (drafting.ts:181-208). The single DISCLAIMER ('not legal advice... an attorney of record... is required to review... before anything is filed') is attached via the one wrapResult chokepoint and rides every success AND error body (result.ts:37, operation.ts:255/278/341). A live adjudication gate scores each paid draft for fabricated specifics, leaked visa codes, and case-law cites and surfaces them to the attorney (adjudication-gates.ts:294, draftOperation.ts:167). DB path feeds REAL persisted criteria + REAL vault exhibits, not sample data (draftOperation.ts:106-121).",
+    "evidence": [
+      "src/features/drafting/drafting.ts:181",
+      "src/lib/result.ts:37",
+      "src/lib/ai/operation.ts:255",
+      "src/lib/llm/adjudication-gates.ts:294",
+      "src/features/drafting/draftOperation.ts:106"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect this — do not weaken the DISCLAIMER string, the chokepoint, or the adjudication gate.",
+    "l2_priority": "On the grounded path, confirm the live draft actually NAMES the supplied evidence/exhibits and crosswalks the correct criterion (real prose quality), and that the adjudication report reads honestly."
+  },
+  {
+    "id": "mo-draft-02",
+    "journey": "draft-petition-letter",
+    "character": "maya-okonkwo-attorney",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Inline (Exhibit N) citations are audited against on-file exhibits — a hallucinated exhibit number is quarantined as 'unresolved'",
+    "expected": "The attorney must never sign a letter that cites evidence the case doesn't have.",
+    "got": "auditCitations/auditDraftCitations (drafting.ts:556-580) parse every (Exhibit N) token and split into resolved vs unresolved against the real vault exhibit ordinals; unresolved is the 'you can never ship a letter that cites evidence you don't have' safety signal, and exhibit numbers are bound to real StoredDocuments by the route (attachExhibits), never to untrusted inline text.",
+    "evidence": [
+      "src/features/drafting/drafting.ts:556",
+      "src/features/drafting/drafting.ts:472",
+      "src/features/drafting/draftOperation.ts:119"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep the unresolved-citation quarantine; surface it prominently in the UI so the attorney sees it during review.",
+    "l2_priority": "Confirm the unresolved-citation count is visibly surfaced to the attorney in the DraftStudio/ExhibitIndex during review, not just computed."
+  },
+  {
+    "id": "mo-track-01",
+    "journey": "track-case-progress",
+    "character": "maya-okonkwo-attorney",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "clarity",
+    "title": "The status lifecycle and roadmap stepper derive correctly from real case state",
+    "expected": "Status must be legible and accurate at every step (Intake/Drafting -> Review -> Filed -> Decision) and the next action obvious.",
+    "got": "caseRoadmap (roadmap.ts:38-59) derives done/current/upcoming from the real status plus hasEvidence/hasDraft; CaseDetailView feeds it from real documents/draft state (CaseDetailView.tsx:133-137). Transitions are an atomic compare-and-set (pglite-store.ts:480-522) so a double-clicked sign&file can't double-file or mint a second receipt, and the append-only review thread can't desync from status. 'Approved' is correctly terminal (actions.ts:184-190).",
+    "evidence": [
+      "src/features/case-file/roadmap.ts:38",
+      "src/features/case-file/components/CaseDetailView.tsx:133",
+      "src/lib/db/pglite-store.ts:480",
+      "src/features/review/actions.ts:184"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect the CAS transition and the state-derived stepper.",
+    "l2_priority": "Walk a real case through Drafting -> Review -> Filed -> Approved and confirm the stepper + status badges update correctly at each step."
+  },
+  {
+    "id": "mo-review-03",
+    "journey": "attorney-review-and-file",
+    "character": "maya-okonkwo-attorney",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Queue is honestly oldest-first with truthful age badges, and the cross-tenant queue read fails closed",
+    "expected": "The queue must not hide an overdue case; oldest-first; truthful fresh/warning/overdue badges; no cross-tenant data leak.",
+    "got": "getCasesInReview orders by created_at asc at the DB (pglite-store.ts:433-441) AND the view re-sorts oldest-first (ReviewQueueView.tsx:44 via sortOldestFirst). ageBucket is truthful (fresh <12h, warning 12-24h, overdue >24h) and null-safe for future timestamps (queue-age.ts:26-38); the badge carries an aria-label. The queue is a cross-tenant read gated by isConfiguredAttorney (fail-closed) so it can't be used to enumerate other applicants' cases/IDs (review/page.tsx:8-17).",
+    "evidence": [
+      "src/lib/db/pglite-store.ts:433",
+      "src/features/review/components/ReviewQueueView.tsx:44",
+      "src/features/review/queue-age.ts:26",
+      "src/app/dashboard/review/page.tsx:17"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect the oldest-first sort, the age-bucket thresholds, and the fail-closed cross-tenant gate.",
+    "l2_priority": "With ATTORNEY_EMAILS set, confirm a >24h case shows the overdue (danger) badge and sorts to the top."
+  }
+]

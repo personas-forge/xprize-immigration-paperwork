@@ -1,0 +1,200 @@
+[
+  {
+    "id": "kw-eval-01",
+    "journey": "evaluate-as-prospect",
+    "character": "karen-whitfield-prospect",
+    "cert_level": "L1",
+    "type": "trust",
+    "severity": "major",
+    "dimension": "trust",
+    "title": "FAQ contradicts the site's \"drafting tool, not a law firm\" positioning — reads as a flat-fee firm-of-record",
+    "expected": "The FAQ — the surface a careful attorney-buyer uses to kill her UPL objection — should reinforce the same positioning as the rest of the site: a self-serve, token-metered AI drafting tool whose output is work product reviewed and signed by the user's OWN attorney of record; not legal advice; priced in prepaid tokens.",
+    "got": "The FAQ describes a full-service immigration law firm on a flat-fee retainer: \"the same attorney listed as counsel of record\" reads the petition (q2), \"we coordinate the Application Support Center appointment\" for biometrics (q5), RFE response \"is part of the flat fee\" (q3), \"the attorney portion of the flat fee is non-refundable\" (q7), and \"your attorney of record answers directly\" to emailed questions (intro). This directly contradicts the landing page's \"We're a drafting tool, not a law firm\" (page.tsx:254-255) and \"your OWN attorney of record\" framing — blurring exactly the UPL/who-is-liable line the rest of the site draws carefully.",
+    "evidence": [
+      "src/app/faq/page.tsx:22",
+      "src/app/faq/page.tsx:26",
+      "src/app/faq/page.tsx:30",
+      "src/app/faq/page.tsx:38",
+      "src/app/faq/page.tsx:46",
+      "src/app/faq/page.tsx:68",
+      "src/app/page.tsx:254"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Rewrite the FAQ entries so they describe the actual product: the platform drafts work product, the USER brings/owns their attorney of record (the platform does not supply counsel), pricing is prepaid tokens (not a flat legal fee), and refund language refers to token purchases (per billing/page.tsx footnotes), not an 'attorney portion of the flat fee'. The 'not a law firm / not legal advice' line must be consistent with landing + billing + validation.",
+    "l2_priority": "Confirm live the FAQ copy as rendered, and whether any other surface (welcome/onboarding/consent) repeats the firm-of-record framing."
+  },
+  {
+    "id": "kw-eval-02",
+    "journey": "evaluate-as-prospect",
+    "character": "karen-whitfield-prospect",
+    "cert_level": "L1",
+    "type": "missing-feature",
+    "severity": "major",
+    "dimension": "missing",
+    "title": "The /validation evidence page is unreachable from any cold-prospect marketing surface",
+    "expected": "The validation/correctness page — the strongest credibility artifact for an attorney-buyer (acceptance criterion 5) — should be discoverable from the cold-entry path (landing/billing/faq nav or footer) so a prospect evaluating in ~90 seconds can actually find it.",
+    "got": "No marketing surface links to /validation. The landing footer links How-it-works, /billing, /faq, /landing-claude but not /validation (no /validation href in src/app/page.tsx). The only link to /validation in the codebase is inside the AUTHENTICATED /qualify panel (QualifyPanel.tsx:165), downstream of the adoption decision. A cold prospect would never reach the one page that most moves her verdict.",
+    "evidence": [
+      "src/features/qualification/components/QualifyPanel.tsx:165",
+      "src/app/page.tsx:426",
+      "src/app/billing/page.tsx:196",
+      "src/app/faq/page.tsx:148"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Add a /validation link to the shared marketing footer (and ideally the FAQ 'data security / correctness' answer), so the evidence page is one click from a cold landing. The gating itself — not the page — is the finding; the page content is a strength.",
+    "l2_priority": "Confirm live nav/footer reachability of /validation from /, /billing, /faq without authentication."
+  },
+  {
+    "id": "kw-eval-03",
+    "journey": "evaluate-as-prospect",
+    "character": "karen-whitfield-prospect",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "trust",
+    "title": "FAQ names \"Gemini\" as the drafter; engine attribution is inconsistent / dated",
+    "expected": "Public-facing copy should either name the engine consistently or stay engine-agnostic; a careful buyer notices a specific vendor name and checks whether it matches the rest of the story.",
+    "got": "FAQ q2 says \"Once Gemini drafts your petition letter...\"; the qualify route comment and env describe a multi-engine wrapper (Gemini|Claude|mock) with the local UAT engine set to Claude. A named single vendor in marketing copy reads as stale/inconsistent to a skeptical reader and undercuts the otherwise-careful positioning.",
+    "evidence": [
+      "src/app/faq/page.tsx:26",
+      "src/app/api/qualify/route.ts:53"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Make the FAQ engine-agnostic (e.g. 'our AI drafts your petition letter') or align the named engine with the product's actual configuration.",
+    "l2_priority": "n-a (static copy)."
+  },
+  {
+    "id": "kw-eval-04",
+    "journey": "evaluate-as-prospect",
+    "character": "karen-whitfield-prospect",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "clarity",
+    "title": "/landing-claude alt masthead has no FAQ/validation/pricing link and only an inline (not stamped) disclaimer",
+    "expected": "An alternate landing a prospect might arrive on cold should still route her to the objection-killing surfaces (FAQ, validation, pricing) and carry the not-legal-advice line clearly.",
+    "got": "/landing-claude links only to /qualify and /dashboard; its footer is 'Immigration Concierge · AI drafting for O-1 / EB-1 · 2026' with no FAQ/pricing/validation links. The UPL line appears only inline in body copy ('never legal advice', lines 63/154), not as the prominent DisclaimerStamp block used elsewhere. A prospect entering here has fewer paths to resolve compliance/pricing objections.",
+    "evidence": [
+      "src/app/landing-claude/page.tsx:69",
+      "src/app/landing-claude/page.tsx:199",
+      "src/app/landing-claude/page.tsx:63"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "uncertain",
+    "suggested_acceptance": "If /landing-claude is a live entry point, add footer links to FAQ/billing/validation. (If it is an internal A/B/demo masthead not used cold, downgrade to scope_note.) The inline 'never legal advice' is acceptable for a marketing page that surfaces no AI output.",
+    "l2_priority": "Confirm whether /landing-claude is a real cold-entry route or an internal demo; check footer/nav reachability."
+  },
+  {
+    "id": "kw-qual-01",
+    "journey": "qualify-verdict",
+    "character": "karen-whitfield-prospect",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "senior-quality",
+    "title": "Free hero verdict is keyword/regex-only and can under-score a strong record phrased off-keyword",
+    "expected": "The free screener should return a verdict at least as sharp as an attorney's back-of-envelope read; a strong candidate should not be mis-scored merely for phrasing achievements without trigger words.",
+    "got": "The anonymous hero preview runs mockQualification — regex keyword matches per criterion (packs.ts:38-94) — not the model. A criterion is 'Met' only on a literal keyword hit, so e.g. chairing a standards committee without the words judge/review/panel scores 'None'. It honestly reflects the pasted text and is NOT a husk (it names evidence, honors 3-of-8, never greens 'None'), and the SoftGate clearly frames it as the instant read with the real model behind /qualify — so this is by-design and disclosed, not a defect, but it caps the free read's senior-quality ceiling.",
+    "evidence": [
+      "src/app/api/qualify/preview/route.ts:69",
+      "src/features/qualification/qualification.ts:225",
+      "src/features/qualification/packs.ts:38",
+      "src/features/qualification/components/InstantVerdict.tsx:255"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep the keyless preview as the floor (cost/abuse-safe is correct). Ensure the SoftGate copy makes the keyword-floor nature legible (it largely does). No structural change required.",
+    "l2_priority": "On authenticated /qualify, fill a real strong-candidate profile and assert the LIVE model output names the supplied evidence and crosswalks the correct criterion (i.e. the model path is meaningfully sharper than the keyword floor)."
+  },
+  {
+    "id": "kw-eval-05",
+    "journey": "evaluate-as-prospect",
+    "character": "karen-whitfield-prospect",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Pricing + free grant sourced from canonical economy.ts BUNDLES — cannot drift between landing and billing",
+    "expected": "Bundle prices and the free grant should be one source of truth so marketing and billing can never disagree.",
+    "got": "Both / and /billing import BUNDLES and FREE_SIGNUP_GRANT from src/lib/tokens/economy.ts; the landing BundleCard is explicitly 'Driven from economy.ts BUNDLES so the price/tokens can't drift'. Enterprise contact-wall is correctly scoped to the enterprise tier only — the core offer is fully self-serve.",
+    "evidence": [
+      "src/lib/tokens/economy.ts:43",
+      "src/app/page.tsx:13",
+      "src/app/billing/page.tsx:10",
+      "src/app/page.tsx:441"
+    ],
+    "code_check": "n-a",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect: keep all price/grant rendering sourced from economy.ts; do not hardcode prices in copy.",
+    "l2_priority": "n-a"
+  },
+  {
+    "id": "kw-eval-06",
+    "journey": "evaluate-as-prospect",
+    "character": "karen-whitfield-prospect",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "/validation is real evidence — primary-source citations, verified-vs-counsel-approved two-layer honesty, CI-gated",
+    "expected": "A 'validation' page should show evidence, not adjectives.",
+    "got": "PROGRAM_VALIDATIONS / COMPLIANCE_VALIDATIONS carry actual primary-law and agency-guidance citations (eCFR, Cornell LII, USCIS Policy Manual, Arizona Supreme Court ABS order PDF), legal basis (8 CFR 214.2(o)(3)(iii) etc.), thresholds, review dates, a freshness countdown, and an explicit two-layer model separating 'verified (matches sources)' from 'counsel-approved (cleared to file)'. UK is self-flagged 'needs-review' with a MODEL MISMATCH note. validation.test.ts CI-gates that no live program ships unverified.",
+    "evidence": [
+      "src/features/qualification/validation.ts:54",
+      "src/features/qualification/validation.ts:127",
+      "src/features/qualification/validation.ts:152",
+      "src/app/validation/page.tsx:62"
+    ],
+    "code_check": "n-a",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect, and surface it from the marketing footer (see kw-eval-02). This is the single strongest credibility artifact for an attorney-buyer.",
+    "l2_priority": "n-a"
+  },
+  {
+    "id": "kw-qual-02",
+    "journey": "qualify-verdict",
+    "character": "karen-whitfield-prospect",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "DISCLAIMER rides first and non-dismissibly on every screening; mock + model both grounded in real pasted input",
+    "expected": "The not-legal-advice line must accompany every AI output, and the verdict must reflect what the user actually pasted.",
+    "got": "One DISCLAIMER constant (lib/result.ts:37) is attached in one factory (buildQualifyResult) and rendered FIRST as a non-aria-hidden role='note' DisclaimerStamp by the shared CriteriaReport. The keyless mock scores against the user's real text and names matched evidence; the model prompt injects req.profile and forbids fabrication. 'None' never renders green and never counts toward the 3-of-8 threshold.",
+    "evidence": [
+      "src/lib/result.ts:37",
+      "src/features/qualification/qualification.ts:131",
+      "src/features/qualification/components/CriteriaReport.tsx:47",
+      "src/components/legal/DisclaimerStamp.tsx:8"
+    ],
+    "code_check": "n-a",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect: keep the single-disclaimer-constant + single-factory invariant; do not let any AI route render output without DisclaimerStamp.",
+    "l2_priority": "n-a"
+  },
+  {
+    "id": "kw-share-01",
+    "journey": "share-verdict",
+    "character": "karen-whitfield-prospect",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Share certificate carries only postable facts (never profile text), is tamper-checked, and framed as informational not a legal grant",
+    "expected": "A shareable verdict must not leak private data and must not overclaim a legal determination.",
+    "got": "encodeSnapshot encodes only name/classification/likelihood/per-criterion status chars — never the profile text (explicit comment). /c/[token] and its OG card decode from the token alone (no DB) and render from the real criteria pack; decodeSnapshot returns null (->404) for non-live programs or mismatched criteria counts. Page framing is 'Informational only · not legal advice · no account needed' and the stamp reads 'Qualifies / In progress' against the pack threshold, not a legal grant.",
+    "evidence": [
+      "src/features/qualification/letters-patent.ts:69",
+      "src/features/qualification/letters-patent.ts:84",
+      "src/app/c/[token]/page.tsx:118",
+      "src/app/c/[token]/opengraph-image.tsx:25"
+    ],
+    "code_check": "n-a",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect: keep the token encoding minimal (no profile text) and the framing informational.",
+    "l2_priority": "n-a"
+  }
+]

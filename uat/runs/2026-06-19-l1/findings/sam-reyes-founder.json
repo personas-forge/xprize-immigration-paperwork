@@ -1,0 +1,162 @@
+[
+  {
+    "id": "SR-QV-01",
+    "journey": "qualify-verdict",
+    "character": "sam-reyes-founder",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "clarity",
+    "title": "Landing-hero verdict and best-path run the keyword mock, not the model; a pure GitHub/product founder is under-scored on the free read",
+    "expected": "The first verdict Sam sees reflects his real founder evidence (GitHub/product => original contribution) believably, or is clearly labelled as a lighter teaser.",
+    "got": "The hero InstantVerdict and the best-path finder call /api/qualify/preview and /api/qualify/preview/best-path, which run ONLY mockQualification (regex keyword match), never the model, by design (no signup/charge). The O-1A ORIGINAL and CRITICAL_ROLE regexes match patent/founder/CEO but NOT GitHub-stars / open-source / 'shipped product', so a founder whose strength is product/GitHub (no press, no patent) gets a low keyword read until the authenticated MODEL screening runs. The 'go deeper' CTA copy ('This was the instant read') hints at the distinction but does not say the engine itself is weaker.",
+    "evidence": [
+      "src/app/api/qualify/preview/route.ts:18",
+      "src/app/api/qualify/preview/best-path/route.ts:11",
+      "src/features/qualification/qualification.ts:225",
+      "src/features/qualification/packs.ts:62",
+      "src/features/qualification/packs.ts:74",
+      "src/features/qualification/components/InstantVerdict.tsx:255"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Either widen the keyless ORIGINAL/CRITICAL_ROLE heuristics to catch GitHub/open-source/product-launch signals, or add one line on the hero/soft-gate making explicit that the instant read is a keyword preview and the full model screening (behind sign-in) reads the nuance.",
+    "l2_priority": "Confirm the AUTHENTICATED model screening maps founder GitHub/product evidence to 'Original contribution' (and round/ARR to 'High remuneration', press to 'Press') correctly on Sam's real pasted profile."
+  },
+  {
+    "id": "SR-QV-02",
+    "journey": "qualify-verdict",
+    "character": "sam-reyes-founder",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Authenticated screening feeds the real pasted profile to the prompt; disclaimer is first and non-dismissible; unscored criteria can never render green",
+    "expected": "A believable verdict grounded in what Sam actually pasted, with the UPL line load-bearing and the criteria math honest.",
+    "got": "buildQualifyPrompt injects req.name + req.profile verbatim and forbids inventing facts; DISCLAIMER is attached to every result and rendered first/non-dismissible; statusTone/summarizeCriteria are single-sourced so a 'None' criterion is neutral, never green, and the count can never disagree with the rows.",
+    "evidence": [
+      "src/features/qualification/qualification.ts:159",
+      "src/features/qualification/qualification.ts:131",
+      "src/features/qualification/qualification.ts:255",
+      "src/features/qualification/components/CriteriaReport.tsx:47",
+      "src/features/case-file/criteria.ts:27",
+      "src/features/case-file/criteria.ts:74"
+    ],
+    "code_check": "n-a",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep the single-sourced criteria classifier and the prompt's real-profile grounding intact under any refactor.",
+    "l2_priority": "Verify the live verdict NAMES Sam's real evidence (not placeholders) and that likelihood/criteria read believably."
+  },
+  {
+    "id": "SR-DP-01",
+    "journey": "draft-petition-letter",
+    "character": "sam-reyes-founder",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Live fabrication tripwire + citation audit directly defend Sam's 'no fabricated stars/ARR/press' bar",
+    "expected": "The draft must not invent metrics, and any cited evidence must trace to something real.",
+    "got": "The DB-path draft is grounded in the case's persisted criteria + vault exhibits (attachExhibits). The prompt wraps applicant data in <<<CASE_DATA>>> with an injection guard and forbids inventing awards/citations/numbers and case law. runAdjudication runs on every paid draft: fabricatedSpecifics flags $/%/years/big-ints (citation/star counts) in the output that aren't in the input, surfaced as a visible 'verify:' AdjudicationBadge; auditCitations quarantines any (Exhibit N) that doesn't resolve to an on-file document.",
+    "evidence": [
+      "src/features/drafting/draftOperation.ts:106",
+      "src/features/drafting/drafting.ts:174",
+      "src/features/drafting/drafting.ts:556",
+      "src/lib/llm/adjudication-gates.ts:122",
+      "src/lib/llm/adjudication-gates.ts:212",
+      "src/features/drafting/components/DraftStudio.tsx:410"
+    ],
+    "code_check": "n-a",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Preserve the fabrication/case-law/wrong-code gates and the citation audit on the paid path; keep the badge visible to the user.",
+    "l2_priority": "On a real grounded draft, confirm the badge actually fires when prose introduces an unsupported metric, and that legitimate supplied numbers do NOT false-positive."
+  },
+  {
+    "id": "SR-DP-02",
+    "journey": "draft-petition-letter",
+    "character": "sam-reyes-founder",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "senior-quality",
+    "title": "Keyless mock-draft argues from templated evidence strings, not Sam's words (keyless build only; L2 runs the real model)",
+    "expected": "Each section argues from Sam's actual supplied facts.",
+    "got": "On the keyless build (no engine), mockQualification sets evidence to a template ('Mentions an award, prize, or honor.') and mockDraft argues from those templates, so a keyless draft reads generic. This is the deterministic fallback, clearly labelled 'Placeholder output' in the UI, and does NOT apply to the L2 env (LLM_ENGINE=claude). Flagged only so the keyless path isn't mistaken for the product's real output.",
+    "evidence": [
+      "src/features/qualification/qualification.ts:225",
+      "src/features/drafting/drafting.ts:595",
+      "src/features/drafting/components/DraftStudio.tsx:419",
+      "src/features/drafting/criteria-text.ts:35"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "No change required; the 'Placeholder output' banner already flags it. Out of scope per the keyless/mock boundary.",
+    "l2_priority": "The whole ballgame: assert the LIVE Claude draft prose names Sam's real evidence, crosswalks the right criterion, and reads like a senior immigration drafter (not filler) on the grounded path."
+  },
+  {
+    "id": "SR-EV-01",
+    "journey": "evaluate-as-prospect",
+    "character": "sam-reyes-founder",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "clarity",
+    "title": "Billing page headline 'one token = one AI form-field guidance answer' undersells a 12-token full draft",
+    "expected": "Sam can see what a draft costs before committing, with no mismatch between the billing framing and the real per-op cost.",
+    "got": "/billing says 'Each AI form-field answer costs a single token' and the footnote repeats '1 token = one AI form-field guidance answer' (legacy guidance framing), but a qualify costs 3 and a full draft 12. The mismatch is mitigated: the landing pricing footnote already corrects it ('a full petition draft spends more than a single form-field answer'), and per-op costs are shown at point-of-use (QualifyPanel '{costOf(qualify)} tokens', DraftStudio 'Uses 12 tokens'). So acceptance #5 (see cost before committing) holds; this is a clarity nit on the billing page, not a dark pattern.",
+    "evidence": [
+      "src/app/billing/page.tsx:56",
+      "src/app/billing/page.tsx:130",
+      "src/app/page.tsx:370",
+      "src/features/qualification/components/QualifyPanel.tsx:208",
+      "src/features/drafting/components/DraftStudio.tsx:357"
+    ],
+    "code_check": "present-but-missed",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Update the /billing headline + footnote to reflect that different AI operations cost different amounts (qualify 3, draft 12, section/RFE 5), e.g. a small per-op price list driven from the OperationRegistry."
+  },
+  {
+    "id": "SR-SV-01",
+    "journey": "share-verdict",
+    "character": "sam-reyes-founder",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "title": "Letters Patent is a stateless, privacy-safe, tamper-rejecting certificate with a per-result OG card",
+    "expected": "A credible share link Sam would actually post, with nothing private leaking and honest framing.",
+    "got": "The token encodes only name/classification/likelihood/per-criterion status (never the profile text). /c/[token] renders from the token alone (no DB); decode rejects a non-live program or a status count that doesn't match the pack, so a tampered token can't render a bogus coat-of-arms. A per-result opengraph-image unfurls on LinkedIn/X and degrades gracefully. Framing: 'Informational only - not legal advice - no account needed'.",
+    "evidence": [
+      "src/features/qualification/letters-patent.ts:69",
+      "src/features/qualification/letters-patent.ts:93",
+      "src/app/c/[token]/page.tsx:43",
+      "src/app/c/[token]/opengraph-image.tsx:23",
+      "src/features/qualification/components/LettersPatentShare.tsx:26"
+    ],
+    "code_check": "n-a",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep the snapshot minimal (no profile text) and the decode validation strict.",
+    "l2_priority": "Visually confirm the /c/[token] page and OG card render credibly (not cheesy) and the LinkedIn unfurl looks like a real certificate."
+  },
+  {
+    "id": "SR-TP-01",
+    "journey": "track-case-progress",
+    "character": "sam-reyes-founder",
+    "cert_level": "L1",
+    "type": "broken-flow",
+    "severity": "minor",
+    "title": "Dashboard suppresses the real-case list when TOKENS_BYPASS=1 (the mode env.md recommends for the quality journeys)",
+    "expected": "From /dashboard Sam sees his real cases above the mock demo and opens one to track progress.",
+    "got": "DashboardPage short-circuits when TOKENS_BYPASS=1 OR no store, leaving cases=[] (it skips getCasesForUser), so only the mock portfolio shows and YourCasesCard never lists the real case. The case IS still created (qualify's persist runs because getUser() returns DEV_USER even under bypass) and is reachable via the /qualify -> 'Open case file' deep-link (CaseDetailPage uses requireOnboardedUser unconditionally). In real-economy mode (bypass off) the list works correctly. So J5's 'dashboard lists my real cases' holds without bypass and breaks only with bypass on.",
+    "evidence": [
+      "src/app/dashboard/page.tsx:15",
+      "src/app/dashboard/page.tsx:28",
+      "src/features/case-file/components/CaseFileDashboard.tsx:31",
+      "src/app/dashboard/cases/[id]/page.tsx:36"
+    ],
+    "code_check": "present-broken",
+    "verdict": "uncertain",
+    "suggested_acceptance": "Decouple the dashboard case-list load from the metering bypass: list real cases whenever a user resolves (dev-auth or Firebase), gating only the BALANCE pill on the economy being enforced.",
+    "l2_priority": "Run J5 in BOTH modes: confirm real cases list on /dashboard in real-economy mode, and confirm whether they list (or not) under TOKENS_BYPASS=1; decide if the bypass suppression is acceptable for the demo."
+  }
+]
