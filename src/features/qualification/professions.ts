@@ -110,6 +110,98 @@ export const PROFESSIONS: readonly Profession[] = [
       "Commercial or critical success": "Box-office, sales, streaming, or critical metrics evidencing major success.",
     },
   },
+  {
+    slug: "chef",
+    label: "Chefs",
+    singular: "a chef",
+    intro:
+      "Culinary careers qualify on recognition and acclaim — major awards, critical reviews, and a lead role at distinguished kitchens — typically under the O-1B (arts) or, at the top of the field, EB-1A.",
+    examples: {
+      Awards: "A James Beard Award or nomination, a Michelin distinction, or another nationally recognized culinary honor.",
+      Press: "Reviews and features in major food press (the New York Times, Eater, Bon Appétit) or national media, independent of you.",
+      "Original contribution": "A signature technique, cuisine, or concept recognized and adopted across the field.",
+      "Lead role in distinguished productions": "An executive-chef or culinary-director role at a distinguished, acclaimed restaurant or group.",
+      "National or international recognition": "Michelin stars, a James Beard medal, a World's 50 Best listing, or comparable acclaim beyond a single city.",
+      "Reviews & press": "Critic reviews and features in recognized food and general press.",
+      "Record of major commercial or critical success": "The acclaim, awards, or commercial success of a restaurant under your direction.",
+      "Recognition from organizations & experts": "Recognition from culinary academies or guilds, or expert letters from established chefs.",
+      "High salary or remuneration": "Compensation high relative to peers, or guest-chef and consulting fees evidencing your standing.",
+      "Critical role": "An executive-chef or culinary-director critical role at a distinguished establishment.",
+      "Commercial success in the arts": "Commercial success of restaurants, cookbooks, or productions tied to your name.",
+    },
+  },
+  {
+    slug: "architect",
+    label: "Architects",
+    singular: "an architect",
+    intro:
+      "Architects evidence extraordinary ability through competition wins, exhibitions, published work, and a lead role on landmark projects — often a strong EB-1A (and O-1) case.",
+    examples: {
+      Awards: "A major architecture prize — an AIA award, or a national/international competition win.",
+      Membership: "Fellowship in a selective body (e.g. FAIA) or another invited professional honor.",
+      Press: "Coverage of your work in Dezeen, Architectural Record, or major press, independent of you.",
+      Judging: "Juring architecture competitions or reviewing for a recognized professional body.",
+      "Original contribution": "A built work, method, or design of significance recognized and built upon in the field.",
+      "Scholarly articles": "Published monographs, essays, or papers on architecture in recognized venues.",
+      "Artistic exhibitions": "Your work exhibited at a biennale, a museum, or a recognized gallery.",
+      "Critical role": "A principal or lead role on landmark projects at a distinguished practice.",
+      "Leading or critical role": "A principal or lead role on landmark projects at a distinguished firm.",
+      "High remuneration": "Compensation or commission fees high relative to peers, with documentation.",
+    },
+  },
+  {
+    slug: "athlete",
+    label: "Athletes & Coaches",
+    singular: "an athlete or coach",
+    intro:
+      "Athletics is judged on results, not papers: championship titles, rankings, national-team selection, and a critical role as a competitor or head coach — an O-1A (and, at the top, EB-1A) case.",
+    examples: {
+      Awards: "Podium finishes, championship titles, or medals at national or international competition.",
+      Membership: "Selection to a national team, or membership in a body that requires outstanding achievement.",
+      Press: "Coverage of your results in sports media, independent of you or your club.",
+      Judging: "Officiating, judging, or selecting athletes at sanctioned competitions.",
+      "Original contribution": "A record, technique, or coaching method recognized within your sport.",
+      "Critical role": "A critical role as a lead competitor or head coach for a distinguished team or program.",
+      "High remuneration": "Prize money, sponsorships, or salary high relative to peers in your sport.",
+    },
+  },
+  {
+    slug: "filmmaker",
+    label: "Filmmakers & Directors",
+    singular: "a filmmaker",
+    intro:
+      "Directors and filmmakers qualify under the O-1B (arts) on lead creative roles, festival recognition, critical reviews, and commercial or critical success.",
+    examples: {
+      Awards: "Festival awards or nominations (e.g. Sundance), or a guild or academy honor.",
+      Press: "Reviews and features in the New York Times, Variety, or major and trade press.",
+      "Original contribution": "A body of work of artistic significance recognized by experts in the field.",
+      "Lead role in distinguished productions": "A director or lead-creative role on films screened at distinguished festivals or in distribution.",
+      "National or international recognition": "Festival selections, critical reviews, or awards evidencing acclaim beyond one market.",
+      "Reviews & press": "Critic reviews in the New York Times or Variety, and festival coverage.",
+      "Record of major commercial or critical success": "Box-office, a distribution deal, streaming performance, or critical acclaim.",
+      "Recognition from organizations & experts": "Guild membership (e.g. the DGA), academy recognition, or expert letters.",
+      "High salary or remuneration": "Fees or compensation high relative to peers.",
+      "Critical role": "A director or lead-creative critical role on a distinguished production.",
+    },
+  },
+  {
+    slug: "composer",
+    label: "Composers & Musicians",
+    singular: "a composer",
+    intro:
+      "Composers and musicians qualify under the O-1B (arts) as the principal creative behind distinguished work — scores, recordings, and performances with critical and commercial recognition.",
+    examples: {
+      Awards: "A Grammy or Emmy nomination, a guild award, or another recognized music honor.",
+      Press: "Features and reviews in Variety, Billboard, or trade and film-music press.",
+      "Original contribution": "A body of work — scores, compositions, or recordings — recognized by experts in the field.",
+      "Lead role in distinguished productions": "The principal, lead-creative role as composer of scores for distinguished films, shows, or games.",
+      "National or international recognition": "Award nominations, streaming reach, or critical recognition beyond a single market.",
+      "Reviews & press": "Features and reviews in recognized music and film press.",
+      "Record of major commercial or critical success": "Streaming numbers, chart performance, or the success of works you scored.",
+      "Recognition from organizations & experts": "Guild or society membership (e.g. the SCL), or expert letters.",
+      "High salary or remuneration": "Commission fees or compensation high relative to peers.",
+    },
+  },
 ] as const;
 
 /** The profession for a slug, or undefined. */

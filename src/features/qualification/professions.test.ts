@@ -16,6 +16,11 @@ test("PROFESSIONS: unique slugs, well-formed content", () => {
 test("professionBySlug: resolves known slugs, undefined otherwise", () => {
   assert.ok(professionBySlug("software-engineer"));
   assert.equal(professionBySlug("nope"), undefined);
+  // Arts/culinary/athletics professions no longer 404 (UAT SEO-professions:
+  // il-seo-01, dm-prospect-03, MB-QV-03).
+  for (const slug of ["chef", "architect", "athlete", "filmmaker", "composer"]) {
+    assert.ok(professionBySlug(slug), `${slug} resolves (was a 404)`);
+  }
 });
 
 test("exampleFor: returns a tuned example or null (never throws)", () => {

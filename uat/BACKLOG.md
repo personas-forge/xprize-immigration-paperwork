@@ -127,8 +127,10 @@ with LLM-1 (better scoring → fewer drops).
   distinguish O-1A / O-1B (arts) / EB-1A); `/` + alt-masthead + layout SEO updated. Was `dm-eval-01`
   (major) — `page.tsx`, `landing-claude/page.tsx`, `layout.tsx`. Reporters: dm-eval-01/02, OA-EP-01,
   YT-EP-01. (The chef/architect/athlete **SEO 404s** are the separate item below.)
-- **SEO professions** — add chef/architect/athlete (or a graceful generic) so
-  `/visa/[class]/[profession]` doesn't hard-404. `professions.ts`. il-seo-01, dm-prospect-03, MB-QV-03.
+- **SEO professions** — ✅ **SHIPPED.** Added `chef`, `architect`, `athlete`, `filmmaker`, `composer`
+  to `professions.ts` (each with profession-tuned, exact-criterion-name examples), so
+  `/visa/[class]/[profession]` no longer hard-404s for arts/culinary/athletics — the SEO matrix
+  grows to 3 classifications × 10 professions = 30 static pages. il-seo-01, dm-prospect-03, MB-QV-03.
 - **Ops features (T2-adjacent, missing-features not bugs)** — a **read-only ops/case-manager role**
   (view the SLA queue without sign/file power; today viewing requires `ATTORNEY_EMAILS` which also
   grants signing) + **per-case aging + target-date on an owner board**. tv-attorney-02, gm-track-02,
