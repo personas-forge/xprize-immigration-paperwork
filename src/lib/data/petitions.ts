@@ -49,10 +49,18 @@ export interface StoredCriterion {
   exhibit: string;
 }
 
-/** Short human file number, e.g. "O1-4821". Random suffix is fine for a demo;
- *  uniqueness is not load-bearing (the case id is the key). */
-function newFileNumber(): string {
-  return `O1-${Math.floor(1000 + Math.random() * 9000)}`;
+/** Prefix the file number by classification so a non-O-1 case doesn't read
+ *  "O1-…" (UAT 2026-06-20 F6): O-1A/O-1B → "O1", EB-1A → "EB1", UK → "GT". */
+function filePrefix(classification: string): string {
+  if (classification.startsWith("EB-1A")) return "EB1";
+  if (classification.startsWith("UK")) return "GT";
+  return "O1"; // O-1A / O-1B
+}
+
+/** Short human file number, e.g. "O1-4821" / "EB1-7233". Random suffix is fine
+ *  for a demo; uniqueness is not load-bearing (the case id is the key). */
+function newFileNumber(classification: string): string {
+  return `${filePrefix(classification)}-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
 /**
@@ -71,7 +79,7 @@ export async function createCaseWithCriteria(input: {
   if (!store) return null;
   return store.createCaseWithCriteria({
     userId: input.userId,
-    fileNumber: newFileNumber(),
+    fileNumber: newFileNumber(input.classification ?? "O-1A"),
     petitioner: input.petitioner,
     classification: input.classification ?? "O-1A",
     approvalLikelihood: input.approvalLikelihood,

@@ -70,7 +70,10 @@ const ORIGINAL: PackCriterion = {
 };
 const SCHOLARLY: PackCriterion = {
   name: "Scholarly articles",
-  match: /\b(paper|publication|published|journal|conference|citation|cited|scholar|arxiv)\b/i,
+  // NB: "conference" is deliberately NOT here — a conference *talk* is not a
+  // scholarly article, and including it let the keyless preview score a
+  // talks-only record "Scholarly: Met" (UAT 2026-06-20 T3). Publications only.
+  match: /\b(paper|publication|published|journal|citation|cited|scholar|arxiv)\b/i,
   evidence: "Mentions publications, papers, or citations.",
   gap: "List publications with venues and citation counts.",
 };
@@ -200,7 +203,7 @@ export const VISA_PACKS: Record<Classification, VisaPack> = {
       },
       {
         name: "Academic or technical publications",
-        match: /\b(paper|publication|published|journal|conference|cited|patent|arxiv)\b/i,
+        match: /\b(paper|publication|published|journal|cited|patent|arxiv)\b/i,
         evidence: "Mentions publications or technical writing.",
         gap: "List publications, talks, or technical writing.",
       },

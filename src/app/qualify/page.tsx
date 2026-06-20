@@ -8,7 +8,7 @@ import { QualifyEntry } from "@/features/qualification/components/QualifyEntry";
 export const metadata: Metadata = {
   title: "Do you qualify? — Immigration Concierge",
   description:
-    "An informational O-1A self-screening. Describe your background and see how it maps onto the eight extraordinary-ability criteria. Not legal advice.",
+    "An informational extraordinary-ability self-screening. Describe your background and see which path (O-1A, O-1B, or EB-1A) fits and how your record maps onto its criteria. Not legal advice.",
 };
 
 // — Qualification funnel ──────────────────────────────────────────────────────
