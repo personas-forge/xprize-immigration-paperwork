@@ -1,0 +1,182 @@
+[
+  {
+    "id": "rm-qual-01",
+    "journey": "qualify-verdict",
+    "character": "ravi-menon-postdoc",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "high" },
+    "title": "EB-1A 10-criteria pack reaches the entire flow end-to-end; a live gate fails closed if it ever became the wrong/short pack",
+    "expected": "Ravi is scored on the correct EB-1A 10-criteria pack (8 CFR 204.5(h)(3)) with the >=3 threshold, not the O-1A 8-pack relabeled by packFor()'s default fallback, across qualify -> case -> criteria UI -> draft -> evidence buckets.",
+    "got": "The EB-1A pack is the 10 regulation criteria, threshold 3 (packs.ts:142-168; validation.ts:103-126). isLiveProgram('EB-1A') is true (jurisdictions.ts:63,101-103), so parseQualifyRequest keeps the classification (qualification.ts:108-110) and prompt/parser/mock all read packFor('EB-1A'). EB-1A is selectable at all three entries (InstantVerdict.tsx:125, BestPathFinder.tsx:166/249, QualifyPanel.tsx:147) and persists via createCase (api/qualify/route.ts:98; petitions.ts:76) into the case detail, which threads classification to the criteria header, EvidenceVault, and DraftStudio (cases/[id]/page.tsx:76; CaseDetailView.tsx:143,195,204). The live qualify adjudication hard-fails if the returned criteria != criteriaNames(classification) in count and canonical order (adjudication-gates.ts:244-253,302), and classificationGate fails a leaked visa code in a letter (:227-233,300).",
+    "evidence": [
+      "src/features/qualification/packs.ts:142",
+      "src/features/qualification/packs.ts:223",
+      "src/features/qualification/validation.ts:103",
+      "src/features/qualification/qualification.ts:108",
+      "src/features/case-file/components/CaseDetailView.tsx:195",
+      "src/lib/llm/adjudication-gates.ts:244",
+      "src/lib/llm/adjudication-gates.ts:227"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep the qualify-criteria-complete and classification-consistent gates; they are the runtime guarantee against Ravi's worst-case wrong-pack swap.",
+    "l2_priority": "Live-screen an EB-1A profile and assert the rendered report shows all 10 EB-1A criterion names (incl. Artistic exhibitions, Commercial success in the arts) with threshold 3 and a non-blocked adjudication badge."
+  },
+  {
+    "id": "rm-qual-02",
+    "journey": "qualify-verdict",
+    "character": "ravi-menon-postdoc",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "senior-quality",
+    "impact": { "frequency": "low", "reachability": "medium", "trust_erosion": "high" },
+    "title": "Keyless mock rubber-stamps Membership 'Met' on a bare keyword; only the live model is instructed to apply the judged-by-experts bar",
+    "expected": "Ravi's Membership is assessed against the real 'outstanding-achievement, judged-by-experts' EB-1A bar, not auto-'Met' because his summary contains the word 'society'/'member'/'fellow'.",
+    "got": "The deterministic mock flips Membership to 'Met' on any match of /member|membership|fellow|fellowship|association|society|admitted|invited/ (packs.ts:44-49; qualification.ts:229-232) -- exactly the dues-only rubber-stamp he fears. This is the no-engine fallback only; under LLM_ENGINE=claude the prompt instructs 'Met' only when 'clear, well-evidenced' and per-criterion-specific scoring (qualification.ts:128-147). Whether the live prose actually applies the judged-by-experts bar is not visible in L1.",
+    "evidence": [
+      "src/features/qualification/packs.ts:44",
+      "src/features/qualification/qualification.ts:229",
+      "src/features/qualification/qualification.ts:128"
+    ],
+    "code_check": "present-by-design",
+    "verdict": "uncertain",
+    "suggested_acceptance": "Mock keyword-Met is an accepted keyless-fallback limitation (labeled 'mock'); the live path is the real read. No code change unless L2 finds the live model also waves through a soft society.",
+    "l2_priority": "Feed a profile naming a dues-/open-membership society and assert the live EB-1A screening does NOT score Membership 'Met' and flags it as thin against the judged-by-experts standard."
+  },
+  {
+    "id": "rm-draft-01",
+    "journey": "draft-petition-letter",
+    "character": "ravi-menon-postdoc",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "clarity",
+    "impact": { "frequency": "medium", "reachability": "high", "trust_erosion": "medium" },
+    "title": "DraftStudio idle copy hardcodes 'O-1A petition letter' on an EB-1A case",
+    "expected": "On Ravi's EB-1A case the draft panel describes drafting an EB-1A (or classification-neutral) petition letter, consistent with the dynamic classification used by the prompt and heading.",
+    "got": "The idle blurb hardcodes 'Draft a full O-1A petition letter from your scored criteria' (DraftStudio.tsx:374-377) and the module docstring says O-1A, even though `classification` is 'EB-1A' and the actual buildDraftPrompt/heading use it correctly. For a petitioner anxious about being shown the wrong product, reading 'O-1A' while drafting his EB-1A case seeds doubt.",
+    "evidence": [
+      "src/features/drafting/components/DraftStudio.tsx:374",
+      "src/features/drafting/components/DraftStudio.tsx:39"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Interpolate `classification` into the idle blurb (e.g. `Draft a full {classification} petition letter...`); update the docstring to say 'the case's classification' not 'O-1A'.",
+    "l2_priority": "Confirm the live EB-1A draft body/headings never say 'O-1A' (covered by classificationGate) and the copy nit doesn't recur in the rendered panel."
+  },
+  {
+    "id": "rm-draft-02",
+    "journey": "draft-petition-letter",
+    "character": "ravi-menon-postdoc",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "high" },
+    "title": "Citation discipline + unresolved-exhibit quarantine + wrong-code/fabrication adjudication (no invented authority)",
+    "expected": "The draft cites only facts Ravi supplied -- zero fabricated h-index, citations, venues, grants, awards, or press; no invented exhibits.",
+    "got": "buildDraftPrompt forbids inventing specifics (drafting.ts:181-183), fences applicant data against injection (:189-192), and enforces inline (Exhibit N) only for listed numbers, never invented (:160-166). auditCitations quarantines any hallucinated exhibit number as `unresolved` (:593-607). Live adjudication runs fabricationGate, classificationGate, and caseLawGate over the drafted letter (draftOperation.ts:213-229; adjudication-gates.ts:212-233).",
+    "evidence": [
+      "src/features/drafting/drafting.ts:160",
+      "src/features/drafting/drafting.ts:593",
+      "src/features/drafting/draftOperation.ts:213",
+      "src/lib/llm/adjudication-gates.ts:212"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect the CITATION_RULE, auditCitations unresolved signal, and the draft adjudication gate set -- they are Ravi's no-fabrication guarantee.",
+    "l2_priority": "On a real EB-1A draft, assert the body invents no metric/venue absent from the criteria evidence and any (Exhibit N) resolves to an on-file document."
+  },
+  {
+    "id": "rm-draft-03",
+    "journey": "draft-petition-letter",
+    "character": "ravi-menon-postdoc",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "senior-quality",
+    "impact": { "frequency": "medium", "reachability": "high", "trust_erosion": "low" },
+    "title": "Draft grounds on persisted criteria + vault exhibits, not Ravi's full pasted CV (accepted G1.3/PN-DRAFT-01)",
+    "expected": "The draft argues sustained acclaim from his real publication record (journals, h-index, grants, peer review) without inflating anything.",
+    "got": "The DB draft path is fed the case's persisted criteria (name/status/evidence/rationale) + vault exhibits/facts + classification + petitioner (draftOperation.ts:147-162), NOT the full free-text CV. This is the accepted grounding (BACKLOG G1.3 -- RESOLVED, no code change): qualify persists the supplied specifics into the criteria evidence/rationale, which is the petition's argument, and L2 already proved the live draft names them. Recorded as the grounding ceiling, refuted as a defect.",
+    "evidence": [
+      "src/features/drafting/draftOperation.ts:147",
+      "src/features/drafting/drafting.ts:174"
+    ],
+    "code_check": "by-design",
+    "verdict": "refuted",
+    "suggested_acceptance": "Accepted per BACKLOG G1.3; the 'populate the vault first' nudge (DraftStudio.tsx:378-387) covers the enrichment path. No change.",
+    "l2_priority": "Assert the live EB-1A draft names Ravi's actual journals/grants/peer-review captured into criteria evidence, and reads like a physicist's careful prose, not generic filler."
+  },
+  {
+    "id": "rm-evid-01",
+    "journey": "organize-evidence",
+    "character": "ravi-menon-postdoc",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "medium" },
+    "title": "Evidence vault is EB-1A-pack-aware; whole-vault consistency context (G2.1) and honest 'present != proven' framing (dc-evidence-02) shipped",
+    "expected": "Documents bucket into the correct EB-1A criteria (or Unsorted), coverage/gaps derive from real on-file evidence, and refile doesn't silently inflate coverage.",
+    "got": "BUCKETS + summary use criteriaNames('EB-1A')/summarizeVault(docs,'EB-1A') (EvidenceVault.tsx:55-56); the categorize POST sends classification (:72) and the route adds a read-only whole-vault summary so a new doc is placed consistently with siblings (evidence.ts:84-143; categorize/route.ts:64-75). A live gate fails any bucket not in the EB-1A pack (adjudication-gates.ts:270-278). The honest line 'documents present -- not that a criterion is proven ... Refiling moves a document without re-checking its fit' is present (EvidenceVault.tsx:210-216).",
+    "evidence": [
+      "src/features/evidence/components/EvidenceVault.tsx:55",
+      "src/features/evidence/evidence.ts:84",
+      "src/app/api/evidence/categorize/route.ts:64",
+      "src/features/evidence/components/EvidenceVault.tsx:210",
+      "src/lib/llm/adjudication-gates.ts:270"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep the pack-aware buckets, the whole-vault categorize context, the bucket-validity gate, and the honest coverage note.",
+    "l2_priority": "Add EB-1A documents (a paper, a peer-review invite, a grant letter) and assert each lands in the right EB-1A bucket, exhibit numbers are monotonic, and the gap read reflects real coverage."
+  },
+  {
+    "id": "rm-track-01",
+    "journey": "track-case-progress",
+    "character": "ravi-menon-postdoc",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "low", "reachability": "high", "trust_erosion": "low" },
+    "title": "Case file number hardcodes the 'O1-' prefix on an EB-1A case",
+    "expected": "Ravi's EB-1A case file number reads as classification-neutral or EB-1A-appropriate, not 'O1-...'.",
+    "got": "newFileNumber() returns `O1-${random}` for every case regardless of classification (petitions.ts:54-55), so his EB-1A case shows 'File No O1-4821' in the masthead and dashboard row. The 'EB-1A' classification label sits beside it, so it's cosmetic -- but for a petitioner primed to fear a wrong-product swap, an 'O1-' number on an EB-1A file is a momentary doubt flicker.",
+    "evidence": [
+      "src/lib/data/petitions.ts:54",
+      "src/features/case-file/components/CaseDetailView.tsx:109"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Make the file-number prefix classification-aware (or use a neutral 'IC-') so an EB-1A case never reads 'O1-'.",
+    "l2_priority": "Cosmetic; confirm the EB-1A case detail clearly labels EB-1A elsewhere so the O1- number isn't read as the product."
+  },
+  {
+    "id": "rm-track-02",
+    "journey": "track-case-progress",
+    "character": "ravi-menon-postdoc",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "completion",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "Roadmap and real-cases-above-mock derive purely from real case state; Ravi is never stranded",
+    "expected": "His dashboard lists his real EB-1A case (above the mock demo), the roadmap marks done/current/upcoming accurately, deep links hydrate, and a next action is always present.",
+    "got": "YourCasesCard renders real cases above the mock masthead (CaseFileDashboard.tsx:31,136-172); empty state points to /qualify (:112-132). caseRoadmap derives stages from real status + documents.length + initialSections (CaseDetailView.tsx:133-137; roadmap.ts:38-59). The qualify 'Open case file ->' deep link lands on /dashboard/cases/[id] hydrated from saved state (QualifyPanel.tsx:287; cases/[id]/page.tsx).",
+    "evidence": [
+      "src/features/case-file/components/CaseFileDashboard.tsx:31",
+      "src/features/case-file/roadmap.ts:38",
+      "src/features/case-file/components/CaseDetailView.tsx:133"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect the pure roadmap derivation and the real-cases-first ordering.",
+    "l2_priority": "Walk Qualified -> Evidence -> Drafted on a real EB-1A case and confirm the stepper advances and never strands."
+  }
+]

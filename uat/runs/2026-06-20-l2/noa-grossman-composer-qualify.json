@@ -1,0 +1,88 @@
+{
+  "criteria": [
+    {
+      "id": "lead-role-in-distinguished-productions",
+      "name": "Lead role in distinguished productions",
+      "status": "Strong",
+      "evidence": "Principal/lead creative author of original scores for two award-winning feature films and a AAA video game",
+      "rationale": "Lead composer credit on productions with documented critical recognition supports this criterion strongly, though 'award-winning' attribution to the productions themselves (vs. the scores) should be clarified."
+    },
+    {
+      "id": "national-or-international-recognition",
+      "name": "National or international recognition",
+      "status": "Strong",
+      "evidence": "Emmy nomination for Outstanding Music Composition; Game Audio Network Guild award; 40 million streams across platforms",
+      "rationale": "An Emmy nomination and a GANG award are nationally recognized honors in the field, and streaming reach reflects broad public exposure."
+    },
+    {
+      "id": "reviews-press",
+      "name": "Reviews & press",
+      "status": "Partial",
+      "evidence": "Work featured in Variety and Film Music Magazine",
+      "rationale": "Coverage in Variety (a major entertainment trade publication) is meaningful, but the description does not specify the nature or depth of coverage, which affects evidentiary weight."
+    },
+    {
+      "id": "record-of-major-commercial-or-critical-success",
+      "name": "Record of major commercial or critical success",
+      "status": "Strong",
+      "evidence": "Emmy nomination; GANG award win; 40 million streams; scores tied to AAA video game (a major commercial release category)",
+      "rationale": "Combination of critical recognition (Emmy nom, GANG win) and commercial reach (streaming numbers, AAA title) provides multi-dimensional support."
+    },
+    {
+      "id": "recognition-from-organizations-experts",
+      "name": "Recognition from organizations & experts",
+      "status": "Partial",
+      "evidence": "Member of the Society of Composers & Lyricists; GANG award from peer organization",
+      "rationale": "SCL membership is professional but generally open to qualifying members and does not itself demonstrate extraordinary recognition; the GANG award from a peer-judged body is stronger but additional letters from recognized experts in film/TV/game music would reinforce this criterion."
+    },
+    {
+      "id": "high-salary-or-remuneration",
+      "name": "High salary or remuneration",
+      "status": "None",
+      "evidence": "No compensation figures, fee rates, or contract terms described",
+      "rationale": "No evidence was provided regarding salary, per-project fees, or remuneration relative to peers in the field."
+    }
+  ],
+  "likelihood": 68,
+  "gaps": [
+    "Provide specific compensation data (project fees, per-episode rates, or salary) benchmarked against peers to address the high remuneration criterion",
+    "Clarify and document the nature of Variety and Film Music Magazine coverage (e.g., dedicated feature vs. brief mention) to strengthen the reviews & press criterion",
+    "Obtain expert letters from recognized figures in film, TV, or game music attesting to extraordinary ability and peer standing",
+    "Distinguish whether 'award-winning productions' refers to the productions receiving awards or the scores specifically, and document accordingly",
+    "SCL membership alone is thin — identify any leadership roles, invited panels, jury service, or commissions that demonstrate recognition within the organization"
+  ],
+  "disclaimer": "This is general informational guidance only, not legal advice. Immigration law is fact-specific and changes frequently. An attorney of record licensed to practice law is required to review your petition and advise on your situation before anything is filed with USCIS.",
+  "source": "claude",
+  "caseId": "6c3b80c8-0fed-45b8-8a21-65618dbe8da9",
+  "adjudication": {
+    "gates": [
+      {
+        "id": "disclaimer-present",
+        "verdict": "pass",
+        "detail": "UPL disclaimer attached"
+      },
+      {
+        "id": "qualify-criteria-complete",
+        "verdict": "pass",
+        "detail": "all 6 criteria, canonical order"
+      },
+      {
+        "id": "qualify-status-valid",
+        "verdict": "pass",
+        "detail": ""
+      },
+      {
+        "id": "qualify-likelihood-range",
+        "verdict": "pass",
+        "detail": "68"
+      },
+      {
+        "id": "no-legal-advice",
+        "verdict": "pass",
+        "detail": "informational, no advice/outcome language"
+      }
+    ],
+    "risk": "ready",
+    "attorneyReady": true
+  }
+}

@@ -1,0 +1,179 @@
+[
+  {
+    "id": "SI-QUAL-01",
+    "journey": "qualify-verdict",
+    "character": "sofia-iglesias-consultant",
+    "cert_level": "L1",
+    "type": "trust",
+    "severity": "minor",
+    "dimension": "trust",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "low" },
+    "title": "Shared certificate /c/[token] stamps the declarative word \"Qualifies\" instead of the hedged language used everywhere else",
+    "expected": "Every client-facing verdict surface informs rather than determines — 'criteria supported' / 'meets threshold', never a flat 'Qualifies' / 'you qualify'. This is the load-bearing UPL hedge (AC#3), and the share certificate is the surface most likely to be forwarded and screenshotted by a client (AC#5).",
+    "got": "The public Letters-Patent page renders a corner Stamp with label=\"Qualifies\" when qualifying >= pack.threshold, otherwise \"In progress\". 'Qualifies' reads as a determination, out of step with the in-app 'criteria supported' / 'Meets threshold' wording (CriteriaReport.tsx:58-86) that the same data drives.",
+    "evidence": [
+      "src/app/c/[token]/page.tsx:126",
+      "src/features/qualification/components/CriteriaReport.tsx:58",
+      "src/features/qualification/components/CriteriaReport.tsx:86"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "The /c/[token] stamp label reads as a hedged informational state (e.g. 'Criteria supported' / 'Meets threshold' / 'In progress'), matching the in-app verdict language; no surface declares 'Qualifies'.",
+    "l2_priority": "Screenshot /c/[token] for both a threshold-met and below-threshold token; confirm the stamp and the page never declare eligibility, only inform."
+  },
+  {
+    "id": "SI-QUAL-02",
+    "journey": "qualify-verdict",
+    "character": "sofia-iglesias-consultant",
+    "cert_level": "L1",
+    "type": "trust",
+    "severity": "minor",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "The anonymous hero/preview screening (the first thing a client touches, no signup) is not covered by the live UPL adjudication tripwire",
+    "expected": "The same runtime UPL guard (legalAdviceGate banning 'you will qualify'/'you should file'/'I recommend you', plus disclaimerGate) that protects the authenticated /api/qualify output should protect, or be provably unnecessary for, the anonymous client-facing read.",
+    "got": "POST /api/qualify/preview runs ONLY the deterministic mock (mockQualification -> buildQualifyResult) and never calls runAdjudication. It is safe by construction — the mock's rationale strings are fixed and cannot drift into advice language, and the DISCLAIMER is still attached — but the live tripwire that guards the deeper path does not run here. The visible 'Attorney-ready' compliance badge is also absent on the preview (AdjudicationBadge only renders on the authenticated result).",
+    "evidence": [
+      "src/app/api/qualify/preview/route.ts:69",
+      "src/app/api/qualify/preview/route.ts:70",
+      "src/features/qualification/qualification.ts:225",
+      "src/lib/llm/adjudication-gates.ts:294",
+      "src/features/qualification/components/QualifyPanel.tsx:269"
+    ],
+    "code_check": "by-design",
+    "verdict": "uncertain",
+    "suggested_acceptance": "Either the preview's mock output is proven (test) to be incapable of emitting any ADVICE_PATTERNS / altered-disclaimer state, or a lightweight disclaimer+advice assertion runs on the preview response too — so the client-facing free read carries the same UPL guarantee, not only the disclaimer string.",
+    "l2_priority": "Run several real profiles through the anonymous hero verdict; assert no advice/outcome language ever appears and the DISCLAIMER is byte-identical, confirming the mock-only path is genuinely safe-by-construction."
+  },
+  {
+    "id": "SI-EVAL-01",
+    "journey": "evaluate-as-prospect",
+    "character": "sofia-iglesias-consultant",
+    "cert_level": "L1",
+    "type": "trust",
+    "severity": "minor",
+    "dimension": "trust",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "low" },
+    "title": "The shared /c/[token] certificate carries only a one-line microprint disclaimer, not the prominent DisclaimerStamp the in-product verdict uses",
+    "expected": "A verdict a client might forward should carry the same prominent, assistive-tech-readable not-legal-advice stamp the in-app CriteriaReport renders (DisclaimerStamp, role=note), so the recipient cannot miss that it is informational, not a grant.",
+    "got": "The public certificate shows a faint microprint footer line 'Informational only · not legal advice · no account needed' but does not render the full DisclaimerStamp block. The framing ('Certificate of Extraordinary Ability', a 'Qualifies' seal) is far more prominent than the disclaimer it sits above.",
+    "evidence": [
+      "src/app/c/[token]/page.tsx:118",
+      "src/app/c/[token]/page.tsx:120",
+      "src/components/legal/DisclaimerStamp.tsx:8"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "The /c/[token] page renders the same prominent DisclaimerStamp (or an equivalently weighted not-legal-advice note) as the in-app result, proportional to the certificate ceremony around it.",
+    "l2_priority": "Screenshot /c/[token]; judge whether a forwarded recipient would read it as an informational screen, not a determination."
+  },
+  {
+    "id": "SI-EVAL-02",
+    "journey": "evaluate-as-prospect",
+    "character": "sofia-iglesias-consultant",
+    "cert_level": "L1",
+    "type": "trust",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "low", "reachability": "high", "trust_erosion": "low" },
+    "title": "Hero sample card shows an 'Approved · 92% likelihood' stamp on a fictional I-129",
+    "expected": "Marketing decoration should not imply the tool issues approvals.",
+    "got": "The landing hero's decorative certificate vignette (fictional 'Dr. A. Krishnan', attorney 'J. Park, Esq.') carries a Stamp label='Approved'. It is clearly an illustrative sample, not a verdict on any real user, and sits in an aria-context that reads as a mock document. Refuted as a defect — by-design marketing illustration — but noted for the UPL-paranoid eye.",
+    "evidence": [
+      "src/app/page.tsx:228",
+      "src/app/page.tsx:206"
+    ],
+    "code_check": "by-design",
+    "verdict": "refuted",
+    "suggested_acceptance": "No change required; if ever tightened, label the sample stamp 'Sample' or 'Filing-ready' to avoid any 'we approve petitions' read.",
+    "l2_priority": "None — cosmetic."
+  },
+  {
+    "id": "SI-STR-01",
+    "journey": "qualify-verdict",
+    "character": "sofia-iglesias-consultant",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "DISCLAIMER rides on the live AI payload via a single chokepoint AND a runtime gate that fails on any alteration",
+    "expected": "The not-legal-advice disclaimer must be on the actual AI output a client sees, not just marketing.",
+    "got": "buildQualifyResult attaches DISCLAIMER to every screening result (authenticated and anonymous preview); CriteriaReport renders DisclaimerStamp first and non-dismissible; disclaimerGate fails the live output if the disclaimer is missing OR even altered. Three independent guarantees on the load-bearing UPL check.",
+    "evidence": [
+      "src/features/qualification/qualification.ts:251",
+      "src/features/qualification/components/CriteriaReport.tsx:48",
+      "src/lib/llm/adjudication-gates.ts:204"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect this wiring; do not let any route build a qualify result outside buildQualifyResult.",
+    "l2_priority": "Confirm the DisclaimerStamp is visible on the live rendered result, not just present in the JSON."
+  },
+  {
+    "id": "SI-STR-02",
+    "journey": "qualify-verdict",
+    "character": "sofia-iglesias-consultant",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "Live UPL tripwire fails the output on advice/outcome language a non-attorney is forbidden to use",
+    "expected": "The output must inform, never advise or predict an outcome.",
+    "got": "legalAdviceGate + ADVICE_PATTERNS fail the live qualify output on 'you will/do qualify', 'you should file/apply/pursue', 'I recommend/advise you', 'your best option is', and affirmative outcome guarantees; a fail flips the visible badge to 'Not attorney-ready'. This is exactly the line Sofia herself cannot cross, enforced at runtime.",
+    "evidence": [
+      "src/lib/llm/adjudication-gates.ts:135",
+      "src/lib/llm/adjudication-gates.ts:236",
+      "src/components/legal/AdjudicationBadge.tsx:19"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep the gate on the live path; extend equivalent coverage (or a proof of mock safety) to the anonymous preview (see SI-QUAL-02).",
+    "l2_priority": "Confirm a real Claude run that drifts into advice copy is actually caught and surfaced as 'Not attorney-ready'."
+  },
+  {
+    "id": "SI-STR-03",
+    "journey": "evaluate-as-prospect",
+    "character": "sofia-iglesias-consultant",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "low" },
+    "title": "Validation page shows real, primary-source evidence with dates and honest counsel-pending status",
+    "expected": "The correctness story must be defensible substance, not adjectives.",
+    "got": "PROGRAM_VALIDATIONS cites 8 CFR 214.2(o)(3)(iii), USCIS Policy Manual Vol. 2 Part M Ch. 4, the 3-of-8 threshold, a last-reviewed date with a freshness countdown, primary-law source links, and a 'Counsel pending' badge (counselApproved:false) — verified-is-not-legal-advice stated explicitly.",
+    "evidence": [
+      "src/features/qualification/validation.ts:55",
+      "src/features/qualification/validation.ts:70",
+      "src/app/validation/page.tsx:203"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep the citations, dates, and counsel-pending honesty; do not soften to marketing adjectives.",
+    "l2_priority": "Confirm the source links resolve and the freshness read-out reflects request time."
+  },
+  {
+    "id": "SI-STR-04",
+    "journey": "qualify-verdict",
+    "character": "sofia-iglesias-consultant",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "low" },
+    "title": "Share token leaks no client PII — profile text never travels",
+    "expected": "Nothing private about the client should leak into the shareable token/URL (AC#5).",
+    "got": "encodeSnapshot carries only name (clamped), classification, likelihood, and per-criterion status chars; the profile/background text is never included. decodeSnapshot rejects tampered tokens whose status count doesn't match the live pack.",
+    "evidence": [
+      "src/features/qualification/letters-patent.ts:21",
+      "src/features/qualification/letters-patent.ts:69",
+      "src/features/qualification/letters-patent.ts:84"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep the snapshot minimal; never add free-text profile fields to the token.",
+    "l2_priority": "None — verified in code."
+  }
+]

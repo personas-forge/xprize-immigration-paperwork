@@ -1,0 +1,103 @@
+{
+  "criteria": [
+    {
+      "id": "awards",
+      "name": "Awards",
+      "status": "Met",
+      "evidence": "Three IFSC World Cup podium finishes (2 silver, 1 bronze); US national champion 2022",
+      "rationale": "International podium finishes at IFSC World Cup level and a national championship title constitute nationally and internationally recognized prizes in the field."
+    },
+    {
+      "id": "membership",
+      "name": "Membership",
+      "status": "Partial",
+      "evidence": "Member of US national team (implied by head coach role and competitive history)",
+      "rationale": "National team membership may qualify but no explicit description of membership in associations requiring outstanding achievement was provided."
+    },
+    {
+      "id": "press",
+      "name": "Press",
+      "status": "None",
+      "evidence": "No media coverage described",
+      "rationale": "No press, media features, or published coverage about the applicant was mentioned in the background."
+    },
+    {
+      "id": "judging",
+      "name": "Judging",
+      "status": "None",
+      "evidence": "No judging activity described",
+      "rationale": "No participation as a judge, panelist, or evaluator of others' work in the field was mentioned."
+    },
+    {
+      "id": "original-contribution",
+      "name": "Original contribution",
+      "status": "Partial",
+      "evidence": "Head coach of US national youth climbing team; multi-year sponsorship deals with major outdoor brands",
+      "rationale": "Coaching at the national team level may support an original methodological or training contribution, but no specific innovation or documented impact was described."
+    },
+    {
+      "id": "scholarly-articles",
+      "name": "Scholarly articles",
+      "status": "None",
+      "evidence": "No academic publications explicitly noted",
+      "rationale": "The background explicitly states no academic publications exist."
+    },
+    {
+      "id": "critical-role",
+      "name": "Critical role",
+      "status": "Strong",
+      "evidence": "Head coach of the US national youth climbing team",
+      "rationale": "A head coach position for a national team is a distinguishing, critical role within a distinguished organization in the field."
+    },
+    {
+      "id": "high-remuneration",
+      "name": "High remuneration",
+      "status": "Partial",
+      "evidence": "Multi-year sponsorship deals with two major outdoor brands",
+      "rationale": "Sponsorship deals with major brands suggest above-average remuneration, but no figures were provided to compare against peers."
+    }
+  ],
+  "likelihood": 52,
+  "gaps": [
+    "Provide documentation of any press, magazine features, or media coverage about Marcus Bell specifically (not just event results)",
+    "Document any judging, evaluation, or selection-committee roles at competitions or team trials",
+    "Quantify sponsorship compensation with figures and compare to peer athletes to support high remuneration",
+    "Identify and document membership in elite climbing associations or governing bodies requiring outstanding achievement for admission",
+    "Articulate any specific training methodology or coaching innovation attributable to the applicant to strengthen original contribution",
+    "Gather letters from national federation officials or brand partners attesting to the critical and distinguished nature of the coaching role"
+  ],
+  "disclaimer": "This is general informational guidance only, not legal advice. Immigration law is fact-specific and changes frequently. An attorney of record licensed to practice law is required to review your petition and advise on your situation before anything is filed with USCIS.",
+  "source": "claude",
+  "caseId": "2d651161-25f1-4ecc-896b-c5bbe1e9602d",
+  "adjudication": {
+    "gates": [
+      {
+        "id": "disclaimer-present",
+        "verdict": "pass",
+        "detail": "UPL disclaimer attached"
+      },
+      {
+        "id": "qualify-criteria-complete",
+        "verdict": "pass",
+        "detail": "all 8 criteria, canonical order"
+      },
+      {
+        "id": "qualify-status-valid",
+        "verdict": "pass",
+        "detail": ""
+      },
+      {
+        "id": "qualify-likelihood-range",
+        "verdict": "pass",
+        "detail": "52"
+      },
+      {
+        "id": "no-legal-advice",
+        "verdict": "pass",
+        "detail": "informational, no advice/outcome language"
+      }
+    ],
+    "risk": "ready",
+    "attorneyReady": true
+  }
+}

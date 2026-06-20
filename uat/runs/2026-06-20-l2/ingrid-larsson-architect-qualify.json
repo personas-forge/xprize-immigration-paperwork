@@ -1,0 +1,117 @@
+{
+  "criteria": [
+    {
+      "id": "awards",
+      "name": "Awards",
+      "status": "Met",
+      "evidence": "First prize in two international architecture competitions",
+      "rationale": "Two first-place wins in international competitions constitute nationally/internationally recognized prizes in the field."
+    },
+    {
+      "id": "membership",
+      "name": "Membership",
+      "status": "None",
+      "evidence": "",
+      "rationale": "No membership in associations requiring outstanding achievement was described."
+    },
+    {
+      "id": "press",
+      "name": "Press",
+      "status": "Met",
+      "evidence": "Coverage in Dezeen and Architectural Record",
+      "rationale": "Both are major trade publications with international reach, constituting published material about the applicant in professional media."
+    },
+    {
+      "id": "judging",
+      "name": "Judging",
+      "status": "Partial",
+      "evidence": "Peer-reviewed for an architecture journal",
+      "rationale": "Peer review of others' work qualifies as judging, but a single journal with no detail on frequency or standing is thin."
+    },
+    {
+      "id": "original-contribution",
+      "name": "Original contribution",
+      "status": "Partial",
+      "evidence": "Published monograph on design practice; led design of three landmark civic buildings",
+      "rationale": "Landmark civic projects may reflect original contributions of major significance, but no specific innovation, influence on the field, or adoption by others was described."
+    },
+    {
+      "id": "scholarly-articles",
+      "name": "Scholarly articles",
+      "status": "Partial",
+      "evidence": "Authored a published monograph on design practice",
+      "rationale": "A monograph can qualify, but no peer-reviewed journal articles were mentioned and the monograph's publisher and scholarly standing are unspecified."
+    },
+    {
+      "id": "artistic-exhibitions",
+      "name": "Artistic exhibitions",
+      "status": "Met",
+      "evidence": "Work exhibited at the Venice Architecture Biennale and a solo gallery show",
+      "rationale": "The Venice Architecture Biennale is a premier international exhibition venue; combined with a solo show this clearly satisfies the artistic exhibitions criterion."
+    },
+    {
+      "id": "leading-or-critical-role",
+      "name": "Leading or critical role",
+      "status": "Met",
+      "evidence": "Led design of three landmark civic buildings as principal architect",
+      "rationale": "Principal architect role on multiple landmark civic projects demonstrates a leading or critical role in distinguished organizations/projects."
+    },
+    {
+      "id": "high-remuneration",
+      "name": "High remuneration",
+      "status": "None",
+      "evidence": "",
+      "rationale": "No salary, fees, or compensation data were described."
+    },
+    {
+      "id": "commercial-success-in-the-arts",
+      "name": "Commercial success in the arts",
+      "status": "None",
+      "evidence": "",
+      "rationale": "No box office figures, gate receipts, or equivalent commercial metrics were described."
+    }
+  ],
+  "likelihood": 68,
+  "gaps": [
+    "Document any elite professional memberships (e.g., AIA College of Fellows, Royal Academy, or invitation-only architecture organizations) to address the Membership criterion",
+    "Provide specifics on peer-review judging: journal name, number of manuscripts reviewed, and any editorial board roles to strengthen Judging",
+    "Articulate a concrete original contribution — e.g., a novel structural method, design philosophy adopted by others, or citation/influence evidence — to move Original Contribution from Partial to Met",
+    "Clarify whether the monograph was peer-reviewed and/or issued by an academic press; supplement with any journal articles to strengthen Scholarly Articles",
+    "Gather compensation documentation (principal architect fee statements, salary comparisons to peers) to potentially satisfy High Remuneration",
+    "An attorney of record must review all evidence before any filing"
+  ],
+  "disclaimer": "This is general informational guidance only, not legal advice. Immigration law is fact-specific and changes frequently. An attorney of record licensed to practice law is required to review your petition and advise on your situation before anything is filed with USCIS.",
+  "source": "claude",
+  "caseId": "4fd07409-7809-402b-9311-cde651ba9815",
+  "adjudication": {
+    "gates": [
+      {
+        "id": "disclaimer-present",
+        "verdict": "pass",
+        "detail": "UPL disclaimer attached"
+      },
+      {
+        "id": "qualify-criteria-complete",
+        "verdict": "pass",
+        "detail": "all 10 criteria, canonical order"
+      },
+      {
+        "id": "qualify-status-valid",
+        "verdict": "pass",
+        "detail": ""
+      },
+      {
+        "id": "qualify-likelihood-range",
+        "verdict": "pass",
+        "detail": "68"
+      },
+      {
+        "id": "no-legal-advice",
+        "verdict": "pass",
+        "detail": "informational, no advice/outcome language"
+      }
+    ],
+    "risk": "ready",
+    "attorneyReady": true
+  }
+}

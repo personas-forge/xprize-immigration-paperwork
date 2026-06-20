@@ -34,15 +34,30 @@ Verify the engine before a run: `printf 'Reply with exactly: PONG' | claude -p -
 ## Run recipe
 
 ```
-npm run dev            # Next dev server → http://localhost:3000  (NEXT_PUBLIC_APP_URL)
+npm run dev                 # Next dev server → http://localhost:3000  (the DEFAULT, not a reservation)
+npm run dev -- -p 3002      # …bound to a chosen port when 3000 is taken (or: PORT=3002 npm run dev)
 ```
 
-- **Base URL:** `http://localhost:3000`. (The Playwright e2e suite uses port **3003** with its
-  own keyless+bypass webServer — don't confuse it with the UAT dev server.)
-- **Server lifecycle:** reuse an already-running dev server; else start it in the background and
-  poll for `200` before driving. If it wedges (hang / `ECONNREFUSED` / stale bundler cache,
-  often after a `git checkout` swapped files under it): kill the port, delete `.next`, restart,
-  re-poll.
+- **Base URL:** `http://localhost:<port>` — **default `3000`, but never assume it's free.** The L2
+  drivers read the port from `BASE_URL` (no code change needed), so any port works.
+- **Port contention (expected — many parallel `/uat` sessions):** UAT runs as periodic sweeps and
+  several repos are routinely under `/uat` at the same time, so port `3000` is *frequently already
+  held by another project's dev server*. Treat `3000` as a default, not a reservation:
+  1. **Probe** `3000`. If nothing answers → use it. If something answers, confirm it's **this** app
+     (title `Immigration Concierge` / a known route like `/qualify` returns our markup) — a foreign
+     app answering on `3000` must not be mistaken for ours.
+  2. **Not ours / refused → step down the ladder** `3000 → 3001 → 3002 → 3004 → 3005 …` to the first
+     free port. **Skip `3003`** (reserved by the Playwright e2e webServer). The prior L2 run already
+     did this ad-hoc, landing on **3001** (`runs/2026-06-19-l2/.bypass_port`).
+  3. **Start** the dev server bound to the picked port (`-p <port>` / `PORT=<port>`) and, so absolute
+     links (share tokens, redirects) match, also set `NEXT_PUBLIC_APP_URL=http://localhost:<port>`.
+  4. **Record** the port in `runs/<id>/.port` and pass `BASE_URL=http://localhost:<port>` to **every**
+     driver call in the run. A driver pointed at the wrong port silently tests a neighbor's app, so
+     **assert server identity before trusting results.**
+- **Server lifecycle:** reuse an already-running dev server **for this repo** (verify identity first);
+  else start it in the background on the picked port and poll for `200` before driving. If it wedges
+  (hang / `ECONNREFUSED` / stale bundler cache, often after a `git checkout` swapped files under it):
+  kill that port, delete `.next`, restart, re-poll.
 - **AI latency budget:** real Claude via the CLI takes ~**15–130 s** per AI op (a full petition
   draft is "long" and the slowest). Budget for it; an early client-timeout is itself a finding,
   not an excuse to abort.

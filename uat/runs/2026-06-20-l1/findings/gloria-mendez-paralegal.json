@@ -1,0 +1,180 @@
+[
+  {
+    "id": "gm-track-01",
+    "journey": "track-case-progress",
+    "character": "gloria-mendez-paralegal",
+    "cert_level": "L1",
+    "type": "broken-flow",
+    "severity": "major",
+    "dimension": "effort",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "Real-case portfolio table rows are not navigable to the case detail",
+    "expected": "The one view that searches/filters/sorts across all my real cases lets me open a case from the row I filtered to.",
+    "got": "The '§ VI — Case portfolio' CaseList runs on real cases (getCases -> getCasesForUser) with full search/filter/sort/CSV, but its <tr> rows render no link/onClick — only the smaller YourCasesCard rows deep-link to /dashboard/cases/[id]. So a 40-matter operator filters to the aging pile, then must scroll back to a different, unfiltered list to actually open a case.",
+    "evidence": [
+      "src/features/case-file/components/CaseList.tsx:246",
+      "src/features/case-file/components/CaseList.tsx:270",
+      "src/lib/data/saved-cases.ts:26",
+      "src/features/case-file/components/CaseFileDashboard.tsx:99",
+      "src/features/case-file/components/CaseFileDashboard.tsx:146"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Each CaseList row links to /dashboard/cases/[id] (or YourCasesCard gains the same filter/sort so the navigable list is also the triage list).",
+    "l2_priority": "Confirm live that a filtered/sorted portfolio row cannot be opened, forcing a context switch back to YourCasesCard."
+  },
+  {
+    "id": "gm-track-02",
+    "journey": "track-case-progress",
+    "character": "gloria-mendez-paralegal",
+    "cert_level": "L1",
+    "type": "missing-feature",
+    "severity": "major",
+    "dimension": "missing",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "med" },
+    "title": "No aging / target-date / staleness signal on any Gloria-reachable real-case view",
+    "expected": "Across 40 matters I triage by what's aging — a deadline column and a 'rotting in Drafting/Review' flag on the board I can actually open.",
+    "got": "Real cases persist targetFileDate:\"\" and attorney:\"\" so the portfolio's Target-file column is blank and sort-by-target-date is a no-op. The queue-age/staleness badges that exist (v0.13.0) live only in the attorney review queue (queue-age.ts / ReviewQueueView.tsx), which gates on isConfiguredAttorney and is walled out for a non-attorney — so there is no aging/triage-by-staleness signal on any surface she can reach.",
+    "evidence": [
+      "src/lib/data/saved-cases.ts:44",
+      "src/features/review/queue-age.ts:1",
+      "src/features/review/components/ReviewQueueView.tsx:1",
+      "src/lib/auth/roles.ts:40",
+      "src/features/case-file/components/CaseFileDashboard.tsx:136"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "An age/last-activity (or target-date) signal is derivable and rendered on an owner-reachable case view so aging matters surface; persisted cases carry a real target/last-activity timestamp.",
+    "l2_priority": "Verify live that an owner cannot see any case-age/staleness cue on /dashboard or the case detail; confirm the only aging UI is the attorney-gated queue."
+  },
+  {
+    "id": "gm-draft-01",
+    "journey": "draft-petition-letter",
+    "character": "gloria-mendez-paralegal",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "clarity",
+    "impact": { "frequency": "low", "reachability": "high", "trust_erosion": "low" },
+    "title": "DraftStudio idle helper copy hardcodes 'O-1A' regardless of classification",
+    "expected": "On an EB-1A or O-1B matter the studio describes drafting that classification's letter.",
+    "got": "The idle/error helper text reads 'Draft a full O-1A petition letter from your scored criteria…' for every classification; the generated draft itself is correctly pack-driven, so this is copy drift only.",
+    "evidence": [
+      "src/features/drafting/components/DraftStudio.tsx:374"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "The helper copy interpolates the case classification (or drops the visa code).",
+    "l2_priority": "Low — visual confirm on an EB-1A case."
+  },
+  {
+    "id": "gm-evid-01",
+    "journey": "organize-evidence",
+    "character": "gloria-mendez-paralegal",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "polish",
+    "dimension": "clarity",
+    "impact": { "frequency": "low", "reachability": "med", "trust_erosion": "low" },
+    "title": "Stale 'eight O-1A criteria' doc comments while the code is fully pack-driven",
+    "expected": "Comments match the multi-product, classification-driven behavior.",
+    "got": "EvidenceVault header comment says 'eight O-1A criteria' and lib/data/evidence.ts says docs are 'AI-categorized into an O-1A criterion', but the runtime uses criteriaNames(classification)/packFor(classification). Comment drift only; behavior is correct.",
+    "evidence": [
+      "src/features/evidence/components/EvidenceVault.tsx:13",
+      "src/lib/data/evidence.ts:5"
+    ],
+    "code_check": "present-but-missed",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Comments reference the case's pack/classification, not O-1A specifically.",
+    "l2_priority": "None — code-only."
+  },
+  {
+    "id": "gm-qual-01",
+    "journey": "qualify-verdict",
+    "character": "gloria-mendez-paralegal",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "senior-quality",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "low" },
+    "title": "First-touch lead previews are deterministic keyword-mock, not the model, even with LLM_ENGINE=claude",
+    "expected": "When pre-screening a referred lead, the headline read uses the AI, not a keyword heuristic.",
+    "got": "Both anonymous previews — homepage InstantVerdict (/api/qualify/preview) and the /qualify BestPathFinder (/api/qualify/preview/best-path -> recommendBestPath -> mockQualification) — run the deterministic keyword mock by design, never the model. Honest (labeled source:'mock', no charge, free-read design), but the first read is a regex, not an AI screen; the model read is behind the authenticated /api/qualify.",
+    "evidence": [
+      "src/features/qualification/best-path.ts:96",
+      "src/features/qualification/best-path.ts:23",
+      "src/app/api/qualify/preview/best-path/route.ts:57",
+      "src/app/api/qualify/preview/route.ts:14"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Either label the preview clearly as a keyword teaser in the UI (not an AI verdict), or offer an authenticated one-click 'run the real screening' from the preview result; no fabrication either way.",
+    "l2_priority": "Judge live whether the keyword preview meaningfully under/over-scores a real pasted lead vs the authenticated model screening (grounding delta)."
+  },
+  {
+    "id": "gm-draft-str-01",
+    "journey": "draft-petition-letter",
+    "character": "gloria-mendez-paralegal",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "Citation discipline + live auditCitations quarantines hallucinated (Exhibit N) before it reaches an attorney",
+    "expected": "n/a (strength)",
+    "got": "The draft/RFE prompts forbid inventing exhibits and only allow citing on-file numbers; auditCitations flags any cited exhibit with no matching vault doc as 'unresolved' and surfaces it in the UI — catching the exact failure mode (a bad cite reaching the attorney) that costs Gloria credibility at scale.",
+    "evidence": [
+      "src/features/drafting/drafting.ts:181",
+      "src/features/drafting/drafting.ts:160",
+      "src/features/drafting/drafting.ts:593"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep — do not soften the unresolved-exhibit quarantine.",
+    "l2_priority": "Confirm the live model honors the (Exhibit N) discipline and the unresolved badge actually fires on a planted bad cite."
+  },
+  {
+    "id": "gm-rfe-str-01",
+    "journey": "respond-to-rfe",
+    "character": "gloria-mendez-paralegal",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "senior-quality",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "RFE prompt fused with the as-filed petition prose + exhibits + RFE text (G1.2 fixed)",
+    "expected": "n/a (strength)",
+    "got": "buildRfePrompt now receives the as-filed petition sections (attachFiledPetition via getLatestDraft) plus criteria, vault exhibits, and the RFE notice, and asks for one section per RFE issue — structurally point-by-point against THIS petition, the opposite of a generic extraordinary-ability form letter.",
+    "evidence": [
+      "src/app/api/rfe/route.ts:99",
+      "src/features/rfe/rfe.ts:202",
+      "src/features/case-file/components/CaseDetailView.tsx:224"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep — protects acceptance #5.",
+    "l2_priority": "Confirm the live RFE response quotes/tracks the actual petition language and crosswalks the deficient criterion, not just the criteria structure."
+  },
+  {
+    "id": "gm-evid-str-01",
+    "journey": "organize-evidence",
+    "character": "gloria-mendez-paralegal",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "Monotonic never-reused exhibit ordinals + whole-vault sibling context (G2.1) + honest coverage framing (dc-evidence-02)",
+    "expected": "n/a (strength)",
+    "got": "Exhibit numbers come from a high-water mark across doc_seq + surviving rows so deletes never renumber; categorize now gets a read-only existing-buckets summary for sibling consistency; the UI honestly frames coverage as 'documents present, not criterion proven' and refile as a manual move that doesn't re-check fit.",
+    "evidence": [
+      "src/lib/db/pglite-store.ts:646",
+      "src/features/evidence/evidence.ts:84",
+      "src/features/evidence/components/EvidenceVault.tsx:210"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep all three.",
+    "l2_priority": "Confirm live that a second related doc lands in the same bucket as its sibling and exhibit numbers stay monotonic across add/delete."
+  }
+]

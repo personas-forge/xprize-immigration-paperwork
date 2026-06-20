@@ -1,0 +1,197 @@
+[
+  {
+    "id": "fam-draft-01",
+    "journey": "draft-petition-letter",
+    "character": "fatima-al-mansoori-data-scientist",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "major",
+    "dimension": "senior-quality",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "high" },
+    "title": "High remuneration is not prompted to argue a peer comparison",
+    "expected": "For an industry self-petitioner whose strongest clear criterion is comp, the draft should argue High remuneration AGAINST field peers ('top-decile vs. ML scientists per <source>'), not assert it bare — a bare comp claim is a classic RFE magnet.",
+    "got": "buildDraftPrompt enforces no-fabrication and no-case-law but contains no remuneration-specific instruction to frame a peer/percentile comparison; the High remuneration section will be as strong as the model's default, and the fabrication gate even flags a real comp figure that isn't byte-present in the persisted criterion evidence.",
+    "evidence": [
+      "src/features/drafting/drafting.ts:174",
+      "src/features/drafting/drafting.ts:181",
+      "src/lib/llm/adjudication-gates.ts:212"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "The draft's High remuneration section frames the comp against field peers / a percentile band (when supplied), not a bare assertion; L2 fills a real comp band and reads the live output.",
+    "l2_priority": "Put Fatima's real comp band (e.g. $320K base+equity, top-decile) through qualify->draft and assert the High remuneration section argues a peer/percentile comparison, not a bare 'commands a high salary'."
+  },
+  {
+    "id": "fam-draft-02",
+    "journey": "draft-petition-letter",
+    "character": "fatima-al-mansoori-data-scientist",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "major",
+    "dimension": "senior-quality",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "med" },
+    "title": "Industry specifics (patent topic, Kaggle Grandmaster) may flatten to generic across qualify->criteria->draft",
+    "expected": "Patents argued as Original contribution and Kaggle Grandmaster recognized as a selective distinction, using her real specifics, not a professor's framing.",
+    "got": "On the DB path the draft prompt is fed the persisted per-criterion evidence/rationale + vault exhibit facts, NOT the raw CV (draftOperation.ts:147-161). Whether 'patent on training-efficiency methods' and 'Kaggle Grandmaster' survive the qualify->criteria capture or flatten to 'an original contribution' is invisible to static analysis. This is the accepted PN-DRAFT-01 (BACKLOG G1.3) viewed through an industry-evidence lens, not the research lens L2 already proved.",
+    "evidence": [
+      "src/features/drafting/draftOperation.ts:147",
+      "src/features/drafting/draftOperation.ts:160",
+      "src/lib/db/pglite-store.ts:391"
+    ],
+    "code_check": "by-design",
+    "verdict": "uncertain",
+    "suggested_acceptance": "Live draft from an INDUSTRY profile names the patent's topic and the Kaggle Grandmaster rank as distinctions, weighting them over a modest citation count.",
+    "l2_priority": "Run Fatima's industry record live; assert the draft surfaces the patent topic and Kaggle rank as concrete distinctions, not generic 'original contribution' filler."
+  },
+  {
+    "id": "fam-qual-01",
+    "journey": "qualify-verdict",
+    "character": "fatima-al-mansoori-data-scientist",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "senior-quality",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "Landing '/' certificate is a keyword mock with generic (non-named) evidence",
+    "expected": "A verdict that names her real evidence (her patents, Kaggle rank, venues, comp).",
+    "got": "The landing InstantVerdict posts to /api/qualify/preview which runs ONLY mockQualification (regex keyword match, Met/None only, templated generic evidence strings) — never the model. It shows 'Mentions a patent...', not 'two granted patents'. Honestly labelled an 'instant keyword read' with a soft gate to the real authenticated read, so it is by-design and disclosed, not deceptive; acceptance criterion 1 is met only on the authenticated /qualify path.",
+    "evidence": [
+      "src/app/api/qualify/preview/route.ts:69",
+      "src/features/qualification/qualification.ts:227",
+      "src/features/qualification/components/InstantVerdict.tsx:274"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "The landing keyword read stays clearly labelled as a keyword scan (it is); the named-evidence read is the authenticated path. No change required — recorded so L2 doesn't mistake the generic landing copy for thin model grounding.",
+    "l2_priority": "On authenticated /qualify with Fatima's paste, confirm the real Claude read names her patents/Kaggle/venues/comp (not the generic landing copy)."
+  },
+  {
+    "id": "fam-qual-02",
+    "journey": "qualify-verdict",
+    "character": "fatima-al-mansoori-data-scientist",
+    "cert_level": "L1",
+    "type": "trust",
+    "severity": "minor",
+    "dimension": "trust",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "low" },
+    "title": "'Certificate / Approved' framing over a regex read risks a horoscope read for a rigor-focused user",
+    "expected": "A sober screening that a quantitative user reads as informational, not award theater.",
+    "got": "The hero renders an engraved 'Certificate of Extraordinary Ability' + Seal around a deterministic keyword screening, and the marketing Hero card hardcodes an 'Approved / 92% likelihood' stamp (page.tsx:228). The honest scored data is underneath, but the ceremony framing can read as more than a regex. This is the OPEN BACKLOG item PN-QUAL-01 (G3.1) — referenced, not re-invented; subjective, L2 to judge.",
+    "evidence": [
+      "src/features/qualification/components/InstantVerdict.tsx:220",
+      "src/app/page.tsx:228"
+    ],
+    "code_check": "by-design",
+    "verdict": "uncertain",
+    "suggested_acceptance": "Per G3.1: L2 judges whether the certificate framing aids or hurts credibility for a rigor-focused user; soften toward 'informational screening' if it hurts.",
+    "l2_priority": "Judge whether the certificate/Approved theater helps or hurts trust for a quantitative beneficiary (G3.1)."
+  },
+  {
+    "id": "fam-evid-01",
+    "journey": "organize-evidence",
+    "character": "fatima-al-mansoori-data-scientist",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "trust",
+    "impact": { "frequency": "low", "reachability": "med", "trust_erosion": "low" },
+    "title": "Refile to a wrong bucket silently inflates coverage",
+    "expected": "Coverage reflects criteria genuinely proven; a manual refile to a bucket the doc doesn't support should not silently close that gap.",
+    "got": "onRefile changes a doc's criterion with no sanity check; summarizeVault then counts the (possibly wrong) bucket as covering that criterion. Pre-existing OPEN BACKLOG item G2.2 / dc-evidence-02 — referenced, not a new finding.",
+    "evidence": [
+      "src/lib/data/evidence.ts:61",
+      "src/features/evidence/evidence.ts:233"
+    ],
+    "code_check": "present-broken",
+    "verdict": "uncertain",
+    "suggested_acceptance": "Distinguish 'documents present' from 'criterion proven', or flag a refiled doc whose facts don't match the new bucket (BACKLOG G2.2).",
+    "l2_priority": "Confirm whether a manual mis-refile visibly misleads the coverage/gap read live."
+  },
+  {
+    "id": "fam-track-01",
+    "journey": "track-case-progress",
+    "character": "fatima-al-mansoori-data-scientist",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "clarity",
+    "impact": { "frequency": "med", "reachability": "med", "trust_erosion": "low" },
+    "title": "Roadmap shows 'Evidence' as current even after a draft exists, when the vault is empty",
+    "expected": "The stepper marks the stage matching what I actually did; after drafting, 'Drafted' (or later) should read as current/done.",
+    "got": "caseRoadmap computes current = !hasEvidence ? EVIDENCE : !hasDraft ? DRAFTED : REVIEW, so a self-petitioner who drafts straight from the screening with no vault docs sees the stepper sitting on 'Evidence' while a full draft is on screen — mildly contradictory. The draft card itself is unambiguous, so it's a nit, not a block.",
+    "evidence": [
+      "src/features/case-file/roadmap.ts:51",
+      "src/features/case-file/components/CaseDetailView.tsx:133"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Once a draft exists, the stepper does not regress to 'Evidence' as current (e.g. advance to Drafted, or mark Evidence done-or-skipped) so 'what now?' is never contradicted.",
+    "l2_priority": "Draft a case with an empty vault; confirm whether the roadmap stepper visibly contradicts the on-screen draft."
+  },
+  {
+    "id": "fam-str-01",
+    "journey": "draft-petition-letter",
+    "character": "fatima-al-mansoori-data-scientist",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "Live fabrication / UPL / wrong-code / case-law adjudication on every paid generation, surfaced with exact reasons",
+    "expected": "A guard against the pet peeves: fabricated citation count, invented patent number, asserted-bare comp, leaked wrong visa code.",
+    "got": "runAdjudication scores every paid generation (fabrication scan of money/percent/year/big-int not traceable to input, UPL advice tripwire, wrong-code, case-law flag) and AdjudicationBadge shows the user the exact reasons, defaulting open when not 'ready'. Directly protects Fatima's pet peeves.",
+    "evidence": [
+      "src/lib/llm/adjudication-gates.ts:294",
+      "src/lib/llm/adjudication-gates.ts:122",
+      "src/components/legal/AdjudicationBadge.tsx:27"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect: do not weaken the fabrication/UPL gates or hide the reasons UI.",
+    "l2_priority": "Confirm a deliberately fabricated number trips the no-fabrication warn live and is shown to the user."
+  },
+  {
+    "id": "fam-str-02",
+    "journey": "qualify-verdict",
+    "character": "fatima-al-mansoori-data-scientist",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "Met/Strong-only threshold math; unscored criteria never render green",
+    "expected": "Nothing I didn't supply shows as 'Met'; the eight criteria and the >=3 threshold are correct.",
+    "got": "A single classifyStatus drives both the badge tone and the summary count, so 'None'/unknown can never paint green or inflate the qualifying count; the pack threshold is passed through everywhere. Directly satisfies acceptance criteria 2 and 5.",
+    "evidence": [
+      "src/features/case-file/criteria.ts:27",
+      "src/features/case-file/criteria.ts:74",
+      "src/features/qualification/components/CriteriaReport.tsx:41"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect: keep the single-source classifier; never let the table tone and summary count diverge.",
+    "l2_priority": "Spot-check that a 'None' criterion renders neutral and is excluded from the qualifying count live."
+  },
+  {
+    "id": "fam-str-03",
+    "journey": "draft-petition-letter",
+    "character": "fatima-al-mansoori-data-scientist",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "effort",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "low" },
+    "title": "Section regenerate preserves other edits and has continuity context",
+    "expected": "Regenerate one section without losing my other edits or contradicting the rest of the letter.",
+    "got": "The regenerate path sends the client's CURRENT sections; the server merges into them (pickMergeBase) and passes the other sections as read-only LETTER_CONTEXT so the new section stays consistent (G1.1/dc-draft-02 fixed). Edits stay local until 'Save edits', clearly stated.",
+    "evidence": [
+      "src/features/drafting/draftOperation.ts:254",
+      "src/features/drafting/drafting.ts:250",
+      "src/features/drafting/components/DraftStudio.tsx:585"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect: keep the current-sections merge base and the continuity context on regenerate.",
+    "l2_priority": "Confirm a regenerated section does not duplicate the intro and that other unsaved edits survive."
+  }
+]

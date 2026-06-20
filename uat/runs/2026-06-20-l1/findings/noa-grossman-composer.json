@@ -1,0 +1,157 @@
+[
+  {
+    "id": "ng-qual-01",
+    "journey": "qualify-verdict",
+    "character": "noa-grossman-composer",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "major",
+    "dimension": "senior-quality",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "high" },
+    "title": "Keyless 'lead role' matcher only recognizes on-camera/starring talent; a composer's lead creative role reads None on every no-signup surface",
+    "expected": "Composing the original score for a distinguished production should engage the O-1B 'Lead role in distinguished productions' criterion — a composer is a principal creative lead, even behind the scenes.",
+    "got": "The deterministic mock that powers the hero InstantVerdict, the best-path finder, and any keyless run matches 'Lead role in distinguished productions' only on /\\b(lead role|leading role|starring|principal|headlin|featured performer)\\b/i. 'Composed the original score for [a distinguished production]' matches none of these, so the criterion scores None and the strongest, case-defining O-1B argument is left blank on the first surfaces a beneficiary or a music supervisor sees. The other five criteria (streams/sales -> commercial success, guild/society -> org-expert recognition, trade feature -> reviews & press) match correctly, masking the gap as a near-miss rather than a structural blindspot.",
+    "evidence": [
+      "src/features/qualification/packs.ts:106",
+      "src/features/qualification/qualification.ts:227-238",
+      "src/app/api/qualify/preview/route.ts:69",
+      "src/app/api/qualify/preview/best-path/route.ts:57",
+      "src/features/qualification/best-path.ts:96"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "On the keyless path, composer/behind-the-scenes lead credits ('composed the original score for', 'scored', 'principal composer', 'music director') engage the O-1B lead-role criterion (extend the match set or add a behind-the-scenes synonym list); a composer paste no longer reads None on lead role.",
+    "l2_priority": "Run the AUTHENTICATED /qualify (real Claude) with Noa's exact paste and assert the live verdict scores 'Lead role in distinguished productions' as Met/Strong and its evidence names the composed score as a lead creative role — not 'contributing music'. The mock is L1-confirmed broken; the live model read is the open question."
+  },
+  {
+    "id": "ng-qual-02",
+    "journey": "qualify-verdict",
+    "character": "noa-grossman-composer",
+    "cert_level": "L1",
+    "type": "missing-feature",
+    "severity": "minor",
+    "dimension": "trust",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "med" },
+    "title": "Qualify prompt gives the model no domain hint that a behind-the-scenes artist (composer, editor, cinematographer) can hold a 'lead role'",
+    "expected": "For O-1B arts, the prompt should help the model understand that a principal creative role behind the camera (composer, etc.) maps to 'lead role in distinguished productions', so the live read doesn't depend purely on the model's own priors.",
+    "got": "buildQualifyPrompt lists the six O-1B criterion names verbatim and a strict no-cross-counting rule, but provides no guidance that a behind-the-scenes creator qualifies as a lead role. The model's reading of composer-as-lead rests entirely on its own knowledge; the prompt does nothing to steer it away from an on-camera-only reading.",
+    "evidence": [
+      "src/features/qualification/qualification.ts:120-165",
+      "src/features/qualification/packs.ts:105-109"
+    ],
+    "code_check": "present-but-missed",
+    "verdict": "uncertain",
+    "suggested_acceptance": "The O-1B qualify prompt (or the criterion label/help text) notes that a principal creative role behind the scenes — composer, director, cinematographer, editor — can satisfy 'lead role in distinguished productions'; live runs score such credits as a lead role.",
+    "l2_priority": "Confirm whether the live model already reads composer-as-lead without the hint; if it does, this is polish, if it doesn't, it is the fix that unblocks the job."
+  },
+  {
+    "id": "ng-draft-01",
+    "journey": "draft-petition-letter",
+    "character": "noa-grossman-composer",
+    "cert_level": "L1",
+    "type": "broken-flow",
+    "severity": "major",
+    "dimension": "missing",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "high" },
+    "title": "Draft writes a section only per Met/Strong criterion; an unscored lead role is silently omitted with no 'strong-but-unscored' signal",
+    "expected": "If the screener under-scored the composer's lead-role criterion, the draft flow should at least surface that a likely-strong criterion produced no section, not silently drop the beneficiary's most important argument.",
+    "got": "buildDraftPrompt/mockDraft generate one argument section per QUALIFYING (Met/Strong) criterion only. A criterion scored None (e.g. the composer-blindspot lead role from ng-qual-01) yields no Lead Role section at all, and the UI gives no indication that a section was omitted. The omission is invisible — the attorney receives a letter missing the case's defining argument and nothing flags it.",
+    "evidence": [
+      "src/features/drafting/drafting.ts:83-85",
+      "src/features/drafting/drafting.ts:204-205",
+      "src/features/drafting/drafting.ts:664-672"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "When a pack criterion is unscored/None but the record plausibly supports it, the draft surfaces a 'this criterion has no section yet — review the screening' nudge (or offers to draft it anyway), so a dropped lead-role argument is never silent.",
+    "l2_priority": "On the grounded path with a correctly-scored lead role, confirm the live draft writes a Lead Role section that names the composed score as a principal creative role; separately confirm an unscored criterion's omission is visible to the user."
+  },
+  {
+    "id": "ng-draft-02",
+    "journey": "draft-petition-letter",
+    "character": "noa-grossman-composer",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "DraftStudio hardcodes 'Draft a full O-1A petition letter' on an O-1B case",
+    "expected": "On an O-1B case the drafting affordance should say O-1B (or be classification-neutral); the component already receives and uses `classification` everywhere else.",
+    "got": "The idle-state copy is the literal string 'Draft a full O-1A petition letter from your scored criteria' regardless of classification, even though payload, exhibit index, prompt, and every other label correctly use the O-1B classification. For a Character whose core anxiety is mis-classification, being told 'O-1A' on his own O-1B draft screen erodes trust at the exact sensitive point.",
+    "evidence": [
+      "src/features/drafting/components/DraftStudio.tsx:374",
+      "src/features/drafting/components/DraftStudio.tsx:40"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "The drafting affordance reads `Draft a full {classification} petition letter` (interpolated), so an O-1B case never shows 'O-1A'.",
+    "l2_priority": "Visually confirm the O-1B label renders on the case-detail DraftStudio after the interpolation fix."
+  },
+  {
+    "id": "ng-evid-01",
+    "journey": "organize-evidence",
+    "character": "noa-grossman-composer",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "clarity",
+    "impact": { "frequency": "low", "reachability": "med", "trust_erosion": "low" },
+    "title": "Mock categorizer is first-keyword-wins; a streams+press document can mis-bucket on the keyless path",
+    "expected": "A Spotify-dashboard document ('40M streams') should bucket under 'Record of major commercial or critical success', not under press/recognition.",
+    "got": "mockCategorize uses packFor(classification).criteria.find() (first match wins) over the O-1B order, which tests 'National or international recognition' and 'Reviews & press' BEFORE 'commercial success'. A streaming doc that also contains 'featured'/'recognized' could bucket into an earlier criterion. This affects only the keyless mock; the live path tries the real model first (tryParseCategorizeResponse) and falls back to the mock only on failure, the whole-vault context stabilizes placement, and manual refile is available. Suppressing the already-addressed PN-EVID-01/G2.1 whole-vault framing; this is the residual mock-order nit.",
+    "evidence": [
+      "src/features/evidence/evidence.ts:185-199",
+      "src/features/qualification/packs.ts:110-127"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Mock-only: acceptable given the model path is primary and refile exists; optionally order or weight the keyword scan so commercial-success terms (streams/sales/chart) aren't shadowed by recognition/press terms.",
+    "l2_priority": "On the live model path, paste a streaming-dashboard doc and confirm it buckets under commercial/critical success, not press."
+  },
+  {
+    "id": "ng-qual-03",
+    "journey": "qualify-verdict",
+    "character": "noa-grossman-composer",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "O-1B classification routes correctly end-to-end with no silent O-1A fallback",
+    "expected": "An arts Character who picks O-1B should be screened, cased, drafted, and shared as O-1B throughout.",
+    "got": "O-1B is a live program, so parseQualifyRequest never down-falls to O-1A; packFor('O-1B') returns the arts six; the prompt, report threshold, persisted criteria, case-detail header, EvidenceVault buckets, DraftStudio, and the /c/[token] certificate all read the classification dynamically. The protocol's packFor fallback-to-O-1A trap is not triggered for Noa. Acceptance criterion #2 passes in code.",
+    "evidence": [
+      "src/features/qualification/qualification.ts:107-112",
+      "src/features/qualification/packs.ts:99-141",
+      "src/features/qualification/jurisdictions.ts:63",
+      "src/features/case-file/components/CaseDetailView.tsx:144",
+      "src/app/c/[token]/page.tsx:48"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Keep classification flowing dynamically; do not reintroduce hardcoded O-1A pack/threshold on any beneficiary-reachable surface.",
+    "l2_priority": "Spot-check the live O-1B screen shows the six arts criteria and no 'scholarly articles'/'patent' rows."
+  },
+  {
+    "id": "ng-evid-02",
+    "journey": "organize-evidence",
+    "character": "noa-grossman-composer",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "low" },
+    "title": "Honest coverage framing and monotonic, never-reused exhibit numbers",
+    "expected": "The vault should not overstate proof, and exhibit numbers should stay stable across deletes.",
+    "got": "EvidenceVault states 'Evidence on file means documents are present — not that a criterion is proven' and that refiling moves a document without re-checking fit; exhibit numbers are assigned monotonically on insert and never reused. Coverage/gaps derive from the real O-1B pack via summarizeVault(documents, classification).",
+    "evidence": [
+      "src/features/evidence/components/EvidenceVault.tsx:212-216",
+      "src/lib/data/evidence.ts:9",
+      "src/features/evidence/evidence.ts:226-244"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Preserve the present-vs-proven distinction and monotonic exhibit numbering.",
+    "l2_priority": "n-a"
+  }
+]

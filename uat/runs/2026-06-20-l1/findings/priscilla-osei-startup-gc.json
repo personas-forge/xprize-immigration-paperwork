@@ -1,0 +1,133 @@
+[
+  {
+    "id": "PO-EVAL-01",
+    "journey": "evaluate-as-prospect",
+    "character": "priscilla-osei-startup-gc",
+    "cert_level": "L1",
+    "type": "trust",
+    "severity": "blocker",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "high" },
+    "title": "FAQ data-security answer makes four specific security claims that nothing in the codebase backs",
+    "expected": "A diligence-grade data-security posture where each customer-facing claim is true and verifiable: encryption at rest/in transit actually implemented, a durable access log, a real full-data export and account-level hard-delete, and a 'we don't train on your data' commitment bound by a policy/DPA.",
+    "got": "faq/page.tsx:55 asserts 'AES-256 at rest, TLS 1.3 in transit, U.S.-based servers, every access is logged, we don't train models on your data, you can export or hard-delete everything at any time.' In code: (1) NO encryption-at-rest/in-transit implementation exists (grep AES|encrypt|TLS returns only this FAQ string; data is plaintext in PGlite/Firestore). (2) The only 'export' is casesToCsv — a CSV of the case LIST (file number/petitioner/status), not a full PII export (case-file/export.ts:33-49). (3) There is NO hard-delete path — only removeCaseDocument deletes a single vault doc (db/store.ts:260, pglite-store.ts:716); no account/case purge or DSAR endpoint. (4) 'U.S.-based servers' has no region pin in the Firestore config. For a GC diligencing buy-vs-firm, this is security-by-slogan — the exact thin-claim pattern that fails the eval on the spot.",
+    "evidence": [
+      "src/app/faq/page.tsx:55",
+      "src/features/case-file/export.ts:33",
+      "src/lib/db/store.ts:260",
+      "src/lib/db/pglite-store.ts:716"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Either soften the FAQ Q8 copy to exactly what the build does (e.g. drop the AES-256/TLS/hard-delete/export-everything specifics, or scope them to 'in production'), OR implement and document the posture (encryption config, an account-level data export + hard-delete, a durable access log) and bind it with a published privacy policy / DPA. A diligence reader must be able to verify each claim.",
+    "l2_priority": "Confirm live whether any real data-security control (encryption header/at-rest, full export, account delete) is wired in a deployed build, or whether the FAQ paragraph is purely aspirational copy. Note: this is a code/copy-mismatch finding fully resolvable at L1 — L2 only confirms no hidden prod-only path exists."
+  },
+  {
+    "id": "PO-EVAL-02",
+    "journey": "evaluate-as-prospect",
+    "character": "priscilla-osei-startup-gc",
+    "cert_level": "L1",
+    "type": "missing-feature",
+    "severity": "minor",
+    "dimension": "missing",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "med" },
+    "title": "No privacy policy / terms / DPA / security page exists to bind the security and 'we don't train on your data' claims",
+    "expected": "A linked privacy policy, terms of service, and/or DPA a GC can diligence — the document that contractually binds 'we don't train models on your data', data residency, retention, deletion, and sub-processors.",
+    "got": "No route exists at /privacy, /terms, /dpa, or /security (glob returns nothing). The FAQ asserts data-handling commitments (faq/page.tsx:51,55) with no policy document anywhere to back them, and no footer link to one. For a buyer, an unbindable promise is functionally no promise.",
+    "evidence": [
+      "src/app/faq/page.tsx:55",
+      "src/app/page.tsx:419"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Ship a privacy policy + DPA (or a /security page) covering training-on-data, residency, retention, deletion, and sub-processors, linked from the footer/FAQ — or, if out of MVP scope, add to accepted-gaps so it isn't a surprise to a diligence reader. Pairs with PO-EVAL-01.",
+    "l2_priority": "n-a (structural absence visible at L1)."
+  },
+  {
+    "id": "PO-EVAL-03",
+    "journey": "evaluate-as-prospect",
+    "character": "priscilla-osei-startup-gc",
+    "cert_level": "L1",
+    "type": "trust",
+    "severity": "minor",
+    "dimension": "trust",
+    "impact": { "frequency": "low", "reachability": "high", "trust_erosion": "low" },
+    "title": "'Every access is logged' overstates the audit subscriber (logs mutations to stdout, not access/reads)",
+    "expected": "If the FAQ claims access logging, a durable, queryable log of who accessed which record (reads included).",
+    "got": "An audit subscriber exists but logs domain MUTATIONS (CaseStatusChanged / DraftGenerated / EvidenceUploaded), not data access/reads, and its default sink is console.info to stdout (events/subscribers/audit-log.ts:22-23,26-58) — not a durable access log. The FAQ's 'every access is logged' (faq/page.tsx:55) overstates this. Distinct from PO-EVAL-01 because a real (if narrow) logging mechanism does exist — present-broken, not absent.",
+    "evidence": [
+      "src/app/faq/page.tsx:55",
+      "src/lib/events/subscribers/audit-log.ts:22"
+    ],
+    "code_check": "present-broken",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Rephrase to 'changes to a case are recorded in an audit trail' (which is true), or add real access/read logging to a durable store before claiming 'every access is logged'.",
+    "l2_priority": "Confirm whether a production sink routes the audit trail anywhere durable; if only stdout, the claim remains overstated."
+  },
+  {
+    "id": "PO-QUAL-01",
+    "journey": "qualify-verdict",
+    "character": "priscilla-osei-startup-gc",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "Screener is honest by construction — no flatter-to-sell",
+    "expected": "A free screener that gives a sober read on a real candidate, not a yes-to-everything upsell a GC wouldn't trust near an employee's record.",
+    "got": "The public Instant Verdict runs the keyless deterministic mock (preview/route.ts:14-24,69-70), always labeled source:'mock', and the SoftGate openly calls it 'an instant keyword read' (InstantVerdict.tsx:273-277) — no pretense it's the deep product. The authenticated model prompt forbids inventing facts and forbids one criterion's evidence satisfying another (qualification.ts:133-138) and pastes the real profile verbatim (qualification.ts:159-161). The report uses the per-pack threshold (CriteriaReport.tsx:30-43) and a 'None' criterion never renders green (qualification.ts:32-33, CriteriaReport.tsx:20-26). Disclaimer renders first and non-dismissible (CriteriaReport.tsx:47-48).",
+    "evidence": [
+      "src/app/api/qualify/preview/route.ts:14",
+      "src/features/qualification/qualification.ts:133",
+      "src/features/qualification/qualification.ts:159",
+      "src/features/qualification/components/CriteriaReport.tsx:20"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect this — do not let the keyless preview drop its 'keyword read' label or the prompt lose its anti-fabrication/anti-cross-credit rules.",
+    "l2_priority": "Verify the live model output is as sober as the prompt instructs on a real candidate (no flatter, names the actual pasted evidence, honors the 3-of-N threshold)."
+  },
+  {
+    "id": "PO-QUAL-02",
+    "journey": "qualify-verdict",
+    "character": "priscilla-osei-startup-gc",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "clarity",
+    "impact": { "frequency": "low", "reachability": "med", "trust_erosion": "low" },
+    "title": "/qualify page metadata still says 'O-1A self-screening / eight criteria' though the page leads with multi-program best-path",
+    "expected": "Page metadata/description consistent with the surface, which now leads with a best-path comparison across O-1A / O-1B / EB-1A.",
+    "got": "qualify/page.tsx:9-12 metadata reads 'An informational O-1A self-screening… how it maps onto the eight extraordinary-ability criteria' while the page body (qualify/page.tsx:31-38) and QualifyEntry (QualifyEntry.tsx:18-57) lead with the multi-program best-path finder. Minor staleness, not a UPL/positioning drift (the not-legal-advice line is present at qualify/page.tsx:36-37).",
+    "evidence": [
+      "src/app/qualify/page.tsx:9",
+      "src/features/qualification/components/QualifyEntry.tsx:18"
+    ],
+    "code_check": "present-but-missed",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Update the /qualify metadata title/description to reflect the multi-program best-path screening (O-1A/O-1B/EB-1A).",
+    "l2_priority": "n-a (copy staleness visible at L1)."
+  },
+  {
+    "id": "PO-SHARE-01",
+    "journey": "share-verdict",
+    "character": "priscilla-osei-startup-gc",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "low" },
+    "title": "Share token is privacy-clean and frames informational-not-a-legal-grant",
+    "expected": "A shareable certificate that leaks no private data, renders without server state, and reads as an informational screen rather than a legal determination an employee could misuse.",
+    "got": "The token encodes only name/classification/likelihood/per-criterion status chars and explicitly omits the profile text (letters-patent.ts:21-29,69-77; LettersPatentShare.tsx:8-11). It decodes from the token alone with no DB (letters-patent.ts:84-102, c/[token]/page.tsx:43-46) and rejects a tampered token whose status count mismatches the live pack (letters-patent.ts:97). The page stamps 'Qualifies / In progress' (not 'Approved/Granted') and carries 'Informational only · not legal advice · no account needed' (c/[token]/page.tsx:119,124-131).",
+    "evidence": [
+      "src/features/qualification/letters-patent.ts:21",
+      "src/features/qualification/letters-patent.ts:84",
+      "src/app/c/[token]/page.tsx:119"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect — keep the profile text out of the token and keep the informational (non-grant) framing on the public certificate.",
+    "l2_priority": "Confirm live that the /c/[token] page and opengraph-image render from the token alone with no private data and the informational framing is visible in the rendered card."
+  }
+]
