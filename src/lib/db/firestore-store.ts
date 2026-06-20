@@ -86,6 +86,23 @@ function toDraftSections(v: unknown): DraftSection[] {
   });
 }
 
+// Firestore is schemaless, so unlike the PGlite driver (integer column +
+// `check (balance >= 0)`) it has no DB-level backstop on the token balance. A
+// single non-numeric/NaN value (bad merge, console edit, out-of-band writer)
+// would make `balance < cost` → `NaN < cost` → false, letting every debit
+// "succeed" while writing NaN back — unbounded free spend forever. Coerce every
+// balance read to a finite non-negative integer (fail-CLOSED to 0, which can't
+// spend), and log when a stored value was actually corrupt so it's observable.
+function safeBalance(raw: unknown, userId: string): number {
+  if (raw === undefined || raw === null) return 0;
+  const n = Number(raw);
+  if (Number.isFinite(n) && Number.isInteger(n) && n >= 0) return n;
+  console.error(
+    `[firestore] corrupt token balance for ${userId}: ${JSON.stringify(raw)} — treating as 0`,
+  );
+  return 0;
+}
+
 export const firestoreStore: Store = {
   async getProfile(userId) {
     const snap = await adminDb().collection(col("profiles")).doc(userId).get();
@@ -161,7 +178,7 @@ export const firestoreStore: Store = {
       .collection(col("token_accounts"))
       .doc(userId)
       .get();
-    return snap.exists ? Number(snap.get("balance") ?? 0) : 0;
+    return snap.exists ? safeBalance(snap.get("balance"), userId) : 0;
   },
 
   async charge(userId, cost, operation, ref) {
@@ -169,7 +186,7 @@ export const firestoreStore: Store = {
     const accRef = fs.collection(col("token_accounts")).doc(userId);
     return fs.runTransaction(async (t) => {
       const snap = await t.get(accRef);
-      const balance = snap.exists ? Number(snap.get("balance") ?? 0) : 0;
+      const balance = snap.exists ? safeBalance(snap.get("balance"), userId) : 0;
       if (balance < cost) return { ok: false, balance };
       const next = balance - cost;
       t.set(
@@ -201,10 +218,10 @@ export const firestoreStore: Store = {
       if (ref) {
         const seen = await t.get(ledgerRef);
         if (seen.exists) {
-          return accSnap.exists ? Number(accSnap.get("balance") ?? 0) : 0;
+          return accSnap.exists ? safeBalance(accSnap.get("balance"), userId) : 0;
         }
       }
-      const cur = accSnap.exists ? Number(accSnap.get("balance") ?? 0) : 0;
+      const cur = accSnap.exists ? safeBalance(accSnap.get("balance"), userId) : 0;
       const next = cur + amount;
       t.set(
         accRef,
@@ -232,7 +249,7 @@ export const firestoreStore: Store = {
       const accSnap = await t.get(accRef);
       const seen = await t.get(ledgerRef);
       if (seen.exists) return; // already granted
-      const cur = accSnap.exists ? Number(accSnap.get("balance") ?? 0) : 0;
+      const cur = accSnap.exists ? safeBalance(accSnap.get("balance"), userId) : 0;
       const next = cur + amount;
       t.set(
         accRef,
