@@ -29,6 +29,9 @@ interface CategorizeApiResponse {
   disclaimer: string;
   source: ModelSource;
   document: DocumentView | null;
+  /** True when a caseId was supplied but the document could not be saved
+   *  (forbidden / store fault) — distinct from the no-case keyless null. */
+  saveFailed?: boolean;
 }
 
 type AddStatus = "idle" | "adding" | "error" | "paywall";
@@ -47,6 +50,8 @@ export function EvidenceVault({
   const [content, setContent] = useState("");
   const [status, setStatus] = useState<AddStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  // Non-fatal: the doc was categorized but couldn't be saved to the case.
+  const [warning, setWarning] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   // Synchronous re-entrancy guard: `disabled={status === "adding"}` only blocks
   // the button AFTER the next render, so a rapid double-click could fire two
@@ -67,6 +72,7 @@ export function EvidenceVault({
     submitting.current = true;
     setStatus("adding");
     setError(null);
+    setWarning(null);
     try {
       const res = await fetch("/api/evidence/categorize", {
         method: "POST",
@@ -102,6 +108,14 @@ export function EvidenceVault({
           source: data.source,
         };
       setDocuments((prev) => [...prev, doc]);
+      // A case-backed save that failed: the categorization is shown, but warn
+      // that it didn't persist (the user was charged) so it isn't mistaken for
+      // a saved exhibit that will vanish on reload.
+      if (data.saveFailed) {
+        setWarning(
+          "Categorized, but we couldn't save this to your case — it won't persist after a reload. Please try again.",
+        );
+      }
       setName("");
       setContent("");
       setStatus("idle");
@@ -188,6 +202,11 @@ export function EvidenceVault({
           {status === "error" && error ? (
             <div role="alert" className="rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[15px] text-danger">
               {error}
+            </div>
+          ) : null}
+          {warning ? (
+            <div role="status" className="rounded-control border border-warning/40 bg-warning-soft/50 px-3 py-2 font-sans text-[15px] text-warning">
+              {warning}
             </div>
           ) : null}
           {status === "paywall" ? (
