@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { getCases } from "@/lib/data";
 import {
@@ -52,6 +54,7 @@ export function CaseList() {
   const [cases, setCases] = useState<readonly PetitionCase[] | null>(null);
   const [load, setLoad] = useState<LoadState>("loading");
   const { query, setQuery, reset } = usePersistentQuery();
+  const router = useRouter();
 
   useEffect(() => {
     let active = true;
@@ -246,10 +249,17 @@ export function CaseList() {
                 {visible.map((c) => (
                   <tr
                     key={c.id}
-                    className="border-t border-dotted border-rule transition-[background-color] duration-200 hover:bg-accent-soft/35"
+                    onClick={() => router.push(`/dashboard/cases/${c.id}`)}
+                    className="cursor-pointer border-t border-dotted border-rule transition-[background-color] duration-200 hover:bg-accent-soft/35"
                   >
                     <td className="px-4 py-3 doc-number text-[14px] text-foreground">
-                      {c.fileNumber}
+                      <Link
+                        href={`/dashboard/cases/${c.id}`}
+                        className="hover:underline focus-visible:underline focus-visible:outline-none"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {c.fileNumber}
+                      </Link>
                     </td>
                     <td className="px-4 py-3 font-sans text-[16px] text-foreground">
                       {c.petitioner}

@@ -44,3 +44,15 @@ test("caseRoadmap: approved marks every stage done", () => {
   const r = caseRoadmap("Approved", { hasEvidence: true, hasDraft: true });
   assert.ok(r.every((s) => s.state === "done"));
 });
+
+test("caseRoadmap: a draft carries past Evidence even with an empty vault (F4 / fam-track-01)", () => {
+  const draftNoEvidence = caseRoadmap("Drafting", { hasEvidence: false, hasDraft: true });
+  assert.notEqual(
+    stateOf(draftNoEvidence, "evidence"),
+    "current",
+    "Evidence must not be 'current' once a draft exists",
+  );
+  assert.equal(stateOf(draftNoEvidence, "evidence"), "done");
+  assert.equal(stateOf(draftNoEvidence, "drafted"), "done");
+  assert.equal(stateOf(draftNoEvidence, "review"), "current");
+});

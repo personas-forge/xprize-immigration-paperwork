@@ -14,6 +14,7 @@ const CASE: StoredCase = {
   approvalLikelihood: 70,
   receiptNumber: null,
   createdAt: null,
+  updatedAt: null,
 };
 
 const DOC: StoredDocument = {

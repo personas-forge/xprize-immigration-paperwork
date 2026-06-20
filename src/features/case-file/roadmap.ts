@@ -48,7 +48,10 @@ export function caseRoadmap(
     current = REVIEW;
   } else {
     // Intake / Drafting: advance through the pre-submission steps as work lands.
-    current = !opts.hasEvidence ? EVIDENCE : !opts.hasDraft ? DRAFTED : REVIEW;
+    // A draft is the strongest signal — it carries past Evidence even when the
+    // vault is empty, so Evidence is never shown "current" once a draft exists
+    // (UAT 2026-06-20 F4 / fam-track-01).
+    current = opts.hasDraft ? REVIEW : opts.hasEvidence ? DRAFTED : EVIDENCE;
   }
 
   return STAGES.map((stage, i) => ({
