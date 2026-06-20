@@ -66,6 +66,25 @@ function pruneExpired(store: Map<string, Bucket>, now: number): void {
 }
 
 /**
+ * Keep the bucket map under MAX_BUCKETS as a HARD ceiling. Expiry-only pruning is
+ * defeated by an IP-rotation burst within a single window (no bucket has expired
+ * yet), so after pruning expired entries, if the map is still full, evict the
+ * entries closest to expiry (oldest `resetAt`) until there's room for one more.
+ * Bounds memory regardless of expiry — the limiter can't be turned into a
+ * memory-exhaustion amplifier.
+ */
+function enforceCap(store: Map<string, Bucket>, now: number): void {
+  if (store.size < MAX_BUCKETS) return;
+  pruneExpired(store, now);
+  if (store.size < MAX_BUCKETS) return;
+  const overflow = store.size - MAX_BUCKETS + 1; // make room for the incoming key
+  const oldest = [...store.entries()]
+    .sort((a, b) => a[1].resetAt - b[1].resetAt)
+    .slice(0, overflow);
+  for (const [k] of oldest) store.delete(k);
+}
+
+/**
  * Record a hit against `key` and report whether it is within `limit` for the
  * current `windowMs` window. Pure given `now` and `store`.
  */
@@ -80,7 +99,7 @@ export function checkRateLimit(
 
   // Fresh window: first hit, or the previous window has elapsed.
   if (!bucket || now >= bucket.resetAt) {
-    if (store.size >= MAX_BUCKETS) pruneExpired(store, now);
+    enforceCap(store, now);
     store.set(key, { count: 1, resetAt: now + windowMs });
     return { ok: true, limit, remaining: limit - 1, retryAfterSec: 0 };
   }
@@ -115,19 +134,40 @@ function isValidIp(value: string): boolean {
   );
 }
 
+/** Number of TRUSTED reverse-proxy hops in front of the app (the platform edge
+ *  + any CDN you control), from `TRUSTED_PROXY_HOPS` (default 0 = one trusted
+ *  edge appends the client IP as the rightmost `x-forwarded-for` entry). */
+export function trustedProxyHops(
+  env: Record<string, string | undefined> = process.env,
+): number {
+  const n = Number(env.TRUSTED_PROXY_HOPS);
+  return Number.isInteger(n) && n >= 0 ? n : 0;
+}
+
 /**
- * The forwarded client IP, VALIDATED, or `null`. `x-forwarded-for` (first hop,
- * else `x-real-ip`) is client-controlled, so it is only returned when it parses
- * as a real IPv4/IPv6 literal — garbage / spoofed non-IP values yield `null`.
- * Shared so every "what's the caller's IP?" site applies the same hardening
- * (the welcome consent record used to trust the raw header).
+ * The forwarded client IP, VALIDATED, or `null`.
+ *
+ * SECURITY: `x-forwarded-for` is fully client-controlled. The LEFTMOST entry is
+ * the original client's *claim* — an attacker rotates it (`1.2.3.4`, `1.2.3.5`,
+ * …) to mint a fresh limiter bucket per request and bypass the cap. We instead
+ * take the **rightmost-minus-N** hop — the value our own trusted edge appended
+ * (N = `trustedProxyHops()`) — which a caller cannot forge. A non-IP / absent
+ * value yields `null` so the caller collapses into a shared `anon` bucket rather
+ * than fanning out. (The hard bucket-map ceiling caps the residual fan-out.)
  */
-export function clientIp(headers: Pick<Headers, "get">): string | null {
-  const candidate =
-    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    headers.get("x-real-ip")?.trim() ||
-    "";
-  return isValidIp(candidate) ? candidate : null;
+export function clientIp(
+  headers: Pick<Headers, "get">,
+  hops: number = trustedProxyHops(),
+): string | null {
+  const xff = headers.get("x-forwarded-for");
+  if (xff) {
+    const parts = xff.split(",").map((s) => s.trim()).filter(Boolean);
+    const idx = parts.length - 1 - hops;
+    const candidate = idx >= 0 ? parts[idx] : undefined;
+    if (candidate && isValidIp(candidate)) return candidate;
+  }
+  const realIp = headers.get("x-real-ip")?.trim();
+  return realIp && isValidIp(realIp) ? realIp : null;
 }
 
 /**
