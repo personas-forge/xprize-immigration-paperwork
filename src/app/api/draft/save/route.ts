@@ -91,5 +91,13 @@ export async function POST(request: Request): Promise<NextResponse> {
   );
   if (!saved.ok) return toErrorResponse(saved.error);
 
-  return NextResponse.json({ caseId: auth.case.id, version: saved.value });
+  // `saved.value` is always a real version number here: the adapter converts a
+  // no-store (null) into err("unconfigured") → 503 above, so a 2xx can't carry a
+  // null version. Emit an explicit `persisted` so the client never infers "saved"
+  // from a 2xx alone (defensive against a future adapter regression).
+  return NextResponse.json({
+    caseId: auth.case.id,
+    version: saved.value,
+    persisted: true,
+  });
 }

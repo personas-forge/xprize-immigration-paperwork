@@ -227,9 +227,19 @@ export function DraftStudio({
         setRegenerationError(heading);
         return;
       }
-      setSections((prev) =>
-        prev.map((s) => (s.heading === heading ? data.section : s)),
-      );
+      // Replace ONLY the first heading match — headings can collide, and
+      // overwriting every match would clobber a distinct section (mirrors the
+      // server-side mergeRegeneratedSection fix).
+      setSections((prev) => {
+        let replaced = false;
+        return prev.map((s) => {
+          if (!replaced && s.heading === heading) {
+            replaced = true;
+            return data.section;
+          }
+          return s;
+        });
+      });
       setSource(data.source);
       setSaveFailed(Boolean(data.saveFailed));
       setAdjudication(data.adjudication ?? null);
