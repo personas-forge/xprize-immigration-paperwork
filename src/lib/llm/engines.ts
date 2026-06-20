@@ -106,12 +106,23 @@ const CLAUDE_TIMEOUT_MS = 180_000;
  * Run `claude -p` non-interactively, feeding the prompt on STDIN (never as a
  * shell argument — no injection, no arg-length limits). The command is a single
  * shell string (no argv array → avoids Node's DEP0190) so the OS resolves
- * `claude`/`claude.cmd` cross-platform; the only interpolated value is the
- * sanitised model id, and the bin path is operator config.
+ * `claude`/`claude.cmd` cross-platform.
+ *
+ * TWO interpolated values land in the shell string and BOTH are hardened: the
+ * model id is sanitised to `[A-Za-z0-9._-]` (config.ts), and the bin path —
+ * operator config (`CLAUDE_CLI_PATH`) — is now QUOTED (so a normal Windows path
+ * with spaces like `C:\Program Files\…\claude.cmd` isn't tokenised) and rejected
+ * outright if it contains shell metacharacters (so it can't break out of the
+ * quotes / chain a command).
  */
 export function runClaudeCli(prompt: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const command = `${claudeBin()} -p --output-format text --model ${claudeModel()}`;
+    const bin = claudeBin();
+    if (/["'`$;&|<>\n\r]/.test(bin)) {
+      reject(new Error("CLAUDE_CLI_PATH contains unsafe shell characters"));
+      return;
+    }
+    const command = `"${bin}" -p --output-format text --model ${claudeModel()}`;
     const child = spawn(command, {
       stdio: ["pipe", "pipe", "pipe"],
       timeout: CLAUDE_TIMEOUT_MS,
