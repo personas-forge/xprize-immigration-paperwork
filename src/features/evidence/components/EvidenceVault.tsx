@@ -83,12 +83,20 @@ export function EvidenceVault({
         setStatus("error");
         return;
       }
+      // Optimistic exhibit ordinal when persistence is skipped (no store): keep
+      // the index MONOTONIC instead of rendering "—" (UAT 2026-06-20 F9).
+      const nextExhibit = String(
+        documents.reduce((max, d) => {
+          const n = parseInt(String(d.exhibit).replace(/\D/g, ""), 10);
+          return Number.isFinite(n) ? Math.max(max, n) : max;
+        }, 0) + 1,
+      );
       const doc: DocumentView =
         data.document ?? {
           id: crypto.randomUUID(),
           name: name.trim(),
           criterion: data.criterion,
-          exhibit: "—",
+          exhibit: nextExhibit,
           status: "Received",
           facts: data.facts,
           source: data.source,

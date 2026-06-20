@@ -184,7 +184,7 @@ const num = (v: unknown): number => Number(v ?? 0);
 const str = (v: unknown): string => (v == null ? "" : String(v));
 
 const CASE_COLUMNS =
-  "id, file_number, petitioner, classification, status, approval_likelihood, receipt_number, created_at";
+  "id, file_number, petitioner, classification, status, approval_likelihood, receipt_number, created_at, updated_at";
 
 interface CaseRow {
   id: string;
@@ -195,6 +195,7 @@ interface CaseRow {
   approval_likelihood: number;
   receipt_number: string | null;
   created_at: string | null;
+  updated_at: string | null;
 }
 
 function toStoredCase(row: CaseRow): StoredCase {
@@ -208,6 +209,9 @@ function toStoredCase(row: CaseRow): StoredCase {
     receiptNumber: row.receipt_number ?? null,
     createdAt: row.created_at
       ? new Date(row.created_at).toISOString()
+      : null,
+    updatedAt: row.updated_at
+      ? new Date(row.updated_at).toISOString()
       : null,
   };
 }
@@ -435,7 +439,7 @@ export async function getPgliteStore(): Promise<Store> {
         `select ${CASE_COLUMNS}
            from cases
           where status = 'Attorney Review'
-          order by created_at asc
+          order by updated_at asc
           limit 200`,
       );
       return (r.rows as unknown as CaseRow[]).map(toStoredCase);

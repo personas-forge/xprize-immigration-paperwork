@@ -52,7 +52,7 @@ const QA: { q: string; a: string }[] = [
   },
   {
     q: "How is my personal and immigration data protected?",
-    a: "Documents are stored encrypted (AES-256 at rest, TLS 1.3 in transit) on U.S.-based servers. Access is limited to you, the attorney of record you designate, and the AI drafting pipeline, and every access is logged. We don't train models on your data and we don't sell anonymized exhibits; you can export or hard-delete everything at any time.",
+    a: "Your documents and case data are stored in our database and are accessible only to you, the attorney of record you designate, and the AI pipeline that drafts your work product. We don't train models on your data and we don't sell it, and you can remove documents you've added. We're an early-stage product: production-grade data controls — at-rest encryption, region pinning, one-click export/delete, and a signed DPA — are on our near-term roadmap rather than all in place today, so treat what you upload accordingly.",
   },
 ];
 

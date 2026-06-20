@@ -36,8 +36,11 @@ export interface StoredCase {
   status: string;
   approvalLikelihood: number;
   receiptNumber: string | null;
-  /** ISO timestamp of case creation — exposed as queue age proxy. */
+  /** ISO timestamp of case creation. */
   createdAt: string | null;
+  /** ISO timestamp of the last mutation — the correct queue-age clock for a case
+   *  in Attorney Review (created_at is wrong for an aged case; UAT 2026-06-20 F3). */
+  updatedAt: string | null;
 }
 
 export interface StoredCriterion {

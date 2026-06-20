@@ -61,6 +61,7 @@ interface CaseDoc {
   approval_likelihood?: number;
   receipt_number?: string | null;
   created_at?: unknown;
+  updated_at?: unknown;
 }
 
 function toStoredCase(id: string, d: CaseDoc): StoredCase {
@@ -73,6 +74,7 @@ function toStoredCase(id: string, d: CaseDoc): StoredCase {
     approvalLikelihood: Number(d.approval_likelihood ?? 0),
     receiptNumber: (d.receipt_number as string | null) ?? null,
     createdAt: tsToIso(d.created_at),
+    updatedAt: tsToIso(d.updated_at),
   };
 }
 
@@ -286,7 +288,7 @@ export const firestoreStore: Store = {
     const q = await adminDb()
       .collection(col("cases"))
       .where("status", "==", "Attorney Review")
-      .orderBy("created_at", "asc")
+      .orderBy("updated_at", "asc")
       .limit(200)
       .get();
     return q.docs.map((d) => toStoredCase(d.id, d.data() as CaseDoc));

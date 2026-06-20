@@ -34,7 +34,7 @@ export default async function DashboardPage() {
       classification: c.classification,
       status: c.status,
       approvalLikelihood: c.approvalLikelihood,
-      submittedAt: c.createdAt,
+      submittedAt: c.updatedAt,
     }));
     // Balance only when the economy is enforced; otherwise the pill shows "∞".
     if (economyEnforced) balance = await getBalance(user.id);
