@@ -157,6 +157,20 @@ export function BestPathFinder({
         <Rise className="space-y-4">
           <DisclaimerStamp text={result.disclaimer} />
           <RecommendationBanner result={result} onChoose={choose} />
+          {/* Interim honesty caveat (UAT 2026-06-20 LLM-1): the ranking is a
+              keyless KEYWORD pre-read, not the model — it can under-read a strong
+              record whose evidence doesn't match the obvious words. The full
+              authenticated screening (which DOES run the model) may re-rank. */}
+          <p className="rounded-control border border-dashed border-seal/50 bg-seal-soft/20 px-4 py-3 font-sans text-[14.5px] leading-snug text-foreground-soft">
+            <span className="font-mono text-[11px] uppercase tracking-document text-seal">
+              Keyword pre-read ·{" "}
+            </span>
+            This comparison scores your text by keyword, so it can under-read a
+            strong record whose evidence doesn&apos;t match the obvious words — a
+            director, composer, chef, or athlete. It&apos;s a starting point, not a
+            verdict: the full screening reads your whole record in depth and can
+            change which path fits best. Your answers carry over.
+          </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {result.programs.map((p) => (
               <ProgramCard
