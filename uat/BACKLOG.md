@@ -121,11 +121,12 @@ with LLM-1 (better scoring → fewer drops).
 
 ## Tier 3 — The rest (positioning, SEO, ops features, polish)
 
-- **Positioning rebalance (T5)** — balance the audience ribbon + evidence copy for arts/culinary/
-  athletics ("CV, press, reviews, awards" not just "GitHub"); **name EB-1A on `/`**; distinguish
-  O-1A-8 / O-1B-6 / EB-1A-10. *dm-eval-01 is "major" (a chef bounces before the right selector) —
-  consider promoting it.* `page.tsx:125,154,156,133`, `landing-claude/page.tsx:59-62`. Effort: S–M.
-  Reporters: dm-eval-01/02, OA-EP-01, YT-EP-01.
+- **Positioning rebalance (T5)** — ✅ **SHIPPED.** Audience ribbon now "founders · researchers ·
+  artists · athletes"; evidence copy broadened ("CV, press, reviews, awards, publications,
+  exhibitions"); **EB-1A named on `/`** (hero "Your O-1 or EB-1A", subhead + promises + process
+  distinguish O-1A / O-1B (arts) / EB-1A); `/` + alt-masthead + layout SEO updated. Was `dm-eval-01`
+  (major) — `page.tsx`, `landing-claude/page.tsx`, `layout.tsx`. Reporters: dm-eval-01/02, OA-EP-01,
+  YT-EP-01. (The chef/architect/athlete **SEO 404s** are the separate item below.)
 - **SEO professions** — add chef/architect/athlete (or a graceful generic) so
   `/visa/[class]/[profession]` doesn't hard-404. `professions.ts`. il-seo-01, dm-prospect-03, MB-QV-03.
 - **Ops features (T2-adjacent, missing-features not bugs)** — a **read-only ops/case-manager role**

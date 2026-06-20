@@ -89,9 +89,9 @@ function InstantVerdictSection() {
             Paste your background. Watch the <em>certificate</em> assemble.
           </h2>
           <p className="mt-4 max-w-2xl font-sans text-[16px] leading-relaxed text-muted-strong">
-            The same eight-criteria engine that powers the petition — run it on
-            yourself right here, no signup, in about twenty seconds. It&apos;s a
-            free informational read, never legal advice.
+            The same engine that powers the petition — run it on yourself right
+            here, no signup, in about twenty seconds. It&apos;s a free
+            informational read, never legal advice.
           </p>
         </Rise>
         <Rise className="mt-8">
@@ -122,7 +122,7 @@ function Hero() {
             style={{ color: "var(--accent-dark)" }}
           >
             <span className="inline-block h-px w-10 bg-accent-dark" />
-            File №&nbsp;O1-241 · For founders · engineers · researchers · designers
+            File №&nbsp;O1-241 · For founders · researchers · artists · athletes
           </div>
 
           <h1
@@ -130,7 +130,7 @@ function Hero() {
             className="display mt-7 text-[clamp(2.6rem,8.4vw,6.6rem)] text-foreground"
             style={{ "--delay": "120ms" } as React.CSSProperties}
           >
-            Your O&#8209;1 visa,
+            Your O&#8209;1 or EB&#8209;1A,
             <br />
             <em>drafted with care</em>
             <br />
@@ -150,10 +150,12 @@ function Hero() {
             style={{ "--delay": "350ms" } as React.CSSProperties}
           >
             The petition packet a firm would charge $8,000 to $15,000 to
-            assemble — drafted by AI from your CV, GitHub, press and
-            publications, structured across the eight O-1 criteria. It&apos;s
-            work product, ready for <em>your</em> attorney of record to review
-            and sign before filing — informational drafting, never legal advice.
+            assemble — drafted by AI from your real record (CV, press, reviews,
+            awards, publications, exhibitions), structured across the regulatory
+            criteria for your category: O&#8209;1A, O&#8209;1B (arts), or
+            EB&#8209;1A. It&apos;s work product, ready for <em>your</em> attorney
+            of record to review and sign before filing — informational drafting,
+            never legal advice.
           </p>
 
           <div
@@ -247,7 +249,7 @@ function Promises() {
     {
       n: "II",
       t: "Drafted in minutes",
-      b: "AI classifies your evidence across the eight O-1 criteria and drafts the petition letter section by section, in one pass. You and your attorney refine from there.",
+      b: "AI classifies your evidence across the criteria for your category — O-1A, O-1B, or EB-1A — and drafts the petition letter section by section, in one pass. You and your attorney refine from there.",
     },
     {
       n: "III",
@@ -279,7 +281,7 @@ function Promises() {
 
 function Process() {
   const steps: [string, string, string][] = [
-    ["I", "Qualify", "5-min self-check that scores the eight O-1 criteria. Free. You get a yes/no/maybe with honest reasoning."],
+    ["I", "Qualify", "5-min self-check that maps your record onto the right criteria — O-1A, O-1B (arts), or EB-1A. Free. You get a yes/no/maybe with honest reasoning."],
     ["II", "Assemble", "Upload your CV and evidence. AI sorts each document into a criterion and drafts the petition letter, section by section."],
     ["III", "Review & sign", "Your own attorney of record reviews every word in the studio, edits where needed, and signs — the tool drafts, your attorney owns the filing."],
     ["IV", "File", "Your attorney files with USCIS; premium processing is ~15 business days to decision. Draft RFE responses in the studio if more evidence is requested."],
