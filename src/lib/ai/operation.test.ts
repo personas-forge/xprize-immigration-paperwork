@@ -209,6 +209,51 @@ test("unusable model output (guard null) → reclaim + mock", async () => {
 });
 
 // ---------------------------------------------------------------------------
+// 7b. guard THROWS on a billed response → reclaim + mock (not a 500, not silent
+//     theater as a model answer). The model was paid; a parser regression must
+//     refund + fall back, and not present the mock as the engine's output.
+// ---------------------------------------------------------------------------
+test("guard throw on a billed response → reclaim + mock, still 200", async () => {
+  const spy = chargeSpy({ ok: true, cost: 1, balance: 9, reclaim: async () => {} });
+  const res = await executeAiOperation(
+    jsonRequest({ text: "hi" }),
+    baseSpec({
+      guard: () => {
+        throw new Error("parser regression");
+      },
+    }),
+    deps({ charge: spy.charge, getLlm: () => llmReturning("REAL ANSWER") }),
+  );
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.result, "MOCK_OUTPUT");
+  assert.equal(body.source, "mock");
+  assert.equal(spy.calls.reclaimed, 1, "a guard throw on a billed response must reclaim");
+});
+
+// ---------------------------------------------------------------------------
+// 7c. adjudication is SKIPPED on a mock (a template's risk score is theater),
+//     but RUNS on a real model answer.
+// ---------------------------------------------------------------------------
+test("adjudicate runs on a model answer but is skipped on a mock", async () => {
+  const report = { gates: [], risk: "ready" as const, attorneyReady: true };
+  // real engine → adjudication attached
+  const real = await executeAiOperation(
+    jsonRequest({ text: "hi" }),
+    baseSpec({ adjudicate: () => report }),
+    deps({ getLlm: () => llmReturning("REAL ANSWER") }),
+  );
+  assert.deepEqual((await real.json()).adjudication, report);
+  // no engine → mock → no adjudication
+  const mock = await executeAiOperation(
+    jsonRequest({ text: "hi" }),
+    baseSpec({ adjudicate: () => report }),
+    deps({ getLlm: () => null }),
+  );
+  assert.equal((await mock.json()).adjudication, undefined, "mock must not be adjudicated");
+});
+
+// ---------------------------------------------------------------------------
 // 8. happy path → source = engine name, no reclaim
 // ---------------------------------------------------------------------------
 test("happy path → model output with source = engine name, no reclaim", async () => {
