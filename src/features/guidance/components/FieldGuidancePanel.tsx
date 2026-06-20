@@ -8,7 +8,13 @@ import { getForms } from "@/lib/data";
 import { type UscisForm } from "@/features/case-file/types";
 import { DISCLAIMER, type GuidanceResponse } from "../guidance";
 import { isModelSource, sourceLabel } from "@/lib/llm/label";
-import { DisclaimerStamp } from "@/components/legal";
+import { DisclaimerStamp, AdjudicationBadge } from "@/components/legal";
+import { type AdjudicationReport } from "@/lib/llm/adjudication-gates";
+
+// The orchestrator attaches a best-effort `{ adjudication }` report to the
+// response body (live UPL screen); the typed envelope doesn't carry it, so
+// augment it locally for the panel.
+type GuidanceResult = GuidanceResponse & { adjudication?: AdjudicationReport };
 
 // — Field-guidance panel ─────────────────────────────────────────────────────
 // Pick a USCIS form + field, describe the situation, and request INFORMATIONAL
@@ -24,7 +30,7 @@ export function FieldGuidancePanel() {
   const [fieldLabel, setFieldLabel] = useState("");
   const [situation, setSituation] = useState("");
   const [status, setStatus] = useState<Status>("idle");
-  const [result, setResult] = useState<GuidanceResponse | null>(null);
+  const [result, setResult] = useState<GuidanceResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formsError, setFormsError] = useState(false);
   // Bumping this re-runs the catalog effect; the Retry handler owns the
@@ -95,7 +101,7 @@ export function FieldGuidancePanel() {
         setStatus("paywall");
         return;
       }
-      const data = (await res.json()) as GuidanceResponse | { error: string };
+      const data = (await res.json()) as GuidanceResult | { error: string };
       if (!res.ok || "error" in data) {
         setError("error" in data ? data.error : "Could not generate guidance.");
         setStatus("error");
@@ -241,6 +247,10 @@ export function FieldGuidancePanel() {
           <div className="space-y-3">
             {/* Disclaimer renders FIRST and prominently — never optional. */}
             <DisclaimerStamp text={result.disclaimer} />
+            {/* Live UPL screen: flags outcome/advice language in the answer. */}
+            {result.adjudication ? (
+              <AdjudicationBadge report={result.adjudication} />
+            ) : null}
             <div className="relative rounded-control border border-accent/30 bg-surface px-5 py-4">
               <div className="absolute inset-x-0 top-0 perforation h-px" aria-hidden />
               <div className="mb-2 flex items-center justify-between">
