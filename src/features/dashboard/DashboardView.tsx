@@ -16,11 +16,12 @@ import { BalancePill, LocalThemeToggle } from "./DashboardChrome";
 export function DashboardView({
   balance,
   cases = [],
-  isAttorney = false,
+  canReviewQueue = false,
 }: {
   balance: number | null;
   cases?: readonly SavedCaseSummary[];
-  isAttorney?: boolean;
+  /** Show the review-queue nav: attorney of record OR read-only ops/case-manager. */
+  canReviewQueue?: boolean;
 }) {
   const [dark, setDark] = useState(false);
 
@@ -32,7 +33,7 @@ export function DashboardView({
         context="O1-241 · Krishnan · O-1A"
         actions={
           <>
-            {isAttorney ? (
+            {canReviewQueue ? (
               <Link
                 href="/dashboard/review"
                 className="hidden items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[12.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 sm:inline-flex"

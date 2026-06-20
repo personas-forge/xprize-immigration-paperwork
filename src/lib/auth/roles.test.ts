@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { attorneyAllowlist, isAttorney, isConfiguredAttorney } from "./roles";
+import {
+  attorneyAllowlist,
+  isAttorney,
+  isConfiguredAttorney,
+  isConfiguredOps,
+  canReviewQueue,
+} from "./roles";
 
 test("attorneyAllowlist: parses, trims, lowercases, drops blanks", () => {
   assert.deepEqual(
@@ -35,4 +41,27 @@ test("isConfiguredAttorney: configured allowlist still restricts to listed email
   assert.equal(isConfiguredAttorney("Counsel@Firm.com", env), true);
   assert.equal(isConfiguredAttorney("someone@else.com", env), false);
   assert.equal(isConfiguredAttorney(null, env), false);
+});
+
+test("isConfiguredOps: fails CLOSED — empty OPS_EMAILS denies everyone (cross-tenant read)", () => {
+  assert.equal(isConfiguredOps("anyone@example.com", {}), false);
+  assert.equal(isConfiguredOps("ops@firm.com", { OPS_EMAILS: "" }), false);
+  const env = { OPS_EMAILS: "ops@firm.com" };
+  assert.equal(isConfiguredOps("Ops@Firm.com", env), true);
+  assert.equal(isConfiguredOps("someone@else.com", env), false);
+  assert.equal(isConfiguredOps(null, env), false);
+});
+
+test("canReviewQueue: attorney OR ops may view; neither → denied (fail-closed)", () => {
+  assert.equal(canReviewQueue("c@firm.com", { ATTORNEY_EMAILS: "c@firm.com" }), true);
+  assert.equal(canReviewQueue("o@firm.com", { OPS_EMAILS: "o@firm.com" }), true);
+  assert.equal(
+    canReviewQueue("o@firm.com", { ATTORNEY_EMAILS: "c@firm.com", OPS_EMAILS: "o@firm.com" }),
+    true,
+  );
+  assert.equal(canReviewQueue("anyone@example.com", {}), false); // no demo unlock
+  assert.equal(
+    canReviewQueue("x@y.com", { ATTORNEY_EMAILS: "c@firm.com", OPS_EMAILS: "o@firm.com" }),
+    false,
+  );
 });

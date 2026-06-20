@@ -45,3 +45,42 @@ export function isConfiguredAttorney(
   if (list.length === 0) return false; // unconfigured → deny (fail closed)
   return typeof email === "string" && list.includes(email.toLowerCase());
 }
+
+// — Read-only ops / case-manager role ─────────────────────────────────────────
+
+export function opsAllowlist(
+  env: Record<string, string | undefined> = process.env,
+): string[] {
+  return (env.OPS_EMAILS ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/**
+ * STRICT read-only ops / case-manager check — fail-closed, exactly like
+ * {@link isConfiguredAttorney}. An ops user may VIEW the cross-tenant SLA review
+ * queue (to manage age/SLAs) but NEVER sign, file, or request changes — every
+ * write stays `isConfiguredAttorney`. Empty `OPS_EMAILS` → deny everyone (an ops
+ * grant is a cross-tenant PII read, so it must be explicit, never demo-unlocked).
+ */
+export function isConfiguredOps(
+  email: string | null | undefined,
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  const list = opsAllowlist(env);
+  if (list.length === 0) return false; // unconfigured → deny (fail closed)
+  return typeof email === "string" && list.includes(email.toLowerCase());
+}
+
+/**
+ * May VIEW the cross-tenant review-queue board: the attorney of record OR a
+ * read-only ops/case-manager. WRITES (sign / file / request-changes) remain
+ * `isConfiguredAttorney`-only — this is strictly a read gate.
+ */
+export function canReviewQueue(
+  email: string | null | undefined,
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return isConfiguredAttorney(email, env) || isConfiguredOps(email, env);
+}
