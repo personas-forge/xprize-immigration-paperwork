@@ -12,6 +12,7 @@ import Link from "next/link";
 import { signInWithPopup } from "firebase/auth";
 import { isDevAuth } from "@/lib/auth/devAuth";
 import { authProvider } from "@/lib/auth/provider";
+import { safeNext } from "@/lib/auth/safe-next";
 import { firebaseAuth, googleProvider } from "@/lib/firebase/client";
 import { PageFrame, Guilloche, Stamp, ChapterMark } from "@/components/brand";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -36,8 +37,11 @@ export default function LoginPage() {
         body: JSON.stringify({ idToken }),
       });
       if (!res.ok) throw new Error("Could not establish a session.");
-      // /welcome onboards first-timers and bounces onboarded users to /dashboard.
-      window.location.href = "/welcome";
+      // Carry the (validated) deep-link destination through onboarding. safeNext
+      // rejects off-site / protocol-relative targets so this can't become an
+      // open redirect; /welcome forwards an onboarded user straight to it.
+      const dest = safeNext(new URLSearchParams(window.location.search).get("next"));
+      window.location.href = `/welcome?next=${encodeURIComponent(dest)}`;
     } catch (e) {
       setBusy(false);
       setError(

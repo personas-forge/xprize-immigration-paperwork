@@ -58,6 +58,17 @@ export async function POST(request: Request): Promise<Response> {
 
 export async function DELETE(): Promise<Response> {
   const jar = await cookies();
+  // Revoke server-side so a copied/stolen session cookie can't outlive sign-out
+  // (getUser verifies with checkRevoked=true). Best-effort: still clear locally.
+  const cookie = jar.get(SESSION_COOKIE)?.value;
+  if (cookie) {
+    try {
+      const decoded = await adminAuth().verifySessionCookie(cookie);
+      await adminAuth().revokeRefreshTokens(decoded.uid);
+    } catch (err) {
+      console.error("[auth/session] could not revoke session tokens", err);
+    }
+  }
   jar.delete(SESSION_COOKIE);
   return Response.json({ ok: true });
 }

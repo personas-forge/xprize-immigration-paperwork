@@ -17,9 +17,12 @@ import { DisclaimerStamp } from "@/components/legal";
 export function ConsentForm({
   defaultName,
   email,
+  next,
 }: {
   defaultName: string;
   email: string | null;
+  /** Validated deep-link destination to forward to after consent. */
+  next?: string;
 }) {
   const [state, action, pending] = useActionState<ConsentState, FormData>(
     submitConsent,
@@ -28,6 +31,9 @@ export function ConsentForm({
 
   return (
     <form action={action} className="space-y-7">
+      {/* Carry the (already-validated) deep-link destination through consent;
+          the server action re-validates it before redirecting. */}
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       {/* Attorney-of-record / not-legal-advice safeguard, visible at sign-up. */}
       <DisclaimerStamp text={CONSENT_DISCLAIMER} />
 

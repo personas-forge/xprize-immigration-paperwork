@@ -6,20 +6,28 @@ import { redirect } from "next/navigation";
 import { getUser, profileFieldsFromUser } from "@/lib/auth/session";
 import { getLatestConsentVersion, getProfile } from "@/lib/auth/db";
 import { CONSENT_VERSION } from "@/lib/auth/consent";
+import { safeNext } from "@/lib/auth/safe-next";
 import { ConsentForm } from "@/components/ConsentForm";
 import { PageFrame, ChapterMark } from "@/components/brand";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-export default async function WelcomePage() {
+export default async function WelcomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
   const user = await getUser();
   if (!user) redirect("/login");
+
+  // Validated deep-link destination carried from /login (open-redirect-safe).
+  const dest = safeNext((await searchParams).next);
 
   const profile = await getProfile(user.id);
   // Skip to the app only when the user is onboarded AND has agreed to the
   // CURRENT consent version — otherwise re-collect consent (terms changed).
   if (profile?.onboarded_at) {
     const consented = await getLatestConsentVersion(user.id);
-    if (consented === CONSENT_VERSION) redirect("/dashboard");
+    if (consented === CONSENT_VERSION) redirect(dest);
   }
 
   const { fullName: defaultName } = profileFieldsFromUser(user);
@@ -54,7 +62,7 @@ export default async function WelcomePage() {
           <span aria-hidden className="text-muted">·</span>
           <span>Confirm your details</span>
         </div>
-        <ConsentForm defaultName={defaultName} email={user.email ?? null} />
+        <ConsentForm defaultName={defaultName} email={user.email ?? null} next={dest} />
       </main>
     </PageFrame>
   );

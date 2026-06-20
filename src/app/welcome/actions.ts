@@ -8,6 +8,7 @@ import { CONSENT_VERSION } from "@/lib/auth/consent";
 import { grantSignupTokens } from "@/lib/tokens/ledger";
 import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
 import { clientIp } from "@/lib/tokens/rate-limit";
+import { safeNext } from "@/lib/auth/safe-next";
 
 export type ConsentState = { error?: string };
 
@@ -22,6 +23,9 @@ export async function submitConsent(
   const terms = formData.get("terms") === "on";
   const privacy = formData.get("privacy") === "on";
   const marketing = formData.get("marketing") === "on";
+  // Re-validate the deep-link destination server-side (never trust the hidden
+  // field) — safeNext rejects off-site targets, defaulting to /dashboard.
+  const dest = safeNext(formData.get("next")?.toString());
 
   if (!fullName) return { error: "Please enter your name." };
   // Cap the length server-side — full_name is written to a TEXT column with no
@@ -76,5 +80,5 @@ export async function submitConsent(
     });
   }
 
-  redirect("/dashboard");
+  redirect(dest);
 }

@@ -89,8 +89,25 @@ export async function getUser(): Promise<AppUser | null> {
           avatar_url: (decoded.picture as string | undefined) ?? null,
         },
       };
-    } catch {
-      return null; // expired/invalid/revoked cookie
+    } catch (err) {
+      // Expected: a genuinely expired/revoked/invalid cookie → treat as signed
+      // out. UNEXPECTED: the admin SDK can't verify ANYTHING (ADC misconfigured/
+      // expired, missing IAM token-creator role) — that signs EVERY user out and
+      // looks like an infinite login loop with no breadcrumb. Log the unexpected
+      // branch so a credential outage is diagnosable. Still return null (the
+      // layout redirects to /login), but no longer silently.
+      const code = (err as { code?: string })?.code ?? "";
+      const expected =
+        /session-cookie-(expired|revoked|invalid)|argument-error|id-token-(expired|revoked)/.test(
+          code,
+        );
+      if (!expected) {
+        console.error(
+          "[auth] session verification failed unexpectedly (check admin credentials / IAM):",
+          code || err,
+        );
+      }
+      return null;
     }
   }
 
