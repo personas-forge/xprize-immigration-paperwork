@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import {
   buildRfeForecastPrompt,
   buildRfeForecastResult,
+  hasReliedCriteria,
   mockRfeForecast,
   tryParseRfeForecast,
   type RfeChallenge,
@@ -25,6 +26,20 @@ import { type AiOperationSpec } from "@/lib/ai/operation";
 export interface ForecastInput {
   req: RfeRequest;
   caseId: string | null;
+}
+
+/** 400 (no charge) when there is nothing to forecast. */
+function noReliedToForecast() {
+  return {
+    ok: false as const,
+    response: NextResponse.json(
+      {
+        error:
+          "No relied-on criteria to forecast — score at least one criterion Met, Strong, or Partial first.",
+      },
+      { status: 400 },
+    ),
+  };
 }
 
 /** Validate an untrusted `criteria` array into RfeCriterion[]. */
@@ -102,6 +117,7 @@ export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {
         })),
         rfeText: "", // forecast is pre-RFE — the prompt never reads it
       };
+      if (!hasReliedCriteria(req)) return noReliedToForecast();
       return { ok: true, value: { req, caseId } };
     }
 
@@ -117,10 +133,12 @@ export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {
       };
     }
     const classification = str(record.classification, 40) || "O-1A";
-    return {
-      ok: true,
-      value: { req: { petitioner, classification, criteria, rfeText: "" }, caseId: null },
-    };
+    const req: RfeRequest = { petitioner, classification, criteria, rfeText: "" };
+    // Reject BEFORE charging when nothing is relied-on (every criterion None/
+    // blank) — the forecast filters to relied-on criteria downstream of the
+    // charge, so without this gate the user is debited for an empty radar.
+    if (!hasReliedCriteria(req)) return noReliedToForecast();
+    return { ok: true, value: { req, caseId: null } };
   },
 
   prompt: (input) => ({
