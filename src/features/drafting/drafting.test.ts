@@ -26,6 +26,7 @@ import {
   parseSectionResponse,
   tryParseDraftResponse,
   tryParseSectionResponse,
+  undraftedSupportedCriteria,
   type DraftRequest,
 } from "./drafting";
 
@@ -369,4 +370,22 @@ test("buildCritiqueResult: attaches the disclaimer + overall score", () => {
   assert.equal(r.disclaimer, DISCLAIMER);
   assert.equal(r.source, "mock");
   assert.equal(r.overallScore, overallCritiqueScore(r.critiques));
+});
+
+test("undraftedSupportedCriteria: surfaces supported-but-undrafted criteria only (LLM-4)", () => {
+  const criteria = [
+    { name: "Awards", status: "Met", evidence: "Best paper award" }, // drafted → skip
+    { name: "Lead role", status: "None", evidence: "Composed the score for two features" }, // under-scored but has evidence → surface
+    { name: "Press", status: "Partial", evidence: "" }, // partial → surface even if evidence blank
+    { name: "Judging", status: "None", evidence: "" }, // nothing → skip
+    { name: "Scholarly", status: "Strong", evidence: "6 papers" }, // drafted → skip
+  ];
+  assert.deepEqual(
+    undraftedSupportedCriteria(criteria).map((c) => c.name),
+    ["Lead role", "Press"],
+  );
+  // The section-selection rule and this nudge can never disagree: a Met/Strong
+  // criterion is never surfaced, an empty None is never surfaced.
+  assert.equal(undraftedSupportedCriteria([{ status: "Met", evidence: "x" }]).length, 0);
+  assert.equal(undraftedSupportedCriteria([{ status: "None", evidence: "" }]).length, 0);
 });

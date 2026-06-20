@@ -85,6 +85,25 @@ function isQualifying(status: string): boolean {
 }
 
 /**
+ * Criteria that carry SUPPORT (scored "Partial", or with evidence on file) but
+ * are NOT drafted as sections — the letter writes one section per QUALIFYING
+ * (Met/Strong) criterion only, so a criterion that was under-scored (e.g. a
+ * composer's mis-read lead role) is silently dropped and the attorney never sees
+ * the gap. Surfacing these lets a missed argument be caught (UAT 2026-06-20
+ * LLM-4 / ng-draft-01). Reuses `isQualifying`, so it can never drift from the
+ * section-selection rule.
+ */
+export function undraftedSupportedCriteria<
+  T extends { status: string; evidence?: string },
+>(criteria: readonly T[]): T[] {
+  return criteria.filter(
+    (c) =>
+      !isQualifying(c.status) &&
+      (c.status === "Partial" || (c.evidence ?? "").trim() !== ""),
+  );
+}
+
+/**
  * Validate and normalize an untrusted request body. Returns the cleaned request
  * or a human-readable error — never throws.
  */

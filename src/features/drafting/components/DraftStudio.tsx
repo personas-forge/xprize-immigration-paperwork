@@ -12,6 +12,7 @@ import {
   attachExhibits,
   auditCitations,
   buildExhibitIndex,
+  undraftedSupportedCriteria,
   type DraftSection,
   type SectionCritique,
   type VaultDocLike,
@@ -159,6 +160,10 @@ export function DraftStudio({
     () => new Set(sections.map((s) => s.heading)),
     [sections],
   );
+  // Criteria that carry support but did NOT become a section (only Met/Strong are
+  // drafted) — surfaced so a mis-scored strong argument isn't silently dropped
+  // from the letter (UAT 2026-06-20 LLM-4 / ng-draft-01).
+  const undrafted = useMemo(() => undraftedSupportedCriteria(criteria), [criteria]);
 
   async function generate() {
     if (busyRef.current) return; // double-submit guard (charges tokens)
@@ -453,6 +458,33 @@ export function DraftStudio({
                 unresolved={audit.unresolved}
                 coverage={audit.coverage}
               />
+            ) : null}
+            {undrafted.length > 0 ? (
+              <div
+                role="note"
+                className="rounded-control border border-dashed border-border-strong bg-surface-muted/40 px-4 py-3"
+              >
+                <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+                  Not drafted — review for a missed argument
+                </div>
+                <p
+                  className="mt-1 font-sans text-[14.5px] leading-snug"
+                  style={{ color: "var(--muted-strong)" }}
+                >
+                  The letter argues only the criteria scored <strong>Met</strong> or{" "}
+                  <strong>Strong</strong>. These carry evidence but weren&apos;t drafted — if any is
+                  actually a strong argument that was under-scored, re-screen or add it so the case
+                  doesn&apos;t silently drop it:
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {undrafted.map((c) => (
+                    <Badge key={c.name} tone="warning">
+                      {c.name}
+                      {c.status === "Partial" ? " · Partial" : ""}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
             ) : null}
             {!isModelSource(source) ? (
               <div
