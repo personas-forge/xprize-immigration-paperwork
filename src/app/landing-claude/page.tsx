@@ -13,7 +13,7 @@ import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
 export const metadata: Metadata = {
   title: "Immigration Concierge — extraordinary ability, on the record",
   description:
-    "AI-drafted O-1 visa petitions, ready for your attorney of record to review and sign. Start free — prepaid tokens, no retainers.",
+    "AI-drafted O-1 and EB-1A extraordinary-ability petitions, ready for your attorney of record to review and sign. Start free — prepaid tokens, no retainers.",
 };
 
 // Alt landing — narrow editorial column. The page is composed as a printed
@@ -123,7 +123,7 @@ export default function LandingClaude() {
           <ChapterMark numeral="II" label="How the petition is built" />
           <ol className="mt-8 space-y-7">
             {[
-              ["I", "Qualify", "A five-minute self-check that scores the eight criteria. Free. We tell you yes, no, or maybe — honestly."],
+              ["I", "Qualify", "A five-minute self-check that maps your record onto the right criteria (O-1A, O-1B, or EB-1A). Free. We tell you yes, no, or maybe — honestly."],
               ["II", "Assemble", "Upload your CV and evidence. AI sorts each document by criterion, then drafts the petition letter section by section."],
               ["III", "Sign", "Your own attorney of record reviews every word, edits where judgment is needed, and signs — you own the filing."],
               ["IV", "File", "Your attorney files with premium processing. Draft RFE responses in the studio if USCIS asks for more evidence."],

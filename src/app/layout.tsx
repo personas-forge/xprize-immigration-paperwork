@@ -33,7 +33,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 const siteTitle =
-  "Immigration Concierge — AI-drafted O-1 petitions, ready for your attorney";
+  "Immigration Concierge — AI-drafted O-1 & EB-1A petitions, ready for your attorney";
 const siteDescription =
   "AI drafts your O-1 / EB-1 petition from your evidence — start free, pay per token. Work product for your attorney of record to review and sign; never legal advice.";
 
