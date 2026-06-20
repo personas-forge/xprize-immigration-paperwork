@@ -1,6 +1,6 @@
 import { DashboardView } from "@/features/dashboard/DashboardView";
 import { requireOnboardedUser } from "@/lib/auth/session";
-import { isConfiguredAttorney } from "@/lib/auth/roles";
+import { canReviewQueue } from "@/lib/auth/roles";
 import { getBalance } from "@/lib/tokens/ledger";
 import { getCasesForUser } from "@/lib/data/petitions";
 import { isStoreConfigured } from "@/lib/db/config";
@@ -18,13 +18,12 @@ export default async function DashboardPage() {
   const economyEnforced = storeConfigured && process.env.TOKENS_BYPASS !== "1";
   let balance: number | null = null;
   let cases: SavedCaseSummary[] = [];
-  let attorney = false;
+  let showReviewQueue = false;
   if (storeConfigured) {
     const { user } = await requireOnboardedUser();
-    // Use the fail-closed check: the review queue / case actions this affordance
-    // links to are now gated on isConfiguredAttorney, so don't surface the nav
-    // to users who'd only hit an empty queue.
-    attorney = isConfiguredAttorney(user.email);
+    // Surface the review-queue nav to anyone who can actually view it — the
+    // attorney of record OR a read-only ops/case-manager (both fail-closed).
+    showReviewQueue = canReviewQueue(user.email);
     // The user's real, persisted cases (from the qualification flow). Empty in
     // the keyless/no-DB demo, where only the mock case file shows.
     cases = (await getCasesForUser(user.id)).map((c) => ({
@@ -39,5 +38,5 @@ export default async function DashboardPage() {
     // Balance only when the economy is enforced; otherwise the pill shows "∞".
     if (economyEnforced) balance = await getBalance(user.id);
   }
-  return <DashboardView balance={balance} cases={cases} isAttorney={attorney} />;
+  return <DashboardView balance={balance} cases={cases} canReviewQueue={showReviewQueue} />;
 }

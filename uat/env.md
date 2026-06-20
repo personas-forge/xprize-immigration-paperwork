@@ -88,6 +88,7 @@ happy path several journeys walk. Create them once per run:
 | **A Filed case** | in the review queue / panel, attorney "Sign & file" (enter a receipt #) | J5 RFE, J7 |
 | **A share token** | `/qualify` positive result → the "Letters Patent" share affordance → `/c/[token]` (token encodes the result; no DB) | J8 share |
 | **Attorney actions unlocked** | set `ATTORNEY_EMAILS=developer@localhost` — the review **queue** + sign/file actions gate on `isConfiguredAttorney` (**fail-closed**: empty list denies everyone, `roles.ts:40`); `isAttorney`'s demo-unlock only covers own-case UI affordances, not the queue. **L1 caught this** (the prior "leave it empty" premise was wrong). | J4, J5 |
+| **Read-only ops/case-manager** | set `OPS_EMAILS=<email>` (fail-closed, like `ATTORNEY_EMAILS`) — the user can **view** the SLA review queue board (age badges, oldest-first) but rows don't deep-link and sign/file/request-changes stay attorney-only. To test Tanya (legal-ops) as ops-not-attorney, set `OPS_EMAILS=developer@localhost` and **leave `ATTORNEY_EMAILS` unset/other**. | track-case-progress / attorney-review-and-file (ops view) |
 | **Tokens to spend** | `TOKENS_BYPASS=1` (unmetered) **or** rely on the 150 grant for a few ops | all AI journeys |
 
 > Lifecycle the fixtures exercise: Intake/Drafting → submit → **Attorney Review** → (request

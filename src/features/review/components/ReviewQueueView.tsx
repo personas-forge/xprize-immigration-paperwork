@@ -20,10 +20,15 @@ export function ReviewQueueView({
   cases,
   balance,
   isAttorney,
+  canView,
 }: {
   cases: readonly SavedCaseSummary[];
   balance: number | null;
+  /** True only for the attorney of record — drives the deep-link + (on the case
+   *  detail) the sign/file affordances. */
   isAttorney: boolean;
+  /** True for an attorney OR a read-only ops/case-manager — gates the board. */
+  canView: boolean;
 }) {
   const [dark, setDark] = useState(false);
   // Null on first render (SSR) to avoid hydration mismatch from clock skew.
@@ -68,67 +73,99 @@ export function ReviewQueueView({
             </Link>
           </div>
 
-          {!isAttorney ? (
+          {!canView ? (
             <Card>
               <CardBody>
                 <p className="font-sans text-[16px] text-foreground-soft">
-                  This queue is for the attorney of record. Your account
-                  isn&apos;t on the attorney allowlist.
-                </p>
-              </CardBody>
-            </Card>
-          ) : cases.length === 0 ? (
-            <Card>
-              <CardBody>
-                <p className="font-sans text-[16px] italic text-muted-strong">
-                  No cases are awaiting review. When an applicant submits a
-                  drafted petition, it appears here.
+                  This queue is for the attorney of record (and case managers on
+                  the ops allowlist). Your account isn&apos;t allow-listed.
                 </p>
               </CardBody>
             </Card>
           ) : (
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-surface-muted/60">
-                <div className="microprint" style={{ color: "var(--accent-dark)" }}>
-                  § — Awaiting review
+            <>
+              {!isAttorney ? (
+                <div className="rounded-control border border-dashed border-border-strong bg-surface-muted/40 px-4 py-2.5">
+                  <span className="microprint" style={{ color: "var(--accent-dark)" }}>
+                    Read-only · case-manager view
+                  </span>
+                  <p
+                    className="mt-1 font-sans text-[14.5px] leading-snug"
+                    style={{ color: "var(--muted-strong)" }}
+                  >
+                    Track queue age and SLAs here. Sign-off, filing, and
+                    request-changes are the attorney of record&apos;s — those
+                    actions aren&apos;t available to your role.
+                  </p>
                 </div>
-                <Badge tone="accent">{cases.length} in queue</Badge>
-              </CardHeader>
-              <ul>
-                {sorted.map((c) => {
-                  const bucket = nowMs !== null ? ageBucket(c.submittedAt, nowMs) : null;
-                  const label = nowMs !== null ? formatAge(c.submittedAt, nowMs) : null;
-                  const tone = bucket ? BUCKET_TONE[bucket] : "neutral";
-                  return (
-                    <li key={c.id} className="border-t border-dotted border-rule first:border-t-0">
-                      <Link
-                        href={`/dashboard/cases/${c.id}`}
-                        className="flex items-center justify-between gap-4 px-5 py-3.5 transition-[background-color] duration-200 hover:bg-accent-soft/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
-                      >
-                        <div className="flex items-baseline gap-3">
-                          <span className="doc-number text-[13px] text-muted">{c.fileNumber}</span>
-                          <span className="font-sans text-[16.5px] text-foreground">{c.petitioner}</span>
-                          <span className="microprint" style={{ color: "var(--muted)" }}>
-                            {c.classification}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {label !== null && (
-                            <Badge tone={tone} aria-label={`In queue ${label}`}>
-                              {label}
-                            </Badge>
+              ) : null}
+
+              {cases.length === 0 ? (
+                <Card>
+                  <CardBody>
+                    <p className="font-sans text-[16px] italic text-muted-strong">
+                      No cases are awaiting review. When an applicant submits a
+                      drafted petition, it appears here.
+                    </p>
+                  </CardBody>
+                </Card>
+              ) : (
+                <Card className="overflow-hidden">
+                  <CardHeader className="bg-surface-muted/60">
+                    <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+                      § — Awaiting review
+                    </div>
+                    <Badge tone="accent">{cases.length} in queue</Badge>
+                  </CardHeader>
+                  <ul>
+                    {sorted.map((c) => {
+                      const bucket = nowMs !== null ? ageBucket(c.submittedAt, nowMs) : null;
+                      const label = nowMs !== null ? formatAge(c.submittedAt, nowMs) : null;
+                      const tone = bucket ? BUCKET_TONE[bucket] : "neutral";
+                      const rowClass = "flex items-center justify-between gap-4 px-5 py-3.5";
+                      const inner = (
+                        <>
+                          <div className="flex items-baseline gap-3">
+                            <span className="doc-number text-[13px] text-muted">{c.fileNumber}</span>
+                            <span className="font-sans text-[16.5px] text-foreground">{c.petitioner}</span>
+                            <span className="microprint" style={{ color: "var(--muted)" }}>
+                              {c.classification}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {label !== null && (
+                              <Badge tone={tone} aria-label={`In queue ${label}`}>
+                                {label}
+                              </Badge>
+                            )}
+                            <span className="doc-number text-[14px] text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                              {c.approvalLikelihood}%
+                            </span>
+                            {isAttorney ? (
+                              <span aria-hidden className="text-accent-dark">→</span>
+                            ) : null}
+                          </div>
+                        </>
+                      );
+                      return (
+                        <li key={c.id} className="border-t border-dotted border-rule first:border-t-0">
+                          {isAttorney ? (
+                            <Link
+                              href={`/dashboard/cases/${c.id}`}
+                              className={`${rowClass} transition-[background-color] duration-200 hover:bg-accent-soft/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40`}
+                            >
+                              {inner}
+                            </Link>
+                          ) : (
+                            <div className={rowClass}>{inner}</div>
                           )}
-                          <span className="doc-number text-[14px] text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
-                            {c.approvalLikelihood}%
-                          </span>
-                          <span aria-hidden className="text-accent-dark">→</span>
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </Card>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </Card>
+              )}
+            </>
           )}
         </div>
       </div>

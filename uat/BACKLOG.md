@@ -131,10 +131,11 @@ with LLM-1 (better scoring → fewer drops).
   to `professions.ts` (each with profession-tuned, exact-criterion-name examples), so
   `/visa/[class]/[profession]` no longer hard-404s for arts/culinary/athletics — the SEO matrix
   grows to 3 classifications × 10 professions = 30 static pages. il-seo-01, dm-prospect-03, MB-QV-03.
-- **Ops features (T2-adjacent, missing-features not bugs)** — a **read-only ops/case-manager role**
-  (view the SLA queue without sign/file power; today viewing requires `ATTORNEY_EMAILS` which also
-  grants signing) + **per-case aging + target-date on an owner board**. tv-attorney-02, gm-track-02,
-  tv-track-01. Effort: M.
+- **Ops features (T2-adjacent, missing-features not bugs)** — ✅ **read-only ops/case-manager role
+  SHIPPED** (`tv-attorney-02`): a strict, fail-closed `OPS_EMAILS` tier (`canReviewQueue` = attorney OR
+  ops) can **view** the SLA review-queue board (age badges, oldest-first) read-only — rows don't
+  deep-link and every write (sign/file/request-changes) stays `isConfiguredAttorney`. **Still open:**
+  per-case aging + target-date on an **owner board** (gm-track-02, tv-track-01). Effort: M.
 - **FAQ security — the real fix (T6 project)** — implement encryption / region-pin / hard-delete /
   DSAR and publish `/privacy`, `/terms`, `/dpa`, `/security` to *bind* the claims (Tier-1 F11 is the
   interim copy-truthing). PO-EVAL-01/02. Effort: L.
