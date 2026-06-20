@@ -13,6 +13,7 @@ import {
   buildExhibitIndex,
   buildSectionPrompt,
   buildSectionResult,
+  draftFraming,
   exhibitNumber,
   extractCitedExhibits,
   hasExhibits,
@@ -388,4 +389,17 @@ test("undraftedSupportedCriteria: surfaces supported-but-undrafted criteria only
   // criterion is never surfaced, an empty None is never surfaced.
   assert.equal(undraftedSupportedCriteria([{ status: "Met", evidence: "x" }]).length, 0);
   assert.equal(undraftedSupportedCriteria([{ status: "None", evidence: "" }]).length, 0);
+});
+
+test("draftFraming / buildDraftPrompt: field-norm framing always; arts + EB-1A get their standard, O-1A doesn't (LLM-3)", () => {
+  const oa = draftFraming("O-1A").join("\n");
+  assert.ok(/behind-the-scenes/i.test(oa), "lead-role field norm present");
+  assert.ok(/relative to peers/i.test(oa), "peer-comparison remuneration framing present");
+  assert.ok(!/arts petition/i.test(oa) && !/final-merits/i.test(oa), "O-1A has no per-class extra");
+  assert.ok(/arts petition/i.test(draftFraming("O-1B").join("\n")), "O-1B → arts framing");
+  assert.ok(/final-merits/i.test(draftFraming("EB-1A").join("\n")), "EB-1A → top-of-field framing");
+  // wired into the full prompt, and the no-fabrication discipline still binds.
+  const p = buildDraftPrompt({ ...valid, classification: "O-1B" });
+  assert.ok(/arts petition/i.test(p));
+  assert.ok(/do not invent/i.test(p), "framing never loosens no-fabrication");
 });
