@@ -11,8 +11,9 @@
  * not in the record").
  *
  * SINGLE SOURCE OF TRUTH: the leaf scanners (specifics / stripLegal /
- * fabricatedSpecifics / UPL advice patterns / case-law detection / wrong-code
- * detection) live HERE and are imported by `scripts/llm-eval/gates.ts`, so the
+ * fabricatedSpecifics / named-entity + award-status grounding / UPL advice
+ * patterns / case-law detection / wrong-code detection) live HERE and are
+ * imported by `scripts/llm-eval/gates.ts`, so the
  * production check can never drift from what the eval asserts. The harness keeps
  * only the SCENARIO-dependent gates (which need a test oracle that doesn't exist
  * at runtime); the invariant gates are shared.
@@ -126,6 +127,77 @@ export function fabricatedSpecifics(outputText: string, inputText: string): stri
   );
 }
 
+// — Qualitative fabrication (named entities + award status) ────────────────────
+// The numbers-only `fabricatedSpecifics` above misses the fabrication classes a
+// signing physician/attorney fears most: an invented or renamed clinical trial,
+// a society the beneficiary doesn't belong to, a journal/award that doesn't
+// exist, or a nomination written up as a win (UAT 2026-06-20 LLM-2 / ao-draft-01,
+// YT-DR-01). These scanners surface those for attorney verification — never
+// auto-block (a heuristic must not fail a legitimately-grounded paid draft).
+
+// Cue words that mark a SPECIFIC named institution / award / work / study. Only
+// matched at the END of a Capitalized proper-noun phrase, so generic prose
+// ("won an award") never trips it — proper nouns in formal petition prose are
+// capitalized.
+const ENTITY_CUE =
+  "Award|Awards|Prize|Medal|Fellowship|Festival|Guild|Society|Association|" +
+  "Academy|Institute|Foundation|University|College|Laboratory|Laboratories|" +
+  "Journal|Conference|Symposium|Biennale|Trial|Study|Championship|Championships|" +
+  "Olympiad|Grammy|Emmy|Oscar|Tony|Pulitzer|Nobel|Turing";
+
+// 1–4 leading Capitalized/numeric tokens then a cue: "Sundance Film Festival",
+// "Lasker Award", "Phase III ENGAGE Trial", "Directors Guild". Case-sensitive on
+// purpose (proper nouns only).
+const ENTITY_RE = new RegExp(
+  `\\b((?:[A-Z][A-Za-z0-9.&'-]+\\s+){1,4}(?:${ENTITY_CUE}))\\b`,
+  "g",
+);
+
+/** Distinct named entities (institutions / awards / works / studies) in the text. */
+export function namedEntities(text: string): string[] {
+  return [...new Set((text.match(ENTITY_RE) ?? []).map((s) => s.trim()))];
+}
+
+// Government/legal/structural entities expected in ANY petition — not claims
+// about the beneficiary, so never flagged.
+const ENTITY_ALLOW = new Set(
+  ("uscis citizenship immigration services department homeland security state").split(/\s+/),
+);
+const CUE_TOKENS = new Set(ENTITY_CUE.toLowerCase().split("|"));
+
+/**
+ * Named entities asserted in the OUTPUT whose distinctive words do NOT appear in
+ * the grounding — i.e. likely invented or misnamed. Conservative: an entity is
+ * "grounded" if ANY of its distinctive (non-cue, non-generic) tokens is in the
+ * input, so a paraphrase ("Zenith Prize" → "Zenith Excellence Award") is NOT
+ * flagged; only a name with no traceable token at all is.
+ */
+export function unsupportedEntities(outputText: string, inputText: string): string[] {
+  const have = tokens(stripLegal(inputText));
+  return namedEntities(stripLegal(outputText)).filter((entity) => {
+    const distinctive = [...tokens(entity)].filter(
+      (t) => !CUE_TOKENS.has(t) && !ENTITY_ALLOW.has(t),
+    );
+    if (distinctive.length === 0) return false; // nothing distinctive to trace
+    return !distinctive.some((t) => have.has(t)); // none traced → suspicious
+  });
+}
+
+const WIN_SIGNAL =
+  /\b(won|winner|first\s+place|first\s+prize|gold\s+medal(?:l?ist)?|laureate|awarded\s+the|recipient\s+of)\b/i;
+const NOMINATION_SIGNAL =
+  /\b(nominat\w*|finalist|shortlist\w*|semifinalist|longlist\w*|in\s+the\s+running|considered\s+for|in\s+contention)\b/i;
+
+/**
+ * True when the OUTPUT asserts a WIN the grounding doesn't support — the record
+ * shows only a nomination/finalist and NO win. Catches "nomination → win"
+ * inflation (e.g. an IGF *nomination* written up as "won the IGF Award").
+ */
+export function inflatedAwardStatus(outputText: string, inputText: string): boolean {
+  if (!WIN_SIGNAL.test(outputText)) return false;
+  return !WIN_SIGNAL.test(inputText) && NOMINATION_SIGNAL.test(inputText);
+}
+
 export function sentenceCount(text: string): number {
   return text.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean).length;
 }
@@ -216,6 +288,23 @@ function fabricationGate(ctx: AdjudicationContext): Adjudication {
     : a("no-fabrication", "warn", `specifics not in the record — verify: ${fabricated.join(", ")}`);
 }
 
+/** Qualitative-fabrication scan — named entities (awards/societies/trials/
+ *  journals) + award status the numbers-only scan misses. WARN: an attorney
+ *  verifies; it never auto-blocks a legitimately-grounded draft. */
+function groundingGate(ctx: AdjudicationContext): Adjudication {
+  const entities = unsupportedEntities(ctx.outputText, ctx.inputText);
+  const inflated = inflatedAwardStatus(ctx.outputText, ctx.inputText);
+  if (entities.length === 0 && !inflated) {
+    return a("grounded-claims", "pass", "named entities trace to the record");
+  }
+  const parts: string[] = [];
+  if (entities.length) {
+    parts.push(`names not in the record — verify: ${entities.slice(0, 4).join(" | ")}`);
+  }
+  if (inflated) parts.push("asserts a win the record shows only as a nomination");
+  return a("grounded-claims", "warn", parts.join("; "));
+}
+
 /** Case-law flag — any cite an attorney must independently verify is real. */
 function caseLawGate(ctx: AdjudicationContext): Adjudication {
   const hits = caseLawHits(ctx.outputText);
@@ -297,7 +386,12 @@ export function runAdjudication(ctx: AdjudicationContext): AdjudicationReport {
     case "draft":
     case "draft_section":
     case "rfe":
-      gates.push(classificationGate(ctx), fabricationGate(ctx), caseLawGate(ctx));
+      gates.push(
+        classificationGate(ctx),
+        fabricationGate(ctx),
+        groundingGate(ctx),
+        caseLawGate(ctx),
+      );
       break;
     case "qualify":
       gates.push(...qualifyGates(ctx), legalAdviceGate(ctx));
