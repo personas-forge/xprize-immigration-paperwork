@@ -6,6 +6,7 @@ import {
   O1A_CRITERIA,
   buildQualifyPrompt,
   buildQualifyResult,
+  mockLikelihood,
   mockQualification,
   parseQualifyRequest,
   parseQualifyResponse,
@@ -61,6 +62,38 @@ test("buildQualifyResult: ALWAYS attaches the disclaimer, for every source", () 
     assert.equal(res.source, source);
     assert.ok(res.criteria.length === 8);
   }
+});
+
+// — The scored classification is pinned into the result (threshold can't drift) —
+
+test("mockQualification pins the classification it scored against", () => {
+  for (const classification of ["O-1A", "EB-1A", "O-1B"] as const) {
+    const a = mockQualification({ ...valid, classification });
+    assert.equal(a.classification, classification);
+  }
+});
+
+// — Likelihood is DERIVED from the verdict (never contradicts Meets/Below) ────
+
+test("mockLikelihood never shows >=50% below threshold, and 0 at zero qualifying", () => {
+  // Zero qualifying → 0% (no fabricated baseline).
+  assert.equal(mockLikelihood(0, 3, 8), 0);
+  // Below threshold stays strictly under 50%.
+  for (const q of [1, 2]) {
+    assert.ok(mockLikelihood(q, 3, 8) < 50, `q=${q} below threshold must be <50%`);
+  }
+  // Meeting the threshold lands at/above 55%.
+  assert.ok(mockLikelihood(3, 3, 8) >= 55, "meeting threshold is >=55%");
+  // Monotonic and capped at 95.
+  assert.ok(mockLikelihood(8, 3, 8) <= 95);
+  assert.ok(mockLikelihood(4, 3, 8) >= mockLikelihood(3, 3, 8));
+});
+
+test("a below-threshold mock screening never reads >=50%", () => {
+  // A sparse profile keys no criteria → Below threshold → must read 0%.
+  const sparse = mockQualification({ ...valid, profile: "I enjoy long walks on the beach and cooking." });
+  const qualifying = sparse.criteria.filter((c) => c.status === "Met" || c.status === "Strong").length;
+  if (qualifying < 3) assert.ok(sparse.likelihood < 50, "below-threshold must be <50%");
 });
 
 // — Prompt safety ────────────────────────────────────────────────────────────

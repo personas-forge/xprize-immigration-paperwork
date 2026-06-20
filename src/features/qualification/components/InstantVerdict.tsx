@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { Seal, Guilloche } from "@/components/brand";
 import { Rise } from "@/components/Motion";
-import { VISA_PACKS, packFor, type Classification } from "../packs";
+import { VISA_PACKS, type Classification } from "../packs";
 import { livePrograms } from "../jurisdictions";
 import { type QualifyResult } from "../qualification";
 import { CriteriaReport } from "./CriteriaReport";
@@ -193,10 +193,7 @@ export function InstantVerdict({
             petitioner={name.trim() || "Applicant"}
             classification={classification}
           >
-            <CriteriaReport
-              result={result}
-              threshold={packFor(classification).threshold}
-            />
+            <CriteriaReport result={result} />
           </Certificate>
           <LettersPatentShare
             name={name}

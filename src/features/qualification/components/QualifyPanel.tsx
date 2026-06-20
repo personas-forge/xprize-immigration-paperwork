@@ -6,7 +6,7 @@ import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/component
 import { costOf } from "@/lib/tokens/registry";
 import { DISCLAIMER } from "@/lib/result";
 import { type QualifyResult } from "../qualification";
-import { VISA_PACKS, isClassification, packFor, type Classification } from "../packs";
+import { VISA_PACKS, isClassification, type Classification } from "../packs";
 import { readQualifyPrefill } from "../prefill";
 import { jurisdictionFor, livePrograms } from "../jurisdictions";
 import { validationFor } from "../validation";
@@ -267,7 +267,7 @@ export function QualifyPanel() {
       {status === "done" && result ? (
         <div className="space-y-4">
           {result.adjudication ? <AdjudicationBadge report={result.adjudication} /> : null}
-          <CriteriaReport result={result} threshold={packFor(classification).threshold} />
+          <CriteriaReport result={result} />
           <LettersPatentShare
             name={name}
             classification={classification}
