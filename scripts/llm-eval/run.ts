@@ -271,10 +271,56 @@ function writeReports(records: RunRecord[]): void {
 }
 
 async function main(): Promise<void> {
-  const scenarios = applyFilters(SCENARIOS);
   const argv = process.argv.slice(2);
+
+  // Reject a malformed --repeat instead of silently coercing it to 1 — a
+  // `--repeat 0` / `--repeat foo` typo must fail loudly, not run one pass and
+  // present it as the stability result.
   const ri = argv.indexOf("--repeat");
-  const repeat = ri >= 0 ? Math.max(1, Number(argv[ri + 1]) || 1) : 1;
+  let repeat = 1;
+  if (ri >= 0) {
+    const raw = Number(argv[ri + 1]);
+    if (!Number.isInteger(raw) || raw < 1) {
+      console.error(`Invalid --repeat "${argv[ri + 1]}" — must be a positive integer.`);
+      process.exit(2);
+    }
+    repeat = raw;
+  }
+
+  // Validate that every requested --ids token matches a known scenario, so a
+  // typo'd id isn't silently dropped to "tested nothing".
+  const idsArg = argv[argv.indexOf("--ids") + 1];
+  if (argv.includes("--ids") && idsArg) {
+    const known = new Set(SCENARIOS.map((s) => s.id));
+    const unknown = idsArg
+      .split(",")
+      .map((x) => x.trim())
+      .filter((x) => x !== "" && !known.has(x));
+    if (unknown.length > 0) {
+      console.error(`Unknown scenario id(s): ${unknown.join(", ")}`);
+      process.exit(2);
+    }
+  }
+
+  const scenarios = applyFilters(SCENARIOS);
+  // A filter that matches NOTHING tests nothing — that must never look green.
+  if (scenarios.length === 0) {
+    console.error(
+      "No scenarios matched the filters (--site / --ids) — nothing was tested. Check for a typo.",
+    );
+    process.exit(2);
+  }
+
+  // A null engine runs every scenario on the deterministic template — that tests
+  // the harness wiring, never the model. Fail fast (like smoke.ts) so a forgotten
+  // LLM_ENGINE / GEMINI_API_KEY can't be reported as a pass.
+  if (!getLlm()) {
+    console.error(
+      "No LLM engine configured — set LLM_ENGINE=claude or GEMINI_API_KEY. The eval needs a real model to be meaningful.",
+    );
+    process.exit(2);
+  }
+
   console.log(
     `Running ${scenarios.length} scenario(s)${repeat > 1 ? ` ×${repeat} (stability)` : ""} sequentially…\n`,
   );
@@ -291,15 +337,20 @@ async function main(): Promise<void> {
   const fail = records.flatMap((r) => r.gates).filter((g) => g.verdict === "fail").length;
   const warn = records.flatMap((r) => r.gates).filter((g) => g.verdict === "warn").length;
   const errored = records.filter((r) => r.error).length;
+  // Distinguish total passes from DISTINCT scenarios so a stability run doesn't
+  // over-report coverage (30 scenarios ×5 is not 150 scenarios).
+  const coverage =
+    repeat > 1 ? `${scenarios.length} scenarios ×${repeat} passes` : `${records.length} scenarios`;
   console.log(
-    `\n── done: ${records.length} scenarios, ${fail} hard failures, ${warn} warnings, ${errored} errored ──`,
+    `\n── done: ${coverage}, ${fail} hard failures, ${warn} warnings, ${errored} errored ──`,
   );
   writeReports(records);
-  // A scenario whose pipeline threw (LLM timeout / parse failure) ran its gates
-  // against an EMPTY context, so they can't reliably hard-fail it. Surface those
-  // runs with a non-zero exit so the quality gate doesn't silently pass a run
-  // where the model was never really exercised.
-  if (errored > 0) process.exitCode = 1;
+  // CRITICAL: a hard FAIL gate is a deterministic invariant the product must never
+  // break (a dropped/altered UPL DISCLAIMER, a wrong-classification leak, an
+  // engine that fell to mock). It MUST fail the run — not only a thrown pipeline
+  // (`errored`). Without this, a regression stripping the disclaimer from every
+  // paid output exits 0 and passes CI.
+  if (fail > 0 || errored > 0) process.exitCode = 1;
 }
 
 main().catch((e) => {
