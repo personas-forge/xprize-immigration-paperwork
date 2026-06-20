@@ -7,6 +7,8 @@ import {
   matchedAdvice,
   wrongCodes,
   caseLawHits,
+  unsupportedEntities,
+  inflatedAwardStatus,
   runAdjudication,
   type AdjudicationContext,
 } from "./adjudication-gates";
@@ -52,6 +54,57 @@ test("runAdjudication: a clean draft is attorney-ready (all pass)", () => {
   assert.equal(report.risk, "ready");
   assert.equal(report.attorneyReady, true);
   assert.ok(report.gates.every((g) => g.verdict === "pass"));
+});
+
+// — qualitative fabrication: named entities + award status (LLM-2) ────────────
+
+test("unsupportedEntities: flags a named entity absent from the record, not a grounded one", () => {
+  const out =
+    "The beneficiary won the Zenith Excellence Award and is a member of the Royal Photographic Society.";
+  const ground = "Member of the Royal Photographic Society; several exhibitions.";
+  const flagged = unsupportedEntities(out, ground);
+  assert.ok(flagged.some((e) => /Zenith Excellence Award/.test(e)), "invented award flagged");
+  assert.ok(!flagged.some((e) => /Royal Photographic Society/.test(e)), "grounded society not flagged");
+});
+
+test("unsupportedEntities: a paraphrased name still traces (no false positive)", () => {
+  // Record says "Zenith Prize"; the draft writes "Zenith Excellence Award" — the
+  // distinctive token "Zenith" traces, so it must NOT be flagged.
+  assert.deepEqual(
+    unsupportedEntities("won the Zenith Excellence Award", "awarded the Zenith Prize"),
+    [],
+  );
+});
+
+test("inflatedAwardStatus: catches a nomination written up as a win", () => {
+  assert.equal(inflatedAwardStatus("won the IGF Award", "nominated for the IGF Award"), true);
+  assert.equal(inflatedAwardStatus("won the IGF Award", "won the IGF Award in 2022"), false);
+  assert.equal(inflatedAwardStatus("nominated for the IGF Award", "nominated for the IGF Award"), false);
+});
+
+test("runAdjudication: an invented entity WARNS (review) but never blocks the draft", () => {
+  const report = runAdjudication(
+    draftCtx({
+      inputText: "Best paper award; 6 papers on record.",
+      outputText:
+        "The beneficiary is a Fellow of the Imaginary Royal Institute and a recipient of the Nonexistent Vanguard Prize.",
+    }),
+  );
+  const g = report.gates.find((x) => x.id === "grounded-claims");
+  assert.equal(g?.verdict, "warn");
+  assert.equal(report.risk, "review"); // surfaced for the attorney…
+  assert.equal(report.attorneyReady, true); // …never auto-blocked (a warn doesn't fail)
+});
+
+test("runAdjudication: a grounded draft keeps grounded-claims passing", () => {
+  const report = runAdjudication(
+    draftCtx({
+      inputText: "Won the Lasker Award; member of the National Academy of Sciences.",
+      outputText: "The beneficiary won the Lasker Award and was elected to the National Academy.",
+    }),
+  );
+  const g = report.gates.find((x) => x.id === "grounded-claims");
+  assert.equal(g?.verdict, "pass");
 });
 
 test("runAdjudication: a missing disclaimer is a hard failure → blocked", () => {
