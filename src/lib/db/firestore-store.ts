@@ -137,6 +137,25 @@ export const firestoreStore: Store = {
     });
   },
 
+  async getLatestConsentVersion(userId) {
+    // Query by user_id only (single-field, auto-indexed) and pick the latest in
+    // memory — a user has at most a handful of consent rows (one per version
+    // bump), so this avoids requiring a composite (user_id, created_at) index.
+    const snap = await adminDb()
+      .collection(col("consents"))
+      .where("user_id", "==", userId)
+      .get();
+    let latest: { version: string; at: number } | null = null;
+    for (const doc of snap.docs) {
+      const version = doc.get("consent_version");
+      if (typeof version !== "string") continue;
+      const ts = doc.get("created_at");
+      const at = ts && typeof ts.toMillis === "function" ? ts.toMillis() : 0;
+      if (!latest || at >= latest.at) latest = { version, at };
+    }
+    return latest?.version ?? null;
+  },
+
   async getBalance(userId) {
     const snap = await adminDb()
       .collection(col("token_accounts"))

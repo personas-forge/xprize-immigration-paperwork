@@ -37,17 +37,11 @@ export async function submitConsent(
   // trusted into the consent record (shared with the rate limiter's hardening).
   const ip = clientIp(h);
 
-  // Wrap ONLY the DB writes — NOT the redirect below, which signals via a thrown
-  // NEXT_REDIRECT that must propagate. A persistence failure here becomes a
-  // friendly ConsentState error instead of a generic 500 page.
+  // Persist consent FIRST — it is the essential, legally-meaningful write, and
+  // ONLY its failure should block onboarding (it leaves the user not-onboarded →
+  // a safe retry; the idempotent grant below no-ops on retry). The thrown
+  // NEXT_REDIRECT at the end is intentionally OUTSIDE this try so it propagates.
   try {
-    // Grant the one-time free tokens (idempotent per user, no-op without a DB)
-    // BEFORE marking the profile onboarded. These are two separate writes, so on
-    // a crash between them this order leaves the user not-yet-onboarded — they
-    // retry consent and the idempotent grant is a no-op — rather than onboarded
-    // with a zero balance, which would 402 every AI op with no way forward.
-    await grantSignupTokens(user.id, FREE_SIGNUP_GRANT);
-
     await upsertProfileWithConsent({
       userId: user.id,
       email: user.email ?? null,
@@ -60,10 +54,26 @@ export async function submitConsent(
       ip,
       userAgent: h.get("user-agent"),
     });
-  } catch {
+  } catch (err) {
+    // Don't swallow — record enough to triage a consent-write outage (DB down vs
+    // rules misconfig vs validation) without logging PII.
+    console.error("[welcome] consent persist failed", { userId: user.id, err });
     return {
       error: "We couldn't save your consent. Please try again in a moment.",
     };
+  }
+
+  // Grant the one-time free tokens BEST-EFFORT. It's a non-essential bonus and is
+  // idempotent per user, so a token-store hiccup must NOT block onboarding or be
+  // misreported as a consent failure. Log it (for operator/top-up re-grant); the
+  // user still enters the workspace.
+  try {
+    await grantSignupTokens(user.id, FREE_SIGNUP_GRANT);
+  } catch (err) {
+    console.error("[welcome] signup token grant failed (non-blocking)", {
+      userId: user.id,
+      err,
+    });
   }
 
   redirect("/dashboard");

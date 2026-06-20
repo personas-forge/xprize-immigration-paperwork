@@ -4,7 +4,8 @@
 
 import { redirect } from "next/navigation";
 import { getUser, profileFieldsFromUser } from "@/lib/auth/session";
-import { getProfile } from "@/lib/auth/db";
+import { getLatestConsentVersion, getProfile } from "@/lib/auth/db";
+import { CONSENT_VERSION } from "@/lib/auth/consent";
 import { ConsentForm } from "@/components/ConsentForm";
 import { PageFrame, ChapterMark } from "@/components/brand";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -14,7 +15,12 @@ export default async function WelcomePage() {
   if (!user) redirect("/login");
 
   const profile = await getProfile(user.id);
-  if (profile?.onboarded_at) redirect("/dashboard");
+  // Skip to the app only when the user is onboarded AND has agreed to the
+  // CURRENT consent version — otherwise re-collect consent (terms changed).
+  if (profile?.onboarded_at) {
+    const consented = await getLatestConsentVersion(user.id);
+    if (consented === CONSENT_VERSION) redirect("/dashboard");
+  }
 
   const { fullName: defaultName } = profileFieldsFromUser(user);
 

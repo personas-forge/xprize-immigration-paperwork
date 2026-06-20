@@ -11,7 +11,12 @@ import { SESSION_COOKIE } from "@/lib/firebase/config";
 import { adminAuth } from "@/lib/firebase/admin";
 import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
 import { grantSignupTokens } from "@/lib/tokens/ledger";
-import { getProfile, upsertProfileWithConsent, type Profile } from "./db";
+import {
+  getLatestConsentVersion,
+  getProfile,
+  upsertProfileWithConsent,
+  type Profile,
+} from "./db";
 import { DEV_USER, isDevAuth, type AppUser } from "./devAuth";
 import { authProvider } from "./provider";
 
@@ -106,5 +111,13 @@ export async function requireOnboardedUser(): Promise<{
   if (!user) redirect("/login");
   const profile = await getProfile(user.id);
   if (!profile || !profile.onboarded_at) redirect("/welcome");
+  // Re-prompt when the consent copy has changed since the user last agreed.
+  // The version is WRITTEN on every consent but must also be READ back, or a
+  // terms bump silently leaves users operating under terms they never accepted.
+  // Dev-auth is auto-seeded at the current version, so this never fires for it.
+  if (!isDevAuth()) {
+    const consented = await getLatestConsentVersion(user.id);
+    if (consented !== CONSENT_VERSION) redirect("/welcome");
+  }
   return { user, profile };
 }

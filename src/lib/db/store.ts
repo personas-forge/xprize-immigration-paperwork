@@ -181,6 +181,9 @@ export interface AddDocumentInput {
 export interface Store {
   getProfile(userId: string): Promise<Profile | null>;
   upsertProfileWithConsent(input: UpsertConsentInput): Promise<void>;
+  /** The `consent_version` of the user's most recent consent row, or null if
+   *  they have never consented. Used to re-prompt when the terms version bumps. */
+  getLatestConsentVersion(userId: string): Promise<string | null>;
   getBalance(userId: string): Promise<number>;
   /** Atomic debit. Refuses (ok:false) when the balance is insufficient. */
   charge(
