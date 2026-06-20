@@ -11,6 +11,8 @@ import {
   snapshotQualifying,
 } from "@/features/qualification/letters-patent";
 import { statusTone } from "@/features/case-file/criteria";
+import { DisclaimerStamp } from "@/components/legal";
+import { DISCLAIMER } from "@/lib/result";
 
 // Public "Letters Patent of Extraordinary Ability" (moonshot #18) — a shareable,
 // engraved certificate minted from a screening result. The result is encoded in
@@ -116,14 +118,18 @@ export default async function LettersPatentPage({ params }: PageParams) {
                   <span aria-hidden>→</span>
                 </Link>
                 <span className="microprint" style={{ color: "var(--muted)" }}>
-                  Informational only · not legal advice · no account needed
+                  Informational only · no account needed
                 </span>
+              </div>
+
+              <div className="mx-auto mt-8 max-w-xl">
+                <DisclaimerStamp text={DISCLAIMER} />
               </div>
             </div>
 
             <div className="pointer-events-none absolute right-5 top-5 hidden sm:block">
               <Stamp
-                label={qualifying >= pack.threshold ? "Qualifies" : "In progress"}
+                label={qualifying >= pack.threshold ? "Meets threshold" : "Below threshold"}
                 meta={`${snap.likelihood}% likelihood`}
                 tone="seal"
                 rotate={-5}

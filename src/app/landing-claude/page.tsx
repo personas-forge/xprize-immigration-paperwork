@@ -87,7 +87,7 @@ export default function LandingClaude() {
         <section id="criteria" className="py-16">
           <ChapterMark numeral="I" label="The eight criteria" />
           <h2 className="display mt-4 text-3xl">
-            The statute asks for three. <em>Most of our candidates meet seven.</em>
+            The statute asks for three. <em>Your job is to clearly establish three.</em>
           </h2>
           <div className="mt-8 grid gap-x-8 gap-y-3 sm:grid-cols-2">
             {[

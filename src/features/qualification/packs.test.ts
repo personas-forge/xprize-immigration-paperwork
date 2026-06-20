@@ -38,3 +38,19 @@ test("criteriaNames returns the pack's ordered names", () => {
   assert.equal(criteriaNames("O-1B").length, 6);
   assert.equal(criteriaNames("EB-1A").length, 10);
 });
+
+test("Scholarly-articles keyword match treats a conference TALK as not-a-publication (UAT T3)", () => {
+  const scholarly = VISA_PACKS["O-1A"].criteria.find(
+    (c) => c.name === "Scholarly articles",
+  );
+  assert.ok(scholarly, "O-1A pack has a Scholarly-articles criterion");
+  // A talk is not a scholarly article — must NOT match on the word "conference"
+  // (the keyless preview previously scored "Scholarly: Met" off a conference talk).
+  assert.ok(
+    !scholarly!.match.test("I gave two conference talks at industry meetups"),
+    "a conference talk alone must not score Scholarly: Met",
+  );
+  // Real publications still match.
+  assert.ok(scholarly!.match.test("published a paper in a peer-reviewed journal"));
+  assert.ok(scholarly!.match.test("3,000 citations on arXiv"));
+});

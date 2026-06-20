@@ -37,7 +37,8 @@ interface DraftStudioCriterion {
 }
 
 // — Drafting Studio ───────────────────────────────────────────────────────────
-// Generates a full O-1A petition letter from the scored criteria, then lets the
+// Generates a full petition letter (for the case's classification) from the
+// scored criteria, then lets the
 // user edit each section inline and regenerate any single section. The
 // not-legal-advice disclaimer renders on every output — a draft is work product
 // for the attorney of record, never final. Generation costs tokens (full draft
@@ -371,9 +372,10 @@ export function DraftStudio({
         {status === "idle" || status === "error" ? (
           <div className="space-y-3">
             <p className="font-sans text-[16px] leading-relaxed text-muted-strong">
-              Draft a full O-1A petition letter from your scored criteria — an
-              introduction, an argument for each qualifying criterion, and a
-              conclusion. You can edit any section and regenerate it.
+              Draft a full {classification} petition letter from your scored
+              criteria — an introduction, an argument for each qualifying
+              criterion, and a conclusion. You can edit any section and
+              regenerate it.
             </p>
             {caseId && documents.length === 0 ? (
               <p

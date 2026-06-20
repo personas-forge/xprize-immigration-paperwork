@@ -3,14 +3,16 @@
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader } from "@/components/ui";
+import { DisclaimerStamp } from "@/components/legal";
+import { DISCLAIMER } from "@/lib/result";
 import { criteriaNames, summarizeVault } from "@/features/evidence";
 import { type StoredDocument } from "@/features/evidence/types";
 import { type ModelSource } from "@/lib/llm/label";
 import { refileDocument, removeDocument } from "../actions";
 
 // — Evidence vault ────────────────────────────────────────────────────────────
-// Add a document (paste its text / describe it) → it's AI-categorized into one
-// of the eight O-1A criteria with an auto-assigned exhibit number and extracted
+// Add a document (paste its text / describe it) → it's AI-categorized into the
+// case's criteria pack with an auto-assigned exhibit number and extracted
 // facts. The vault shows coverage across the criteria and flags the gaps. The
 // disclaimer-bearing categorization runs through /api/evidence/categorize;
 // re-file and remove are server actions. (Binary PDF/image OCR via Document AI
@@ -141,6 +143,9 @@ export function EvidenceVault({
       </CardHeader>
 
       <CardBody className="space-y-5">
+        {/* UPL safeguard on the surface itself — a forwarded vault screenshot
+            must carry the not-legal-advice stamp (the categorize payload does too). */}
+        <DisclaimerStamp text={DISCLAIMER} />
         {/* Add a document */}
         <div className="space-y-3 rounded-control border border-border-strong bg-surface px-4 py-3">
           <div className="grid grid-cols-1 gap-3">
