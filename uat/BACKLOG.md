@@ -48,10 +48,10 @@ Ordered by impact. Effort: XS ≈ a few lines · S ≈ one file/handler · M ≈
 
 ## Tier 2 — LLM improvements (largest business impact)
 
-> **Progress:** LLM-1 interim caveat → PR **#97**; **LLM-1 model-backed best-path → PR #98** (shipped,
-> live-verified — a director is now recommended O-1B with cross-classification reasoning, the opposite
-> of the keyword mock); **LLM-2 grounding gate → this PR**. Remaining: **LLM-4** (strong-but-unscored
-> nudge), **LLM-3** (grounding floor / domain hints).
+> **Progress:** LLM-1 interim caveat → **#97**; **LLM-1 model-backed best-path → #98** (live-verified —
+> a director is now recommended O-1B with cross-classification reasoning); **LLM-2 grounding gate →
+> #99**; **LLM-4 strong-but-unscored nudge → this PR**. Remaining: **LLM-3** (grounding floor / domain
+> hints).
 
 The product's value *is* the AI output. L2 proved the authenticated draft/verdict already clears the
 bar — so these target the one place the model **isn't** used (the picker), the **gate** that protects

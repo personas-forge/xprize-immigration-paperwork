@@ -27,6 +27,7 @@ export {
   tryParseDraftResponse,
   tryParseSectionResponse,
   tryParseSections,
+  undraftedSupportedCriteria,
   type CitationAudit,
   type CritiqueResult,
   type DraftCriterion,
