@@ -6,6 +6,7 @@ import { Seal } from "@/components/brand";
 import { Rise } from "@/components/Motion";
 import { DisclaimerStamp } from "@/components/legal";
 import { type BestPathResult, type ProgramScore } from "../best-path";
+import { isModelSource } from "@/lib/llm/label";
 import { type QualifyPrefill } from "../prefill";
 
 // — Best-path finder (moonshot #7) ────────────────────────────────────────────
@@ -51,11 +52,21 @@ export function BestPathFinder({
     setError(null);
     setResult(null);
     try {
-      const res = await fetch("/api/qualify/preview/best-path", {
+      // Prefer the model-backed comparison (authenticated — reads the whole
+      // record); fall back to the keyless KEYWORD preview when signed out (401)
+      // or out of tokens (402) so the funnel still works (UAT LLM-1).
+      let res = await fetch("/api/qualify/best-path", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, profile, classification: "O-1A" }),
       });
+      if (res.status === 401 || res.status === 402) {
+        res = await fetch("/api/qualify/preview/best-path", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, profile, classification: "O-1A" }),
+        });
+      }
       if (res.status === 429) {
         setError("You're going quickly — give it a few seconds and try again.");
         setStatus("error");
@@ -157,20 +168,22 @@ export function BestPathFinder({
         <Rise className="space-y-4">
           <DisclaimerStamp text={result.disclaimer} />
           <RecommendationBanner result={result} onChoose={choose} />
-          {/* Interim honesty caveat (UAT 2026-06-20 LLM-1): the ranking is a
-              keyless KEYWORD pre-read, not the model — it can under-read a strong
-              record whose evidence doesn't match the obvious words. The full
-              authenticated screening (which DOES run the model) may re-rank. */}
-          <p className="rounded-control border border-dashed border-seal/50 bg-seal-soft/20 px-4 py-3 font-sans text-[14.5px] leading-snug text-foreground-soft">
-            <span className="font-mono text-[11px] uppercase tracking-document text-seal">
-              Keyword pre-read ·{" "}
-            </span>
-            This comparison scores your text by keyword, so it can under-read a
-            strong record whose evidence doesn&apos;t match the obvious words — a
-            director, composer, chef, or athlete. It&apos;s a starting point, not a
-            verdict: the full screening reads your whole record in depth and can
-            change which path fits best. Your answers carry over.
-          </p>
+          {/* The keyless KEYWORD ranking can under-read a record whose evidence
+              doesn't match the obvious words — show this caveat ONLY for the mock;
+              a model-read result (source claude/gemini) read the whole record and
+              needs none (UAT 2026-06-20 LLM-1 / T1). */}
+          {!isModelSource(result.source) ? (
+            <p className="rounded-control border border-dashed border-seal/50 bg-seal-soft/20 px-4 py-3 font-sans text-[14.5px] leading-snug text-foreground-soft">
+              <span className="font-mono text-[11px] uppercase tracking-document text-seal">
+                Keyword pre-read ·{" "}
+              </span>
+              This comparison scores your text by keyword, so it can under-read a
+              strong record whose evidence doesn&apos;t match the obvious words — a
+              director, composer, chef, or athlete. It&apos;s a starting point, not
+              a verdict: the full screening reads your whole record in depth and
+              can change which path fits best. Your answers carry over.
+            </p>
+          ) : null}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {result.programs.map((p) => (
               <ProgramCard

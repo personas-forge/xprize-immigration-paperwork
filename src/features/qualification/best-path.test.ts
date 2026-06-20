@@ -7,6 +7,8 @@ import {
   rankPrograms,
   rationaleFor,
   recommendBestPath,
+  buildBestPathPrompt,
+  parseBestPathResponse,
   type BestPathRequest,
   type ProgramScore,
 } from "./best-path";
@@ -96,4 +98,55 @@ test("recommendBestPath: a thin profile still returns a ranked closest path", ()
   assert.equal(result.programs.length, livePrograms().length);
   // Nothing clears, so the recommendation is a "closest path".
   assert.ok(result.recommendation.rationale.includes("closest path"));
+});
+
+// ── Model-backed best-path (LLM-1) ───────────────────────────────────────────
+
+test("buildBestPathPrompt: lists every live program + its criteria and asks for JSON", () => {
+  const p = buildBestPathPrompt(STRONG);
+  for (const c of livePrograms()) assert.ok(p.includes(c), `prompt names ${c}`);
+  assert.ok(/EB-1A is a GREEN CARD/i.test(p), "flags the EB-1A higher-bar trade-off");
+  assert.ok(p.includes("STRICT JSON"), "asks for strict JSON");
+  assert.ok(p.includes(STRONG.profile), "includes the applicant's record");
+});
+
+test("parseBestPathResponse: maps model JSON to a ranked BestPathResult (source claude)", () => {
+  const raw = JSON.stringify({
+    programs: livePrograms().map((c) => ({
+      classification: c,
+      qualifying: c === "O-1B" ? 5 : 1,
+      read: "x",
+    })),
+    recommendation: {
+      classification: "O-1B",
+      rationale: "Arts is the strongest fit; O-1A under-reads a director.",
+    },
+  });
+  const result = parseBestPathResponse(raw, STRONG);
+  assert.ok(result);
+  assert.equal(result!.source, "claude");
+  assert.equal(result!.programs.length, livePrograms().length);
+  assert.equal(result!.recommendation.classification, "O-1B"); // most qualifying → ranked first
+  assert.ok(result!.recommendation.rationale.includes("director"));
+  const ob = result!.programs.find((p) => p.classification === "O-1B")!;
+  assert.equal(ob.summary.qualifying, 5);
+  assert.equal(ob.summary.meetsThreshold, true);
+});
+
+test("parseBestPathResponse: clamps an over-count + keeps omitted programs at zero", () => {
+  const raw = JSON.stringify({
+    programs: [{ classification: "O-1A", qualifying: 999, read: "x" }],
+    recommendation: { classification: "O-1A", rationale: "" },
+  });
+  const result = parseBestPathResponse(raw, STRONG);
+  assert.ok(result);
+  const oa = result!.programs.find((p) => p.classification === "O-1A")!;
+  assert.equal(oa.summary.qualifying, oa.criteriaCount); // clamped to the pack size
+  assert.equal(result!.programs.length, livePrograms().length); // omitted still present
+  assert.ok(result!.recommendation.rationale.length > 0); // empty model rationale → fallback
+});
+
+test("parseBestPathResponse: returns null on unusable output (→ mock fallback)", () => {
+  assert.equal(parseBestPathResponse("not json at all", STRONG), null);
+  assert.equal(parseBestPathResponse(JSON.stringify({ nope: 1 }), STRONG), null);
 });
