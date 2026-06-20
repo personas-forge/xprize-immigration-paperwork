@@ -240,18 +240,43 @@ export const REVERIFY_WARN_DAYS = 30;
 export type FreshnessLevel = "fresh" | "due-soon" | "stale";
 
 export interface Freshness {
-  /** Days until re-verification is due (negative = overdue). */
+  /** Days until re-verification is due (negative = overdue; NaN = unverifiable). */
   daysLeft: number;
   level: FreshnessLevel;
-  /** yyyy-mm-dd the record is due for re-verification. */
+  /** yyyy-mm-dd the record is due for re-verification (the raw date when unverifiable). */
   dueBy: string;
+  /** True when `lastVerified` could not be parsed — fail-safe forces level "stale". */
+  unverifiable: boolean;
 }
 
-/** Classify a record's freshness as of `todayIso`. */
-export function freshnessOf(record: ValidationRecord, todayIso: string): Freshness {
-  const elapsed = daysBetween(record.lastVerified, todayIso);
+/** Classify a record's freshness as of `today` (a yyyy-mm-dd UTC string).
+ *
+ *  Fail-SAFE on a bad date: an unparseable `lastVerified` (or `today`) makes
+ *  `daysBetween` return NaN, and every comparison against NaN is `false` — so the
+ *  naive `daysLeft < 0 ? "stale" : … : "fresh"` classifier would fall through to
+ *  "fresh" and present a corrupt-dated legal rule as current. We treat an
+ *  unparseable date as STALE (the whole point of this framework is that a record
+ *  whose freshness we can't establish is NOT shown as current). */
+export function freshnessOf(record: ValidationRecord, today: string): Freshness {
+  const elapsed = daysBetween(record.lastVerified, today);
+  if (Number.isNaN(elapsed)) {
+    // Don't call addDays here — new Date(NaN).toISOString() throws.
+    return { daysLeft: NaN, level: "stale", dueBy: record.lastVerified, unverifiable: true };
+  }
   const daysLeft = REVALIDATE_AFTER_DAYS - elapsed;
   const level: FreshnessLevel =
     daysLeft < 0 ? "stale" : daysLeft <= REVERIFY_WARN_DAYS ? "due-soon" : "fresh";
-  return { daysLeft, level, dueBy: addDays(record.lastVerified, REVALIDATE_AFTER_DAYS) };
+  return {
+    daysLeft,
+    level,
+    dueBy: addDays(record.lastVerified, REVALIDATE_AFTER_DAYS),
+    unverifiable: false,
+  };
+}
+
+/** Is this record overdue for re-verification (or unverifiable) as of `today`?
+ *  Thin wrapper over `freshnessOf` so the staleness rule lives in exactly one
+ *  place — used by the CI freshness guard. */
+export function isStale(record: ValidationRecord, today: string): boolean {
+  return freshnessOf(record, today).level === "stale";
 }

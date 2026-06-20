@@ -12,6 +12,8 @@ import {
   allValidations,
   daysBetween,
   freshnessOf,
+  isStale,
+  todayIso,
   validationFor,
   type ValidationRecord,
 } from "./validation";
@@ -98,4 +100,38 @@ test("freshnessOf classifies fresh / due-soon / stale and reports the due date",
   const over = freshnessOf(rec, addDays(rec.lastVerified, REVALIDATE_AFTER_DAYS + 5));
   assert.equal(over.level, "stale");
   assert.equal(over.daysLeft, -5);
+});
+
+// — Fail-SAFE: an unparseable date must read as STALE, never "fresh" ──────────
+
+test("freshnessOf fails safe to stale when lastVerified is unparseable", () => {
+  for (const bad of ["", "2026-13-40", "not-a-date", "2026/05/30"]) {
+    const rec: ValidationRecord = { ...PROGRAM_VALIDATIONS["O-1A"], lastVerified: bad };
+    const f = freshnessOf(rec, todayIso());
+    assert.equal(f.level, "stale", `"${bad}" must classify stale, not fresh`);
+    assert.equal(f.unverifiable, true, `"${bad}" must be marked unverifiable`);
+    assert.equal(isStale(rec, todayIso()), true, `"${bad}" must be stale via isStale`);
+  }
+  // A bad reference date must also not read as fresh.
+  assert.equal(freshnessOf(PROGRAM_VALIDATIONS["O-1A"], "2026-13-40").level, "stale");
+});
+
+// — Commit-CI guard: no LIVE program may be overdue as of today ───────────────
+// This is the enforcement docs/validation-framework.md promises ("a market
+// can't go live stale"). It fails the `verify` job the moment a record drifts
+// past REVALIDATE_AFTER_DAYS, so staleness is caught on commit, not only by the
+// weekly workflow.
+
+test("every LIVE program's validation record is currently fresh (not stale)", () => {
+  const today = todayIso();
+  for (const code of livePrograms()) {
+    const r = validationFor(code);
+    assert.ok(r, `${code} has a validation record`);
+    if (!r) continue;
+    assert.equal(
+      isStale(r, today),
+      false,
+      `${code} is overdue for re-verification (lastVerified ${r.lastVerified}) — re-verify and bump the date before shipping`,
+    );
+  }
 });

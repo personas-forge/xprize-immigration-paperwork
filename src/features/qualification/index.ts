@@ -38,6 +38,7 @@ export {
   validationFor,
   allValidations,
   freshnessOf,
+  isStale,
   todayIso,
   type Freshness,
   type FreshnessLevel,

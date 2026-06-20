@@ -35,7 +35,11 @@ Each program and each load-bearing compliance claim has a `ValidationRecord`
   being validated;
 - the US compliance claims (`us-federal-practice`, `us-arizona-abs`) are verified
   and cited;
-- freshness math (`isStale`) is correct.
+- freshness math (`freshnessOf` / `isStale`) is correct **and no LIVE program is
+  overdue as of today** — an unparseable or >180-day-old `lastVerified` fails the
+  `verify` job (fail-safe: an unreadable date classifies as stale, never "fresh").
+  The weekly `validation-freshness.yml` workflow additionally opens a tracking
+  issue ahead of the due date.
 
 **Cadence:** re-verify every ≤ `REVALIDATE_AFTER_DAYS` (180) or on any regulatory
 change; bump `lastVerified`. `lastVerified` makes staleness auditable.
