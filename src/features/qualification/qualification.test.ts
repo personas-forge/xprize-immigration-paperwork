@@ -20,6 +20,13 @@ const valid: QualifyRequest = {
     "press in TechCrunch, and a $340K salary. Founding engineer at a Series B startup.",
 };
 
+test("buildQualifyPrompt: carries the field-norm guidance (LLM-3) without dropping no-fabrication", () => {
+  const p = buildQualifyPrompt(valid);
+  assert.ok(/its own norms/i.test(p), "judges each field by its own norms");
+  assert.ok(/head chef|choreographer|behind-the-scenes/i.test(p), "names non-default lead roles");
+  assert.ok(/invent\s+nothing/i.test(p), "still reaffirms no fabrication");
+});
+
 // — Validation ────────────────────────────────────────────────────────────
 
 test("parseQualifyRequest: accepts and trims a well-formed body", () => {
