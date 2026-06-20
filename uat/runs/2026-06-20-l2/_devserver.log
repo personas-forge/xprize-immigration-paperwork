@@ -1,0 +1,42 @@
+
+> immigration-concierge@0.13.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3010
+- Network:       http://172.25.16.1:3010
+- Environments: .env.local
+✓ Ready in 819ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+ GET / 200 in 660ms (next.js: 170ms, proxy.ts: 56ms, application-code: 434ms)
+ GET / 200 in 128ms (next.js: 5ms, proxy.ts: 4ms, application-code: 120ms)
+ GET / 200 in 152ms (next.js: 4ms, proxy.ts: 4ms, application-code: 145ms)
+ GET /qualify 200 in 143ms (next.js: 31ms, proxy.ts: 3ms, application-code: 109ms)
+ POST /api/qualify 200 in 16.6s (next.js: 66ms, proxy.ts: 4ms, application-code: 16.6s)
+ POST /api/qualify 200 in 13.6s (next.js: 5ms, proxy.ts: 4ms, application-code: 13.6s)
+ POST /api/qualify 200 in 24.7s (next.js: 4ms, proxy.ts: 4ms, application-code: 24.7s)
+ POST /api/qualify 200 in 14.0s (next.js: 3ms, proxy.ts: 3ms, application-code: 14.0s)
+ POST /api/qualify 200 in 16.6s (next.js: 3ms, proxy.ts: 3ms, application-code: 16.6s)
+ POST /api/qualify/preview 200 in 46ms (next.js: 33ms, proxy.ts: 3ms, application-code: 10ms)
+ GET /dashboard 200 in 422ms (next.js: 36ms, proxy.ts: 3ms, application-code: 382ms)
+ POST /dashboard 200 in 33ms (next.js: 11ms, proxy.ts: 8ms, application-code: 14ms)
+  └─ ƒ getCases() in 2ms src/lib/data/saved-cases.ts
+ GET /dashboard 200 in 86ms (next.js: 5ms, proxy.ts: 3ms, application-code: 79ms)
+ GET /dashboard 200 in 75ms (next.js: 5ms, proxy.ts: 2ms, application-code: 68ms)
+ GET /dashboard/cases/099b73fd-b799-4a75-8ad4-6394b44f37ac 200 in 816ms (next.js: 677ms, proxy.ts: 2ms, application-code: 136ms)
+ GET /dashboard/cases/29d84c34-0fcf-41f3-bf92-b760f8e9d38e 200 in 92ms (next.js: 12ms, proxy.ts: 3ms, application-code: 78ms)
+ GET /dashboard/cases/2d651161-25f1-4ecc-896b-c5bbe1e9602d 200 in 85ms (next.js: 4ms, proxy.ts: 1846µs, application-code: 79ms)
+ GET /dashboard/cases/3e925bdc-2178-4096-a511-0028272e5600 200 in 89ms (next.js: 12ms, proxy.ts: 1864µs, application-code: 76ms)
+ GET /dashboard/cases/4fd07409-7809-402b-9311-cde651ba9815 200 in 86ms (next.js: 5ms, proxy.ts: 1844µs, application-code: 79ms)
+ GET /dashboard/cases/54dd56d0-b9c4-4b99-a2e4-006632709d2d 200 in 89ms (next.js: 11ms, proxy.ts: 2ms, application-code: 75ms)
+ GET /dashboard/cases/60596d92-032f-4bd4-8cb7-fcd945c27bea 200 in 87ms (next.js: 4ms, proxy.ts: 2ms, application-code: 80ms)
+ GET /dashboard/cases/6c3b80c8-0fed-45b8-8a21-65618dbe8da9 200 in 88ms (next.js: 12ms, proxy.ts: 2ms, application-code: 74ms)
+ GET /dashboard/cases/76d2e989-6665-4d71-9bef-8b4618333f77 200 in 91ms (next.js: 5ms, proxy.ts: 1884µs, application-code: 84ms)
+ GET /dashboard/cases/9bb5302e-346e-47cc-8be6-1a68ddab7d18 200 in 89ms (next.js: 10ms, proxy.ts: 2ms, application-code: 76ms)
+ GET /dashboard/cases/d32ed171-afe7-4ddf-b525-6bd3816eb4f4 200 in 99ms (next.js: 5ms, proxy.ts: 2ms, application-code: 91ms)
+ GET /dashboard/cases/fdd80039-08d8-4cda-8afb-3caa58e7c779 200 in 95ms (next.js: 12ms, proxy.ts: 1890µs, application-code: 81ms)
+ GET /dashboard/cases/4fd07409-7809-402b-9311-cde651ba9815 200 in 103ms (next.js: 13ms, proxy.ts: 3ms, application-code: 88ms)
+[provenance] {"event":"DraftGenerated","caseId":"54dd56d0-b9c4-4b99-a2e4-006632709d2d","at":"2026-06-20T11:16:12.608Z","detail":{"version":1,"source":"claude","sectionCount":6},"prevHash":null,"selfHash":"0a1791e6864d3dabc1b5b06597147902deafa270f19f793db39c655581b99a2c"}
+ POST /api/draft 200 in 38.3s (next.js: 44ms, proxy.ts: 4ms, application-code: 38.2s)
+[?25h

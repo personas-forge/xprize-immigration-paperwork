@@ -1,0 +1,88 @@
+{
+  "criteria": [
+    {
+      "id": "lead-role-in-distinguished-productions",
+      "name": "Lead role in distinguished productions",
+      "status": "Met",
+      "evidence": "Director (lead creative role) on all four feature documentaries; last feature official selection at Sundance, IDFA, and Hot Docs",
+      "rationale": "Four features as lead director, with the most recent selected by three internationally recognized major documentary festivals, clearly establishes a lead role in distinguished productions."
+    },
+    {
+      "id": "national-or-international-recognition",
+      "name": "National or international recognition",
+      "status": "Strong",
+      "evidence": "Official selections at Sundance (US), IDFA (Netherlands), and Hot Docs (Canada); NYT Critic's Pick",
+      "rationale": "Selection at three major international festivals across multiple countries and a prominent U.S. critical designation demonstrate international recognition, though no specific awards won were described."
+    },
+    {
+      "id": "reviews-press",
+      "name": "Reviews & press",
+      "status": "Met",
+      "evidence": "New York Times Critic's Pick and positive Variety review",
+      "rationale": "Coverage in two of the most prominent U.S. film/entertainment publications satisfies the reviews and press criterion."
+    },
+    {
+      "id": "record-of-major-commercial-or-critical-success",
+      "name": "Record of major commercial or critical success",
+      "status": "Strong",
+      "evidence": "Theatrical and streaming distribution deal secured; festival selections at Sundance, IDFA, Hot Docs; NYT Critic's Pick",
+      "rationale": "A distribution deal plus top-tier festival placements and critical recognition indicate notable success, though specific commercial metrics (box office, streaming numbers) or awards were not described."
+    },
+    {
+      "id": "recognition-from-organizations-experts",
+      "name": "Recognition from organizations & experts",
+      "status": "Partial",
+      "evidence": "Voting membership in the Directors Guild of America and International Documentary Association",
+      "rationale": "DGA voting membership reflects peer recognition within a distinguished professional organization, but no described expert testimonials, jury prizes, or formal honors from organizations were mentioned to fully satisfy this criterion."
+    },
+    {
+      "id": "high-salary-or-remuneration",
+      "name": "High salary or remuneration",
+      "status": "None",
+      "evidence": "No compensation figures, contract values, or comparator salary data described",
+      "rationale": "No evidence of remuneration was provided in the described background."
+    }
+  ],
+  "likelihood": 68,
+  "gaps": [
+    "Provide documented salary or fee data demonstrating remuneration substantially above peers in documentary direction",
+    "Obtain expert opinion letters from recognized figures in documentary film attesting to extraordinary achievement",
+    "Document any jury prizes, nominations, or formal awards won at Sundance, IDFA, Hot Docs, or other festivals",
+    "Supply commercial performance metrics for the distribution deal (e.g., theatrical grosses, streaming reach) to strengthen commercial success criterion",
+    "Gather additional press coverage beyond the two outlets described, especially international reviews, to reinforce national/international recognition"
+  ],
+  "disclaimer": "This is general informational guidance only, not legal advice. Immigration law is fact-specific and changes frequently. An attorney of record licensed to practice law is required to review your petition and advise on your situation before anything is filed with USCIS.",
+  "source": "claude",
+  "caseId": "54dd56d0-b9c4-4b99-a2e4-006632709d2d",
+  "adjudication": {
+    "gates": [
+      {
+        "id": "disclaimer-present",
+        "verdict": "pass",
+        "detail": "UPL disclaimer attached"
+      },
+      {
+        "id": "qualify-criteria-complete",
+        "verdict": "pass",
+        "detail": "all 6 criteria, canonical order"
+      },
+      {
+        "id": "qualify-status-valid",
+        "verdict": "pass",
+        "detail": ""
+      },
+      {
+        "id": "qualify-likelihood-range",
+        "verdict": "pass",
+        "detail": "68"
+      },
+      {
+        "id": "no-legal-advice",
+        "verdict": "pass",
+        "detail": "informational, no advice/outcome language"
+      }
+    ],
+    "risk": "ready",
+    "attorneyReady": true
+  }
+}

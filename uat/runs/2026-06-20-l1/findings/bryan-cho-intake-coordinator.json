@@ -1,0 +1,179 @@
+[
+  {
+    "id": "bc-org-01",
+    "journey": "organize-evidence",
+    "character": "bryan-cho-intake-coordinator",
+    "cert_level": "L1",
+    "type": "trust",
+    "severity": "major",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "high" },
+    "title": "The DISCLAIMER rides on the categorize payload but is NEVER rendered on the Evidence Vault surface",
+    "expected": "Per acceptance criterion #5, the not-legal-advice DISCLAIMER must visibly ride on the evidence AI output, so nothing Bryan reads/forwards (auto-buckets + extracted facts) reads as a non-lawyer giving a legal opinion. Every OTHER AI surface in the product (qualify via CriteriaReport->DisclaimerStamp, paywall path) renders it prominently.",
+    "got": "buildCategorizeResult attaches disclaimer to the API body (evidence.ts:205) and the route returns it, but EvidenceVault types it in CategorizeApiResponse (EvidenceVault.tsx:27) and then drops it on the floor — it renders criterion/exhibit/facts only. grep for 'disclaimer|DisclaimerStamp' across src/features/case-file/components returns ZERO matches, so the entire case-detail/evidence surface (CaseDetailView.tsx) shows no disclaimer at all. The exhibit index + extracted facts that Bryan turns into a client 'still-needed' checklist appear with no UPL stamp on screen.",
+    "evidence": [
+      "src/features/evidence/components/EvidenceVault.tsx:24-30",
+      "src/features/evidence/components/EvidenceVault.tsx:120-292",
+      "src/features/evidence/evidence.ts:205",
+      "src/features/case-file/components/CaseDetailView.tsx:191-198"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Render DisclaimerStamp (text={data.disclaimer}, or the canonical DISCLAIMER) once on the Evidence Vault card — ideally near the header or the gaps read — so the categorization output Bryan forwards carries the same visible UPL stamp the qualify result does.",
+    "l2_priority": "Confirm live that no disclaimer text appears anywhere on /dashboard/cases/[id] around the Evidence Vault, and that the categorize JSON still contains it (machinery vs. surface gap)."
+  },
+  {
+    "id": "bc-org-02",
+    "journey": "organize-evidence",
+    "character": "bryan-cho-intake-coordinator",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "trust",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "med" },
+    "title": "Per-document categorization source (model vs keyword mock) is captured but hidden, so Bryan can't tell which extracted facts to trust",
+    "expected": "When a document's facts were keyword-mocked (keyless/CI or model-output-unusable), Bryan should see that on the doc the way the qualify report badges 'mock' vs the engine name (CriteriaReport.tsx:64 sourceLabel). The mock only takes the first two sentences as 'facts' (evidence.ts:192-197) — a senior coordinator must know a fact is template-derived before he files it.",
+    "got": "StoredDocument carries `source` (types.ts:17) and the store persists it (pglite-store.ts:690), and EvidenceVault even imports ModelSource and types `source` in the response (EvidenceVault.tsx:8,28) — but the per-document render shows exhibit/name/facts only and never surfaces `d.source`. On the LLM_ENGINE=claude L2 path docs are model-categorized, but the provenance is invisible either way.",
+    "evidence": [
+      "src/features/evidence/components/EvidenceVault.tsx:236-254",
+      "src/features/evidence/types.ts:17",
+      "src/features/evidence/evidence.ts:185-199"
+    ],
+    "code_check": "confirmed-absent",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Render a small source badge per document (reuse sourceLabel/isModelSource) so a keyword-mock categorization is visibly distinct from a model one, matching the qualify report's provenance badge.",
+    "l2_priority": "On the real Claude path, verify docs are model-sourced and that the keyword-mock 'first two sentences' fallback isn't silently presented as extracted facts."
+  },
+  {
+    "id": "bc-org-03",
+    "journey": "organize-evidence",
+    "character": "bryan-cho-intake-coordinator",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "clarity",
+    "impact": { "frequency": "low", "reachability": "med", "trust_erosion": "low" },
+    "title": "Optimistic-add fallback shows exhibit '—' when persistence is skipped, breaking the monotonic index Bryan files",
+    "expected": "Acceptance #2: the exhibit index is something the firm could file — monotonic, every item numbered.",
+    "got": "When the categorize response has no persisted `document` (no DB / persist gated off), EvidenceVault fabricates a client doc with `exhibit: '—'` (EvidenceVault.tsx:84-93) and appends it to the list, so the on-screen index can show a placeholder dash among real 'Ex. N' rows. In Bryan's dev-auth env he owns his case so the DB returns a real Ex. N (the high-water-mark assignment in pglite-store.ts:652-664 is correct and never-reused — a genuine strength), making this an edge case, but a non-owner/forbidden persist would surface the dash.",
+    "evidence": [
+      "src/features/evidence/components/EvidenceVault.tsx:84-94",
+      "src/lib/db/pglite-store.ts:646-692"
+    ],
+    "code_check": "present-broken",
+    "verdict": "uncertain",
+    "suggested_acceptance": "If no persisted document comes back, either surface a 'not saved' state instead of an em-dash exhibit, or suppress the optimistic row — never mix '—' into a filable index.",
+    "l2_priority": "Add a doc as the case owner and confirm a real 'Ex. N' (never '—') appears; try the no-DB path to see the dash."
+  },
+  {
+    "id": "bc-qual-01",
+    "journey": "qualify-verdict",
+    "character": "bryan-cho-intake-coordinator",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "trust",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "Pre-screen is unmistakably framed as a tool's screening output, not Bryan's verdict — DISCLAIMER + 'mock'/engine provenance + UPL adjudication tripwire",
+    "expected": "Acceptance #4/#5: the pre-screen reflects what was pasted and is framed as a tool's output with the DISCLAIMER, so nothing reads as Bryan advising the client.",
+    "got": "Authenticated /qualify (QualifyPanel) renders DisclaimerStamp first via CriteriaReport (CriteriaReport.tsx:47) and on the paywall (QualifyPanel.tsx:242); the section reads '§ Self-screening · informational' and a provenance badge shows mock vs engine (CriteriaReport.tsx:64). The route also runs a live UPL adjudication tripwire over the screening's own evidence/rationale/gaps text (qualify/route.ts:72-83). The keyless landing pre-screen (InstantVerdict -> /api/qualify/preview) is deterministic, never charges, never persists, always labelled source:'mock' (preview/route.ts:62-70) and carries the DISCLAIMER. This is exactly the clerical-safe framing Bryan needs.",
+    "evidence": [
+      "src/features/qualification/components/CriteriaReport.tsx:45-67",
+      "src/features/qualification/components/QualifyPanel.tsx:240-270",
+      "src/app/api/qualify/route.ts:72-83",
+      "src/app/api/qualify/preview/route.ts:62-70"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect as-is — do not weaken the DisclaimerStamp-first ordering, the provenance badge, or the preview's source:'mock' labelling.",
+    "l2_priority": "Confirm the live pre-screen names the actual pasted evidence (grounding) and the disclaimer is visually prominent above the verdict."
+  },
+  {
+    "id": "bc-qual-02",
+    "journey": "qualify-verdict",
+    "character": "bryan-cho-intake-coordinator",
+    "cert_level": "L1",
+    "type": "quality-gap",
+    "severity": "minor",
+    "dimension": "trust",
+    "impact": { "frequency": "med", "reachability": "med", "trust_erosion": "med" },
+    "title": "The keyless landing pre-screen is a keyword read, not the real model — honest, but the 'Certificate of Extraordinary Ability' framing risks reading as a verdict if Bryan forwards a screenshot",
+    "expected": "Acceptance #4: a verdict unmistakably framed as a tool's screening output, never something that, forwarded to a client, reads as a non-lawyer's legal opinion.",
+    "got": "InstantVerdict skins the keyword-mock result as an engraved 'Certificate' with the brand Seal + Guilloche and a 'Reveal my verdict / Sealing…' CTA (InstantVerdict.tsx:192-216, 161). The SoftGate honestly says 'This was an instant keyword read' (InstantVerdict.tsx:272-277) and the DISCLAIMER is present via CriteriaReport, which is good — but the award-ceremony 'Certificate' visual is the kind of thing that, screenshotted and forwarded, could read as a verdict rather than a screening. This is the open backlog item PN-QUAL-01/G3.1 (polish, subjective) — referencing rather than re-inventing.",
+    "evidence": [
+      "src/features/qualification/components/InstantVerdict.tsx:192-216",
+      "src/features/qualification/components/InstantVerdict.tsx:255-289",
+      "uat/BACKLOG.md:67-73"
+    ],
+    "code_check": "by-design",
+    "verdict": "uncertain",
+    "suggested_acceptance": "Tracked as PN-QUAL-01/G3.1; for Bryan specifically, the 'instant keyword read' caveat + DISCLAIMER do hold the UPL line, so this stays polish. No new finding.",
+    "l2_priority": "L2 to judge whether the certificate framing aids or hurts the not-a-verdict read (already on the backlog)."
+  },
+  {
+    "id": "bc-qual-03",
+    "journey": "qualify-verdict",
+    "character": "bryan-cho-intake-coordinator",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "senior-quality",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "Anti-invention + per-criterion isolation rules are baked into the qualify prompt; unscored criteria never render green",
+    "expected": "Acceptance #3: nothing invented or embellished. The pre-screen must reflect only what was pasted.",
+    "got": "buildQualifyPrompt forbids inventing facts (rule 2) and forbids letting one criterion's evidence satisfy another (rule 4) (qualification.ts:129-138). The parser fills any omitted criterion with status 'None'/empty evidence (qualification.ts:202-211), and CriteriaReport's statusAccent renders None as border-l-transparent (CriteriaReport.tsx:20-26) so an unscored criterion is never green. Threshold is passed from the pack so EB-1A/O-1B don't misreport (CriteriaReport.tsx:30-43).",
+    "evidence": [
+      "src/features/qualification/qualification.ts:129-138",
+      "src/features/qualification/qualification.ts:202-211",
+      "src/features/qualification/components/CriteriaReport.tsx:19-43"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect the anti-invention/isolation prompt rules and the None=neutral rendering.",
+    "l2_priority": "Verify live the model honours rule 2/4 (no invented awards/publications) on a thin profile."
+  },
+  {
+    "id": "bc-track-01",
+    "journey": "track-case-progress",
+    "character": "bryan-cho-intake-coordinator",
+    "cert_level": "L1",
+    "type": "strength",
+    "severity": "polish",
+    "dimension": "completion",
+    "impact": { "frequency": "high", "reachability": "high", "trust_erosion": "low" },
+    "title": "Dashboard lists Bryan's real intakes (above the mock), the roadmap derives from real case state, and there's always a next action — without attorney privileges",
+    "expected": "Acceptance #6: Bryan can track progress without attorney privileges; a non-attorney is correctly walled out of the review queue only.",
+    "got": "DashboardPage loads real cases for the signed-in user and renders YourCasesCard above the mock masthead, or an EmptyCasesCallout linking to /qualify (CaseFileDashboard.tsx:31, dashboard/page.tsx:30-38). The review-queue nav only renders for isConfiguredAttorney (DashboardView.tsx:35-45) — so Bryan simply doesn't see it (no confusing wall). The case roadmap derives purely from status + hasEvidence/hasDraft (roadmap.ts:38-58; CaseDetailView.tsx:133-137) and marks done/current/upcoming correctly. The case detail and categorize op need only authentication, not attorney, so organize+track are fully reachable for him.",
+    "evidence": [
+      "src/app/dashboard/page.tsx:22-42",
+      "src/features/case-file/components/CaseFileDashboard.tsx:29-31",
+      "src/features/case-file/roadmap.ts:38-58",
+      "src/features/dashboard/DashboardView.tsx:35-45"
+    ],
+    "code_check": "by-design",
+    "verdict": "confirmed",
+    "suggested_acceptance": "Protect: real-cases-above-mock, the empty-state CTA, the status-derived roadmap, and the attorney-only review nav gating.",
+    "l2_priority": "Confirm as a non-attorney dev user that the review-queue nav is absent and the roadmap matches actions taken (add evidence -> Evidence stage advances)."
+  },
+  {
+    "id": "bc-track-02",
+    "journey": "track-case-progress",
+    "character": "bryan-cho-intake-coordinator",
+    "cert_level": "L1",
+    "type": "confusion",
+    "severity": "minor",
+    "dimension": "clarity",
+    "impact": { "frequency": "med", "reachability": "high", "trust_erosion": "low" },
+    "title": "A hardcoded mock 'Dr. Anya Krishnan / Drafting / 92% approval' case file renders below Bryan's real intakes",
+    "expected": "Bryan tracks his real intakes; a coordinator scanning the dashboard shouldn't have to disambiguate a fake matter from real ones.",
+    "got": "Below YourCasesCard, CaseFileDashboard always renders a mock masthead ('Dr. Anya Krishnan · O-1A', a 'Drafting · Phase III of IV' stamp, '92% approval likelihood' badge) and a mock CaseList (CaseFileDashboard.tsx:34-105). This is the accepted-gap 'Mock demo case file' (illustrative, not editable) — so it is a scope_note, not a defect — but for Bryan's pre-screen-to-tracking flow it adds momentary 'is this real?' friction. Referencing the accepted gap rather than logging a new defect.",
+    "evidence": [
+      "src/features/case-file/components/CaseFileDashboard.tsx:33-105",
+      "uat/accepted-gaps.md:24-25"
+    ],
+    "code_check": "by-design",
+    "verdict": "refuted",
+    "suggested_acceptance": "Accepted gap (mock demo case file). No change required; optionally label the demo block 'Sample' to reduce the disambiguation beat. Out of scope for this run.",
+    "l2_priority": "n-a (accepted gap)."
+  }
+]
