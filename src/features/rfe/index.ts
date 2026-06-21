@@ -7,6 +7,7 @@ export {
   buildRfeForecastPrompt,
   buildRfeForecastResult,
   hasReliedCriteria,
+  isRelied,
   mockRfe,
   mockRfeForecast,
   parseRfeRequest,
