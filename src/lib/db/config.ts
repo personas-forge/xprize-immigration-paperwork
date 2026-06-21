@@ -21,27 +21,43 @@ export type DbDriver = "firestore" | "pglite";
  */
 export const COLLECTION_PREFIX = "immigration";
 
-export function firestoreProjectId(): string | undefined {
+type Env = Record<string, string | undefined>;
+
+export function firestoreProjectId(env: Env = process.env): string | undefined {
   return (
-    process.env.FIRESTORE_PROJECT_ID ||
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-    process.env.GOOGLE_CLOUD_PROJECT
+    env.FIRESTORE_PROJECT_ID ||
+    env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+    env.GOOGLE_CLOUD_PROJECT
   );
 }
 
-export function dbDriver(): DbDriver | null {
-  const explicit = process.env.DB_DRIVER?.trim().toLowerCase();
+export function dbDriver(env: Env = process.env): DbDriver | null {
+  const explicit = env.DB_DRIVER?.trim().toLowerCase();
   if (explicit === "firestore" || explicit === "pglite") return explicit;
-  if (process.env.NODE_ENV === "production" && firestoreProjectId()) {
+  if (env.NODE_ENV === "production" && firestoreProjectId(env)) {
     return "firestore";
   }
-  if (isDevAuth()) return "pglite";
+  if (isDevAuth(env)) return "pglite";
   return null;
 }
 
 /** True when SOME persistent store is configured (firestore or pglite). */
-export function isStoreConfigured(): boolean {
-  return dbDriver() !== null;
+export function isStoreConfigured(env: Env = process.env): boolean {
+  return dbDriver(env) !== null;
+}
+
+/**
+ * The SINGLE source of truth for "is the token economy enforced right now?": a
+ * store is configured AND the dev bypass is off. Every "should I charge / show a
+ * real balance / free-pass" decision must use THIS — never an ad-hoc
+ * `DATABASE_URL` read, which is a pglite-only signal and is WRONG for Firestore
+ * prod (no `DATABASE_URL`, yet metering IS on). NOTE: this is the GLOBAL switch;
+ * the charge guard additionally requires an identifiable user before it can
+ * actually debit (an unidentifiable request free-passes regardless). `env` is
+ * injectable for tests.
+ */
+export function isMeteringEnforced(env: Env = process.env): boolean {
+  return env.TOKENS_BYPASS !== "1" && isStoreConfigured(env);
 }
 
 /** Local PGlite data directory (created on first use). */

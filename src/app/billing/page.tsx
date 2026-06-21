@@ -6,6 +6,7 @@ import { getUser } from "@/lib/auth/session";
 import { getBalance } from "@/lib/tokens/ledger";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { isDevAuth } from "@/lib/auth/devAuth";
+import { isMeteringEnforced } from "@/lib/db/config";
 import { BUNDLES, ENTERPRISE_CONTACT, FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
 import { costOf, labelOf, type OperationKey } from "@/lib/tokens/registry";
 import { BundleGrid } from "./BundleGrid";
@@ -46,9 +47,11 @@ export default async function BillingPage({
 }) {
   const purchaseSuccess = (await searchParams).status === "success";
   const user = isFirebaseConfigured() || isDevAuth() ? await getUser() : null;
-  // "∞" when the token economy isn't enforced (no auth/DB → guard free-passes).
+  // "∞" when the token economy isn't enforced (the guard free-passes). Use the
+  // canonical isMeteringEnforced() — NOT a raw DATABASE_URL read, which would
+  // wrongly show "∞" on Firestore prod (no DATABASE_URL) while the guard charges.
   const balance =
-    user && process.env.DATABASE_URL ? await getBalance(user.id) : null;
+    user && isMeteringEnforced() ? await getBalance(user.id) : null;
   const balanceLabel = balance === null ? "∞" : balance.toLocaleString();
 
   return (

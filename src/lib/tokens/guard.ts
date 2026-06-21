@@ -3,7 +3,7 @@ import "server-only";
 import { getUser } from "@/lib/auth/session";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { isDevAuth } from "@/lib/auth/devAuth";
-import { isStoreConfigured } from "@/lib/db/config";
+import { isMeteringEnforced } from "@/lib/db/config";
 import { charge, reclaim } from "./ledger";
 import { costOf } from "./registry";
 
@@ -33,15 +33,16 @@ export async function chargeForOperation(
   operation: string,
   requestId: string,
 ): Promise<ChargeResult> {
-  // Dev/test bypass — run AI paths unmetered (no balance required, no debit).
-  // Set TOKENS_BYPASS=1 in .env.local for mass LLM testing without Polar.
-  if (process.env.TOKENS_BYPASS === "1") return FREE_PASS;
+  // Canonical global switch: dev bypass (TOKENS_BYPASS=1) OR no store configured
+  // → run AI paths unmetered. Single source of truth shared with the billing
+  // page and isMeteringBypassed so the three can't disagree (e.g. Firestore prod,
+  // which has no DATABASE_URL but IS metered).
+  if (!isMeteringEnforced()) return FREE_PASS;
 
-  const canMeter = isStoreConfigured();
+  // Even with metering on, we can only debit a caller we can identify; an
+  // unidentifiable request (no auth provider) gets a keyless free pass.
   const canIdentify = isFirebaseConfigured() || isDevAuth();
-
-  // No persistent store or no auth provider → keyless free pass.
-  if (!canMeter || !canIdentify) return FREE_PASS;
+  if (!canIdentify) return FREE_PASS;
 
   const user = await getUser();
   if (!user) return { ok: false, reason: "unauthenticated" };

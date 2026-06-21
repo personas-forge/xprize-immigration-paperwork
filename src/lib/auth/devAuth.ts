@@ -26,12 +26,11 @@ export interface AppUser {
   };
 }
 
-/** True only outside production with the dev flag set. */
-export function isDevAuth(): boolean {
-  return (
-    process.env.NEXT_PUBLIC_DEV_AUTH === "1" &&
-    process.env.NODE_ENV !== "production"
-  );
+/** True only outside production with the dev flag set. `env` is injectable so
+ *  store/metering predicates that thread an explicit env (for unit tests) share
+ *  one definition instead of re-inlining the flag check. */
+export function isDevAuth(env: Record<string, string | undefined> = process.env): boolean {
+  return env.NEXT_PUBLIC_DEV_AUTH === "1" && env.NODE_ENV !== "production";
 }
 
 /** The synthetic developer identity used in dev-auth mode. */
