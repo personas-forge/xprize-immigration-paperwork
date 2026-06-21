@@ -414,6 +414,17 @@ FIXES-WAVES-1-4 (with an 11-item pattern catalogue) at
 - **2026-06-21 LESSON** — `git commit -m` with an apostrophe (can't, doesn't) in a
   single-quoted bash string terminates the quote → use a heredoc message FILE
   (`git commit -F`).
+- **2026-06-21 (GDPR)** — `Store.exportUserData(userId)`/`deleteUserData(userId)`
+  (both drivers) + `auth/db.ts` wrappers. PGlite delete CASCADES via
+  `cases(id) ON DELETE CASCADE` on all 5 child tables (criteria/petition_drafts/
+  rfe_responses/case_documents/case_reviews) in one tx, then profile/consents/
+  token rows by user id; Firestore has NO FK cascade → gather every keyed doc +
+  per-case children and `batch.delete` (450/batch, idempotent). `GET /api/me/export`
+  (auth-gated, session-uid-keyed JSON download). `/dashboard/account` page: export
+  link + Danger-zone delete (two-step + typed `delete my account` → cascade →
+  `adminAuth().deleteUser` [skipped for dev-auth] → clear `SESSION_COOKIE`). Order
+  is DATA-first then auth-account so a failed data delete is retryable. "Account"
+  link in `@/components/SiteChrome` nav.
 
 ### Open follow-ups (from the 2026-06-20 dual-lens scan)
 - **Waves 6-8 NOT run** (no remaining criticals): W6 accessibility (focus-visible
