@@ -6,6 +6,9 @@ import {
   FREE_SIGNUP_GRANT,
   bundleByKey,
   bundleByProductId,
+  bundlePriceLabel,
+  formatCentsPerToken,
+  formatUsdCents,
   isMeteringBypassed,
 } from "./economy";
 
@@ -49,8 +52,33 @@ test("bundleByKey: resolves a known key and rejects an unknown one", () => {
   const starter = bundleByKey("starter");
   assert.ok(starter);
   assert.equal(starter?.tokens, 500);
-  assert.equal(starter?.priceLabel, "$5");
+  assert.equal(starter?.priceCents, 500); // cents are the source of truth
   assert.equal(bundleByKey("nope"), undefined);
+});
+
+test("priceCents is consistent with the advertised per-token rate", () => {
+  // priceCents is the SOURCE OF TRUTH; centsPerToken is the headline rate. They
+  // must agree (price / tokens), or the grid advertises a discount it won't honor.
+  for (const b of BUNDLES) {
+    assert.ok(Number.isInteger(b.priceCents) && b.priceCents > 0, `${b.key} priceCents`);
+    const impliedRate = b.priceCents / b.tokens;
+    assert.ok(
+      Math.abs(impliedRate - b.centsPerToken) < 0.001,
+      `${b.key}: priceCents/tokens (${impliedRate}) ≈ centsPerToken (${b.centsPerToken})`,
+    );
+  }
+});
+
+test("currency formatting: one convention, whole-dollar bundles drop the .00", () => {
+  // Whole-dollar prices render compactly; the recurring plan keeps its "/mo".
+  assert.equal(formatUsdCents(500), "$5");
+  assert.equal(formatUsdCents(1999), "$19.99");
+  assert.equal(bundlePriceLabel(bundleByKey("starter")!), "$5");
+  assert.equal(bundlePriceLabel(bundleByKey("scale")!), "$150");
+  assert.equal(bundlePriceLabel(bundleByKey("monthly")!), "$19/mo");
+  // The sub-cent rate uses the same fixed-2-decimal convention as the price.
+  assert.equal(formatCentsPerToken(1.0), "1.00¢");
+  assert.equal(formatCentsPerToken(0.6), "0.60¢");
 });
 
 test("bundleByProductId: matches only when a product id is set", () => {

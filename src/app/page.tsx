@@ -10,7 +10,7 @@ import {
 import { Rise, Stagger, HoverCard } from "@/components/Motion";
 import { PetitionStepper } from "@/components/PetitionStepper";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { BUNDLES, FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
+import { BUNDLES, FREE_SIGNUP_GRANT, bundlePriceLabel } from "@/lib/tokens/economy";
 import { InstantVerdict } from "@/features/qualification/components/InstantVerdict";
 
 // Marketing landing — "The Petition". The page is composed as if the
@@ -360,7 +360,7 @@ function Pricing() {
             <Rise key={b.key}>
               <BundleCard
                 label={b.label}
-                price={b.priceLabel}
+                price={bundlePriceLabel(b)}
                 tokens={b.tokens}
                 discount={b.discountLabel}
                 highlight={b.key === "pro"}
