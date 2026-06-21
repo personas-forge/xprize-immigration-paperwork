@@ -15,6 +15,19 @@
  * A Proxy (binding methods to the original target) preserves whatever `this`
  * the concrete driver relies on, so this works for both the Firestore object
  * literal and the PGlite class instance.
+ *
+ * DELIVERY CONTRACT (recorded — ADR-0007): the write COMMITS FIRST, then
+ * `publish()` runs in a SEPARATE, non-transactional step. Delivery is therefore
+ * BEST-EFFORT / AT-MOST-ONCE: a crash (serverless freeze/OOM, a deploy) in the
+ * window AFTER the commit but before/within `publish` LOSES the event with no
+ * trace — a missing audit/provenance line and a missing attorney notification,
+ * with zero signal. This is an accepted limitation of the in-process bus, NOT a
+ * guarantee: NO consumer may treat the bus as the source of truth, and the
+ * persisted Store row (not the event) is authoritative. Achieving at-least-once
+ * would require a durable outbox written inside the same commit as the mutation
+ * plus a relay that drains it — deliberately out of scope here; see event-bus
+ * findings #2/#3. (`bus.publish` also swallows individual handler failures —
+ * handlers are isolated — so a thrown sink doesn't roll back the committed write.)
  */
 
 import type {
