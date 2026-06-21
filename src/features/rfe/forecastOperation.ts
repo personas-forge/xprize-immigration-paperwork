@@ -82,7 +82,11 @@ export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {
           ),
         };
       }
-      const access: CaseAccess = { userId: user.id, email: null };
+      // Mirror the responder's access (api/rfe/route.ts): pass the caller's email
+      // so a configured attorney-of-record can forecast a case they can already
+      // draft. Hardcoding `email: null` made forecast owner-only and diverged from
+      // the responder — an attorney got 403 on the risk radar but 200 on the draft.
+      const access: CaseAccess = { userId: user.id, email: user.email ?? null };
       const gate = await petitions.resolveCase(access, caseId);
       if (!gate.ok) {
         if (gate.error.kind === "forbidden" || gate.error.kind === "not_found") {

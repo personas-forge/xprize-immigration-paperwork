@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { Stamp } from "@/components/brand";
 import { HoverCard } from "@/components/Motion";
-import type { Bundle } from "@/lib/tokens/economy";
+import {
+  bundlePriceLabel,
+  formatCentsPerToken,
+  type Bundle,
+} from "@/lib/tokens/economy";
 
 // — Token bundle grid (client) ───────────────────────────────────────────────
 // Renders the four prepaid bundles as document bands and runs the purchase
@@ -69,6 +73,13 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
         </div>
       ) : null}
 
+      {/* The in-flight state is otherwise purely visual ("Opening…" + disabled).
+          Announce it to assistive tech so a screen-reader user knows a money
+          action started — a polite live region, so it doesn't interrupt. */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {loading ? "Opening checkout…" : ""}
+      </div>
+
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {bundles.map((b) => {
           const isBest = b.key === "pro";
@@ -95,7 +106,7 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
                   className="display text-[2.6rem] text-foreground"
                   style={{ fontVariantNumeric: "tabular-nums" }}
                 >
-                  {b.priceLabel}
+                  {bundlePriceLabel(b)}
                 </span>
                 {b.discountLabel ? (
                   <span className="microprint" style={{ color: "var(--accent-dark)" }}>
@@ -119,7 +130,7 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
                   </span>
                 </li>
                 <li className="microprint" style={{ color: "var(--muted)" }}>
-                  ≈ {b.centsPerToken.toFixed(2)}¢ / token
+                  ≈ {formatCentsPerToken(b.centsPerToken)} / token
                 </li>
                 <li className="microprint" style={{ color: "var(--muted)" }}>
                   ≈ {b.tokens.toLocaleString()} guidance answers
@@ -130,6 +141,7 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
                 type="button"
                 onClick={() => buy(b.key)}
                 disabled={loading}
+                aria-busy={status.key === b.key}
                 className={`mt-6 inline-flex items-center justify-center gap-2 rounded-control px-5 py-3 font-mono text-[14px] uppercase tracking-document transition-[background-color,border-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px] disabled:opacity-60 ${
                   isBest
                     ? "bg-seal text-background hover:bg-[color:var(--accent-dark)]"

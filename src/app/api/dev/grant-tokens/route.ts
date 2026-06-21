@@ -21,9 +21,14 @@ export async function POST(request: NextRequest) {
   if (!user) return Response.json({ error: "unauthenticated" }, { status: 401 });
 
   const { amount } = await request.json().catch(() => ({}));
-  const n = Math.max(1, Math.min(1_000_000, Number(amount) || 1000));
+  // `Number(amount) || 1000` treated an explicit 0 (and "", false, null) as the
+  // 1000 default — a probe of "grant 0" silently minted 1000. Use a finiteness
+  // check (and truncate) so only a genuinely absent/unparseable amount defaults.
+  const raw = Number(amount);
+  const n = Number.isFinite(raw) ? Math.max(1, Math.min(1_000_000, Math.trunc(raw))) : 1000;
   const balance = await credit(user.id, n, "adjustment", `dev:${Date.now()}:${user.id}`, {
     dev: true,
+    requested: amount ?? null, // audit the requested-vs-granted amount
   });
   return Response.json({ ok: true, granted: n, balance });
 }

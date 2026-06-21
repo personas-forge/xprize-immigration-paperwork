@@ -51,6 +51,13 @@ export const RATE_LIMITS = {
 
 export const RATE_WINDOW_MS = 60_000;
 
+// ⚠ SINGLE-NODE: counts live in THIS process's memory. The caps in RATE_LIMITS
+// are correct only on ONE instance — under horizontal scaling (PM2 cluster,
+// multiple containers, serverless concurrency) each process keeps its own counts
+// and the EFFECTIVE cap multiplies by the instance count, while a cold start /
+// HMR resets every count to zero. The seam to fix this already exists:
+// `checkRateLimit` takes an injectable `store`, so a shared backend (Redis/
+// Upstash) can be dropped in when the deployment scales past one node.
 const globalBuckets = new Map<string, Bucket>();
 
 // Cap the bucket map so one-time visitors / rotated IPs can't leak memory: a

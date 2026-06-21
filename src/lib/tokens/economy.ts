@@ -33,7 +33,10 @@ export type Bundle = {
   key: string;
   label: string;
   tokens: number;
-  priceLabel: string;
+  /** Price in whole cents — the SOURCE OF TRUTH. Display strings are derived from
+   *  this via {@link bundlePriceLabel} so every price uses one currency convention
+   *  (and stays locale-ready) instead of hand-authored "$5" / "$19/mo" literals. */
+  priceCents: number;
   centsPerToken: number;
   discountLabel?: string;
   polarProductId?: string;
@@ -41,13 +44,46 @@ export type Bundle = {
 };
 
 export const BUNDLES: Bundle[] = [
-  { key: "starter", label: "Starter", tokens: 500, priceLabel: "$5", centsPerToken: 1.0, polarProductId: process.env.POLAR_PRODUCT_STARTER },
-  { key: "builder", label: "Builder", tokens: 2000, priceLabel: "$15", centsPerToken: 0.75, discountLabel: "25% off", polarProductId: process.env.POLAR_PRODUCT_BUILDER },
-  { key: "pro", label: "Pro", tokens: 8000, priceLabel: "$48", centsPerToken: 0.6, discountLabel: "40% off", polarProductId: process.env.POLAR_PRODUCT_PRO },
-  { key: "scale", label: "Scale", tokens: 30000, priceLabel: "$150", centsPerToken: 0.5, discountLabel: "50% off", polarProductId: process.env.POLAR_PRODUCT_SCALE },
+  { key: "starter", label: "Starter", tokens: 500, priceCents: 500, centsPerToken: 1.0, polarProductId: process.env.POLAR_PRODUCT_STARTER },
+  { key: "builder", label: "Builder", tokens: 2000, priceCents: 1500, centsPerToken: 0.75, discountLabel: "25% off", polarProductId: process.env.POLAR_PRODUCT_BUILDER },
+  { key: "pro", label: "Pro", tokens: 8000, priceCents: 4800, centsPerToken: 0.6, discountLabel: "40% off", polarProductId: process.env.POLAR_PRODUCT_PRO },
+  { key: "scale", label: "Scale", tokens: 30000, priceCents: 15000, centsPerToken: 0.5, discountLabel: "50% off", polarProductId: process.env.POLAR_PRODUCT_SCALE },
   // Monthly subscription — ~builder rate as a convenience plan, renews itself.
-  { key: "monthly", label: "Monthly", tokens: 2500, priceLabel: "$19/mo", centsPerToken: 0.76, recurring: true, polarProductId: process.env.POLAR_PRODUCT_MONTHLY },
+  { key: "monthly", label: "Monthly", tokens: 2500, priceCents: 1900, centsPerToken: 0.76, recurring: true, polarProductId: process.env.POLAR_PRODUCT_MONTHLY },
 ];
+
+// One currency convention for every price the app renders. `Intl.NumberFormat` is
+// locale-ready (swap the locale when i18n lands) and keeps whole-dollar bundles as
+// "$5" while any future fractional price still shows cents — no more hand-authored
+// "$5" vs "$5.00" drift between the bundle grid and the landing page.
+const USD = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
+/** Format whole cents as a display price, e.g. 500 → "$5", 1999 → "$19.99". */
+export function formatUsdCents(cents: number): string {
+  return USD.format(cents / 100);
+}
+
+/** A bundle's display price, with the "/mo" suffix for the recurring plan. */
+export function bundlePriceLabel(b: Bundle): string {
+  return b.recurring ? `${formatUsdCents(b.priceCents)}/mo` : formatUsdCents(b.priceCents);
+}
+
+// The sub-cent per-token rate uses the SAME numeric convention (fixed 2 decimals,
+// locale-aware grouping) so "1.00¢" and "$5" don't read as two different systems.
+const RATE = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/** The "≈ N¢ / token" rate, formatted consistently with {@link formatUsdCents}. */
+export function formatCentsPerToken(centsPerToken: number): string {
+  return `${RATE.format(centsPerToken)}¢`;
+}
 
 export function bundleByKey(key: string): Bundle | undefined {
   return BUNDLES.find((b) => b.key === key);

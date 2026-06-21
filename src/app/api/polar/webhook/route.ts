@@ -115,6 +115,16 @@ export async function POST(request: NextRequest) {
       event.type === "order.refunded" ? order.id : order.order_id ?? order.orderId;
     if (userId && b && originalOrderId) {
       await credit(userId, -b.tokens, "refund", `refund:${originalOrderId}`, { bundle: b.key });
+    } else {
+      // An unresolvable refund (lost metadata.userId / unmapped product / no
+      // original order id) silently left the original purchase credited but never
+      // clawed back — the mirror of the bug the paid-path 500 was added to
+      // prevent. Make it observable for reconciliation (this is a reversal, so
+      // unlike the paid path we don't 500-to-retry; we surface it for an operator).
+      console.error(
+        `[polar webhook] refund NOT clawed back: userId=${userId ?? "<missing>"} ` +
+          `bundle=${b?.key ?? "<unresolved>"} originalOrderId=${originalOrderId ?? "<none>"}`,
+      );
     }
   }
 
