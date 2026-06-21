@@ -3,11 +3,14 @@ import { cn } from "@/lib/cn";
 
 type CardProps = HTMLAttributes<HTMLDivElement> & {
   tone?: "default" | "accent" | "muted" | "seal";
+  /** Opt in to a subtle hover-lift (the `.lift` class — a 3px translate that
+   *  globals.css neutralises under prefers-reduced-motion). STATIC by default. */
+  interactive?: boolean;
 };
 
-// Cards are vellum cards — a hairline ruled edge, a paper-warm fill, a
-// soft leaf-shadow on hover. The "accent" tone tints with parchment-gold.
-// No drop-shadow box; the depth comes from edge contrast and lift on hover.
+// Cards are vellum cards — a hairline ruled edge, a paper-warm fill, a static
+// leaf-shadow; depth comes from edge contrast. They do NOT lift on hover by
+// default (pass `interactive` for that). The "accent" tone tints parchment-gold.
 const toneClass: Record<NonNullable<CardProps["tone"]>, string> = {
   default: "border-border bg-surface",
   accent: "border-accent/40 bg-accent-soft/40",
@@ -15,12 +18,13 @@ const toneClass: Record<NonNullable<CardProps["tone"]>, string> = {
   seal: "border-seal/40 bg-seal-soft/50",
 };
 
-export function Card({ tone = "default", className, ...props }: CardProps) {
+export function Card({ tone = "default", interactive = false, className, ...props }: CardProps) {
   return (
     <div
       className={cn(
         "relative rounded-card border shadow-leaf",
         toneClass[tone],
+        interactive && "lift",
         className,
       )}
       {...props}

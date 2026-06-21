@@ -1,7 +1,7 @@
 {
   "name": "Immigration Concierge — Atelier of Arrival",
   "short_name": "Immigration",
-  "description": "AI-drafted, attorney-signed O-1 petitions. $2,500 flat for a filing-ready packet.",
+  "description": "AI drafts your O-1 / EB-1 petition from your evidence — start free, pay per token. Work product for your attorney of record to review and sign; never legal advice.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
