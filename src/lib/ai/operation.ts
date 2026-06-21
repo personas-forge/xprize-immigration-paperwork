@@ -190,6 +190,18 @@ export interface AiOperationDeps {
   ) => Promise<T>;
 }
 
+/** A client idempotency key must be a short, safe token to be used as a ledger
+ *  ref — bound the length and charset so an untrusted header can't inject a huge
+ *  or weird ref. Returns the trimmed key, or null when absent/invalid. */
+const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_.:-]{1,200}$/;
+function readIdempotencyKey(request: Request): string | null {
+  const raw =
+    request.headers.get("Idempotency-Key") ?? request.headers.get("idempotency-key");
+  if (!raw) return null;
+  const key = raw.trim();
+  return IDEMPOTENCY_KEY_RE.test(key) ? key : null;
+}
+
 let cachedDefaults: AiOperationDeps | null = null;
 
 /**
@@ -292,7 +304,18 @@ export async function executeAiOperation<TInput, TOutput>(
   //    the model. Free pass in keyless/dev builds (handled inside the guard).
   const operationKey =
     typeof spec.operation === "function" ? spec.operation(input) : spec.operation;
-  const requestId = d.newRequestId();
+  // Request idempotency: a client that retries a dropped/timed-out request (or
+  // double-clicks an expensive draft/rfe button) can pass an `Idempotency-Key`
+  // header. We fold it into the ledger ref so the retry's charge DE-DUPES against
+  // the first (the store keys debits on `(ref, reason)`) — no double-billing.
+  // Scoped by user id so two different users can't collide on the same key. (The
+  // model may still re-run on the retry; full response-replay/caching is a
+  // separate follow-up — this closes the double-CHARGE, the money leak.) Absent
+  // or malformed key → a fresh per-call id, i.e. the prior behaviour.
+  const idemKey = readIdempotencyKey(request);
+  const requestId = idemKey
+    ? `idem:${(await resolveUser())?.id ?? "anon"}:${operationKey}:${idemKey}`
+    : d.newRequestId();
   const charged = await d.charge(operationKey, requestId);
   if (!charged.ok) {
     if (charged.reason === "unauthenticated") {

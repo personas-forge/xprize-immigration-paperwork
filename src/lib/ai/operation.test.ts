@@ -291,6 +291,34 @@ test("onBlocked is NOT triggered when adjudication clears (attorneyReady:true)",
   assert.equal(spy.calls.reclaimed, 0, "a clean billed answer must not reclaim");
 });
 
+// 7e. Idempotency-Key folds into a stable ledger ref so a retry de-dupes.
+// ---------------------------------------------------------------------------
+test("Idempotency-Key → stable ledger ref across retries; absent → fresh id", async () => {
+  const seen: string[] = [];
+  const charge = async (_op: string, requestId: string): Promise<ChargeOutcome> => {
+    seen.push(requestId);
+    return { ok: true, cost: 1, balance: 9, reclaim: async () => {} };
+  };
+  const mk = (key?: string) =>
+    new Request("http://test.local/api/op", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(key ? { "Idempotency-Key": key } : {}),
+      },
+      body: JSON.stringify({ text: "hi" }),
+    });
+  await executeAiOperation(mk("abc-123"), baseSpec(), deps({ charge, getLlm: () => llmReturning("X") }));
+  await executeAiOperation(mk("abc-123"), baseSpec(), deps({ charge, getLlm: () => llmReturning("X") }));
+  assert.equal(seen[0], seen[1], "same Idempotency-Key must produce the same ledger ref");
+  assert.match(seen[0], /abc-123/);
+  await executeAiOperation(mk(), baseSpec(), deps({ charge, getLlm: () => llmReturning("X") }));
+  assert.notEqual(seen[2], seen[0], "absent key falls back to a fresh per-call id");
+  // a malformed key (too long / bad chars) is ignored → fresh id, not used as a ref
+  await executeAiOperation(mk("bad key with spaces"), baseSpec(), deps({ charge, getLlm: () => llmReturning("X") }));
+  assert.equal(seen[3], "req-fixed", "an invalid Idempotency-Key is rejected, not used as a ref");
+});
+
 // ---------------------------------------------------------------------------
 // 8. happy path → source = engine name, no reclaim
 // ---------------------------------------------------------------------------
