@@ -18,13 +18,29 @@ export function CaseFileDashboard({
   // Single owner of the case-file data: one composited fetch (case facts +
   // outstanding tasks + petition excerpt) drilled into the child cards as
   // props, replacing the three independent useEffect fetches (ADR-0009).
-  const { data } = useCaseFileData();
+  const { data, error, reload } = useCaseFileData();
   const caseFacts = data?.caseFacts ?? null;
 
   return (
     <div className="px-8 py-10">
       <div className="mx-auto max-w-7xl space-y-8">
         <ChapterMark numeral="I" label="Petitioner of record" />
+
+        {/* A fetch rejection used to leave every card on infinite skeletons with
+            no signal. Surface it with a retry instead of a silent dead-end. */}
+        {error ? (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-danger/40 bg-danger-soft/50 px-5 py-4"
+          >
+            <span className="font-sans text-[15.5px] text-danger">
+              We couldn&apos;t load your case file. Please try again.
+            </span>
+            <Button variant="secondary" onClick={reload}>
+              Retry
+            </Button>
+          </div>
+        ) : null}
 
         {/* The user's real, persisted cases (from the qualification flow). Shows
             an empty-state CTA when none exist yet. */}

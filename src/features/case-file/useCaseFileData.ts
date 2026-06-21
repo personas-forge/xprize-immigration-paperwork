@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getCaseFacts, getCriteria, getOutstandingTasks, getPetitionExcerpt } from "@/lib/data";
 import {
   type CaseFileData,
   type CaseFileDataDeps,
+  clearCaseFileDataCache,
   fetchCaseFileData,
 } from "./caseFileData";
 
@@ -22,6 +23,8 @@ export interface CaseFileDataState {
   data: CaseFileData | null;
   isLoading: boolean;
   error: Error | null;
+  /** Bust the cache and re-fetch — wired to the dashboard's error-state retry. */
+  reload: () => void;
 }
 
 /**
@@ -31,11 +34,19 @@ export interface CaseFileDataState {
  * side panels used to run. Results are drilled into the child cards as props.
  */
 export function useCaseFileData(caseId?: string): CaseFileDataState {
-  const [state, setState] = useState<CaseFileDataState>({
+  const [state, setState] = useState<Omit<CaseFileDataState, "reload">>({
     data: null,
     isLoading: true,
     error: null,
   });
+  // Bumped by reload() to re-run the fetch effect after busting the cache.
+  const [nonce, setNonce] = useState(0);
+
+  const reload = useCallback(() => {
+    clearCaseFileDataCache(caseId);
+    setState((s) => ({ ...s, isLoading: true, error: null }));
+    setNonce((n) => n + 1);
+  }, [caseId]);
 
   useEffect(() => {
     let active = true;
@@ -61,7 +72,7 @@ export function useCaseFileData(caseId?: string): CaseFileDataState {
     return () => {
       active = false;
     };
-  }, [caseId]);
+  }, [caseId, nonce]);
 
-  return state;
+  return { ...state, reload };
 }
