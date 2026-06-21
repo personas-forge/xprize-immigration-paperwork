@@ -53,7 +53,7 @@ export function PetitionStepper() {
               type="button"
               onClick={next}
               aria-label="Advance to the next petition stage"
-              className="inline-flex items-center gap-2 rounded-control bg-foreground px-5 py-2.5 font-mono text-[13.5px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+              className="inline-flex items-center gap-2 rounded-control bg-foreground px-5 py-2.5 font-mono text-[13.5px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
             >
               Next stage
               <span aria-hidden>→</span>
@@ -82,7 +82,7 @@ export function PetitionStepper() {
                     aria-current={isActive ? "step" : undefined}
                     className={cn(
                       "group relative grid h-[88px] w-[88px] place-items-center rounded-pill border-2 transition-[border-color,background-color,color] duration-300",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]",
                       isActive
                         ? "border-[color:var(--accent)] bg-surface text-accent-dark"
                         : isPast

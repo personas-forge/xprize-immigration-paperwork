@@ -42,7 +42,7 @@ export function SaveFailedAlert({
         <button
           type="button"
           onClick={onCopy}
-          className="rounded-control border border-seal/50 px-3 py-1.5 font-mono text-[12px] uppercase tracking-document text-seal transition-colors hover:bg-seal-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+          className="rounded-control border border-seal/50 px-3 py-1.5 font-mono text-[12px] uppercase tracking-document text-seal transition-colors hover:bg-seal-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
         >
           {copyState === "copied"
             ? "Copied ✓"
@@ -55,7 +55,7 @@ export function SaveFailedAlert({
             type="button"
             onClick={onRetry}
             disabled={retryState === "saving"}
-            className="rounded-control bg-seal px-3 py-1.5 font-mono text-[12px] uppercase tracking-document text-background transition-colors hover:bg-[color:var(--accent-dark)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="rounded-control bg-seal px-3 py-1.5 font-mono text-[12px] uppercase tracking-document text-background transition-colors hover:bg-[color:var(--accent-dark)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >
             {retryState === "saving" ? "Saving…" : "Retry saving"}
           </button>

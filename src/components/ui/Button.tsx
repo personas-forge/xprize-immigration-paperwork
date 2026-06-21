@@ -13,11 +13,7 @@ const variantClass: Record<Variant, string> = {
   secondary:
     "bg-transparent text-foreground border border-border-strong hover:border-foreground hover:bg-surface-muted/60",
   ghost:
-    // ring-accent-dark, not ring-accent: gold-leaf --accent is 2.63:1 against the
-    // parchment background (below the 3:1 non-text-contrast minimum, WCAG 1.4.11);
-    // --accent-dark clears it on both themes (4.2:1 light, 5.6:1 dark). The offset
-    // is pinned to the themed background so the gap never falls back to white.
-    "text-muted-strong hover:text-foreground hover:bg-surface-muted/50 border border-transparent focus-visible:ring-2 focus-visible:ring-accent-dark focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    "text-muted-strong hover:text-foreground hover:bg-surface-muted/50 border border-transparent",
   seal:
     "bg-seal text-background border border-seal hover:bg-[color:var(--accent-dark)] hover:border-[color:var(--accent-dark)]",
 };
@@ -47,7 +43,13 @@ export function Button({
         // Document-grade chrome: small radius, mono-leaning label, restrained transition.
         "inline-flex items-center justify-center gap-2 rounded-control font-mono uppercase tracking-document",
         "transition-[background-color,border-color,color,transform] duration-300 ease-out",
-        "focus-visible:outline-none active:translate-y-[1px]",
+        // Focus ring on the BASE so EVERY variant (primary/secondary/seal/ghost)
+        // has a visible keyboard indicator — not just ghost (WCAG 2.4.7). Rings on
+        // --accent-dark, not the 2.63:1 gold-leaf --accent (below the 3:1 WCAG
+        // 1.4.11 non-text minimum); --accent-dark clears it on both themes (4.2:1
+        // light, 5.6:1 dark). The offset is pinned to the themed background so the
+        // gap never falls back to white.
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-[1px]",
         variantClass[variant],
         sizeClass[size],
         className,

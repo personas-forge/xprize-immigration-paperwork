@@ -447,7 +447,7 @@ export function DraftStudio({
               </div>
               <Link
                 href="/billing"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px]"
               >
                 Buy more
                 <span aria-hidden>→</span>
@@ -539,7 +539,7 @@ export function DraftStudio({
                     type="button"
                     onClick={() => regenerate(s.heading)}
                     disabled={regenerating !== null}
-                    className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                    className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
                   >
                     <svg
                       width="11"
@@ -576,7 +576,7 @@ export function DraftStudio({
                   value={s.body}
                   onChange={(e) => editBody(s.heading, e.target.value)}
                   rows={Math.max(3, Math.ceil(s.body.length / 90))}
-                  className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-[1.7] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-[1.7] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
                 />
                 {critiques[s.heading] && critiques[s.heading].score < WEAK_SECTION_SCORE ? (
                   <RedlineCard

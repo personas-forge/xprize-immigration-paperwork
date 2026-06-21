@@ -259,7 +259,7 @@ function ValidationCard({
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ink-link font-sans text-[15.5px] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="ink-link font-sans text-[15.5px] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
                 >
                   {s.title}
                 </a>
@@ -320,19 +320,19 @@ function SiteHeader() {
         <nav className="flex items-center gap-6 font-mono text-[13px] uppercase tracking-document text-muted-strong">
           <Link
             href="/"
-            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >
             Home
           </Link>
           <Link
             href="/qualify"
-            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >
             Qualify
           </Link>
           <Link
             href="/faq"
-            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >
             FAQ
           </Link>

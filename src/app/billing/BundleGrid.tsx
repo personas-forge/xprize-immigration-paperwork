@@ -130,7 +130,7 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
                 type="button"
                 onClick={() => buy(b.key)}
                 disabled={loading}
-                className={`mt-6 inline-flex items-center justify-center gap-2 rounded-control px-5 py-3 font-mono text-[14px] uppercase tracking-document transition-[background-color,border-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px] disabled:opacity-60 ${
+                className={`mt-6 inline-flex items-center justify-center gap-2 rounded-control px-5 py-3 font-mono text-[14px] uppercase tracking-document transition-[background-color,border-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px] disabled:opacity-60 ${
                   isBest
                     ? "bg-seal text-background hover:bg-[color:var(--accent-dark)]"
                     : "border border-border-strong bg-transparent text-foreground hover:border-foreground"

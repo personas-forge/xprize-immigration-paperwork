@@ -40,7 +40,7 @@ export function TokenExplainerBanner({ balance }: { balance: number }) {
         type="button"
         onClick={dismiss}
         aria-label="Dismiss token explainer"
-        className="shrink-0 rounded-control border border-border-strong bg-surface px-2 py-0.5 text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+        className="shrink-0 rounded-control border border-border-strong bg-surface px-2 py-0.5 text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
       >
         Dismiss
       </button>
