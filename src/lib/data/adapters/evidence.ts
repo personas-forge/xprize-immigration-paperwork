@@ -32,12 +32,12 @@ export interface EvidenceDeps extends CaseGateDeps {
     status?: string;
   }): Promise<StoredDocument | null>;
   getCaseDocuments(caseId: string): Promise<readonly StoredDocument[]>;
-  removeCaseDocument(caseId: string, documentId: string): Promise<void>;
+  removeCaseDocument(caseId: string, documentId: string): Promise<boolean>;
   refileCaseDocument(
     caseId: string,
     documentId: string,
     criterion: string,
-  ): Promise<void>;
+  ): Promise<boolean>;
 }
 
 let cached: EvidenceDeps | null = null;
@@ -131,8 +131,10 @@ export class EvidenceAdapter {
     const gate = await this.gate(deps, access, caseId);
     if (!gate.ok) return gate;
     try {
-      await deps.removeCaseDocument(caseId, documentId);
-      return ok(undefined);
+      // false = no row matched (wrong case / already-removed id) → report
+      // not_found instead of a false success on a mutation that changed nothing.
+      const removed = await deps.removeCaseDocument(caseId, documentId);
+      return removed ? ok(undefined) : err("not_found");
     } catch (cause) {
       return err("store_error", cause);
     }
@@ -149,8 +151,8 @@ export class EvidenceAdapter {
     const gate = await this.gate(deps, access, caseId);
     if (!gate.ok) return gate;
     try {
-      await deps.refileCaseDocument(caseId, documentId, criterion);
-      return ok(undefined);
+      const refiled = await deps.refileCaseDocument(caseId, documentId, criterion);
+      return refiled ? ok(undefined) : err("not_found");
     } catch (cause) {
       return err("store_error", cause);
     }

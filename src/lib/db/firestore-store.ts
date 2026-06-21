@@ -585,20 +585,22 @@ export const firestoreStore: Store = {
     });
   },
 
-  async removeCaseDocument(caseId, documentId): Promise<void> {
+  async removeCaseDocument(caseId, documentId): Promise<boolean> {
     const fs = adminDb();
     const ref = fs.collection(col("case_documents")).doc(documentId);
     const snap = await ref.get();
     // Scope by case_id (mirrors the SQL `where id = $1 and case_id = $2`).
-    if (snap.exists && snap.get("case_id") === caseId) await ref.delete();
+    const matched = snap.exists && snap.get("case_id") === caseId;
+    if (matched) await ref.delete();
+    return matched;
   },
 
-  async refileCaseDocument(caseId, documentId, criterion): Promise<void> {
+  async refileCaseDocument(caseId, documentId, criterion): Promise<boolean> {
     const fs = adminDb();
     const ref = fs.collection(col("case_documents")).doc(documentId);
     const snap = await ref.get();
-    if (snap.exists && snap.get("case_id") === caseId) {
-      await ref.set({ criterion }, { merge: true });
-    }
+    const matched = snap.exists && snap.get("case_id") === caseId;
+    if (matched) await ref.set({ criterion }, { merge: true });
+    return matched;
   },
 };

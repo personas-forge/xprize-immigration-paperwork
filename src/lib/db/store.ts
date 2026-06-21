@@ -263,14 +263,17 @@ export interface Store {
   addCaseDocument(input: AddDocumentInput): Promise<StoredDocument>;
   /** Every document in a case's vault, by exhibit order. */
   getCaseDocuments(caseId: string): Promise<StoredDocument[]>;
-  /** Remove a document from a case's vault. */
-  removeCaseDocument(caseId: string, documentId: string): Promise<void>;
-  /** Re-file a document under a different criterion bucket. */
+  /** Remove a document from a case's vault. Returns true iff a row was removed
+   *  (false = no matching doc for that case, so callers can report not-found
+   *  instead of a false success). */
+  removeCaseDocument(caseId: string, documentId: string): Promise<boolean>;
+  /** Re-file a document under a different criterion bucket. Returns true iff a
+   *  matching row was updated. */
   refileCaseDocument(
     caseId: string,
     documentId: string,
     criterion: string,
-  ): Promise<void>;
+  ): Promise<boolean>;
 }
 
 let cached: Promise<Store | null> | undefined;

@@ -31,8 +31,8 @@ function deps(over: Partial<EvidenceDeps> = {}): EvidenceDeps {
   return {
     addCaseDocument: async () => DOC,
     getCaseDocuments: async () => [DOC],
-    removeCaseDocument: async () => {},
-    refileCaseDocument: async () => {},
+    removeCaseDocument: async () => true,
+    refileCaseDocument: async () => true,
     getCaseForUser: async () => CASE,
     getCaseAnyOwner: async () => CASE,
     isConfiguredAttorney: () => false,
@@ -103,6 +103,18 @@ test("removeDocument: owner → ok(void)", async () => {
   const a = new EvidenceAdapter(deps());
   const r = await a.removeDocument(OWNER, "c1", "d1");
   assert.deepEqual(r, { ok: true, value: undefined });
+});
+
+test("removeDocument: no row matched (wrong case / gone) → not_found, not a false ok", async () => {
+  const a = new EvidenceAdapter(deps({ removeCaseDocument: async () => false }));
+  const r = await a.removeDocument(OWNER, "c1", "missing");
+  assert.deepEqual(r, { ok: false, error: { kind: "not_found" } });
+});
+
+test("refileDocument: no matching document → not_found", async () => {
+  const a = new EvidenceAdapter(deps({ refileCaseDocument: async () => false }));
+  const r = await a.refileDocument(OWNER, "c1", "missing", "Press");
+  assert.deepEqual(r, { ok: false, error: { kind: "not_found" } });
 });
 
 test("refileDocument: a store throw downstream of the gate → store_error", async () => {
