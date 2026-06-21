@@ -10,6 +10,7 @@ import { Rise, Stagger, HoverCard } from "@/components/Motion";
 import { PetitionStepper } from "@/components/PetitionStepper";
 import { SiteHeader, SiteFooter } from "@/components/SiteChrome";
 import { BUNDLES, FREE_SIGNUP_GRANT, bundlePriceLabel } from "@/lib/tokens/economy";
+import { FIRM_FEE } from "@/lib/site";
 import { InstantVerdict } from "@/features/qualification/components/InstantVerdict";
 
 // Marketing landing — "The Petition". The page is composed as if the
@@ -114,7 +115,7 @@ function Hero() {
             className="mt-8 max-w-2xl font-sans text-[17px] leading-relaxed text-foreground-soft initial"
             style={{ "--delay": "350ms" } as React.CSSProperties}
           >
-            The petition packet a firm would charge $8,000 to $15,000 to
+            The petition packet immigration firms {FIRM_FEE.verb} {FIRM_FEE.range} to
             assemble — drafted by AI from your real record (CV, press, reviews,
             awards, publications, exhibitions), structured across the regulatory
             criteria for your category: O&#8209;1A, O&#8209;1B (arts), or
@@ -209,7 +210,7 @@ function Promises() {
     {
       n: "I",
       t: "Pay only for what you draft",
-      b: "Prepaid tokens, not retainers — a fraction of the $8K–15K a firm bills to assemble the same packet. New accounts start free; top up a bundle when you need more.",
+      b: `Prepaid tokens, not retainers — a fraction of the ${FIRM_FEE.range} firms ${FIRM_FEE.verb} to assemble the same packet. New accounts start free; top up a bundle when you need more.`,
     },
     {
       n: "II",

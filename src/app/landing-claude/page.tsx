@@ -9,6 +9,7 @@ import {
   Stamp,
 } from "@/components/brand";
 import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
+import { FIRM_FEE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Immigration Concierge — extraordinary ability, on the record",
@@ -62,7 +63,7 @@ export default function LandingClaude() {
             style={{ "--delay": "180ms" } as React.CSSProperties}
             className="mx-auto mt-8 max-w-xl font-sans text-[16.5px] leading-relaxed text-muted-strong"
           >
-            The visa petition a firm bills $8,000–$15,000 to assemble — drafted
+            The visa petition immigration firms {FIRM_FEE.verb} {FIRM_FEE.range} to assemble — drafted
             by AI from your CV, citations and press, then handed to <em>your</em>
             attorney of record to review and sign. Start free; pay only for the
             tokens you use — never legal advice.
