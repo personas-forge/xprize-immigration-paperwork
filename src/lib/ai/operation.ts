@@ -447,6 +447,18 @@ export async function executeAiOperation<TInput, TOutput>(
   //    Skipped on a mock: a deterministic template's "risk score" would be
   //    constant theater that reads like a real assessment of the user's case
   //    (mirrors the "a mock is never billed as model output" honesty invariant).
+  //
+  //    CONTRACT (persist-always vs adjudicate-skip-on-mock): step 6 persists EVERY
+  //    non-error outcome, INCLUDING a mock — so a persisted draft/qualify/RFE may
+  //    carry NO adjudication report while an engine-generated twin does. This is
+  //    intentional and safe: (a) a mock is a deterministic TEMPLATE — it has no
+  //    fabricated specifics / leaked codes / invented case law for the gate to
+  //    catch, so adjudicating it would be theater; (b) `source: "mock"` is
+  //    persisted end-to-end (persist receives `source`) and the UI flags
+  //    "Placeholder output" before any attorney action; (c) filing is separately
+  //    guarded (pre-file draft-exists gate + the exhibit-citation gate). So an
+  //    unadjudicated mock can be SAVED but never silently presents as a screened,
+  //    attorney-ready work product. Do not "fix" this by adjudicating mocks.
   let adjudication: AdjudicationReport | null = null;
   if (spec.adjudicate && source !== "mock") {
     try {
