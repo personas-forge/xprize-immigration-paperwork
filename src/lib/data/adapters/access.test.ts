@@ -70,6 +70,32 @@ test("resolveCase: non-owner, non-attorney → forbidden (no existence leak)", a
   assert.equal(anyOwnerCalled, false);
 });
 
+test("resolveCase: store vanished mid-call (configured at top, gone at deny) → unconfigured not forbidden", async () => {
+  // storeConfigured: true at the top guard, false at the re-probe before deny —
+  // the admin-init-flap window. A legitimate owner read returning null during
+  // that blip must become a retryable 503, not a misleading 403.
+  let probes = 0;
+  const r = await resolveCase(
+    deps({
+      storeConfigured: async () => (++probes === 1), // true first, false after
+      getCaseForUser: async () => null, // store gone → null, not a throw
+    }),
+    { userId: "u1", email: null },
+    "c1",
+  );
+  assert.deepEqual(r, { ok: false, error: { kind: "unconfigured" } });
+  assert.equal(probes, 2, "the re-probe before deny must run");
+});
+
+test("resolveCase: store stays up, genuine non-owner → forbidden (re-probe doesn't mask a real deny)", async () => {
+  const r = await resolveCase(
+    deps({ storeConfigured: async () => true, getCaseForUser: async () => null }),
+    { userId: "u1", email: null },
+    "c1",
+  );
+  assert.deepEqual(r, { ok: false, error: { kind: "forbidden" } });
+});
+
 test("resolveCase: configured attorney, case exists → ok(case)", async () => {
   const r = await resolveCase(
     deps({
