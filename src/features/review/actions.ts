@@ -25,6 +25,16 @@ import { isConfiguredAttorney } from "@/lib/auth/roles";
 import { petitions } from "@/lib/data/adapters/petition";
 import { addReviewEvent, transitionCase } from "@/lib/data/reviews";
 
+/** Result every review action returns so the form (via useActionState) can show
+ *  a visible error instead of silently doing nothing — on a legal filing flow a
+ *  swallowed action must never look identical to success. */
+export interface ReviewActionState {
+  ok: boolean;
+  error?: string;
+}
+const OK: ReviewActionState = { ok: true };
+const fail = (error: string): ReviewActionState => ({ ok: false, error });
+
 function revalidateCase(caseId: string): void {
   revalidatePath(`/dashboard/cases/${caseId}`);
   revalidatePath("/dashboard/review");
@@ -52,27 +62,45 @@ async function requireAttorney(): Promise<Awaited<ReturnType<typeof getUser>>> {
   return user;
 }
 
-/** Run an atomic status transition and revalidate the case views ONLY when it
- *  actually applied — a no-op compare-and-set (stale tab / double-submit) must
- *  not trigger a revalidation. The shared tail of every status-changing action. */
+/** Run an atomic status transition and revalidate ONLY when it actually applied.
+ *  Returns a visible result: applied → ok; a no-op compare-and-set (stale tab /
+ *  already-moved / no store) → a "verify" message (we can't distinguish benign
+ *  from failed, so we tell the user rather than silently doing nothing); a thrown
+ *  store fault → a logged error. The shared tail of every status-changing action. */
 async function applyTransition(
   input: Parameters<typeof transitionCase>[0],
-): Promise<void> {
-  const applied = await transitionCase(input);
-  if (applied) revalidateCase(input.caseId);
+): Promise<ReviewActionState> {
+  try {
+    const applied = await transitionCase(input);
+    if (applied) {
+      revalidateCase(input.caseId);
+      return OK;
+    }
+    return fail(
+      "No change was applied — the case may have already moved, or the service is busy. Refresh to check.",
+    );
+  } catch (err) {
+    console.error("[review] transition failed", { caseId: input.caseId, err });
+    return fail("We couldn't complete that action. Please try again in a moment.");
+  }
 }
 
-/** Applicant submits a drafted case to the attorney of record for review. */
-export async function submitForReview(caseId: string): Promise<void> {
+/** Applicant submits a drafted case to the attorney of record for review.
+ *  Signature matches useActionState (caseId is bound at the call site). */
+export async function submitForReview(
+  caseId: string,
+  _prev: ReviewActionState,
+  _formData: FormData,
+): Promise<ReviewActionState> {
   const user = await getUser();
-  if (!user) return;
+  if (!user) return fail("Sign in to submit your case.");
   // Owner-only gate via the PetitionAdapter (ADR-0010). `email` is omitted so the
   // adapter's single resolveCase resolves owner-only (the configured-attorney
   // cross-tenant fallback never fires) — preserving the prior owner-only
   // `getCaseForUser` semantics while the adapter owns null/store-error handling.
   const gate = await petitions.resolveCase({ userId: user.id, email: null }, caseId);
-  if (!gate.ok) return; // only the owner may submit their case
-  await applyTransition({
+  if (!gate.ok) return fail("Only the case owner can submit it for review.");
+  return applyTransition({
     caseId,
     fromStatuses: ["Intake", "Drafting"],
     toStatus: "Attorney Review",
@@ -90,41 +118,56 @@ export async function submitForReview(caseId: string): Promise<void> {
 /** Owner OR a configured attorney adds a free-form note to the review thread. */
 export async function addReviewNote(
   caseId: string,
+  _prev: ReviewActionState,
   formData: FormData,
-): Promise<void> {
+): Promise<ReviewActionState> {
   const user = await getUser();
-  if (!user) return;
+  if (!user) return fail("Sign in to add a note.");
   const body = formField(formData, "body");
-  if (!body) return;
-  // Owner-or-attorney note gate. Ownership resolves through the adapter
-  // (email omitted ⇒ owner-only, fail-closed) so it gets the centralized
-  // null/store-error handling; a non-owning configured attorney is the
-  // fallback. Mirrors the prior `owned`/`attorney` split byte-for-byte, and
-  // `owned` still drives the author-role attribution (StoredCase carries no
-  // owner field, so the role can't be read off the resolved case).
+  if (!body) return fail("Enter a note before submitting.");
+  // Owner-or-attorney gate. Owner resolves through the adapter (email omitted ⇒
+  // owner-only, fail-closed). `owned` also drives the author-role attribution.
   const owned = (await petitions.resolveCase({ userId: user.id, email: null }, caseId)).ok;
-  const attorney = isConfiguredAttorney(user.email);
-  if (!owned && !attorney) return;
-  await addReviewEvent({
-    caseId,
-    authorId: user.id,
-    authorRole: owned ? "applicant" : "attorney",
-    kind: "note",
-    body,
-  });
-  revalidateCase(caseId);
+  if (!owned) {
+    if (!isConfiguredAttorney(user.email)) {
+      return fail("You don't have access to this case.");
+    }
+    // Attorney branch: RESOLVE the case (email leg) before appending so a note
+    // can't be written against a non-existent / garbage caseId, which would
+    // append an orphan audit row that desyncs from the real cases.
+    const gate = await petitions.resolveCase(
+      { userId: user.id, email: user.email ?? null },
+      caseId,
+    );
+    if (!gate.ok) return fail("That case could not be found.");
+  }
+  try {
+    await addReviewEvent({
+      caseId,
+      authorId: user.id,
+      authorRole: owned ? "applicant" : "attorney",
+      kind: "note",
+      body,
+    });
+    revalidateCase(caseId);
+    return OK;
+  } catch (err) {
+    console.error("[review] addReviewNote failed", { caseId, err });
+    return fail("We couldn't save your note. Please try again.");
+  }
 }
 
 /** Attorney returns the case to the applicant with required changes. */
 export async function attorneyRequestChanges(
   caseId: string,
+  _prev: ReviewActionState,
   formData: FormData,
-): Promise<void> {
+): Promise<ReviewActionState> {
   const user = await requireAttorney();
-  if (!user) return;
+  if (!user) return fail("Attorney-of-record access is required.");
   const body = formField(formData, "feedback") || "Please revise and resubmit.";
   // Only from Attorney Review — can't bounce an already-Filed case to Drafting.
-  await applyTransition({
+  return applyTransition({
     caseId,
     fromStatuses: ["Attorney Review"],
     toStatus: "Drafting",
@@ -141,13 +184,17 @@ export async function attorneyRequestChanges(
 
 /** Attorney signs the petition (e-sign stub) and files it with USCIS (stub),
  *  recording a receipt number and advancing the case to "Filed". */
-export async function attorneySignAndFile(caseId: string): Promise<void> {
+export async function attorneySignAndFile(
+  caseId: string,
+  _prev: ReviewActionState,
+  _formData: FormData,
+): Promise<ReviewActionState> {
   const user = await requireAttorney();
-  if (!user) return;
+  if (!user) return fail("Attorney-of-record access is required to sign & file.");
   const receipt = newReceiptNumber();
   // Compare-and-set from Attorney Review → a second (double-click / stale tab)
   // call finds status already Filed, does NOT apply, and mints no second receipt.
-  await applyTransition({
+  return applyTransition({
     caseId,
     fromStatuses: ["Attorney Review"],
     toStatus: "Filed",
@@ -173,18 +220,21 @@ export async function attorneySignAndFile(caseId: string): Promise<void> {
 /** Attorney records the USCIS decision once it comes back. */
 export async function attorneyRecordDecision(
   caseId: string,
+  _prev: ReviewActionState,
   formData: FormData,
-): Promise<void> {
+): Promise<ReviewActionState> {
   const user = await requireAttorney();
-  if (!user) return;
+  if (!user) return fail("Attorney-of-record access is required.");
   const decision = String(formData.get("decision") ?? "Approved");
   // Server-side allowlist: the ReviewPanel <select> only offers these three, but
   // a crafted POST could otherwise write an arbitrary string into the append-only
   // review log (and only "Approved" is terminal). Reject anything else.
-  if (!["Approved", "RFE issued", "Denied"].includes(decision)) return;
+  if (!["Approved", "RFE issued", "Denied"].includes(decision)) {
+    return fail("Unrecognized decision.");
+  }
   // Only a Filed case can receive a decision. "Approved" is terminal; any other
   // decision keeps the case "Filed" (the decision is recorded in the thread).
-  await applyTransition({
+  return applyTransition({
     caseId,
     fromStatuses: ["Filed"],
     toStatus: decision === "Approved" ? "Approved" : "Filed",
