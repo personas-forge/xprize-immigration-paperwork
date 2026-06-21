@@ -63,6 +63,10 @@ interface SectionApiResponse {
   section: DraftSection;
   disclaimer: string;
   source: ModelSource;
+  /** The version the merged sections were persisted as (the orchestrator spreads
+   *  the persist result, same as the full-draft response). null when nothing was
+   *  saved (inline path / save failure). */
+  version?: number | null;
   saveFailed?: boolean;
   adjudication?: AdjudicationReport;
 }
@@ -119,6 +123,10 @@ export function DraftStudio({
   // Explicit no-charge "Save edits" of the current sections (so plain textarea
   // edits aren't local-only). "saved" reverts to "idle" on the next edit.
   const [editSaveState, setEditSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  // The last persisted version number, surfaced as a "Saved · vN" pill. A
+  // generate / section-regenerate / explicit save / applied redline all write a
+  // new version server-side; null until the first successful persist.
+  const [version, setVersion] = useState<number | null>(null);
   // Synchronous in-flight guard: a stale-closure `status` check can't stop two
   // clicks in the same render from both firing a paid POST. A ref can.
   const busyRef = useRef(false);
@@ -195,6 +203,11 @@ export function DraftStudio({
       setSaveFailed(Boolean(data.saveFailed));
       setAdjudication(data.adjudication ?? null);
       setResolvedCaseId(data.caseId ?? caseId);
+      // A fresh draft is persisted server-side with a version; reflect it (and
+      // clear any stale "Saved ✓" from a prior draft). null version → unsaved.
+      const v = typeof data.version === "number" ? data.version : null;
+      setVersion(v);
+      setEditSaveState(v !== null ? "saved" : "idle");
       setStatus("done");
     } catch {
       setError("Network error — please try again.");
@@ -245,6 +258,13 @@ export function DraftStudio({
       setAdjudication(data.adjudication ?? null);
       setCopyState("idle");
       setRetryState("idle");
+      // The server merged this section into the client's current sections and
+      // saved a NEW version (v1 even when no draft was stored yet) — surface it
+      // so the pill isn't a stale "Saved ✓" from before the regenerate and the
+      // un-stored-draft case no longer silently stays version=null (#4/#5).
+      const v = typeof data.version === "number" ? data.version : null;
+      setVersion(v);
+      setEditSaveState(v !== null ? "saved" : "idle");
     } catch {
       setRegenerationError(heading);
     } finally {
@@ -308,7 +328,13 @@ export function DraftStudio({
     setApplying(heading);
     try {
       const result = await retrySaveDraft({ caseId: resolvedCaseId, sections: next, source });
-      if (!result.ok) setSaveFailed(true);
+      if (result.ok) {
+        // Persisted — refresh the version pill instead of leaving a stale "Saved ✓".
+        setVersion(result.version);
+        setEditSaveState("saved");
+      } else {
+        setSaveFailed(true);
+      }
     } finally {
       setApplying(null);
       busyRef.current = false;
@@ -353,6 +379,7 @@ export function DraftStudio({
     try {
       const result = await retrySaveDraft({ caseId: resolvedCaseId, sections, source });
       if (result.ok) {
+        setVersion(result.version);
         setEditSaveState("saved");
       } else {
         setEditSaveState("error");
@@ -617,7 +644,9 @@ export function DraftStudio({
                   {editSaveState === "saving"
                     ? "Saving…"
                     : editSaveState === "saved"
-                      ? "Saved ✓"
+                      ? version !== null
+                        ? `Saved · v${version}`
+                        : "Saved ✓"
                       : "Save edits"}
                 </Button>
               ) : null}
