@@ -43,11 +43,24 @@ export interface CaseFileDataDeps {
 // Promise.all instead of racing three fetches each. A rejected fetch is evicted
 // so a later mount can retry rather than re-throwing a stale failure.
 const LIVE_KEY = "__live__";
-const cache = new Map<string, Promise<CaseFileData>>();
+
+interface CacheEntry {
+  data: Promise<CaseFileData>;
+  at: number;
+}
+const cache = new Map<string, CacheEntry>();
+
+// A SUCCESSFUL fetch was previously pinned for the whole SPA session (evict only
+// on rejection), so once the fixtures become real per-case reads, a user who
+// mutates evidence/criteria and returns to the dashboard would see pre-mutation
+// data until a full reload. Two invalidation seams guard that:
+//   • a short TTL auto-expires entries (a safety net if a write path forgets), and
+//   • clearCaseFileDataCache(caseId?) for explicit busting from mutation actions.
+const CACHE_TTL_MS = 30_000;
 
 /**
  * Fetch the three case-file data sources concurrently and return the unified
- * snapshot. Idempotent per `caseId` via the module cache.
+ * snapshot. Idempotent per `caseId` within the TTL via the module cache.
  */
 export function fetchCaseFileData(
   deps: CaseFileDataDeps,
@@ -55,7 +68,7 @@ export function fetchCaseFileData(
 ): Promise<CaseFileData> {
   const key = caseId ?? LIVE_KEY;
   const cached = cache.get(key);
-  if (cached) return cached;
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.data;
 
   const pending = Promise.all([
     deps.getCaseFacts(caseId),
@@ -73,11 +86,17 @@ export function fetchCaseFileData(
 
   // Evict on failure so the cache never pins a rejected promise.
   pending.catch(() => cache.delete(key));
-  cache.set(key, pending);
+  cache.set(key, { data: pending, at: Date.now() });
   return pending;
 }
 
-/** Drop cached fetches — for tests and for a forced refresh. */
-export function clearCaseFileDataCache(): void {
-  cache.clear();
+/**
+ * Bust cached fetches. Pass a `caseId` to invalidate that case (the LIVE board
+ * uses the no-arg key); omit it to clear everything (tests / forced refresh).
+ * Any write path that mutates a case's facts/tasks/criteria/evidence should call
+ * this for the affected case so the dashboard doesn't serve a stale snapshot.
+ */
+export function clearCaseFileDataCache(caseId?: string): void {
+  if (caseId === undefined) cache.clear();
+  else cache.delete(caseId);
 }

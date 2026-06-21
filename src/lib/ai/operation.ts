@@ -177,7 +177,18 @@ export interface AiOperationDeps {
 
 let cachedDefaults: AiOperationDeps | null = null;
 
-/** Lazily wire the real server-only infra. Never called from the unit suite. */
+/**
+ * Lazily wire the real server-only infra. Never called from the unit suite.
+ *
+ * CONTRACT: the deps bundle is wired ONCE and treated as process-lifetime
+ * immutable (we only cache to avoid re-importing the modules per request). This
+ * is safe because the cached values are STABLE FUNCTION references that re-read
+ * their own config on each call — `getLlm(opts)` re-resolves the engine/env per
+ * request, and `runWithBilling` reads `cost-telemetry.config()` internally — so
+ * an operator rotating a key or toggling telemetry takes effect on the next
+ * request WITHOUT a restart. Do NOT cache a value DERIVED from env here (e.g. a
+ * pre-resolved engine), or it would pin the first request's config.
+ */
 async function defaultDeps(): Promise<AiOperationDeps> {
   if (cachedDefaults) return cachedDefaults;
   const [{ chargeForOperation }, { getLlm }, { getUser }, { runWithBilling }] = await Promise.all([
