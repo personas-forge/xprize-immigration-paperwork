@@ -297,13 +297,13 @@ function Process() {
       </Rise>
 
       <Stagger
+        as="ol"
         className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-card border border-border bg-border-strong sm:grid-cols-2 lg:grid-cols-4"
-        role="list"
       >
         {steps.map(([n, t, b], i) => (
           <Rise
             key={t}
-            role="listitem"
+            as="li"
             className="group relative flex flex-col bg-surface p-6 transition-[background-color] duration-300 hover:bg-accent-soft/40"
           >
             <div className="flex items-baseline justify-between">

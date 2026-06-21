@@ -12,29 +12,37 @@ import { easeArrival, fadeUp, staggerParent } from "@/lib/motion";
 
 type DivProps = React.HTMLAttributes<HTMLDivElement>;
 
+// The element these wrappers render as. Defaults to `div`; pass a list tag so a
+// staggered group can carry REAL list semantics (`<ol><li>…`) instead of
+// `role="list"` on a `<div>`, which screen readers honor more reliably.
+type AsTag = "div" | "ol" | "ul" | "li" | "section";
+
 const inView = { once: true, margin: "-80px" } as const;
 
 /**
  * Scroll-reveal: fade + 14px rise the first time the element scrolls into
- * view. Drop-in for any block element. Respects reduced-motion.
+ * view. Drop-in for any block element. Respects reduced-motion. Render as a
+ * different tag (e.g. `as="li"`) via the `as` prop to keep semantics correct.
  */
 export function Rise({
   children,
   className,
-  as: _as,
+  as = "div",
   delay = 0,
   ...rest
-}: DivProps & { as?: "div"; delay?: number }) {
+}: DivProps & { as?: AsTag; delay?: number }) {
   const reduce = useReducedMotion();
   if (reduce) {
+    const Tag = as;
     return (
-      <div className={className} {...rest}>
+      <Tag className={className} {...(rest as React.HTMLAttributes<HTMLElement>)}>
         {children}
-      </div>
+      </Tag>
     );
   }
+  const MotionTag = motion[as] as typeof motion.div;
   return (
-    <motion.div
+    <MotionTag
       className={className}
       initial="hidden"
       whileInView="show"
@@ -44,30 +52,34 @@ export function Rise({
       {...(rest as React.ComponentProps<typeof motion.div>)}
     >
       {children}
-    </motion.div>
+    </MotionTag>
   );
 }
 
 /**
  * Parent that staggers its direct children's reveal. Each child should be a
- * <motion.*> element (or a <Rise>) with a `hidden`/`show` variants pair.
+ * <motion.*> element (or a <Rise>) with a `hidden`/`show` variants pair. Render
+ * as a list tag (`as="ol"`) when the children are list items.
  */
 export function Stagger({
   children,
   className,
   variants,
+  as = "div",
   ...rest
-}: DivProps & { variants?: Variants }) {
+}: DivProps & { variants?: Variants; as?: AsTag }) {
   const reduce = useReducedMotion();
   if (reduce) {
+    const Tag = as;
     return (
-      <div className={className} {...rest}>
+      <Tag className={className} {...(rest as React.HTMLAttributes<HTMLElement>)}>
         {children}
-      </div>
+      </Tag>
     );
   }
+  const MotionTag = motion[as] as typeof motion.div;
   return (
-    <motion.div
+    <MotionTag
       className={className}
       initial="hidden"
       whileInView="show"
@@ -76,7 +88,7 @@ export function Stagger({
       {...(rest as React.ComponentProps<typeof motion.div>)}
     >
       {children}
-    </motion.div>
+    </MotionTag>
   );
 }
 
