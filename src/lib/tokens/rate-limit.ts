@@ -49,6 +49,18 @@ export const RATE_LIMITS = {
   categorize: OPERATION_REGISTRY.categorize.rateLimit, // light — evidence categorization
 } as const;
 
+/**
+ * Cap for the ANONYMOUS, keyless preview routes (`/api/qualify/preview` and its
+ * best-path sibling). Deliberately governed OUTSIDE OPERATION_REGISTRY: a preview
+ * runs no model and charges nothing, so it is not a metered operation, and adding
+ * a registry entry would break the "exactly six metered operations" invariant
+ * (registry.test.ts). It sits LOWER than the authenticated model-backed caps (40)
+ * on purpose — an anonymous, IP-keyed endpoint is the most abuse-prone surface
+ * (no balance to drain, no account to ban), so the unauthenticated path is held
+ * tighter. One shared constant so the two preview routes can't drift to two caps.
+ */
+export const PREVIEW_RATE_LIMIT = 30;
+
 export const RATE_WINDOW_MS = 60_000;
 
 // ⚠ SINGLE-NODE: counts live in THIS process's memory. The caps in RATE_LIMITS

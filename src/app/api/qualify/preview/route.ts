@@ -5,6 +5,7 @@ import {
   parseQualifyRequest,
 } from "@/features/qualification";
 import {
+  PREVIEW_RATE_LIMIT,
   checkRateLimit,
   isRateLimitEnabled,
   rateLimitKey,
@@ -30,15 +31,11 @@ import { DISCLAIMER } from "@/lib/result";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Per-IP/minute cap. Generous: the preview is free + instant, so this only
- *  exists to stop a flood, not to ration legitimate use. */
-const PREVIEW_LIMIT = 30;
-
 export async function POST(request: Request): Promise<NextResponse> {
   if (isRateLimitEnabled()) {
     const rl = checkRateLimit(
       rateLimitKey(request, "qualify_preview"),
-      PREVIEW_LIMIT,
+      PREVIEW_RATE_LIMIT,
     );
     if (!rl.ok) {
       return NextResponse.json(
