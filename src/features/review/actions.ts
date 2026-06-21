@@ -41,9 +41,17 @@ function revalidateCase(caseId: string): void {
   revalidatePath("/dashboard");
 }
 
-/** USCIS-style receipt number (e.g. "EAC2412345678"). Stub for real filing. */
+/** A DEMO receipt number (real filing isn't wired). Marked `demo:true` in the
+ *  filed event so the UI can flag it as not a genuine USCIS receipt. */
 function newReceiptNumber(): string {
   return `EAC${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`;
+}
+
+/** USCIS receipt format: a 3-letter service-center prefix + 10 digits
+ *  (EAC/WAC/LIN/SRC/IOE/MSC/YSC/NBC). Used to validate an attorney-entered real
+ *  receipt so a typo isn't recorded as authoritative. */
+function isUscisReceipt(value: string): boolean {
+  return /^(EAC|WAC|LIN|SRC|IOE|MSC|YSC|NBC)\d{10}$/i.test(value.trim());
 }
 
 /** Read a free-text form field from untrusted FormData: coerce to string, trim,
@@ -187,11 +195,35 @@ export async function attorneyRequestChanges(
 export async function attorneySignAndFile(
   caseId: string,
   _prev: ReviewActionState,
-  _formData: FormData,
+  formData: FormData,
 ): Promise<ReviewActionState> {
   const user = await requireAttorney();
   if (!user) return fail("Attorney-of-record access is required to sign & file.");
-  const receipt = newReceiptNumber();
+  const access = { userId: user.id, email: user.email ?? null };
+  // PRE-FILE INTEGRITY GATE: never let an attorney sign+file a case with no
+  // petition draft. transitionCase only compare-and-sets the STATUS, so without
+  // this an empty/stub case (draft never generated, or emptied after submission)
+  // could be filed with USCIS under the attorney's bar license — a malpractice-
+  // grade outcome. The adapter read is owner-or-attorney gated.
+  const draft = await petitions.getLatestDraft(access, caseId);
+  if (!draft.ok) {
+    return fail("Could not load this case to file it. Please try again.");
+  }
+  if (!draft.value || draft.value.sections.length === 0) {
+    return fail(
+      "Cannot file: no petition draft exists for this case. Generate the petition letter before signing & filing.",
+    );
+  }
+  // Real USCIS receipt, if the attorney captured one at filing; else a clearly-
+  // labelled demo receipt (see ReviewPanel) so it can't be mistaken for genuine.
+  const realReceipt = formField(formData, "receiptNumber");
+  if (realReceipt && !isUscisReceipt(realReceipt)) {
+    return fail(
+      "That doesn't look like a USCIS receipt number (e.g. EAC2412345678). Leave it blank to record a demo receipt.",
+    );
+  }
+  const isDemo = realReceipt === "";
+  const receipt = realReceipt || newReceiptNumber();
   // Compare-and-set from Attorney Review → a second (double-click / stale tab)
   // call finds status already Filed, does NOT apply, and mints no second receipt.
   return applyTransition({
@@ -210,8 +242,10 @@ export async function attorneySignAndFile(
         authorId: user.id,
         authorRole: "attorney",
         kind: "filed",
-        body: "Filed with USCIS.",
-        metadata: { receipt },
+        body: isDemo
+          ? "Recorded a DEMO filing (not actually filed with USCIS)."
+          : "Filed with USCIS.",
+        metadata: { receipt, demo: isDemo },
       },
     ],
   });

@@ -72,6 +72,11 @@ export function ReviewPanel({
   const inReview = status === "Attorney Review";
   const filed = status === "Filed";
   const approved = status === "Approved";
+  // A receipt recorded WITHOUT a real USCIS filing integration is a demo receipt
+  // (the filed event says so) — flag it so it can't be mistaken for genuine.
+  const receiptIsDemo = events.some(
+    (ev) => ev.kind === "filed" && /DEMO/i.test(ev.body),
+  );
 
   return (
     <Card>
@@ -83,11 +88,25 @@ export function ReviewPanel({
       </CardHeader>
       <CardBody className="space-y-5">
         {receiptNumber ? (
-          <div className="flex items-center justify-between rounded-control border border-success/40 bg-success-soft/40 px-4 py-3">
-            <span className="microprint" style={{ color: "var(--accent-dark)" }}>
-              USCIS receipt
-            </span>
-            <span className="doc-number text-[16px] text-foreground">{receiptNumber}</span>
+          <div
+            className={
+              receiptIsDemo
+                ? "rounded-control border border-warning/50 bg-warning-soft/40 px-4 py-3"
+                : "rounded-control border border-success/40 bg-success-soft/40 px-4 py-3"
+            }
+          >
+            <div className="flex items-center justify-between">
+              <span className="microprint" style={{ color: "var(--accent-dark)" }}>
+                {receiptIsDemo ? "Demo receipt" : "USCIS receipt"}
+              </span>
+              <span className="doc-number text-[16px] text-foreground">{receiptNumber}</span>
+            </div>
+            {receiptIsDemo ? (
+              <p className="mt-1.5 font-sans text-[13.5px] leading-snug text-warning">
+                Not a genuine USCIS receipt — this case was recorded as filed for
+                demonstration; no petition was submitted to USCIS.
+              </p>
+            ) : null}
           </div>
         ) : null}
 
@@ -259,16 +278,30 @@ function SignAndFileAction({ caseId }: { caseId: string }) {
         a receipt number. Confirm only after you have reviewed the full draft and
         exhibits — this is your attorney-of-record action.
       </p>
-      <div className="flex flex-wrap items-center gap-3">
-        <ReviewActionForm action={attorneySignAndFile.bind(null, caseId)}>
-          <SubmitButton variant="seal" pendingLabel="Filing with USCIS…">
+      <ReviewActionForm action={attorneySignAndFile.bind(null, caseId)} className="space-y-3">
+        <label className="block">
+          <span className="microprint">USCIS receipt number (optional)</span>
+          <input
+            name="receiptNumber"
+            type="text"
+            inputMode="text"
+            placeholder="e.g. EAC2412345678 — leave blank to record a demo receipt"
+            className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-mono text-[15px] tracking-document text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+          />
+          <span className="microprint mt-1 block" style={{ color: "var(--muted)" }}>
+            Real USCIS filing isn&apos;t wired yet — enter the actual receipt if you
+            filed outside the app, or leave blank for a clearly-labelled demo.
+          </span>
+        </label>
+        <div className="flex flex-wrap items-center gap-3">
+          <SubmitButton variant="seal" pendingLabel="Recording filing…">
             Confirm — sign &amp; file
           </SubmitButton>
-        </ReviewActionForm>
-        <Button type="button" variant="secondary" onClick={() => setConfirming(false)}>
-          Cancel
-        </Button>
-      </div>
+          <Button type="button" variant="secondary" onClick={() => setConfirming(false)}>
+            Cancel
+          </Button>
+        </div>
+      </ReviewActionForm>
     </div>
   );
 }
