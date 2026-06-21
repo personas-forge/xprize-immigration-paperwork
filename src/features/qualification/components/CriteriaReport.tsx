@@ -115,6 +115,26 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
                   style={{ width: `${result.likelihood}%` }}
                 />
               </div>
+
+              {/* EB-1A FINAL-MERITS CAVEAT: clearing 3 criteria is only STEP ONE of
+                  EB-1A's two-step Kazarian analysis — USCIS then weighs the totality
+                  of the record on a higher "final merits" bar. The per-classification
+                  screen otherwise scores EB-1A identically to O-1A, so a confident
+                  green "Meets threshold" would over-claim on a green-card path. (The
+                  likelihood band is deliberately NOT damped here — see packs.ts.) */}
+              {result.classification === "EB-1A" ? (
+                <div
+                  role="note"
+                  className="rounded-control border border-warning/50 bg-warning-soft/40 px-4 py-3 font-sans text-[14.5px] leading-snug text-foreground-soft"
+                >
+                  <strong>EB-1A is judged on a higher bar.</strong> Meeting{" "}
+                  {threshold} of the criteria is only the first step — for EB-1A
+                  (an immigrant/green-card petition) USCIS then weighs the{" "}
+                  <em>totality</em> of your record on a stricter &ldquo;final
+                  merits&rdquo; standard. Treat a passing screen as a starting
+                  point to discuss with your attorney, not a likely approval.
+                </div>
+              ) : null}
             </>
           )}
         </CardBody>
