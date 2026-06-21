@@ -53,15 +53,21 @@ export function CaseFileDashboard({
               <div className="flex items-center gap-3 text-accent-dark">
                 <Seal size={36} />
                 <div className="microprint" style={{ color: "var(--accent-dark)" }}>
-                  File №&nbsp;<span className="doc-number">O1-241</span> · Petitioner
+                  File №&nbsp;<span className="doc-number">O1-241</span> · Sample case
                 </div>
               </div>
 
+              {/* Illustrative masthead — NOT the user's data. Real, persisted cases
+                  render in "Your cases" above; this shows what a worked case file
+                  looks like so an empty account isn't a blank page. */}
               <h1 className="display mt-5 text-[clamp(2rem,4.2vw,3rem)]">
                 Dr. <em>Anya</em> Krishnan
               </h1>
               <p className="font-sans text-[17px] italic text-muted-strong">
                 Senior Research Engineer · India → United States · O-1A
+              </p>
+              <p className="microprint mt-2" style={{ color: "var(--muted)" }}>
+                Illustrative example — your real cases appear under “Your cases.”
               </p>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -115,7 +121,7 @@ export function CaseFileDashboard({
         <CaseList />
 
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tone="success">92% approval likelihood</Badge>
+          <Badge tone="success">Sample · 92% modeled likelihood</Badge>
           <Badge tone="neutral">Prepaid tokens · start free</Badge>
           <Badge tone="neutral">USCIS premium $2,805 (paid to USCIS)</Badge>
         </div>
