@@ -20,6 +20,7 @@ import {
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 import {
   copyDraftToClipboard,
+  draftClipboardText,
   retrySaveDraft,
 } from "@/features/drafting/saveRecovery";
 import {
@@ -346,6 +347,23 @@ export function DraftStudio({
     setCopyState(ok ? "copied" : "failed");
   }
 
+  // Take the finished letter OUT of the app — the product's core deliverable. The
+  // serializer (draftClipboardText, exhibit-indexed) already exists; this just
+  // streams it as a .txt download so the attorney can pull the work product into
+  // their filing workflow without screenshotting or re-typing.
+  function downloadDraft() {
+    const text = draftClipboardText(sections, exhibitIndex);
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${classification}-petition-letter.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   async function retrySave() {
     // Persistence-only retry (/api/draft/save) — never re-generates, so it can
     // never re-charge. Guarded by busyRef like the paid calls so a retry can't
@@ -488,6 +506,19 @@ export function DraftStudio({
             <DisclaimerStamp text={DISCLAIMER} />
             <CitationNote />
             {adjudication ? <AdjudicationBadge report={adjudication} /> : null}
+            {/* Export the finished letter on the HAPPY path (was only reachable via
+                the save-failed alert) — the product's core deliverable. */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Button type="button" variant="secondary" size="sm" onClick={copyDraft}>
+                {copyState === "copied" ? "Copied ✓" : copyState === "failed" ? "Copy failed — retry" : "Copy letter"}
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={downloadDraft}>
+                Download .txt
+              </Button>
+              <span className="microprint" style={{ color: "var(--muted)" }}>
+                Plain text with an exhibit index — for your attorney&apos;s filing workflow.
+              </span>
+            </div>
             {exhibitIndex.length > 0 ? (
               <ExhibitIndex
                 entries={exhibitIndex}
