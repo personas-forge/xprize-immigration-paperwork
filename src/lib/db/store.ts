@@ -33,6 +33,19 @@ export interface UpsertConsentInput {
   userAgent: string | null;
 }
 
+/** Append-only consent/preference record (no profile mutation) — e.g. a later
+ *  marketing opt-in/out, which is recorded as a NEW consent row so the audit
+ *  trail of "what they agreed to, and when" is never edited in place. */
+export interface RecordConsentInput {
+  userId: string;
+  consentVersion: string;
+  terms: boolean;
+  privacy: boolean;
+  marketing: boolean;
+  ip: string | null;
+  userAgent: string | null;
+}
+
 export type CreditReason =
   | "purchase"
   | "reclaim"
@@ -254,6 +267,12 @@ export interface Store {
   /** The `consent_version` of the user's most recent consent row, or null if
    *  they have never consented. Used to re-prompt when the terms version bumps. */
   getLatestConsentVersion(userId: string): Promise<string | null>;
+  /** The user's full append-only consent history, NEWEST first — the data behind
+   *  a "what you agreed to" receipt / consent log on the account page. */
+  getConsentHistory(userId: string): Promise<ConsentExport[]>;
+  /** Append a consent/preference row (no profile change). Used for a later
+   *  marketing opt-in/out so the audit trail is preserved, not edited in place. */
+  recordConsent(input: RecordConsentInput): Promise<void>;
   getBalance(userId: string): Promise<number>;
   /** A user's recent token-ledger entries, newest first (capped at `limit`) —
    *  for the billing "Recent activity" read-out. */

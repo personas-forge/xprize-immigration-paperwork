@@ -8,12 +8,14 @@ if (typeof window !== "undefined") {
 
 import {
   getStore,
+  type ConsentExport,
   type Profile,
+  type RecordConsentInput,
   type UpsertConsentInput,
   type UserDataExport,
 } from "@/lib/db/store";
 
-export type { Profile, UserDataExport };
+export type { ConsentExport, Profile, RecordConsentInput, UserDataExport };
 
 export async function getProfile(userId: string): Promise<Profile | null> {
   const store = await getStore();
@@ -26,6 +28,23 @@ export async function getLatestConsentVersion(
 ): Promise<string | null> {
   const store = await getStore();
   return store ? store.getLatestConsentVersion(userId) : null;
+}
+
+/** The user's full append-only consent history (newest first). Empty when no store. */
+export async function getConsentHistory(userId: string): Promise<ConsentExport[]> {
+  const store = await getStore();
+  return store ? store.getConsentHistory(userId) : [];
+}
+
+/** Append a consent/preference row (e.g. a marketing opt-in change). Throws when
+ *  no store is configured (a silently-dropped preference change is worse than an
+ *  error on a compliance surface). */
+export async function recordConsent(input: RecordConsentInput): Promise<void> {
+  const store = await getStore();
+  if (!store) {
+    throw new Error("No database configured — cannot record the preference change.");
+  }
+  return store.recordConsent(input);
 }
 
 export async function upsertProfileWithConsent(

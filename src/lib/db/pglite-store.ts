@@ -301,6 +301,42 @@ export async function getPgliteStore(): Promise<Store> {
       return typeof v === "string" ? v : null;
     },
 
+    async getConsentHistory(userId) {
+      const r = await pg.query(
+        `select consent_version, terms_accepted, privacy_accepted, marketing_opt_in,
+                ip, user_agent, created_at
+           from consents where user_id = $1 order by id desc`,
+        [userId],
+      );
+      return r.rows.map((row) => ({
+        consentVersion: str(row.consent_version),
+        termsAccepted: Boolean(row.terms_accepted),
+        privacyAccepted: Boolean(row.privacy_accepted),
+        marketingOptIn: Boolean(row.marketing_opt_in),
+        ip: row.ip == null ? null : str(row.ip),
+        userAgent: row.user_agent == null ? null : str(row.user_agent),
+        createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : null,
+      }));
+    },
+
+    async recordConsent(input) {
+      await pg.query(
+        `insert into consents
+           (user_id, consent_version, terms_accepted, privacy_accepted,
+            marketing_opt_in, ip, user_agent)
+         values ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          input.userId,
+          input.consentVersion,
+          input.terms,
+          input.privacy,
+          input.marketing,
+          input.ip,
+          input.userAgent,
+        ],
+      );
+    },
+
     async getBalance(userId) {
       const r = await pg.query(
         `select balance from token_accounts where user_id = $1`,

@@ -4,9 +4,10 @@ import { Card, CardBody, CardHeader, Badge } from "@/components/ui";
 import { Rise } from "@/components/Motion";
 import { SiteHeader, SiteFooter } from "@/components/SiteChrome";
 import { requireOnboardedUser } from "@/lib/auth/session";
-import { getLatestConsentVersion } from "@/lib/auth/db";
+import { getConsentHistory } from "@/lib/auth/db";
 import { CONSENT_VERSION } from "@/lib/auth/consent";
 import { DeleteAccountForm } from "./DeleteAccountForm";
+import { MarketingPreferenceForm } from "./MarketingPreferenceForm";
 
 export const metadata: Metadata = {
   title: "Account & data — Immigration Concierge",
@@ -17,7 +18,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AccountPage() {
   const { user, profile } = await requireOnboardedUser();
-  const consented = await getLatestConsentVersion(user.id);
+  const consents = await getConsentHistory(user.id);
+  // History is newest-first, so the latest row carries the current state.
+  const consented = consents[0]?.consentVersion ?? null;
+  const marketingOptIn = consents[0]?.marketingOptIn ?? false;
 
   return (
     <PageFrame>
@@ -55,6 +59,65 @@ export default async function AccountPage() {
                 <Field label="Current terms version">{CONSENT_VERSION}</Field>
               </dl>
             </CardBody>
+          </Card>
+        </Rise>
+
+        {/* Marketing preference */}
+        <Rise className="mt-6">
+          <Card>
+            <CardHeader>
+              <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+                § Email preferences
+              </div>
+            </CardHeader>
+            <CardBody>
+              <MarketingPreferenceForm current={marketingOptIn} />
+            </CardBody>
+          </Card>
+        </Rise>
+
+        {/* Consent history / receipt */}
+        <Rise className="mt-6">
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+                § Consent history
+              </div>
+              <Badge tone="neutral">{consents.length}</Badge>
+            </CardHeader>
+            {consents.length === 0 ? (
+              <CardBody>
+                <p className="font-sans text-[15.5px] italic text-muted-strong">
+                  No consent events recorded.
+                </p>
+              </CardBody>
+            ) : (
+              <ul className="divide-y divide-rule">
+                {consents.map((c, i) => (
+                  <li key={i} className="px-5 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-sans text-[15.5px] text-foreground">
+                        Version {c.consentVersion}
+                      </span>
+                      <span className="microprint" style={{ color: "var(--muted)" }}>
+                        {c.createdAt ? c.createdAt.slice(0, 10) : "—"}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      <Badge tone={c.termsAccepted ? "success" : "neutral"}>
+                        Terms {c.termsAccepted ? "✓" : "—"}
+                      </Badge>
+                      <Badge tone={c.privacyAccepted ? "success" : "neutral"}>
+                        Privacy {c.privacyAccepted ? "✓" : "—"}
+                      </Badge>
+                      <Badge tone={c.marketingOptIn ? "accent" : "neutral"}>
+                        Marketing {c.marketingOptIn ? "on" : "off"}
+                      </Badge>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </Rise>
 

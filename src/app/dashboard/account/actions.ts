@@ -1,12 +1,53 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth/session";
-import { deleteUserData } from "@/lib/auth/db";
+import { deleteUserData, recordConsent } from "@/lib/auth/db";
 import { adminAuth } from "@/lib/firebase/admin";
 import { isDevAuth } from "@/lib/auth/devAuth";
 import { SESSION_COOKIE } from "@/lib/firebase/config";
+import { CONSENT_VERSION } from "@/lib/auth/consent";
+import { clientIp } from "@/lib/tokens/rate-limit";
+
+export interface MarketingPreferenceState {
+  ok?: boolean;
+  error?: string;
+}
+
+/**
+ * Change the marketing-email preference. Recorded as a NEW append-only consent
+ * row (terms/privacy already accepted; current version) rather than an in-place
+ * edit, so the audit trail of "what they agreed to, and when" is preserved — the
+ * onboarding gate keys on consent VERSION only, so this never re-prompts. `optIn`
+ * is the DESIRED new value, posted by the form's hidden field.
+ */
+export async function updateMarketingPreference(
+  _prev: MarketingPreferenceState,
+  formData: FormData,
+): Promise<MarketingPreferenceState> {
+  const user = await getUser();
+  if (!user) redirect("/login");
+  const optIn = String(formData.get("optIn") ?? "") === "true";
+  const h = await headers();
+  try {
+    await recordConsent({
+      userId: user.id,
+      consentVersion: CONSENT_VERSION,
+      terms: true,
+      privacy: true,
+      marketing: optIn,
+      ip: clientIp(h),
+      userAgent: h.get("user-agent"),
+    });
+  } catch (err) {
+    console.error("[account] marketing preference update failed", { userId: user.id, err });
+    return { error: "We couldn't save your preference. Please try again." };
+  }
+  revalidatePath("/dashboard/account");
+  return { ok: true };
+}
 
 export interface DeleteAccountState {
   error?: string;

@@ -190,6 +190,40 @@ export const firestoreStore: Store = {
     return latest?.version ?? null;
   },
 
+  async getConsentHistory(userId) {
+    const snap = await adminDb()
+      .collection(col("consents"))
+      .where("user_id", "==", userId)
+      .get();
+    return snap.docs
+      .map((d) => d.data())
+      .sort((a, b) => tsMs(b.created_at) - tsMs(a.created_at))
+      .map((v) => ({
+        consentVersion: String(v.consent_version ?? ""),
+        termsAccepted: Boolean(v.terms_accepted),
+        privacyAccepted: Boolean(v.privacy_accepted),
+        marketingOptIn: Boolean(v.marketing_opt_in),
+        ip: (v.ip as string | undefined) ?? null,
+        userAgent: (v.user_agent as string | undefined) ?? null,
+        createdAt: tsToIso(v.created_at),
+      }));
+  },
+
+  async recordConsent(input) {
+    // Append-only auto-id doc — same shape as upsertProfileWithConsent's consent
+    // write, but WITHOUT the profile mutation.
+    await adminDb().collection(col("consents")).doc().set({
+      user_id: input.userId,
+      consent_version: input.consentVersion,
+      terms_accepted: input.terms,
+      privacy_accepted: input.privacy,
+      marketing_opt_in: input.marketing,
+      ip: input.ip,
+      user_agent: input.userAgent,
+      created_at: FieldValue.serverTimestamp(),
+    });
+  },
+
   async getBalance(userId) {
     const snap = await adminDb()
       .collection(col("token_accounts"))
