@@ -15,7 +15,9 @@ import { RfeStudio } from "@/features/rfe/components/RfeStudio";
 import { EvidenceVault, type DocumentView } from "@/features/evidence/components/EvidenceVault";
 import { RoadmapStepper } from "./RoadmapStepper";
 import { type ModelSource } from "@/lib/llm/label";
-import { jurisdictionFor } from "@/features/qualification";
+import { jurisdictionFor, packFor } from "@/features/qualification";
+import { summarizeCriteria } from "@/features/case-file/criteria";
+import { type Criterion } from "@/features/case-file/types";
 import { CriteriaRows } from "./CriteriaRows";
 
 // — Case detail view ──────────────────────────────────────────────────────────
@@ -136,24 +138,50 @@ export function CaseDetailView({
             hasDraft={Boolean(initialSections && initialSections.length > 0)}
           />
 
-          {/* Criteria */}
-          <Card className="overflow-hidden">
-            <CardHeader className="bg-surface-muted/60">
-              <div className="microprint" style={{ color: "var(--accent-dark)" }}>
-                § II — {classification} criteria · AI-scored
-              </div>
-              <Badge tone="neutral">{criteria.length} criteria</Badge>
-            </CardHeader>
-            {criteria.length === 0 ? (
-              <CardBody>
-                <p className="font-sans text-[16px] italic text-muted-strong">
-                  No scored criteria on file for this case.
-                </p>
-              </CardBody>
-            ) : (
-              <CriteriaRows criteria={criteria} evidenceHeader="What we found" />
-            )}
-          </Card>
+          {/* Criteria — with the SAME eligibility read-out the mock dashboard and
+              the screening show (summarizeCriteria), so a real, logged-in case
+              answers "am I eligible?" not just "how many criteria". The threshold
+              is the case's OWN pack (O-1A=3 / O-1B / EB-1A), never a hardcoded
+              O-1A constant (ADR-0001) — wrong threshold = wrong legal statement. */}
+          {(() => {
+            const threshold = packFor(classification).threshold;
+            const summary = summarizeCriteria(
+              criteria as unknown as readonly Criterion[],
+              threshold,
+            );
+            return (
+              <Card className="overflow-hidden">
+                <CardHeader className="flex-wrap gap-y-2 bg-surface-muted/60">
+                  <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+                    § II — {classification} criteria · AI-scored
+                  </div>
+                  {criteria.length > 0 ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-sans text-[14.5px] text-muted-strong">
+                        {summary.qualifying} of {criteria.length} qualify · need{" "}
+                        {threshold}
+                        {summary.partial > 0 ? ` · ${summary.partial} partial` : ""}
+                      </span>
+                      <Badge tone={summary.meetsThreshold ? "success" : "warning"}>
+                        {summary.meetsThreshold ? "Meets threshold" : "Below threshold"}
+                      </Badge>
+                    </div>
+                  ) : (
+                    <Badge tone="neutral">{criteria.length} criteria</Badge>
+                  )}
+                </CardHeader>
+                {criteria.length === 0 ? (
+                  <CardBody>
+                    <p className="font-sans text-[16px] italic text-muted-strong">
+                      No scored criteria on file for this case.
+                    </p>
+                  </CardBody>
+                ) : (
+                  <CriteriaRows criteria={criteria} evidenceHeader="What we found" />
+                )}
+              </Card>
+            );
+          })()}
 
           {/* Evidence vault — categorized exhibits + coverage gaps. */}
           <PanelErrorBoundary label="Evidence vault">
