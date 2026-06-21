@@ -51,19 +51,20 @@ export async function getCaseDocuments(
 export async function removeCaseDocument(
   caseId: string,
   documentId: string,
-): Promise<void> {
+): Promise<boolean> {
   const store = await getStore();
-  if (!store) return;
-  await store.removeCaseDocument(caseId, documentId);
+  if (!store) return false;
+  return store.removeCaseDocument(caseId, documentId);
 }
 
-/** Re-file a document under a different criterion bucket. No-op when no store. */
+/** Re-file a document under a different criterion bucket. False when no store or
+ *  no matching document. */
 export async function refileCaseDocument(
   caseId: string,
   documentId: string,
   criterion: string,
-): Promise<void> {
+): Promise<boolean> {
   const store = await getStore();
-  if (!store) return;
-  await store.refileCaseDocument(caseId, documentId, criterion);
+  if (!store) return false;
+  return store.refileCaseDocument(caseId, documentId, criterion);
 }

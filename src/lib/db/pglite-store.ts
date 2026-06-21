@@ -728,17 +728,19 @@ export async function getPgliteStore(): Promise<Store> {
     },
 
     async removeCaseDocument(caseId, documentId) {
-      await pg.query(
+      const r = await pg.query(
         `delete from case_documents where id = $1 and case_id = $2`,
         [documentId, caseId],
       );
+      return (r.affectedRows ?? 0) > 0;
     },
 
     async refileCaseDocument(caseId, documentId, criterion) {
-      await pg.query(
+      const r = await pg.query(
         `update case_documents set criterion = $3 where id = $1 and case_id = $2`,
         [documentId, caseId, criterion],
       );
+      return (r.affectedRows ?? 0) > 0;
     },
   };
 }

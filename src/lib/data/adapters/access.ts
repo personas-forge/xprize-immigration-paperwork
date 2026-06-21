@@ -65,9 +65,14 @@ export async function resolveCase(
       const any = await deps.getCaseAnyOwner(caseId);
       return any ? ok(any) : err("not_found");
     }
-    // Not the owner and not a configured attorney: deny without revealing
-    // whether the case exists (fail-closed; mirrors the prior HIGH findings on
-    // cross-tenant PII egress).
+    // Not the owner and not a configured attorney → deny. But a `null` from
+    // getCaseForUser can also mean the store went unavailable mid-call (a driver
+    // that yields no rows on a dropped connection, not a throw). Re-probe so a
+    // transient outage surfaces as `unconfigured` (503 "try again") rather than a
+    // wrong, alarming `forbidden` (403) to the legitimate owner.
+    if (!(await deps.storeConfigured())) return err("unconfigured");
+    // Deny without revealing whether the case exists (fail-closed; mirrors the
+    // prior HIGH findings on cross-tenant PII egress).
     return err("forbidden");
   } catch (cause) {
     return err("store_error", cause);

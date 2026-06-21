@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Badge, Button, Card, CardBody, CardHeader, type BadgeTone } from "@/components/ui";
 import { SubmitButton } from "./SubmitButton";
+import { ReviewActionForm } from "./ReviewActionForm";
 import {
   addReviewNote,
   attorneyRecordDecision,
@@ -103,7 +104,7 @@ export function ReviewPanel({
         ) : null}
 
         {inDrafting && isOwner ? (
-          <form action={submitForReview.bind(null, caseId)} className="space-y-2">
+          <ReviewActionForm action={submitForReview.bind(null, caseId)} className="space-y-2">
             <SubmitButton variant="seal" pendingLabel="Submitting…">
               Submit for attorney review
             </SubmitButton>
@@ -112,7 +113,7 @@ export function ReviewPanel({
                 ? "Sends your drafted petition to the attorney of record."
                 : "Tip: generate a petition draft above before submitting."}
             </p>
-          </form>
+          </ReviewActionForm>
         ) : null}
 
         {inReview && !isAttorney ? (
@@ -130,7 +131,7 @@ export function ReviewPanel({
               Attorney of record · console
             </div>
             <SignAndFileAction caseId={caseId} />
-            <form action={attorneyRequestChanges.bind(null, caseId)} className="space-y-2">
+            <ReviewActionForm action={attorneyRequestChanges.bind(null, caseId)} className="space-y-2">
               <textarea
                 name="feedback"
                 rows={3}
@@ -140,12 +141,12 @@ export function ReviewPanel({
               <SubmitButton variant="secondary" pendingLabel="Returning…">
                 Return with changes
               </SubmitButton>
-            </form>
+            </ReviewActionForm>
           </div>
         ) : null}
 
         {filed && isAttorney ? (
-          <form
+          <ReviewActionForm
             action={attorneyRecordDecision.bind(null, caseId)}
             className="flex flex-wrap items-end gap-3 rounded-control border border-seal/30 bg-seal-soft/20 px-5 py-4"
           >
@@ -163,7 +164,7 @@ export function ReviewPanel({
             <SubmitButton variant="secondary" pendingLabel="Recording…">
               Record decision
             </SubmitButton>
-          </form>
+          </ReviewActionForm>
         ) : null}
 
         {/* — Review thread ──────────────────────────────────────────────── */}
@@ -203,7 +204,7 @@ export function ReviewPanel({
 
         {/* — Add note (owner or attorney) ───────────────────────────────── */}
         {isOwner || isAttorney ? (
-          <form action={addReviewNote.bind(null, caseId)} className="space-y-2">
+          <ReviewActionForm action={addReviewNote.bind(null, caseId)} className="space-y-2">
             <textarea
               name="body"
               rows={2}
@@ -213,7 +214,7 @@ export function ReviewPanel({
             <SubmitButton variant="ghost" size="sm" pendingLabel="Adding…">
               Add note
             </SubmitButton>
-          </form>
+          </ReviewActionForm>
         ) : null}
       </CardBody>
     </Card>
@@ -259,11 +260,11 @@ function SignAndFileAction({ caseId }: { caseId: string }) {
         exhibits — this is your attorney-of-record action.
       </p>
       <div className="flex flex-wrap items-center gap-3">
-        <form action={attorneySignAndFile.bind(null, caseId)}>
+        <ReviewActionForm action={attorneySignAndFile.bind(null, caseId)}>
           <SubmitButton variant="seal" pendingLabel="Filing with USCIS…">
             Confirm — sign &amp; file
           </SubmitButton>
-        </form>
+        </ReviewActionForm>
         <Button type="button" variant="secondary" onClick={() => setConfirming(false)}>
           Cancel
         </Button>

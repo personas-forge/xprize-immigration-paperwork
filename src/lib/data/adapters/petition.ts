@@ -112,8 +112,15 @@ export class PetitionAdapter {
         ...input,
       });
       // Store is configured yet the write produced nothing: treat as a store
-      // fault rather than silently dropping the case.
-      return created ? ok(created) : err("store_error");
+      // fault. Attach a descriptive cause so the adapter's `store_error` log
+      // carries context instead of a useless `undefined` (a null-write and a real
+      // backend throw must be distinguishable in ops).
+      return created
+        ? ok(created)
+        : err(
+            "store_error",
+            new Error("createCaseWithCriteria returned null despite a configured store"),
+          );
     } catch (cause) {
       return err("store_error", cause);
     }
