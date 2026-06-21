@@ -364,3 +364,31 @@ test("byUser rate-limit keys on user id, not IP", async () => {
   );
   assert.equal(keyedWith, "rfe:user-42");
 });
+
+// ---------------------------------------------------------------------------
+// 13b. byUser with NO authenticated caller → shared "anon" user key, never IP.
+//      (A spoofable x-forwarded-for must not fan out the bucket map; collapsing
+//      anonymous byUser traffic into one user bucket keeps the IP-rotation
+//      guarantee even before the route's own 401-at-charge.)
+// ---------------------------------------------------------------------------
+test("byUser with no user keys on a shared anon user bucket, not IP", async () => {
+  let keyedWith = "";
+  await executeAiOperation(
+    jsonRequest({ text: "hi" }),
+    baseSpec({ rateLimit: { bucket: "rfe", scope: "rfe", byUser: true } }),
+    deps({
+      resolveUser: async () => null,
+      rateLimit: {
+        check: () => ({ ok: true, limit: 20, remaining: 19, retryAfterSec: 0 }),
+        key: (_r, scope, userId) => {
+          // Mirror the real rateLimitKey: a userId routes to `:u:`, absence to `:ip:`.
+          keyedWith = userId ? `${scope}:u:${userId}` : `${scope}:ip:1.2.3.4`;
+          return keyedWith;
+        },
+        enabled: () => true,
+        limits: { rfe: 20 } as never,
+      },
+    }),
+  );
+  assert.equal(keyedWith, "rfe:u:anon");
+});

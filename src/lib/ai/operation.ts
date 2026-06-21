@@ -256,7 +256,11 @@ export async function executeAiOperation<TInput, TOutput>(
   //    model cost or drain a balance unchecked.
   if (spec.rateLimit && d.rateLimit.enabled()) {
     const { bucket, scope, byUser } = spec.rateLimit;
-    const keyUser = byUser ? (await resolveUser())?.id : undefined;
+    // For byUser ops, key on the resolved user id; an UNauthenticated caller
+    // (these routes 401 at charge anyway) buckets into a SHARED `:u:anon` key,
+    // NOT per-IP — so a spoofed x-forwarded-for can't fan out the bucket map and
+    // the "user-keying stops IP-rotation evasion" guarantee actually holds.
+    const keyUser = byUser ? ((await resolveUser())?.id ?? "anon") : undefined;
     const rl = d.rateLimit.check(
       d.rateLimit.key(request, scope, keyUser),
       d.rateLimit.limits[bucket],
