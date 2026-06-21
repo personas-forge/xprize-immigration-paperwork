@@ -168,7 +168,20 @@ export const firestoreStore: Store = {
       if (typeof version !== "string") continue;
       const ts = doc.get("created_at");
       const at = ts && typeof ts.toMillis === "function" ? ts.toMillis() : 0;
-      if (!latest || at >= latest.at) latest = { version, at };
+      // DETERMINISTIC "latest accepted version": order by the version STRING
+      // (consent versions are chronological yyyy-mm-dd dates, and a user only ever
+      // accepts the CURRENT — newest — version, so the max version string is the
+      // latest accepted), with `created_at` only breaking an exact version tie.
+      // This is immune to an un-materialized `serverTimestamp()` reading as 0 —
+      // the prior `at >= latest.at` could pick an OLDER version when the newest
+      // row's timestamp hadn't committed yet (at=0 losing to an older at>0 row).
+      if (
+        !latest ||
+        version > latest.version ||
+        (version === latest.version && at >= latest.at)
+      ) {
+        latest = { version, at };
+      }
     }
     return latest?.version ?? null;
   },
