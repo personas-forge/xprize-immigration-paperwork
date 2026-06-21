@@ -42,6 +42,12 @@ export function SiteHeader() {
             Pricing
           </Link>
           <Link
+            href="/dashboard/account"
+            className="ink-link whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+          >
+            Account
+          </Link>
+          <Link
             href="/login"
             className="ink-link whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >

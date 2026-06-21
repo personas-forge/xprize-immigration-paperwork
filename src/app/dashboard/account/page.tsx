@@ -6,6 +6,7 @@ import { SiteHeader, SiteFooter } from "@/components/SiteChrome";
 import { requireOnboardedUser } from "@/lib/auth/session";
 import { getLatestConsentVersion } from "@/lib/auth/db";
 import { CONSENT_VERSION } from "@/lib/auth/consent";
+import { DeleteAccountForm } from "./DeleteAccountForm";
 
 export const metadata: Metadata = {
   title: "Account & data — Immigration Concierge",
@@ -79,6 +80,21 @@ export default async function AccountPage() {
                 Download my data (.json)
                 <span aria-hidden>↓</span>
               </a>
+            </CardBody>
+          </Card>
+        </Rise>
+
+        {/* Danger zone — permanent account deletion */}
+        <Rise className="mt-6">
+          <Card>
+            <CardHeader>
+              <div className="microprint" style={{ color: "var(--danger)" }}>
+                § Delete account
+              </div>
+              <Badge tone="danger">Irreversible</Badge>
+            </CardHeader>
+            <CardBody>
+              <DeleteAccountForm />
             </CardBody>
           </Card>
         </Rise>
