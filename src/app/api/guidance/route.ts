@@ -7,7 +7,11 @@ import {
   type GuidanceRequest,
 } from "@/features/guidance/guidance";
 import { executeAiOperation } from "@/lib/ai/operation";
-import { runAdjudication } from "@/lib/llm/adjudication-gates";
+import { clampSentences, runAdjudication } from "@/lib/llm/adjudication-gates";
+
+// The prompt asks for "3–6 short sentences"; enforce the ceiling on the OUTPUT so
+// a model that overshoots into a wall of text is trimmed to the contract.
+const GUIDANCE_MAX_SENTENCES = 6;
 
 // USCIS form-field guidance endpoint (migrated to the shared orchestrator,
 // ADR-0004 task 3/6).
@@ -56,7 +60,9 @@ export function POST(request: Request): Promise<NextResponse> {
     // turns into reclaim + deterministic mock labelled source:"mock".
     guard: (raw) => {
       const text = raw.trim();
-      return text.length > 0 ? text : null;
+      // Blank → null (orchestrator reclaims + mocks). Otherwise enforce the
+      // concise-output contract so a runaway answer is trimmed, not shown whole.
+      return text.length > 0 ? clampSentences(text, GUIDANCE_MAX_SENTENCES) : null;
     },
     mock: (req) => mockGuidance(req),
     // The orchestrator widens `source` to string; buildGuidanceResponse takes

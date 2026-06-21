@@ -11,6 +11,7 @@ import {
   inflatedAwardStatus,
   runAdjudication,
   sentenceCount,
+  clampSentences,
   type AdjudicationContext,
 } from "./adjudication-gates";
 
@@ -29,6 +30,20 @@ test("sentenceCount: abbreviations / citations / list markers don't inflate the 
   );
   // "U.S." mid-sentence is not a boundary.
   assert.equal(sentenceCount("She works for a U.S. company in the arts."), 1);
+});
+
+test("clampSentences: trims to the first N sentences, preserving the text", () => {
+  const six = "One. Two. Three. Four. Five. Six. Seven. Eight.";
+  assert.equal(clampSentences(six, 6), "One. Two. Three. Four. Five. Six.");
+  // Under-length text is returned unchanged (trimmed).
+  assert.equal(clampSentences("Only two. Sentences.", 6), "Only two. Sentences.");
+  // Abbreviations don't count as boundaries, so they aren't trimmed prematurely.
+  assert.equal(
+    clampSentences("File with a U.S. employer now. Second. Third.", 1),
+    "File with a U.S. employer now.",
+  );
+  // ! and ? are terminal too.
+  assert.equal(clampSentences("Wow! Really? Yes. No.", 2), "Wow! Really?");
 });
 
 // — leaf scanners (shared with the eval harness) ─────────────────────────────
