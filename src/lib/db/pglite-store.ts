@@ -308,6 +308,13 @@ export async function getPgliteStore(): Promise<Store> {
           [userId],
         );
         const balance = num(cur.rows[0]?.balance);
+        // Idempotent by requestId (ref): an app-level retry of the same logical
+        // charge must not debit twice (mirrors credit's ref dedupe).
+        const seen = await tx.query(
+          `select 1 from token_ledger where ref = $1 and reason = 'debit' limit 1`,
+          [ref],
+        );
+        if (seen.rows.length) return { ok: true, balance }; // already debited
         if (balance < cost) return { ok: false, balance };
         const next = balance - cost;
         await tx.query(
@@ -341,7 +348,10 @@ export async function getPgliteStore(): Promise<Store> {
           );
           if (seen.rows.length) return num(cur.rows[0]?.balance); // already applied
         }
-        const next = num(cur.rows[0]?.balance) + amount;
+        // Floor at 0: a refund clawback (negative amount) on an already-spent
+        // balance must not go negative — and the `check (balance >= 0)` column
+        // constraint would otherwise THROW here, failing the whole refund.
+        const next = Math.max(0, num(cur.rows[0]?.balance) + amount);
         await tx.query(
           `update token_accounts set balance = $2, updated_at = now() where user_id = $1`,
           [userId, next],

@@ -184,9 +184,16 @@ export const firestoreStore: Store = {
   async charge(userId, cost, operation, ref) {
     const fs = adminDb();
     const accRef = fs.collection(col("token_accounts")).doc(userId);
+    // Key the debit row DETERMINISTICALLY on the requestId (ref) — like credit's
+    // `${reason}_${ref}` — so an app-level retry of the same logical charge can't
+    // debit twice (the previous auto-id `.doc()` was the only ledger mutation
+    // without idempotency).
+    const debitRef = fs.collection(col("token_ledger")).doc(`debit_${ref}`);
     return fs.runTransaction(async (t) => {
       const snap = await t.get(accRef);
       const balance = snap.exists ? safeBalance(snap.get("balance"), userId) : 0;
+      const seen = await t.get(debitRef);
+      if (seen.exists) return { ok: true, balance }; // already debited (idempotent)
       if (balance < cost) return { ok: false, balance };
       const next = balance - cost;
       t.set(
@@ -194,7 +201,7 @@ export const firestoreStore: Store = {
         { user_id: userId, balance: next, updated_at: FieldValue.serverTimestamp() },
         { merge: true },
       );
-      t.set(fs.collection(col("token_ledger")).doc(), {
+      t.set(debitRef, {
         user_id: userId,
         delta: -cost,
         reason: "debit",
@@ -222,7 +229,10 @@ export const firestoreStore: Store = {
         }
       }
       const cur = accSnap.exists ? safeBalance(accSnap.get("balance"), userId) : 0;
-      const next = cur + amount;
+      // Floor at 0: a refund clawback (negative amount) on an already-spent
+      // balance must not drive the account NEGATIVE (locking the user out behind
+      // an invisible debt). Positive credits/grants are unaffected.
+      const next = Math.max(0, cur + amount);
       t.set(
         accRef,
         { user_id: userId, balance: next, updated_at: FieldValue.serverTimestamp() },
@@ -250,7 +260,10 @@ export const firestoreStore: Store = {
       const seen = await t.get(ledgerRef);
       if (seen.exists) return; // already granted
       const cur = accSnap.exists ? safeBalance(accSnap.get("balance"), userId) : 0;
-      const next = cur + amount;
+      // Floor at 0: a refund clawback (negative amount) on an already-spent
+      // balance must not drive the account NEGATIVE (locking the user out behind
+      // an invisible debt). Positive credits/grants are unaffected.
+      const next = Math.max(0, cur + amount);
       t.set(
         accRef,
         { user_id: userId, balance: next, updated_at: FieldValue.serverTimestamp() },
