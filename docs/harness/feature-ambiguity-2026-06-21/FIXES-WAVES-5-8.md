@@ -46,7 +46,7 @@
 | marketing #4 (M) | `4e603bc` | **FAQ JSON-LD** — `FAQPage` structured data emitted from the same QA array (rich-result eligibility for cost/lawyer queries) |
 | llm-eval #1 (H) | `4e603bc` | **Eval qualify temperature parity** — the harness now sends `temperature: 0` for qualify to match production (was a higher-variance default on the op flagged as the top stability risk) |
 
-**Deferred (flagged):** checkout #2 receipts/invoices + #3 subscription affordances/portal (Polar customer-portal API); auth #4 (multi-attorney org/role mgmt — large, product decision); consent #2/#5 (marketing-preference + consent-receipt account page — M); rate-limit #1 (abuse alerting — S, pairs with cost-telemetry); marketing #2 (social-proof/testimonials band — M, needs real content); llm-eval #2 (regression baseline/golden-diff — M).
+**Deferred (flagged):** checkout #2 receipts/invoices + #3 subscription affordances/portal (Polar customer-portal API); auth #4 (multi-attorney org/role mgmt — large, product decision); rate-limit #1 (abuse alerting — S, pairs with cost-telemetry); marketing #2 (social-proof/testimonials band — M, needs real content); llm-eval #2 (regression baseline/golden-diff — M).
 
 ### Post-W8 follow-up — GDPR account self-service (auth #1, High) ✅ SHIPPED
 
@@ -55,6 +55,13 @@
 | auth #1 (H) | `49e4a60` `5ca17c8` `b196e87` | **Account deletion + GDPR data export.** `Store.exportUserData` + `deleteUserData` (both drivers — PGlite FK-cascade delete in one tx; Firestore batched delete); `GET /api/me/export` (auth-gated JSON download, keyed on session uid); a new `/dashboard/account` page with "Download my data (.json)" + a Danger-zone delete (two-step + typed `delete my account` confirm → cascade delete → `adminAuth().deleteUser` → clear session); "Account" link added to the site nav. tsc0/tests429/next-build PASS. |
 
 ⚠ The delete removes the user's COPY of case data; a filed petition is the attorney's record. Order is data-first then auth-account so a failed data delete leaves a retryable state.
+
+### Post-W8 follow-up — consent receipt + marketing preference (consent #2/#5) ✅ SHIPPED
+
+| Finding | Commit | What shipped |
+|---|---|---|
+| consent #2 (H) | `1215043` | **Viewable/changeable marketing preference** — a toggle on `/dashboard/account` that records the change as a NEW append-only consent row (preserves the audit trail; never re-prompts since onboarding keys on version only). `marketing_opt_in` was previously write-only. |
+| consent #5 (M) | `1215043` | **Consent history / receipt** — the full append-only consent log surfaced (version + date + terms/privacy/marketing badges). New `Store.getConsentHistory` + `recordConsent` (both drivers; recordConsent appends WITHOUT a profile mutation) + `updateMarketingPreference` action. |
 
 ---
 

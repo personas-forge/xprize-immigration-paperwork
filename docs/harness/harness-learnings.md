@@ -425,6 +425,13 @@ FIXES-WAVES-1-4 (with an 11-item pattern catalogue) at
   `adminAuth().deleteUser` [skipped for dev-auth] → clear `SESSION_COOKIE`). Order
   is DATA-first then auth-account so a failed data delete is retryable. "Account"
   link in `@/components/SiteChrome` nav.
+- **2026-06-21 (consent self-service)** — `Store.getConsentHistory(userId)` (full
+  append-only log, newest first) + `recordConsent(input)` (appends a consent row
+  WITHOUT the profile mutation — distinct from `upsertProfileWithConsent`). The
+  `/dashboard/account` page shows the consent receipt log + a marketing-preference
+  toggle (`updateMarketingPreference` action records a NEW consent row with the
+  flipped `marketing_opt_in`, current `CONSENT_VERSION`, terms/privacy=true). The
+  page derives current marketing/version from `getConsentHistory()[0]` (newest).
 
 ### Open follow-ups (from the 2026-06-20 dual-lens scan)
 - **Waves 6-8 NOT run** (no remaining criticals): W6 accessibility (focus-visible
