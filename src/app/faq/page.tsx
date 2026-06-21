@@ -57,8 +57,28 @@ const QA: { q: string; a: string }[] = [
 ];
 
 export default function FaqPage() {
+  // FAQPage structured data, emitted from the SAME QA array (single source — no
+  // duplicate copy) so Google can render FAQ rich results for the high-intent
+  // cost/lawyer queries these answers cover. Free organic acquisition for a
+  // product with no paid-funnel content engine.
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: QA.map((entry) => ({
+      "@type": "Question",
+      name: entry.q,
+      acceptedAnswer: { "@type": "Answer", text: entry.a },
+    })),
+  };
+
   return (
     <PageFrame>
+      <script
+        type="application/ld+json"
+        // Server-rendered static JSON-LD built from our own QA constant (no user
+        // input) — safe to inline.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <SiteHeader />
 
       <section className="mx-auto max-w-3xl px-6 pb-10 pt-20">
