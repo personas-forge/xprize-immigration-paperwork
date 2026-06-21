@@ -117,14 +117,20 @@ function Checkbox({
         type="checkbox"
         name={name}
         required={required}
+        aria-required={required}
         className="mt-1 h-4 w-4 shrink-0 rounded-[2px] border-border-strong text-accent-dark accent-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
       />
       <span className="leading-snug">
         {label}
         {required ? (
-          <span aria-hidden className="ml-1 text-seal">
-            *
-          </span>
+          <>
+            {/* The "*" is visual-only; the sr-only "(required)" puts the
+                requirement into the accessible name for screen-reader users. */}
+            <span aria-hidden className="ml-1 text-seal">
+              *
+            </span>
+            <span className="sr-only"> (required)</span>
+          </>
         ) : null}
       </span>
     </label>
