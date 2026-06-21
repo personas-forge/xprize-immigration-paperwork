@@ -2,14 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   PageFrame,
-  Wordmark,
   Stamp,
   ChapterMark,
   Guilloche,
 } from "@/components/brand";
 import { Rise, Stagger, HoverCard } from "@/components/Motion";
 import { PetitionStepper } from "@/components/PetitionStepper";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { SiteHeader, SiteFooter } from "@/components/SiteChrome";
 import { BUNDLES, FREE_SIGNUP_GRANT, bundlePriceLabel } from "@/lib/tokens/economy";
 import { InstantVerdict } from "@/features/qualification/components/InstantVerdict";
 
@@ -38,40 +37,6 @@ export default function Page() {
 
       <SiteFooter />
     </PageFrame>
-  );
-}
-
-/* ── Header ─────────────────────────────────────────────────────────────── */
-
-function SiteHeader() {
-  return (
-    <header className="relative">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-6">
-        <div className="flex items-center gap-3">
-          <Image
-            src="/brand/logo.png"
-            alt="immigration-paperwork"
-            width={28}
-            height={28}
-            className="h-7 w-7 rounded-full"
-            priority
-          />
-          <Wordmark context="Petition Atelier · est. 2026" />
-        </div>
-        <nav className="flex flex-nowrap items-center gap-5 font-mono text-[13px] uppercase tracking-document text-muted-strong">
-          <Link href="/dashboard" className="ink-link whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]">Live case file</Link>
-          <Link href="/login" className="ink-link whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]">Sign in</Link>
-          <Link
-            href="/qualify"
-            className="whitespace-nowrap rounded-control border border-foreground bg-foreground px-4 py-2 text-background transition-[background-color] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
-          >
-            Free qualification
-          </Link>
-          <ThemeToggle />
-        </nav>
-      </div>
-      <div className="perforation mx-8 h-px" aria-hidden />
-    </header>
   );
 }
 
@@ -413,27 +378,6 @@ function Closing() {
         </div>
       </Rise>
     </section>
-  );
-}
-
-/* ── Footer ────────────────────────────────────────────────────────────── */
-
-function SiteFooter() {
-  return (
-    <footer className="border-t border-border bg-surface/50">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-8 py-8">
-        <div className="microprint">
-          © Immigration Concierge · XPrize hackathon · 90-day MVP
-        </div>
-        <div className="microprint flex flex-wrap items-center gap-4">
-          <a className="ink-link" href="#how">How it works</a>
-          <Link className="ink-link" href="/billing">Pricing</Link>
-          <Link className="ink-link" href="/faq">FAQ</Link>
-          <Link className="ink-link" href="/validation">Validation</Link>
-          <Link className="ink-link" href="/landing-claude">Alt. masthead</Link>
-        </div>
-      </div>
-    </footer>
   );
 }
 

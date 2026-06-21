@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { PageFrame, Wordmark, ChapterMark, Seal } from "@/components/brand";
+import { PageFrame, ChapterMark, Seal } from "@/components/brand";
 import { Rise } from "@/components/Motion";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { SiteHeader, SiteFooter } from "@/components/SiteChrome";
 import { getUser } from "@/lib/auth/session";
 import { getBalance } from "@/lib/tokens/ledger";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
@@ -191,45 +190,3 @@ function Footnote({ eyebrow, body }: { eyebrow: string; body: string }) {
   );
 }
 
-/* ── Header + footer (kept local so /billing is a standalone route) ──── */
-
-function SiteHeader() {
-  return (
-    <header className="relative">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-6">
-        <Wordmark context="Petition Atelier · est. 2026" />
-        <nav className="flex items-center gap-6 font-mono text-[13px] uppercase tracking-document text-muted-strong">
-          <Link href="/" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]">
-            Home
-          </Link>
-          <Link href="/faq" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]">
-            FAQ
-          </Link>
-          <Link href="/dashboard" className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]">
-            Live case file
-          </Link>
-          <ThemeToggle />
-        </nav>
-      </div>
-      <div className="perforation mx-8 h-px" aria-hidden />
-    </header>
-  );
-}
-
-function SiteFooter() {
-  return (
-    <footer className="mt-20 border-t border-border bg-surface/50">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-8 py-8">
-        <div className="microprint">
-          © Immigration Concierge · Token ledger · 2026
-        </div>
-        <div className="microprint flex gap-4">
-          <Link className="ink-link" href="/">Home</Link>
-          <Link className="ink-link" href="/faq">FAQ</Link>
-          <Link className="ink-link" href="/validation">Validation</Link>
-          <Link className="ink-link" href="/dashboard">Live case</Link>
-        </div>
-      </div>
-    </footer>
-  );
-}
