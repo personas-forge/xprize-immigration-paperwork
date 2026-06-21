@@ -7,8 +7,21 @@ if (typeof window !== "undefined") {
 }
 
 import { getStore, type ChargeOutcome, type CreditReason } from "@/lib/db/store";
+import { isStoreConfigured } from "@/lib/db/config";
 
 export type { ChargeOutcome };
+
+/** The no-store free-pass below is correct for the genuinely keyless/dev build,
+ *  but if a store is CONFIGURED (prod) yet `getStore()` resolved null (admin-init
+ *  flap / transient outage), metering silently opens for EVERYONE — a revenue
+ *  leak that's invisible until someone audits the ledger. Make it observable. */
+function warnIfMeteringExpected(where: string): void {
+  if (isStoreConfigured()) {
+    console.error(
+      `[tokens] metering unavailable in ${where}: a store is configured but getStore() returned null — operations are running UNMETERED (free pass).`,
+    );
+  }
+}
 
 // Money-kernel boundary guards. The ledger is the one chokepoint every metered
 // op, purchase, refund, reclaim and grant funnels through, so validating the
@@ -53,7 +66,10 @@ export async function charge(
 ): Promise<ChargeOutcome> {
   assertChargeCost(cost);
   const store = await getStore();
-  if (!store) return { ok: true, balance: Number.POSITIVE_INFINITY };
+  if (!store) {
+    warnIfMeteringExpected("charge");
+    return { ok: true, balance: Number.POSITIVE_INFINITY };
+  }
   return store.charge(userId, cost, operation, ref);
 }
 

@@ -23,7 +23,17 @@ export type Unsubscribe = () => void;
 export interface EventBusOptions {
   /** Invoked when a handler throws/rejects. Defaults to console.error. */
   onError?: (error: unknown, event: DomainEvent) => void;
+  /** Per-handler timeout (ms). `publish` is on the critical path of a committed
+   *  Store write, so a slow/hung subscriber (a durable sink doing network I/O)
+   *  must not block the mutation's caller indefinitely. After this, the handler
+   *  is reported via `onError` and `publish` stops waiting (the handler keeps
+   *  running detached). 0 disables the timeout. */
+  handlerTimeoutMs?: number;
 }
+
+/** Default per-handler timeout — generous enough for any in-process sink, short
+ *  enough that a hung network sink can't wedge a user-facing mutation. */
+const DEFAULT_HANDLER_TIMEOUT_MS = 5_000;
 
 export class EventBus {
   // Per-type handler sets + a wildcard set for cross-cutting subscribers
@@ -31,12 +41,37 @@ export class EventBus {
   readonly #byType = new Map<DomainEventType, Set<EventHandler>>();
   readonly #wildcard = new Set<EventHandler>();
   readonly #onError: (error: unknown, event: DomainEvent) => void;
+  readonly #timeoutMs: number;
 
   constructor(options: EventBusOptions = {}) {
     this.#onError =
       options.onError ??
       ((error, event) =>
         console.error(`[events] handler failed for ${event.type}`, error));
+    this.#timeoutMs = options.handlerTimeoutMs ?? DEFAULT_HANDLER_TIMEOUT_MS;
+  }
+
+  /** Run a handler, rejecting if it doesn't settle within the configured
+   *  timeout (so one slow subscriber can't block the publish forever). */
+  #runHandler(handler: EventHandler, event: DomainEvent): Promise<void> {
+    const run = Promise.resolve().then(() => handler(event));
+    if (this.#timeoutMs <= 0) return run;
+    return new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error(`subscriber timed out after ${this.#timeoutMs}ms`)),
+        this.#timeoutMs,
+      );
+      run.then(
+        () => {
+          clearTimeout(timer);
+          resolve();
+        },
+        (err) => {
+          clearTimeout(timer);
+          reject(err);
+        },
+      );
+    });
   }
 
   /** Subscribe to a single event type. Returns an unsubscribe fn. */
@@ -74,7 +109,7 @@ export class EventBus {
     await Promise.all(
       targets.map(async (handler) => {
         try {
-          await handler(event);
+          await this.#runHandler(handler, event);
         } catch (error) {
           // The error reporter itself must never break the publish (and thus
           // the Store mutation): a throwing onError would otherwise reject the

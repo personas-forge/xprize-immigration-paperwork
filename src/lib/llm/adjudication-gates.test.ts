@@ -10,8 +10,26 @@ import {
   unsupportedEntities,
   inflatedAwardStatus,
   runAdjudication,
+  sentenceCount,
   type AdjudicationContext,
 } from "./adjudication-gates";
+
+// — sentenceCount: abbreviation/citation-aware ───────────────────────────────
+
+test("sentenceCount: counts real sentence boundaries", () => {
+  assert.equal(sentenceCount("One. Two. Three."), 3);
+  assert.equal(sentenceCount("Just one sentence with no terminal punctuation"), 1);
+});
+
+test("sentenceCount: abbreviations / citations / list markers don't inflate the count", () => {
+  // Two sentences, peppered with the abbreviations real petition prose uses.
+  assert.equal(
+    sentenceCount("File Form I-129 with a U.S. employer; see 8 C.F.R. 214.2(o). Gather e.g. letters."),
+    2,
+  );
+  // "U.S." mid-sentence is not a boundary.
+  assert.equal(sentenceCount("She works for a U.S. company in the arts."), 1);
+});
 
 // — leaf scanners (shared with the eval harness) ─────────────────────────────
 

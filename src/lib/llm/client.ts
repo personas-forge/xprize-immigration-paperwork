@@ -28,7 +28,7 @@ import "server-only";
 import { LightTrack } from "@/lib/lighttrack";
 import { trackLlm } from "@/lib/cost-telemetry";
 import { withGuards, LLM_OUTPUT_GUARD } from "./guards";
-import { claudeModel } from "./config";
+import { claudeModel, geminiModelFor } from "./config";
 import {
   callGemini,
   runClaudeCli,
@@ -63,24 +63,44 @@ function geminiClient(): Llm {
   return {
     name: "gemini",
     async generate(prompt, options = {}) {
-      // engines.callGemini measures the generateContent latency itself (around
-      // the call only), so the tracked latency matches the prior measurement.
-      const { text, response, model, latencyMs } = await callGemini(prompt, options);
-      // LLM /v1/events emission → external LightTrack (cost netted against Polar revenue), tagged to the
-      // ambient billing customer set by executeAiOperation's runWithBilling. Real usage from the Gemini
-      // SDK's usageMetadata (promptTokenCount / candidatesTokenCount); fire-and-forget, never blocks.
-      // (Sole emission per call — the old SDK-client `lt.trackGemini` path was removed to avoid double
-      // counting; `lt` is retained here only for the output-guard score via `withGuards`.)
-      const usage = (response as { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } })
-        .usageMetadata;
-      void trackLlm({
-        provider: "google",
-        model,
-        inputTokens: usage?.promptTokenCount ?? 0,
-        outputTokens: usage?.candidatesTokenCount ?? 0,
-        latencyMs,
-      });
-      return text;
+      // Capture startedAt here so the error path (below) can still report latency
+      // even when callGemini throws before returning a GeminiCall.
+      const startedAt = Date.now();
+      try {
+        // engines.callGemini measures the generateContent latency itself (around
+        // the call only), so the tracked latency matches the prior measurement.
+        const { text, response, model, latencyMs } = await callGemini(prompt, options);
+        // LLM /v1/events emission → external LightTrack (cost netted against Polar revenue), tagged to the
+        // ambient billing customer set by executeAiOperation's runWithBilling. Real usage from the Gemini
+        // SDK's usageMetadata (promptTokenCount / candidatesTokenCount); fire-and-forget, never blocks.
+        const usage = (response as { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } })
+          .usageMetadata;
+        void trackLlm({
+          provider: "google",
+          model,
+          inputTokens: usage?.promptTokenCount ?? 0,
+          outputTokens: usage?.candidatesTokenCount ?? 0,
+          latencyMs,
+          // Empty/whitespace output produced nothing usable (the route guard will
+          // reclaim + fall to mock) — mark it 'error' so it isn't counted as a
+          // successful generation in the margin/failure-rate dashboards.
+          status: text.trim() === "" ? "error" : "success",
+        });
+        return text;
+      } catch (err) {
+        // A Gemini safety-block / empty-candidates throw is EXACTLY the call you
+        // most want in observability — the Claude path emits error telemetry; the
+        // Gemini path used to drop it, so error/margin dashboards under-counted.
+        void trackLlm({
+          provider: "google",
+          model: geminiModelFor(options.tier ?? "fast"),
+          inputTokens: 0,
+          outputTokens: 0,
+          latencyMs: Date.now() - startedAt,
+          status: "error",
+        });
+        throw err;
+      }
     },
   };
 }
@@ -104,6 +124,9 @@ function claudeClient(): Llm {
           inputTokens: 0,
           outputTokens: 0,
           latencyMs: Date.now() - startedAt,
+          // Blank CLI output is a non-result (route guard → mock); don't count it
+          // as a successful generation.
+          status: out.trim() === "" ? "error" : "success",
         });
         return out;
       } catch (err) {

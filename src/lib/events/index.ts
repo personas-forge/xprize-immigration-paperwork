@@ -29,6 +29,12 @@ export function getDomainBus(): EventBus {
     // record so the trail is tamper-EVIDENT (moonshot #2), but it lives in
     // process memory and vanishes in serverless. Inject a durable ChainedAuditSink
     // (a Store ledger table) here before relying on it across requests/instances.
+    //
+    // The standalone `registerAuditLog` subscriber is deliberately NOT attached:
+    // provenance is the sole LIVE audit projection (it reuses the same
+    // `toAuditRecord`), so adding audit-log with its default console sink would
+    // only double-log. Wire `registerAuditLog(bus, durableSink)` here when a
+    // durable AuditSink lands — until then there is no second, dormant trail.
     provenance = registerProvenanceLedger(bus).chain;
     registerAttorneyNotify(bus);
   }

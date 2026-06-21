@@ -57,7 +57,16 @@ export function toAuditRecord(event: DomainEvent): AuditRecord {
   }
 }
 
-/** Attach the audit subscriber to a bus. Returns its unsubscribe fn. */
+/**
+ * Attach the audit subscriber to a bus. Returns its unsubscribe fn.
+ *
+ * NOT WIRED into the production bus by default (see `getDomainBus`): the
+ * provenance ledger is the LIVE audit projection and reuses this module's
+ * `toAuditRecord`, so registering this too with the default `console.info` sink
+ * would only double-log. This stays as the seam to wire WHEN a durable
+ * `AuditSink` (a Store ledger table) exists — call `registerAuditLog(bus,
+ * durableSink)` then. Do not assume a second, durable trail is live until it is.
+ */
 export function registerAuditLog(bus: EventBus, sink: AuditSink = defaultSink) {
   return bus.onAny((event) => sink(toAuditRecord(event)));
 }

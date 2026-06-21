@@ -327,10 +327,21 @@ export async function executeAiOperation<TInput, TOutput>(
         // unconfigured; the user id may be undefined on the keyless/dev free-pass path.
         const billing = d.runWithBilling ?? ((_ctx, fn) => fn());
         const customerId = (await resolveUser())?.id;
-        raw = await billing(
-          { customerId, feature: operationKey },
-          () => llm.generate(text, options),
-        );
+        try {
+          raw = await billing(
+            { customerId, feature: operationKey },
+            () => llm.generate(text, options),
+          );
+        } catch (billingErr) {
+          // The billing/telemetry wrapper failed (ALS context setup, sink hiccup)
+          // — telemetry is a SIDE concern, so fail OPEN: retry the model call
+          // UNGAUGED rather than degrading a working generation to mock. If the
+          // model itself is down, this rethrows → the outer catch reclaims + mocks.
+          // (The real runWithBilling only `.run()`s an ALS context, so a throw is
+          // at setup, before generate() runs — no double model call.)
+          console.error(`[ai] ${operationKey} billing wrapper failed; retrying ungauged`, billingErr);
+          raw = await llm.generate(text, options);
+        }
       } catch (err) {
         console.error(`[ai] ${operationKey} model call failed; serving mock`, err);
         await reclaim();

@@ -198,8 +198,26 @@ export function inflatedAwardStatus(outputText: string, inputText: string): bool
   return !WIN_SIGNAL.test(inputText) && NOMINATION_SIGNAL.test(inputText);
 }
 
+// Periods that are NOT sentence boundaries in immigration prose. Masking these
+// before the split stops "Form I-129, a U.S. employer, see 8 C.F.R. 214.2(o),
+// e.g. …" from being mis-counted as many short sentences (which would trip the
+// guidance-concise gate on perfectly good, domain-correct writing).
+const ABBREVIATIONS =
+  /\b(?:U\.S|U\.S\.C|C\.F\.R|e\.g|i\.e|etc|vs|no|inc|llc|co|ltd|dept|fig|sec|art|para|pp|cf|al|mr|mrs|ms|dr|st|ave)\./gi;
+const INITIALS = /\b(?:[A-Za-z]\.){2,}/g; // A.B.C. / U.S.C. — letter-dot sequences
+const LIST_MARKER = /(^|\n)[ \t]*\d+\./g; // "1." / "2." at the start of a line
+
 export function sentenceCount(text: string): number {
-  return text.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean).length;
+  // Replace the non-terminal periods with spaces so the terminal-punctuation
+  // split below can't treat them as sentence ends.
+  const masked = text
+    .replace(ABBREVIATIONS, (m) => m.replace(/\./g, " "))
+    .replace(INITIALS, (m) => m.replace(/\./g, " "))
+    .replace(LIST_MARKER, (m) => m.replace(/\./g, " "));
+  return masked
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean).length;
 }
 
 // Phrases that cross the line from "informational" into legal advice / outcome
