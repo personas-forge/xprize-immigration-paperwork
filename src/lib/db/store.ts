@@ -263,12 +263,23 @@ export interface Store {
   addCaseDocument(input: AddDocumentInput): Promise<StoredDocument>;
   /** Every document in a case's vault, by exhibit order. */
   getCaseDocuments(caseId: string): Promise<StoredDocument[]>;
-  /** Remove a document from a case's vault. Returns true iff a row was removed
-   *  (false = no matching doc for that case, so callers can report not-found
-   *  instead of a false success). */
-  removeCaseDocument(caseId: string, documentId: string): Promise<boolean>;
+  /** SOFT-delete a document from a case's vault — marks it deleted (keeps the row
+   *  + its never-reused exhibit ordinal) rather than hard-deleting, so an
+   *  accidental/disputed removal of filed legal evidence is recoverable and
+   *  auditable (`deletedBy`). Returns true iff a LIVE row was deleted (false = no
+   *  matching live doc — already deleted or wrong case — so callers report
+   *  not-found instead of a false success). */
+  removeCaseDocument(
+    caseId: string,
+    documentId: string,
+    deletedBy?: string | null,
+  ): Promise<boolean>;
+  /** Restore a soft-deleted document. Returns true iff a DELETED row was restored
+   *  (false = no matching deleted doc). The exhibit ordinal is non-reused, so the
+   *  restored document keeps its original `Ex. N`. */
+  restoreCaseDocument(caseId: string, documentId: string): Promise<boolean>;
   /** Re-file a document under a different criterion bucket. Returns true iff a
-   *  matching row was updated. */
+   *  matching LIVE row was updated (a soft-deleted doc can't be refiled). */
   refileCaseDocument(
     caseId: string,
     documentId: string,

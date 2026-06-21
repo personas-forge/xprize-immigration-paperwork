@@ -33,7 +33,12 @@ export interface EvidenceDeps extends CaseGateDeps {
     status?: string;
   }): Promise<StoredDocument | null>;
   getCaseDocuments(caseId: string): Promise<readonly StoredDocument[]>;
-  removeCaseDocument(caseId: string, documentId: string): Promise<boolean>;
+  removeCaseDocument(
+    caseId: string,
+    documentId: string,
+    deletedBy?: string | null,
+  ): Promise<boolean>;
+  restoreCaseDocument(caseId: string, documentId: string): Promise<boolean>;
   refileCaseDocument(
     caseId: string,
     documentId: string,
@@ -54,6 +59,7 @@ async function defaultDeps(): Promise<EvidenceDeps> {
     addCaseDocument: evidence.addCaseDocument,
     getCaseDocuments: evidence.getCaseDocuments,
     removeCaseDocument: evidence.removeCaseDocument,
+    restoreCaseDocument: evidence.restoreCaseDocument,
     refileCaseDocument: evidence.refileCaseDocument,
     getCaseForUser: petitions.getCaseForUser,
     getCaseAnyOwner: petitions.getCaseAnyOwner,
@@ -122,7 +128,8 @@ export class EvidenceAdapter {
     }
   }
 
-  /** Remove a document from a case's vault. Gated. */
+  /** SOFT-delete a document from a case's vault (recoverable via
+   *  {@link restoreDocument}). Gated; records the remover for the audit trail. */
   async removeDocument(
     access: CaseAccess,
     caseId: string,
@@ -132,10 +139,28 @@ export class EvidenceAdapter {
     const gate = await this.gate(deps, access, caseId);
     if (!gate.ok) return gate;
     try {
-      // false = no row matched (wrong case / already-removed id) → report
+      // false = no LIVE row matched (wrong case / already-removed id) → report
       // not_found instead of a false success on a mutation that changed nothing.
-      const removed = await deps.removeCaseDocument(caseId, documentId);
+      const removed = await deps.removeCaseDocument(caseId, documentId, access.userId);
       return removed ? ok(undefined) : err("not_found");
+    } catch (cause) {
+      return err("store_error", cause);
+    }
+  }
+
+  /** Restore a soft-deleted document (keeps its original exhibit ordinal). Gated.
+   *  not_found when there's no matching deleted document. */
+  async restoreDocument(
+    access: CaseAccess,
+    caseId: string,
+    documentId: string,
+  ): Promise<AdapterResult<void>> {
+    const deps = await this.deps();
+    const gate = await this.gate(deps, access, caseId);
+    if (!gate.ok) return gate;
+    try {
+      const restored = await deps.restoreCaseDocument(caseId, documentId);
+      return restored ? ok(undefined) : err("not_found");
     } catch (cause) {
       return err("store_error", cause);
     }

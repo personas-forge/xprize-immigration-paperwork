@@ -121,8 +121,17 @@ create table if not exists case_documents (
   status     text not null default 'Received',
   facts      jsonb not null default '[]'::jsonb,
   source     text not null default 'mock',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Soft-delete: a removed exhibit keeps its row (and its never-reused ordinal)
+  -- so a disputed/accidental deletion of filed legal evidence is recoverable +
+  -- auditable. NULL deleted_at = live.
+  deleted_at timestamptz,
+  deleted_by text
 );
+-- Backfill the soft-delete columns on a pre-existing local DB (create-table-if-
+-- not-exists won't add columns to a table that already exists).
+alter table case_documents add column if not exists deleted_at timestamptz;
+alter table case_documents add column if not exists deleted_by text;
 create index if not exists case_documents_case_idx on case_documents (case_id);
 
 create table if not exists rfe_responses (
@@ -738,7 +747,7 @@ export async function getPgliteStore(): Promise<Store> {
       const r = await pg.query(
         `select id, name, criterion, exhibit, status, facts, source
            from case_documents
-          where case_id = $1
+          where case_id = $1 and deleted_at is null
           order by ord asc`,
         [caseId],
       );
@@ -755,9 +764,21 @@ export async function getPgliteStore(): Promise<Store> {
       );
     },
 
-    async removeCaseDocument(caseId, documentId) {
+    async removeCaseDocument(caseId, documentId, deletedBy = null) {
+      // Soft-delete: mark the row deleted (keeps the ordinal) only if it's still
+      // live, so re-deleting an already-deleted doc affects 0 rows → not_found.
       const r = await pg.query(
-        `delete from case_documents where id = $1 and case_id = $2`,
+        `update case_documents set deleted_at = now(), deleted_by = $3
+          where id = $1 and case_id = $2 and deleted_at is null`,
+        [documentId, caseId, deletedBy],
+      );
+      return (r.affectedRows ?? 0) > 0;
+    },
+
+    async restoreCaseDocument(caseId, documentId) {
+      const r = await pg.query(
+        `update case_documents set deleted_at = null, deleted_by = null
+          where id = $1 and case_id = $2 and deleted_at is not null`,
         [documentId, caseId],
       );
       return (r.affectedRows ?? 0) > 0;
@@ -765,7 +786,8 @@ export async function getPgliteStore(): Promise<Store> {
 
     async refileCaseDocument(caseId, documentId, criterion) {
       const r = await pg.query(
-        `update case_documents set criterion = $3 where id = $1 and case_id = $2`,
+        `update case_documents set criterion = $3
+          where id = $1 and case_id = $2 and deleted_at is null`,
         [documentId, caseId, criterion],
       );
       return (r.affectedRows ?? 0) > 0;

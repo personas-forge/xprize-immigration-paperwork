@@ -597,27 +597,51 @@ export const firestoreStore: Store = {
       .where("case_id", "==", caseId)
       .orderBy("ord", "asc")
       .get();
-    return q.docs.map((d): StoredDocument => {
-      const v = d.data();
-      return {
-        id: d.id,
-        name: String(v.name ?? ""),
-        criterion: String(v.criterion ?? "Unsorted"),
-        exhibit: String(v.exhibit ?? ""),
-        status: String(v.status ?? "Received"),
-        facts: strArr(v.facts),
-        source: String(v.source ?? "mock"),
-      };
-    });
+    return q.docs
+      // Exclude soft-deleted exhibits (deleted_at present). Filtered in memory so
+      // no composite (case_id, deleted_at, ord) index is required.
+      .filter((d) => !d.get("deleted_at"))
+      .map((d): StoredDocument => {
+        const v = d.data();
+        return {
+          id: d.id,
+          name: String(v.name ?? ""),
+          criterion: String(v.criterion ?? "Unsorted"),
+          exhibit: String(v.exhibit ?? ""),
+          status: String(v.status ?? "Received"),
+          facts: strArr(v.facts),
+          source: String(v.source ?? "mock"),
+        };
+      });
   },
 
-  async removeCaseDocument(caseId, documentId): Promise<boolean> {
+  async removeCaseDocument(caseId, documentId, deletedBy = null): Promise<boolean> {
     const fs = adminDb();
     const ref = fs.collection(col("case_documents")).doc(documentId);
     const snap = await ref.get();
-    // Scope by case_id (mirrors the SQL `where id = $1 and case_id = $2`).
-    const matched = snap.exists && snap.get("case_id") === caseId;
-    if (matched) await ref.delete();
+    // Scope by case_id (mirrors the SQL `where id = $1 and case_id = $2`) and
+    // only delete a LIVE doc — re-deleting an already-deleted one is not_found.
+    const matched = snap.exists && snap.get("case_id") === caseId && !snap.get("deleted_at");
+    if (matched) {
+      await ref.set(
+        { deleted_at: FieldValue.serverTimestamp(), deleted_by: deletedBy },
+        { merge: true },
+      );
+    }
+    return matched;
+  },
+
+  async restoreCaseDocument(caseId, documentId): Promise<boolean> {
+    const fs = adminDb();
+    const ref = fs.collection(col("case_documents")).doc(documentId);
+    const snap = await ref.get();
+    const matched = snap.exists && snap.get("case_id") === caseId && Boolean(snap.get("deleted_at"));
+    if (matched) {
+      await ref.set(
+        { deleted_at: FieldValue.delete(), deleted_by: FieldValue.delete() },
+        { merge: true },
+      );
+    }
     return matched;
   },
 
@@ -625,7 +649,7 @@ export const firestoreStore: Store = {
     const fs = adminDb();
     const ref = fs.collection(col("case_documents")).doc(documentId);
     const snap = await ref.get();
-    const matched = snap.exists && snap.get("case_id") === caseId;
+    const matched = snap.exists && snap.get("case_id") === caseId && !snap.get("deleted_at");
     if (matched) await ref.set({ criterion }, { merge: true });
     return matched;
   },
