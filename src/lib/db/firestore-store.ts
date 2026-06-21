@@ -48,6 +48,10 @@ function tsToIso(v: unknown): string | null {
   return v instanceof Timestamp ? v.toDate().toISOString() : null;
 }
 
+function tsMs(v: unknown): number {
+  return v instanceof Timestamp ? v.toMillis() : 0;
+}
+
 function strArr(v: unknown): string[] {
   return Array.isArray(v) ? v.map((x) => String(x)) : [];
 }
@@ -674,5 +678,140 @@ export const firestoreStore: Store = {
     const matched = snap.exists && snap.get("case_id") === caseId && !snap.get("deleted_at");
     if (matched) await ref.set({ criterion }, { merge: true });
     return matched;
+  },
+
+  async exportUserData(userId) {
+    const fs = adminDb();
+
+    const pSnap = await fs.collection(col("profiles")).doc(userId).get();
+    const profile = pSnap.exists
+      ? {
+          id: userId,
+          email: (pSnap.get("email") as string | undefined) ?? null,
+          full_name: (pSnap.get("full_name") as string | undefined) ?? null,
+          avatar_url: (pSnap.get("avatar_url") as string | undefined) ?? null,
+          onboarded_at: tsToIso(pSnap.get("onboarded_at")),
+        }
+      : null;
+
+    const cSnap = await fs.collection(col("consents")).where("user_id", "==", userId).get();
+    const consents = cSnap.docs
+      .map((d) => d.data())
+      .sort((a, b) => tsMs(a.created_at) - tsMs(b.created_at))
+      .map((v) => ({
+        consentVersion: String(v.consent_version ?? ""),
+        termsAccepted: Boolean(v.terms_accepted),
+        privacyAccepted: Boolean(v.privacy_accepted),
+        marketingOptIn: Boolean(v.marketing_opt_in),
+        ip: (v.ip as string | undefined) ?? null,
+        userAgent: (v.user_agent as string | undefined) ?? null,
+        createdAt: tsToIso(v.created_at),
+      }));
+
+    const balSnap = await fs.collection(col("token_accounts")).doc(userId).get();
+    const tokenBalance = balSnap.exists ? safeBalance(balSnap.get("balance"), userId) : 0;
+
+    const lSnap = await fs.collection(col("token_ledger")).where("user_id", "==", userId).get();
+    const tokenLedger = lSnap.docs
+      .map((d) => d.data())
+      .sort((a, b) => tsMs(b.created_at) - tsMs(a.created_at))
+      .map((v) => ({
+        delta: Number(v.delta ?? 0),
+        reason: String(v.reason ?? ""),
+        operation: v.operation == null ? null : String(v.operation),
+        balanceAfter: Number(v.balance_after ?? 0),
+        createdAt: tsToIso(v.created_at),
+      }));
+
+    const casesSnap = await fs.collection(col("cases")).where("user_id", "==", userId).get();
+    const cases = await Promise.all(
+      casesSnap.docs.map(async (cd) => {
+        const caseId = cd.id;
+        const c = toStoredCase(caseId, cd.data() as CaseDoc);
+        const rawCrit = cd.get("criteria");
+        const criteria = (Array.isArray(rawCrit) ? rawCrit : [])
+          .map((x, i) => ({ o: (x ?? {}) as Record<string, unknown>, ord: Number((x as Record<string, unknown>)?.ord ?? i) }))
+          .sort((a, b) => a.ord - b.ord)
+          .map(({ o }, i) => ({
+            id: `${caseId}_c${i}`,
+            name: String(o.name ?? ""),
+            status: String(o.status ?? ""),
+            evidence: String(o.evidence ?? ""),
+            rationale: String(o.rationale ?? ""),
+            exhibit: String(o.exhibit ?? ""),
+          }));
+        const [draftsSnap, rfeSnap, docsSnap, revSnap] = await Promise.all([
+          fs.collection(col("petition_drafts")).where("case_id", "==", caseId).get(),
+          fs.collection(col("rfe_responses")).where("case_id", "==", caseId).get(),
+          fs.collection(col("case_documents")).where("case_id", "==", caseId).get(),
+          fs.collection(col("case_reviews")).where("case_id", "==", caseId).get(),
+        ]);
+        const drafts = draftsSnap.docs
+          .map((d) => d.data())
+          .sort((a, b) => Number(a.version ?? 0) - Number(b.version ?? 0))
+          .map((v) => ({ version: Number(v.version ?? 1), sections: Array.isArray(v.sections) ? (v.sections as DraftSection[]) : [], source: String(v.source ?? "mock"), createdAt: tsToIso(v.created_at) }));
+        const rfeResponses = rfeSnap.docs
+          .map((d) => d.data())
+          .sort((a, b) => Number(a.version ?? 0) - Number(b.version ?? 0))
+          .map((v) => ({ version: Number(v.version ?? 1), rfeText: String(v.rfe_text ?? ""), sections: Array.isArray(v.sections) ? (v.sections as DraftSection[]) : [], source: String(v.source ?? "mock"), createdAt: tsToIso(v.created_at) }));
+        const documents = docsSnap.docs.map((d) => ({
+          id: d.id,
+          name: String(d.get("name") ?? ""),
+          criterion: String(d.get("criterion") ?? "Unsorted"),
+          exhibit: String(d.get("exhibit") ?? ""),
+          status: String(d.get("status") ?? "Received"),
+          facts: strArr(d.get("facts")),
+          source: String(d.get("source") ?? "mock"),
+          deletedAt: tsToIso(d.get("deleted_at")),
+        }));
+        const reviews = revSnap.docs
+          .map((d) => ({ d, ms: tsMs(d.get("created_at")) }))
+          .sort((a, b) => a.ms - b.ms)
+          .map(({ d }) => ({
+            id: d.id,
+            authorRole: String(d.get("author_role") ?? "applicant"),
+            kind: String(d.get("kind") ?? "note") as ReviewEvent["kind"],
+            body: String(d.get("body") ?? ""),
+            metadata: (d.get("metadata") ?? {}) as Record<string, unknown>,
+            createdAt: tsToIso(d.get("created_at")) ?? "",
+          }));
+        return { case: c, criteria, drafts, rfeResponses, documents, reviews };
+      }),
+    );
+
+    return { userId, profile, consents, tokenBalance, tokenLedger, cases };
+  },
+
+  async deleteUserData(userId) {
+    const fs = adminDb();
+    const casesSnap = await fs.collection(col("cases")).where("user_id", "==", userId).get();
+    const refs: FirebaseFirestore.DocumentReference[] = [
+      fs.collection(col("profiles")).doc(userId),
+      fs.collection(col("token_accounts")).doc(userId),
+    ];
+    const byUser = await Promise.all([
+      fs.collection(col("consents")).where("user_id", "==", userId).get(),
+      fs.collection(col("token_ledger")).where("user_id", "==", userId).get(),
+    ]);
+    for (const snap of byUser) for (const d of snap.docs) refs.push(d.ref);
+    // Per case: the cascaded children (Firestore has no FK cascade) + the case doc.
+    for (const cd of casesSnap.docs) {
+      const caseId = cd.id;
+      const children = await Promise.all([
+        fs.collection(col("petition_drafts")).where("case_id", "==", caseId).get(),
+        fs.collection(col("rfe_responses")).where("case_id", "==", caseId).get(),
+        fs.collection(col("case_documents")).where("case_id", "==", caseId).get(),
+        fs.collection(col("case_reviews")).where("case_id", "==", caseId).get(),
+      ]);
+      for (const snap of children) for (const d of snap.docs) refs.push(d.ref);
+      refs.push(cd.ref);
+    }
+    // Commit in batches (Firestore caps a batch at 500). delete() is idempotent,
+    // so a missing profile/account doc is a harmless no-op.
+    for (let i = 0; i < refs.length; i += 450) {
+      const batch = fs.batch();
+      for (const ref of refs.slice(i, i + 450)) batch.delete(ref);
+      await batch.commit();
+    }
   },
 };

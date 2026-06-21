@@ -192,9 +192,65 @@ export interface AddDocumentInput {
   status?: string;
 }
 
+// ── GDPR / data-portability bundle ───────────────────────────────────────────
+
+/** One recorded consent event (terms/privacy/marketing), for the data export. */
+export interface ConsentExport {
+  consentVersion: string;
+  termsAccepted: boolean;
+  privacyAccepted: boolean;
+  marketingOptIn: boolean;
+  ip: string | null;
+  userAgent: string | null;
+  createdAt: string | null;
+}
+
+export interface ExportedDraft extends StoredDraft {
+  createdAt: string | null;
+}
+export interface ExportedRfe extends StoredRfe {
+  createdAt: string | null;
+}
+/** A document in the export — includes SOFT-DELETED exhibits (still the user's
+ *  data) with their deletion stamp. */
+export interface ExportedDocument extends StoredDocument {
+  deletedAt: string | null;
+}
+
+export interface ExportedCase {
+  case: StoredCase;
+  criteria: StoredCriterion[];
+  /** All draft versions (non-destructive history), oldest first. */
+  drafts: ExportedDraft[];
+  /** All RFE response versions, oldest first. */
+  rfeResponses: ExportedRfe[];
+  /** All documents incl. soft-deleted. */
+  documents: ExportedDocument[];
+  reviews: ReviewEvent[];
+}
+
+/** The complete bundle of a user's data, for "download my data" (GDPR/CCPA). The
+ *  route stamps `exportedAt`; the store gathers everything keyed to the user. */
+export interface UserDataExport {
+  userId: string;
+  profile: Profile | null;
+  consents: ConsentExport[];
+  tokenBalance: number;
+  tokenLedger: LedgerEntry[];
+  cases: ExportedCase[];
+}
+
 export interface Store {
   getProfile(userId: string): Promise<Profile | null>;
   upsertProfileWithConsent(input: UpsertConsentInput): Promise<void>;
+  /** Gather everything keyed to this user — profile, consents, balance + ledger,
+   *  and every case with its criteria/drafts/RFEs/documents/reviews — for the
+   *  "download my data" export (GDPR/CCPA). Read-only. */
+  exportUserData(userId: string): Promise<UserDataExport>;
+  /** PERMANENTLY delete every record keyed to this user (profile, consents, token
+   *  account + ledger, and all cases + their cascaded children). Irreversible —
+   *  the caller is responsible for the auth-account removal + confirmation. */
+  deleteUserData(userId: string): Promise<void>;
   /** The `consent_version` of the user's most recent consent row, or null if
    *  they have never consented. Used to re-prompt when the terms version bumps. */
   getLatestConsentVersion(userId: string): Promise<string | null>;

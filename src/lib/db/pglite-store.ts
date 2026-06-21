@@ -807,5 +807,113 @@ export async function getPgliteStore(): Promise<Store> {
       );
       return (r.affectedRows ?? 0) > 0;
     },
+
+    async exportUserData(userId) {
+      const iso = (v: unknown) => (v ? new Date(v as string).toISOString() : null);
+
+      const profileR = await pg.query(
+        `select id, email, full_name, avatar_url, onboarded_at from profiles where id = $1`,
+        [userId],
+      );
+      const prow = profileR.rows[0];
+      const profile = prow
+        ? {
+            id: str(prow.id),
+            email: prow.email == null ? null : str(prow.email),
+            full_name: prow.full_name == null ? null : str(prow.full_name),
+            avatar_url: prow.avatar_url == null ? null : str(prow.avatar_url),
+            onboarded_at: iso(prow.onboarded_at),
+          }
+        : null;
+
+      const consentsR = await pg.query(
+        `select consent_version, terms_accepted, privacy_accepted, marketing_opt_in,
+                ip, user_agent, created_at
+           from consents where user_id = $1 order by id`,
+        [userId],
+      );
+      const consents = consentsR.rows.map((r) => ({
+        consentVersion: str(r.consent_version),
+        termsAccepted: Boolean(r.terms_accepted),
+        privacyAccepted: Boolean(r.privacy_accepted),
+        marketingOptIn: Boolean(r.marketing_opt_in),
+        ip: r.ip == null ? null : str(r.ip),
+        userAgent: r.user_agent == null ? null : str(r.user_agent),
+        createdAt: iso(r.created_at),
+      }));
+
+      const balR = await pg.query(
+        `select balance from token_accounts where user_id = $1`,
+        [userId],
+      );
+      const tokenBalance = num(balR.rows[0]?.balance);
+
+      const ledgerR = await pg.query(
+        `select delta, reason, operation, balance_after, created_at
+           from token_ledger where user_id = $1 order by id desc`,
+        [userId],
+      );
+      const tokenLedger = ledgerR.rows.map((r) => ({
+        delta: num(r.delta),
+        reason: str(r.reason),
+        operation: r.operation == null ? null : str(r.operation),
+        balanceAfter: num(r.balance_after),
+        createdAt: iso(r.created_at),
+      }));
+
+      const casesR = await pg.query(
+        `select ${CASE_COLUMNS} from cases where user_id = $1 order by created_at`,
+        [userId],
+      );
+      // Group every child table by case_id in one pass each (no N+1).
+      const scope = `(select id from cases where user_id = $1)`;
+      const [critR, draftR, rfeR, docR, revR] = await Promise.all([
+        pg.query(`select case_id, id, name, status, evidence, rationale, exhibit from criteria where case_id in ${scope} order by ord`, [userId]),
+        pg.query(`select case_id, version, sections, source, created_at from petition_drafts where case_id in ${scope} order by version`, [userId]),
+        pg.query(`select case_id, version, rfe_text, sections, source, created_at from rfe_responses where case_id in ${scope} order by version`, [userId]),
+        pg.query(`select case_id, id, name, criterion, exhibit, status, facts, source, deleted_at from case_documents where case_id in ${scope} order by ord`, [userId]),
+        pg.query(`select case_id, id, author_role, kind, body, metadata, created_at from case_reviews where case_id in ${scope} order by created_at`, [userId]),
+      ]);
+      const group = <T>(rows: Row[], make: (r: Row) => T): Map<string, T[]> => {
+        const m = new Map<string, T[]>();
+        for (const r of rows) {
+          const k = str(r.case_id);
+          (m.get(k) ?? m.set(k, []).get(k)!).push(make(r));
+        }
+        return m;
+      };
+      const critByCase = group(critR.rows, (r) => ({ id: str(r.id), name: str(r.name), status: str(r.status), evidence: str(r.evidence), rationale: str(r.rationale), exhibit: str(r.exhibit) }));
+      const draftByCase = group(draftR.rows, (r) => ({ version: num(r.version), sections: Array.isArray(r.sections) ? (r.sections as DraftSection[]) : [], source: str(r.source), createdAt: iso(r.created_at) }));
+      const rfeByCase = group(rfeR.rows, (r) => ({ version: num(r.version), rfeText: str(r.rfe_text), sections: Array.isArray(r.sections) ? (r.sections as DraftSection[]) : [], source: str(r.source), createdAt: iso(r.created_at) }));
+      const docByCase = group(docR.rows, (r) => ({ id: str(r.id), name: str(r.name), criterion: str(r.criterion), exhibit: str(r.exhibit), status: str(r.status), facts: Array.isArray(r.facts) ? (r.facts as string[]) : [], source: str(r.source), deletedAt: iso(r.deleted_at) }));
+      const revByCase = group(revR.rows, (r) => ({ id: str(r.id), authorRole: str(r.author_role), kind: str(r.kind) as ReviewEvent["kind"], body: str(r.body), metadata: (r.metadata ?? {}) as Record<string, unknown>, createdAt: iso(r.created_at) ?? "" }));
+
+      const cases = (casesR.rows as unknown as CaseRow[]).map((row) => {
+        const c = toStoredCase(row);
+        return {
+          case: c,
+          criteria: critByCase.get(c.id) ?? [],
+          drafts: draftByCase.get(c.id) ?? [],
+          rfeResponses: rfeByCase.get(c.id) ?? [],
+          documents: docByCase.get(c.id) ?? [],
+          reviews: revByCase.get(c.id) ?? [],
+        };
+      });
+
+      return { userId, profile, consents, tokenBalance, tokenLedger, cases };
+    },
+
+    async deleteUserData(userId) {
+      // One transaction. Deleting the user's cases CASCADES to criteria, drafts,
+      // rfe_responses, case_documents and case_reviews (all FK ON DELETE CASCADE);
+      // the rest are keyed by user id directly. Irreversible.
+      await pg.transaction(async (tx) => {
+        await tx.query(`delete from cases where user_id = $1`, [userId]);
+        await tx.query(`delete from token_ledger where user_id = $1`, [userId]);
+        await tx.query(`delete from token_accounts where user_id = $1`, [userId]);
+        await tx.query(`delete from consents where user_id = $1`, [userId]);
+        await tx.query(`delete from profiles where id = $1`, [userId]);
+      });
+    },
   };
 }

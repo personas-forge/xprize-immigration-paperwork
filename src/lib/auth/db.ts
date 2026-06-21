@@ -10,9 +10,10 @@ import {
   getStore,
   type Profile,
   type UpsertConsentInput,
+  type UserDataExport,
 } from "@/lib/db/store";
 
-export type { Profile };
+export type { Profile, UserDataExport };
 
 export async function getProfile(userId: string): Promise<Profile | null> {
   const store = await getStore();
@@ -37,4 +38,29 @@ export async function upsertProfileWithConsent(
     );
   }
   return store.upsertProfileWithConsent(input);
+}
+
+/** The complete bundle of a user's data, for "download my data" (GDPR/CCPA).
+ *  Returns an empty bundle when no store is configured. */
+export async function exportUserData(userId: string): Promise<UserDataExport> {
+  const store = await getStore();
+  if (!store) {
+    return {
+      userId,
+      profile: null,
+      consents: [],
+      tokenBalance: 0,
+      tokenLedger: [],
+      cases: [],
+    };
+  }
+  return store.exportUserData(userId);
+}
+
+/** PERMANENTLY delete every record keyed to this user. Irreversible. No-op when
+ *  no store is configured. The caller must remove the auth account separately. */
+export async function deleteUserData(userId: string): Promise<void> {
+  const store = await getStore();
+  if (!store) return;
+  return store.deleteUserData(userId);
 }
