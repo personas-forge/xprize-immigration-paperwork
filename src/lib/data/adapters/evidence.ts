@@ -14,6 +14,7 @@
 
 import { isConfiguredAttorney } from "@/lib/auth/roles";
 import type { StoredDocument } from "@/lib/data/evidence";
+import type { StoredCase } from "@/lib/data/petitions";
 import {
   type CaseAccess,
   type CaseGateDeps,
@@ -73,7 +74,7 @@ export class EvidenceAdapter {
     deps: EvidenceDeps,
     access: CaseAccess,
     caseId: string,
-  ): Promise<AdapterResult<unknown>> {
+  ): Promise<AdapterResult<StoredCase>> {
     return resolveCase(deps, access, caseId);
   }
 
