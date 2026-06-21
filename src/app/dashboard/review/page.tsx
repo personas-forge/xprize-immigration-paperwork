@@ -1,7 +1,7 @@
 import { requireOnboardedUser } from "@/lib/auth/session";
 import { isConfiguredAttorney, isConfiguredOps } from "@/lib/auth/roles";
 import { getBalance } from "@/lib/tokens/ledger";
-import { getCasesInReview } from "@/lib/data/petitions";
+import { petitions } from "@/lib/data/adapters/petition";
 import { ReviewQueueView } from "@/features/review/components/ReviewQueueView";
 
 // Attorney-of-record review queue. Lists every case awaiting review — a
@@ -18,10 +18,14 @@ export default async function ReviewQueuePage() {
   const attorney = isConfiguredAttorney(user.email);
   const canView = attorney || isConfiguredOps(user.email);
 
-  const [balance, cases] = await Promise.all([
+  // The cross-tenant gate now lives IN the adapter (listReviewQueue fail-closes
+  // unless attorney|ops). `canView` is recomputed only for the view's not-
+  // authorized state; the data path can't leak the queue even if it drifted.
+  const [balance, queue] = await Promise.all([
     getBalance(user.id),
-    canView ? getCasesInReview() : Promise.resolve([] as const),
+    petitions.listReviewQueue({ userId: user.id, email: user.email ?? null }),
   ]);
+  const cases = queue.ok ? queue.value : [];
 
   return (
     <ReviewQueueView

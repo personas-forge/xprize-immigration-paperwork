@@ -37,6 +37,8 @@ function deps(over: Partial<PetitionDeps> = {}): PetitionDeps {
   return {
     getCaseForUser: async () => null, // requester owns nothing
     getCaseAnyOwner: async () => CASE, // ...but the case exists under another owner
+    getCasesForUser: async () => [],
+    getCasesInReview: async () => [],
     createCaseWithCriteria: async () => null,
     getCriteriaForCase: async () => [],
     saveDraft: async () => 1,
@@ -46,6 +48,7 @@ function deps(over: Partial<PetitionDeps> = {}): PetitionDeps {
     // Models the real gate: fail-closed on a null/empty email (that is exactly
     // what makes `email: null` resolve owner-only).
     isConfiguredAttorney: (email) => Boolean(email),
+    isConfiguredOps: () => false,
     storeConfigured: async () => true,
     ...over,
   };
