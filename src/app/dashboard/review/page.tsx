@@ -39,6 +39,15 @@ export default async function ReviewQueuePage() {
         classification: c.classification,
         status: c.status,
         approvalLikelihood: c.approvalLikelihood,
+        // QUEUE-AGE CONTRACT (recorded — prior decision UAT 2026-06-20 F3): the SLA
+        // clock is "time since this case last ENTERED review", which is exactly
+        // updated_at here. A case in Attorney Review reached it via the submit
+        // transition (which set updated_at) and no transition fires again until the
+        // attorney acts (which MOVES it out of the queue); plain notes
+        // (addReviewEvent) do NOT bump updated_at. A changes-requested→resubmit
+        // therefore intentionally RESTARTS the clock — a re-submitted case is a
+        // fresh review request. So updated_at is correct for an in-queue case; it
+        // is deliberately NOT a frozen original-submission timestamp.
         submittedAt: c.updatedAt,
       }))}
     />
