@@ -15,6 +15,7 @@ import {
 } from "@/features/drafting";
 import { ExhibitIndex } from "@/features/drafting/components/ExhibitIndex";
 import { isRelied } from "@/features/rfe";
+import { costOf } from "@/lib/tokens/registry";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 
 // — RFE response studio ───────────────────────────────────────────────────────
@@ -222,7 +223,7 @@ export function RfeStudio({
                 : "Draft RFE response"}
           </Button>
           <span className="microprint" style={{ color: "var(--muted)" }}>
-            Uses 5 tokens · attorney must review &amp; sign
+            Uses {costOf("rfe")} tokens · attorney must review &amp; sign
           </span>
         </div>
 
