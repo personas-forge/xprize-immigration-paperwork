@@ -17,9 +17,22 @@ test("attorneyAllowlist: parses, trims, lowercases, drops blanks", () => {
   assert.deepEqual(attorneyAllowlist({}), []);
 });
 
-test("isAttorney: empty allowlist unlocks everyone (demo default)", () => {
+test("isAttorney: empty allowlist unlocks everyone OUTSIDE production (demo default)", () => {
   assert.equal(isAttorney("anyone@example.com", {}), true);
   assert.equal(isAttorney(null, { ATTORNEY_EMAILS: "" }), true);
+});
+
+test("isAttorney: empty allowlist in PRODUCTION fails closed (no demo unlock)", () => {
+  assert.equal(isAttorney("anyone@example.com", { NODE_ENV: "production" }), false);
+  assert.equal(
+    isAttorney("anyone@example.com", { NODE_ENV: "production", ATTORNEY_EMAILS: "" }),
+    false,
+  );
+  // …but a configured allowlist still works in production.
+  assert.equal(
+    isAttorney("counsel@firm.com", { NODE_ENV: "production", ATTORNEY_EMAILS: "counsel@firm.com" }),
+    true,
+  );
 });
 
 test("isAttorney: configured allowlist restricts to listed emails (case-insensitive)", () => {

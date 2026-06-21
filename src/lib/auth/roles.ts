@@ -1,11 +1,16 @@
 /**
  * Attorney-of-record role check for the review/filing workflow.
  *
- * Pure and env-injectable (like `isMeteringBypassed`), so it stays unit-
- * testable and the server actions/pages can gate on it. Graceful default: when
- * ATTORNEY_EMAILS is unset/empty, EVERY signed-in user is treated as an
- * attorney — this unlocks the workflow for the keyless/dev demo. Set the
- * allowlist in production to restrict sign-off and filing to licensed counsel.
+ * Pure and env-injectable, so it stays unit-testable and the server actions/pages
+ * can gate on it. Demo unlock: when ATTORNEY_EMAILS is unset/empty, every
+ * signed-in user is treated as an attorney so the workflow is usable in the
+ * keyless/dev demo — but ONLY OUTSIDE production. In production an empty allowlist
+ * FAILS CLOSED (denies + warns), exactly like {@link isConfiguredAttorney}: an
+ * unconfigured prod deploy must not silently make every applicant the attorney of
+ * record (a fail-open authorization for the sign/file affordances). Cross-tenant
+ * DATA gates must still use `isConfiguredAttorney`, never this — this is the UI
+ * affordance check with defense-in-depth so the permissive twin can't reopen the
+ * IDOR class even if a future call site reaches for it by autocomplete.
  */
 
 export function attorneyAllowlist(
@@ -17,12 +22,29 @@ export function attorneyAllowlist(
     .filter(Boolean);
 }
 
+let warnedUnconfiguredAttorneyProd = false;
+
 export function isAttorney(
   email: string | null | undefined,
   env: Record<string, string | undefined> = process.env,
 ): boolean {
   const list = attorneyAllowlist(env);
-  if (list.length === 0) return true; // unconfigured → demo unlock
+  if (list.length === 0) {
+    // Demo unlock is dev-only. In production, an empty allowlist denies (fail
+    // closed) and warns ONCE so the misconfiguration is loud, not invisible.
+    if (env.NODE_ENV === "production") {
+      if (!warnedUnconfiguredAttorneyProd) {
+        warnedUnconfiguredAttorneyProd = true;
+        console.error(
+          "[roles] ATTORNEY_EMAILS is empty in production — attorney affordances " +
+            "are DENIED for everyone (fail-closed). Set ATTORNEY_EMAILS to the " +
+            "licensed counsel allowlist to enable the review/filing workflow.",
+        );
+      }
+      return false;
+    }
+    return true; // dev/demo unlock
+  }
   return typeof email === "string" && list.includes(email.toLowerCase());
 }
 
