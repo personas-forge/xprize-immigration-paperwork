@@ -226,11 +226,16 @@ export function FieldGuidancePanel() {
         {status === "loading" ? <GuidanceResultSkeleton /> : null}
 
         {status === "error" && error ? (
-          <div
-            role="alert"
-            className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[15px] text-danger"
-          >
-            {error}
+          <div className="space-y-3">
+            {/* UPL safeguard is never optional on this surface — keep it visible
+                even when the request failed (guidance #3). */}
+            <DisclaimerStamp text={DISCLAIMER} />
+            <div
+              role="alert"
+              className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[15px] text-danger"
+            >
+              {error}
+            </div>
           </div>
         ) : null}
 
@@ -264,8 +269,10 @@ export function FieldGuidancePanel() {
 
         {status === "done" && result ? (
           <div className="space-y-3">
-            {/* Disclaimer renders FIRST and prominently — never optional. */}
-            <DisclaimerStamp text={result.disclaimer} />
+            {/* Disclaimer renders FIRST and prominently — never optional. Sourced
+                from the LOCAL const, not the server echo, so a response that omits
+                `disclaimer` can't drop the UPL safeguard (guidance #3). */}
+            <DisclaimerStamp text={DISCLAIMER} />
             {/* Live UPL screen: flags outcome/advice language in the answer. */}
             {result.adjudication ? (
               <AdjudicationBadge report={result.adjudication} />
