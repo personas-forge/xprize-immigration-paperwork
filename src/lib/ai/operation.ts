@@ -177,7 +177,18 @@ export interface AiOperationDeps {
 
 let cachedDefaults: AiOperationDeps | null = null;
 
-/** Lazily wire the real server-only infra. Never called from the unit suite. */
+/**
+ * Lazily wire the real server-only infra. Never called from the unit suite.
+ *
+ * CONTRACT: the deps bundle is wired ONCE and treated as process-lifetime
+ * immutable (we only cache to avoid re-importing the modules per request). This
+ * is safe because the cached values are STABLE FUNCTION references that re-read
+ * their own config on each call — `getLlm(opts)` re-resolves the engine/env per
+ * request, and `runWithBilling` reads `cost-telemetry.config()` internally — so
+ * an operator rotating a key or toggling telemetry takes effect on the next
+ * request WITHOUT a restart. Do NOT cache a value DERIVED from env here (e.g. a
+ * pre-resolved engine), or it would pin the first request's config.
+ */
 async function defaultDeps(): Promise<AiOperationDeps> {
   if (cachedDefaults) return cachedDefaults;
   const [{ chargeForOperation }, { getLlm }, { getUser }, { runWithBilling }] = await Promise.all([
@@ -288,15 +299,27 @@ export async function executeAiOperation<TInput, TOutput>(
   const llm = d.getLlm({ requiresImages: spec.requiresImages });
   let output: TOutput;
   let source: string;
-  // Track whether the charge has already been reclaimed so a throw FROM
-  // reclaim() (or from mock()) in the guard-null/catch path doesn't reclaim a
-  // second time (double-refund / idempotency error).
+  // Reclaim at most once. `reclaim()` wraps the refund in try/catch so a ledger
+  // hiccup can't (a) double-refund or (b) escalate a serviceable mock fallback
+  // into a 500 — the charge stays debited but the user still gets their mock.
   let reclaimed = false;
+  const reclaim = async () => {
+    if (reclaimed) return;
+    reclaimed = true;
+    try {
+      await charged.reclaim();
+    } catch (err) {
+      console.error(`[ai] ${operationKey} reclaim failed (charge left debited)`, err);
+    }
+  };
   try {
     if (!llm) {
       output = spec.mock(input);
       source = "mock";
     } else {
+      // (a) Model call. A failure here means NO billable output was produced →
+      //     reclaim + mock. `raw` stays null so the guard step is skipped.
+      let raw: string | null = null;
       try {
         const { text, options } = spec.prompt(input);
         // Attribute the LLM cost emitted by this generate() (via the client's `trackLlm` seam) to the
@@ -304,25 +327,40 @@ export async function executeAiOperation<TInput, TOutput>(
         // unconfigured; the user id may be undefined on the keyless/dev free-pass path.
         const billing = d.runWithBilling ?? ((_ctx, fn) => fn());
         const customerId = (await resolveUser())?.id;
-        const raw = await billing(
+        raw = await billing(
           { customerId, feature: operationKey },
           () => llm.generate(text, options),
         );
-        const guarded = spec.guard(raw, input);
+      } catch (err) {
+        console.error(`[ai] ${operationKey} model call failed; serving mock`, err);
+        await reclaim();
+      }
+      // (b) Guard runs OUTSIDE the model try — it operates on already-returned,
+      //     already-BILLED text. A guard *throw* is a parser regression on a paid
+      //     response, NOT a model failure: log it loudly so it can't masquerade
+      //     as a normal keyless mock forever, then reclaim + mock like guard null.
+      if (raw === null) {
+        output = spec.mock(input);
+        source = "mock";
+      } else {
+        let guarded: TOutput | null;
+        try {
+          guarded = spec.guard(raw, input);
+        } catch (err) {
+          console.error(
+            `[ai] ${operationKey} guard threw on a billed response (parser regression)`,
+            err,
+          );
+          guarded = null;
+        }
         if (guarded === null) {
-          reclaimed = true;
-          await charged.reclaim();
+          await reclaim();
           output = spec.mock(input);
           source = "mock";
         } else {
           output = guarded;
           source = llm.name;
         }
-      } catch {
-        if (!reclaimed) await charged.reclaim();
-        reclaimed = true;
-        output = spec.mock(input);
-        source = "mock";
       }
     }
   } catch {
@@ -330,13 +368,7 @@ export async function executeAiOperation<TInput, TOutput>(
     // any still-outstanding charge and emit a structured 500 that STILL carries
     // the DISCLAIMER — the UPL invariant: every error body this orchestrator
     // emits includes it (a raw framework 500 would not).
-    if (!reclaimed) {
-      try {
-        await charged.reclaim();
-      } catch {
-        /* best-effort refund; don't mask the original mock failure */
-      }
-    }
+    await reclaim();
     return NextResponse.json(
       { error: "generation_failed", disclaimer: DISCLAIMER },
       { status: 500 },
@@ -359,8 +391,11 @@ export async function executeAiOperation<TInput, TOutput>(
 
   // 8. Live adjudication-risk gate — score the built body and attach the report.
   //    Best-effort: a throw here must never fail a generation the user paid for.
+  //    Skipped on a mock: a deterministic template's "risk score" would be
+  //    constant theater that reads like a real assessment of the user's case
+  //    (mirrors the "a mock is never billed as model output" honesty invariant).
   let adjudication: AdjudicationReport | null = null;
-  if (spec.adjudicate) {
+  if (spec.adjudicate && source !== "mock") {
     try {
       adjudication = spec.adjudicate(output, input, source, responseBody) ?? null;
     } catch {

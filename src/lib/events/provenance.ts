@@ -26,7 +26,22 @@ export interface ChainedAuditRecord extends AuditRecord {
   prevHash: string | null;
   /** SHA-256 over the canonical {event, caseId, at, detail, prevHash}. */
   selfHash: string;
+  /** Strictly-increasing index stamped at APPEND time — the order the bus
+   *  actually observed events. Concurrent publishes can interleave their `at`
+   *  timestamps, so export/audit should sort by `seq`, not by `at`. NOT part of
+   *  the hashed content, so it never affects chain verification. */
+  seq: number;
+  /** True when this record's `at` precedes the prior record's `at` — a clock or
+   *  emit-order inversion (e.g. two concurrent publishes). Surfaced so an export
+   *  can flag a chain whose timestamps disagree with its append order. */
+  atRegression: boolean;
 }
+
+/** Default cap on the in-memory window. Beyond this the chain keeps only the
+ *  most-recent N records (the running `head` hash is always retained), so a
+ *  long-running host can't OOM on lifetime mutations. Full-history verification
+ *  requires the durable sink that received every appended record. */
+export const DEFAULT_MAX_RECORDS = 10_000;
 
 /** Injectable digest — `(input) => hex`. Default is SHA-256. */
 export type HashFn = (input: string) => string;
@@ -77,17 +92,36 @@ export interface ProvenanceChain {
   records(): ChainedAuditRecord[];
 }
 
-/** A stateful, append-only hash chain over audit records. */
-export function createProvenanceChain(hashFn: HashFn = sha256): ProvenanceChain {
+/** A stateful, append-only hash chain over audit records. Bounded: the in-memory
+ *  window keeps the last `maxRecords` (the running `head` hash is always kept), so
+ *  a long-running process can't grow it without limit. */
+export function createProvenanceChain(
+  hashFn: HashFn = sha256,
+  maxRecords: number = DEFAULT_MAX_RECORDS,
+): ProvenanceChain {
   let head: string | null = null;
+  let headAt: string | null = null;
+  let seq = 0;
   const records: ChainedAuditRecord[] = [];
   return {
     append(record: AuditRecord): ChainedAuditRecord {
       const prevHash = head;
       const selfHash = hashAuditRecord(record, prevHash, hashFn);
-      const chained: ChainedAuditRecord = { ...record, prevHash, selfHash };
+      const atRegression = headAt !== null && record.at < headAt;
+      const chained: ChainedAuditRecord = {
+        ...record,
+        prevHash,
+        selfHash,
+        seq: seq++,
+        atRegression,
+      };
       records.push(chained);
+      // Bound memory: drop the oldest once past the cap. `head`/`headAt`/`seq`
+      // are independent of the array, so the chain stays correct — only the
+      // retained WINDOW shrinks (full history lives in the durable sink).
+      if (records.length > maxRecords) records.shift();
       head = selfHash;
+      headAt = record.at;
       return chained;
     },
     head: () => head,

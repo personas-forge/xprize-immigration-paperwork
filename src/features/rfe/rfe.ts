@@ -327,8 +327,15 @@ export interface RfeForecastResult {
 }
 
 /** Criteria the petition relies on (RFE targets these; "None" is not argued). */
-function isRelied(status: string): boolean {
+export function isRelied(status: string): boolean {
   return status === "Met" || status === "Strong" || status === "Partial";
+}
+
+/** True when at least one criterion is relied-on — i.e. there is something to
+ *  forecast. Used to reject a forecast BEFORE charging when every criterion is
+ *  "None"/blank (which would otherwise debit and render an empty radar). */
+export function hasReliedCriteria(req: RfeRequest): boolean {
+  return req.criteria.some((c) => isRelied(c.status));
 }
 
 /**

@@ -20,13 +20,18 @@ const FOCUS_RING_CLASSES = [
   "focus-visible:ring-offset-background",
 ];
 
-test("ghost variant renders the focus-visible ring classes", () => {
-  const classAttr = renderClassAttr("ghost");
-  for (const cls of FOCUS_RING_CLASSES) {
-    assert.ok(
-      classAttr.split(" ").includes(cls),
-      `ghost variant is missing "${cls}" in: ${classAttr}`,
-    );
+test("EVERY variant renders the focus-visible ring classes (WCAG 2.4.7)", () => {
+  // The ring lives on the shared base, so primary/secondary/seal must carry it
+  // too — not only ghost. Looping all four catches a regression that moves the
+  // ring back into a single variant string.
+  for (const variant of ["primary", "secondary", "ghost", "seal"] as const) {
+    const classAttr = renderClassAttr(variant).split(" ");
+    for (const cls of FOCUS_RING_CLASSES) {
+      assert.ok(
+        classAttr.includes(cls),
+        `${variant} variant is missing "${cls}"`,
+      );
+    }
   }
 });
 

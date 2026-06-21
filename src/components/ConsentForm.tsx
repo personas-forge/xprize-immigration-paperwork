@@ -17,9 +17,12 @@ import { DisclaimerStamp } from "@/components/legal";
 export function ConsentForm({
   defaultName,
   email,
+  next,
 }: {
   defaultName: string;
   email: string | null;
+  /** Validated deep-link destination to forward to after consent. */
+  next?: string;
 }) {
   const [state, action, pending] = useActionState<ConsentState, FormData>(
     submitConsent,
@@ -28,6 +31,9 @@ export function ConsentForm({
 
   return (
     <form action={action} className="space-y-7">
+      {/* Carry the (already-validated) deep-link destination through consent;
+          the server action re-validates it before redirecting. */}
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       {/* Attorney-of-record / not-legal-advice safeguard, visible at sign-up. */}
       <DisclaimerStamp text={CONSENT_DISCLAIMER} />
 
@@ -44,7 +50,7 @@ export function ConsentForm({
           name="full_name"
           defaultValue={defaultName}
           required
-          className="w-full rounded-control border border-border-strong bg-surface px-3.5 py-2.5 font-sans text-[17px] text-foreground placeholder:text-muted focus-visible:border-accent-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+          className="w-full rounded-control border border-border-strong bg-surface px-3.5 py-2.5 font-sans text-[17px] text-foreground placeholder:text-muted focus-visible:border-accent-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
         />
         {email && (
           <p className="microprint" style={{ color: "var(--muted)" }}>
@@ -87,7 +93,7 @@ export function ConsentForm({
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-seal px-6 py-3.5 font-mono text-[14px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-seal px-6 py-3.5 font-mono text-[14px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] disabled:opacity-60"
       >
         {pending ? "Stamping…" : "Agree & open my case file"}
         <span aria-hidden>→</span>
@@ -111,7 +117,7 @@ function Checkbox({
         type="checkbox"
         name={name}
         required={required}
-        className="mt-1 h-4 w-4 shrink-0 rounded-[2px] border-border-strong text-accent-dark accent-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+        className="mt-1 h-4 w-4 shrink-0 rounded-[2px] border-border-strong text-accent-dark accent-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
       />
       <span className="leading-snug">
         {label}

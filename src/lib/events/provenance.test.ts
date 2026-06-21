@@ -32,6 +32,29 @@ test("createProvenanceChain: anchors null then chains prevHash → selfHash", ()
   assert.notEqual(a.selfHash, b.selfHash);
 });
 
+test("createProvenanceChain: stamps a strictly-increasing seq and flags `at` regression", () => {
+  const chain = createProvenanceChain();
+  const a = chain.append({ ...rec("c1", 1), at: "2026-06-14T00:00:02.000Z" });
+  // A concurrent publish whose `at` precedes the head's `at` (clock/order inversion).
+  const b = chain.append({ ...rec("c1", 2), at: "2026-06-14T00:00:01.000Z" });
+  const c = chain.append({ ...rec("c1", 3), at: "2026-06-14T00:00:03.000Z" });
+  assert.deepEqual([a.seq, b.seq, c.seq], [0, 1, 2], "seq is strictly increasing");
+  assert.equal(a.atRegression, false, "first record can't regress");
+  assert.equal(b.atRegression, true, "an earlier `at` than the head is flagged");
+  assert.equal(c.atRegression, false, "a later `at` is fine");
+  // seq/atRegression are metadata, NOT hashed, so the chain still verifies.
+  assert.deepEqual(verifyChain(chain.records()), { ok: true });
+});
+
+test("createProvenanceChain: bounds the in-memory window at maxRecords", () => {
+  const chain = createProvenanceChain(undefined, 3);
+  for (let i = 0; i < 10; i++) chain.append(rec("c1", i));
+  const recs = chain.records();
+  assert.equal(recs.length, 3, "window never exceeds the cap");
+  assert.deepEqual(recs.map((r) => r.seq), [7, 8, 9], "keeps the most-recent records");
+  assert.notEqual(chain.head(), null, "head hash is retained across eviction");
+});
+
 test("hashAuditRecord: stable regardless of detail key order (canonical)", () => {
   const h1 = hashAuditRecord(
     { event: "DraftGenerated", caseId: "c", at: "t", detail: { a: 1, b: 2 } },

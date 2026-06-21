@@ -29,6 +29,9 @@ interface CategorizeApiResponse {
   disclaimer: string;
   source: ModelSource;
   document: DocumentView | null;
+  /** True when a caseId was supplied but the document could not be saved
+   *  (forbidden / store fault) — distinct from the no-case keyless null. */
+  saveFailed?: boolean;
 }
 
 type AddStatus = "idle" | "adding" | "error" | "paywall";
@@ -47,6 +50,10 @@ export function EvidenceVault({
   const [content, setContent] = useState("");
   const [status, setStatus] = useState<AddStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  // Non-fatal: the doc was categorized but couldn't be saved to the case.
+  const [warning, setWarning] = useState<string | null>(null);
+  // SR announcement of categorize progress/result (the visual bar is aria-hidden).
+  const [announce, setAnnounce] = useState("");
   const [, startTransition] = useTransition();
   // Synchronous re-entrancy guard: `disabled={status === "adding"}` only blocks
   // the button AFTER the next render, so a rapid double-click could fire two
@@ -67,6 +74,8 @@ export function EvidenceVault({
     submitting.current = true;
     setStatus("adding");
     setError(null);
+    setWarning(null);
+    setAnnounce("Categorizing the document…");
     try {
       const res = await fetch("/api/evidence/categorize", {
         method: "POST",
@@ -102,6 +111,15 @@ export function EvidenceVault({
           source: data.source,
         };
       setDocuments((prev) => [...prev, doc]);
+      setAnnounce(`Document categorized under ${doc.criterion}, exhibit ${doc.exhibit}.`);
+      // A case-backed save that failed: the categorization is shown, but warn
+      // that it didn't persist (the user was charged) so it isn't mistaken for
+      // a saved exhibit that will vanish on reload.
+      if (data.saveFailed) {
+        setWarning(
+          "Categorized, but we couldn't save this to your case — it won't persist after a reload. Please try again.",
+        );
+      }
       setName("");
       setContent("");
       setStatus("idle");
@@ -114,6 +132,16 @@ export function EvidenceVault({
   }
 
   function onRemove(id: string) {
+    // Removal is irreversible and BURNS the exhibit number (a consumed high-water
+    // mark — re-adding gets a new, higher ordinal), so confirm before deleting.
+    const doc = documents.find((d) => d.id === id);
+    const label = doc ? `"${doc.name}" (exhibit ${doc.exhibit})` : "this document";
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(`Remove ${label}? Its exhibit number can't be reused.`)
+    ) {
+      return;
+    }
     setDocuments((prev) => prev.filter((d) => d.id !== id));
     startTransition(() => {
       void removeDocument(caseId, id);
@@ -154,6 +182,11 @@ export function EvidenceVault({
         {/* UPL safeguard on the surface itself — a forwarded vault screenshot
             must carry the not-legal-advice stamp (the categorize payload does too). */}
         <DisclaimerStamp text={DISCLAIMER} />
+        {/* SR announcement for the categorize flow — the progress bar is
+            aria-hidden, so without this the AI categorization is silent to AT. */}
+        <div role="status" aria-live="polite" className="sr-only">
+          {announce}
+        </div>
         {/* Add a document */}
         <div className="space-y-3 rounded-control border border-border-strong bg-surface px-4 py-3">
           <div className="grid grid-cols-1 gap-3">
@@ -163,7 +196,7 @@ export function EvidenceVault({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. ICML 2024 Best Paper certificate"
-                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               />
             </label>
             <label className="block">
@@ -173,7 +206,7 @@ export function EvidenceVault({
                 onChange={(e) => setContent(e.target.value)}
                 rows={3}
                 placeholder="Paste the document text or describe what it shows…"
-                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               />
             </label>
           </div>
@@ -188,6 +221,11 @@ export function EvidenceVault({
           {status === "error" && error ? (
             <div role="alert" className="rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[15px] text-danger">
               {error}
+            </div>
+          ) : null}
+          {warning ? (
+            <div role="status" className="rounded-control border border-warning/40 bg-warning-soft/50 px-3 py-2 font-sans text-[15px] text-warning">
+              {warning}
             </div>
           ) : null}
           {status === "paywall" ? (
@@ -273,7 +311,7 @@ export function EvidenceVault({
                               id={`refile-${d.id}`}
                               value={d.criterion}
                               onChange={(e) => onRefile(d.id, e.target.value)}
-                              className="rounded-control border border-border-strong bg-surface px-2 py-1 font-mono text-[12px] uppercase tracking-document text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                              className="rounded-control border border-border-strong bg-surface px-2 py-1 font-mono text-[12px] uppercase tracking-document text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
                             >
                               {BUCKETS.map((b) => (
                                 <option key={b} value={b}>
@@ -285,7 +323,7 @@ export function EvidenceVault({
                               type="button"
                               onClick={() => onRemove(d.id)}
                               aria-label={`Remove ${d.name}`}
-                              className="rounded-control border border-border-strong px-2 py-1 font-mono text-[13px] text-muted-strong hover:border-seal hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                              className="rounded-control border border-border-strong px-2 py-1 font-mono text-[13px] text-muted-strong hover:border-seal hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
                             >
                               ×
                             </button>

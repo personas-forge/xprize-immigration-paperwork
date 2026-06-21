@@ -68,13 +68,13 @@ export default function LandingClaude() {
           >
             <Link
               href="/qualify"
-              className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background hover:bg-foreground-soft"
+              className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               Take the free qualification
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-control border border-border-strong px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-foreground hover:border-foreground"
+              className="rounded-control border border-border-strong px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-foreground hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               See the case file
             </Link>
@@ -186,7 +186,7 @@ export default function LandingClaude() {
           <div className="mt-9 flex items-center justify-center gap-4">
             <Link
               href="/qualify"
-              className="rounded-control bg-seal px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background shadow-seal hover:bg-[color:var(--accent-dark)]"
+              className="rounded-control bg-seal px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background shadow-seal hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               Begin qualification
             </Link>

@@ -106,32 +106,77 @@ const CLAUDE_TIMEOUT_MS = 180_000;
  * Run `claude -p` non-interactively, feeding the prompt on STDIN (never as a
  * shell argument — no injection, no arg-length limits). The command is a single
  * shell string (no argv array → avoids Node's DEP0190) so the OS resolves
- * `claude`/`claude.cmd` cross-platform; the only interpolated value is the
- * sanitised model id, and the bin path is operator config.
+ * `claude`/`claude.cmd` cross-platform.
+ *
+ * TWO interpolated values land in the shell string and BOTH are hardened: the
+ * model id is sanitised to `[A-Za-z0-9._-]` (config.ts), and the bin path —
+ * operator config (`CLAUDE_CLI_PATH`) — is now QUOTED (so a normal Windows path
+ * with spaces like `C:\Program Files\…\claude.cmd` isn't tokenised) and rejected
+ * outright if it contains shell metacharacters (so it can't break out of the
+ * quotes / chain a command).
  */
 export function runClaudeCli(prompt: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const command = `${claudeBin()} -p --output-format text --model ${claudeModel()}`;
+    const bin = claudeBin();
+    if (/["'`$;&|<>\n\r]/.test(bin)) {
+      reject(new Error("CLAUDE_CLI_PATH contains unsafe shell characters"));
+      return;
+    }
+    const command = `"${bin}" -p --output-format text --model ${claudeModel()}`;
+    // detached (POSIX): the shell becomes its own process-group leader so the
+    // timeout can kill the WHOLE group — the built-in spawn `timeout` only
+    // SIGTERMs the shell and leaves the long-running `claude` GRANDCHILD running
+    // (orphaned, still burning the local subscription). Windows reaps the tree
+    // via `taskkill /T` instead, so detaching there (a new console) isn't needed.
+    const detached = process.platform !== "win32";
     const child = spawn(command, {
       stdio: ["pipe", "pipe", "pipe"],
-      timeout: CLAUDE_TIMEOUT_MS,
       windowsHide: true,
       shell: true,
+      detached,
     });
+
+    // Kill the shell AND its claude grandchild, not just the shell.
+    const killTree = () => {
+      if (!child.pid) return;
+      try {
+        if (process.platform === "win32") {
+          spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], { windowsHide: true });
+        } else {
+          process.kill(-child.pid, "SIGKILL"); // negative pid = the process group
+        }
+      } catch {
+        /* already exited */
+      }
+    };
+
+    let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      fn();
+    };
+    const timer = setTimeout(() => {
+      killTree();
+      finish(() => reject(new Error(`claude CLI timed out after ${CLAUDE_TIMEOUT_MS}ms`)));
+    }, CLAUDE_TIMEOUT_MS);
 
     let out = "";
     let err = "";
     child.stdout.on("data", (d) => (out += d.toString()));
     child.stderr.on("data", (d) => (err += d.toString()));
-    child.on("error", reject);
+    child.on("error", (e) => finish(() => reject(e)));
     // A stdin pipe error (e.g. the child exits immediately on auth failure and
     // closes the pipe) would otherwise be an unhandled stream 'error' and could
-    // hang the promise until the 180s timeout — reject like the process error.
-    child.stdin.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) resolve(out.trim());
-      else reject(new Error(`claude CLI exited with code ${code}: ${err.slice(0, 400)}`));
-    });
+    // hang the promise until the timeout — reject like the process error.
+    child.stdin.on("error", (e) => finish(() => reject(e)));
+    child.on("close", (code) =>
+      finish(() => {
+        if (code === 0) resolve(out.trim());
+        else reject(new Error(`claude CLI exited with code ${code}: ${err.slice(0, 400)}`));
+      }),
+    );
 
     child.stdin.write(prompt);
     child.stdin.end();

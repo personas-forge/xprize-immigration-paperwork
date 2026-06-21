@@ -27,6 +27,11 @@ export async function POST(request: NextRequest) {
       products: [b.polarProductId],
       successUrl: `${origin}/billing?status=success`,
       customerEmail: user.email ?? undefined,
+      // Tie the Polar customer to our user id. UNLIKE per-order `metadata`, the
+      // customer external id propagates to every SUBSCRIPTION CYCLE order, so a
+      // monthly renewal can still be credited even when cycle-order metadata is
+      // absent (the webhook falls back to this — see the renewal-userId fix).
+      externalCustomerId: user.id,
       // Echoed back on the order webhook so we credit the right user/bundle.
       // Only userId + bundle are read; the webhook re-derives the credited
       // amount from the SERVER-side Bundle.tokens (never from echoed metadata),

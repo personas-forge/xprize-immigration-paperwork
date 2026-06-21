@@ -47,6 +47,10 @@ export interface ScoredCriterion {
 
 /** The screening core, before the disclaimer/source envelope is attached. */
 export interface QualifyAssessment {
+  /** The classification this assessment was actually SCORED against. Pinned into
+   *  the result so the read-out's threshold/denominator can never be derived from
+   *  mutable form state that has since changed (see CriteriaReport). */
+  classification: Classification;
   criteria: ScoredCriterion[];
   /** Overall approval likelihood, 0-100. Informational, not a guarantee. */
   likelihood: number;
@@ -221,7 +225,12 @@ export function parseQualifyResponse(
     ? obj.gaps.filter((g): g is string => typeof g === "string" && g.trim() !== "").map((g) => g.trim())
     : [];
 
-  return { criteria, likelihood: clampLikelihood(obj.likelihood), gaps };
+  return {
+    classification: req.classification,
+    criteria,
+    likelihood: clampLikelihood(obj.likelihood),
+    gaps,
+  };
 }
 
 /**
@@ -244,14 +253,29 @@ export function mockQualification(req: QualifyRequest): QualifyAssessment {
     };
   });
 
+  const pack = packFor(req.classification);
   const qualifying = criteria.filter((c) => c.status === "Met" || c.status === "Strong").length;
-  // Informational heuristic only — base 38, +8 per qualifying criterion, capped.
-  const likelihood = Math.max(0, Math.min(95, 38 + qualifying * 8));
-  const gaps = packFor(req.classification)
-    .criteria.filter((pc) => !pc.match.test(text))
-    .map((pc) => pc.gap);
+  const likelihood = mockLikelihood(qualifying, pack.threshold, criteria.length);
+  const gaps = pack.criteria.filter((pc) => !pc.match.test(text)).map((pc) => pc.gap);
 
-  return { criteria, likelihood, gaps };
+  return { classification: req.classification, criteria, likelihood, gaps };
+}
+
+/**
+ * Informational likelihood heuristic, DERIVED from the qualifying verdict so the
+ * headline % can never contradict the "Meets / Below threshold" badge:
+ *   - 0 qualifying           → 0% (no fabricated baseline chance)
+ *   - below threshold        → 0-45% band, scaled by progress toward threshold
+ *   - meets/exceeds threshold → 55-95% band, scaled by qualifying / total
+ * The gap at 45/55 keeps a "Below threshold" verdict strictly under 50%.
+ */
+export function mockLikelihood(qualifying: number, threshold: number, total: number): number {
+  if (qualifying <= 0 || threshold <= 0) return Math.max(0, Math.min(95, qualifying <= 0 ? 0 : 55));
+  if (qualifying < threshold) {
+    return Math.round((qualifying / threshold) * 45);
+  }
+  const extra = total > threshold ? (qualifying - threshold) / (total - threshold) : 1;
+  return Math.round(55 + Math.max(0, Math.min(1, extra)) * 40);
 }
 
 /** Wrap an assessment in the response contract, always attaching the disclaimer. */

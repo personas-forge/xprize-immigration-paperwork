@@ -28,13 +28,37 @@ test("checkRateLimit: distinct keys are independent", () => {
   assert.equal(checkRateLimit("b", 1, 1000, 0, store).ok, true, "b unaffected by a");
 });
 
-test("rateLimitKey: prefers the user id, else the first forwarded IP, else anon", () => {
+test("rateLimitKey: prefers user id, else the TRUSTED (rightmost) forwarded hop, else anon", () => {
+  // The rightmost XFF entry is the one our own edge appended (trustworthy); the
+  // leftmost is the client's claim and must NOT determine the bucket.
   const req = new Request("http://x", {
     headers: { "x-forwarded-for": "9.9.9.9, 1.1.1.1" },
   });
   assert.equal(rateLimitKey(req, "draft", "user-1"), "draft:u:user-1");
-  assert.equal(rateLimitKey(req, "draft", null), "draft:ip:9.9.9.9");
+  assert.equal(rateLimitKey(req, "draft", null), "draft:ip:1.1.1.1");
   assert.equal(rateLimitKey(new Request("http://x"), "rfe"), "rfe:ip:anon");
+});
+
+test("rateLimitKey: rotating the client-claimed (leftmost) XFF hop does NOT fan out buckets", () => {
+  const mk = (xff: string) =>
+    rateLimitKey(new Request("http://x", { headers: { "x-forwarded-for": xff } }), "guidance");
+  // Attacker rotates the leftmost claim; our edge appends the same real IP last.
+  assert.equal(mk("1.2.3.4, 8.8.8.8"), "guidance:ip:8.8.8.8");
+  assert.equal(mk("1.2.3.5, 8.8.8.8"), "guidance:ip:8.8.8.8");
+  assert.equal(mk("9.9.9.9, 8.8.8.8"), "guidance:ip:8.8.8.8");
+  // Non-IP rightmost → no fan-out, collapses to the shared anon bucket.
+  assert.equal(mk("1.2.3.4, garbage"), "guidance:ip:anon");
+});
+
+test("checkRateLimit: hard-caps the bucket map under an in-window key burst", () => {
+  const store = new Map();
+  const now = 5_000_000;
+  // More distinct keys than MAX_BUCKETS within ONE window (nothing expired yet)
+  // — expiry-only pruning would leak; the hard ceiling must hold.
+  for (let i = 0; i < 10_050; i++) {
+    checkRateLimit(`burst:${i}`, 5, 60_000, now, store);
+  }
+  assert.ok(store.size <= 10_000, `bucket map stays capped (size ${store.size})`);
 });
 
 test("isRateLimitEnabled: on by default, off only when RATE_LIMIT_DISABLED=1", () => {

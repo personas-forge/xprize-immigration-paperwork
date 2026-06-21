@@ -278,6 +278,16 @@ export async function getPgliteStore(): Promise<Store> {
       });
     },
 
+    async getLatestConsentVersion(userId) {
+      const r = await pg.query(
+        `select consent_version from consents
+           where user_id = $1 order by id desc limit 1`,
+        [userId],
+      );
+      const v = r.rows[0]?.consent_version;
+      return typeof v === "string" ? v : null;
+    },
+
     async getBalance(userId) {
       const r = await pg.query(
         `select balance from token_accounts where user_id = $1`,

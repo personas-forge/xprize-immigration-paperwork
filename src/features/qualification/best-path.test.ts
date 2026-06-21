@@ -69,7 +69,7 @@ test("rationaleFor: distinguishes clears vs short, flags the green card", () => 
     label: "x",
     criteriaCount: 10,
     threshold: 3,
-    assessment: { criteria: [], likelihood: 70, gaps: [] },
+    assessment: { classification: "EB-1A", criteria: [], likelihood: 70, gaps: [] },
     summary: { total: 10, qualifying: 5, partial: 0, meetsThreshold: true },
     margin: 2,
     gapsToThreshold: 0,

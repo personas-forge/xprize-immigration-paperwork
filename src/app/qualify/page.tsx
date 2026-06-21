@@ -58,19 +58,19 @@ function SiteHeader() {
         <nav className="flex items-center gap-6 font-mono text-[13px] uppercase tracking-document text-muted-strong">
           <Link
             href="/"
-            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >
             Home
           </Link>
           <Link
             href="/faq"
-            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >
             FAQ
           </Link>
           <Link
             href="/billing"
-            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >
             Tokens
           </Link>

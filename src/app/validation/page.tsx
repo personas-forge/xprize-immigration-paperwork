@@ -145,23 +145,32 @@ function FreshnessBar({
   daysLeft,
   level,
   dueBy,
+  unverifiable,
 }: {
   daysLeft: number;
   level: "fresh" | "due-soon" | "stale";
   dueBy: string;
+  unverifiable: boolean;
 }) {
-  const pct = Math.max(
-    0,
-    Math.min(100, ((REVALIDATE_AFTER_DAYS - daysLeft) / REVALIDATE_AFTER_DAYS) * 100),
-  );
+  // An unverifiable date has a NaN countdown; show the bar full (overdue) rather
+  // than a NaN width, and label it plainly instead of "NaN days".
+  const pct = unverifiable
+    ? 100
+    : Math.max(
+        0,
+        Math.min(100, ((REVALIDATE_AFTER_DAYS - daysLeft) / REVALIDATE_AFTER_DAYS) * 100),
+      );
   const bar =
     level === "stale" ? "bg-danger" : level === "due-soon" ? "bg-warning" : "bg-success";
+  const label = unverifiable
+    ? "Last-verified date is unreadable — treated as overdue"
+    : level === "stale"
+      ? `Re-verify due · ${Math.abs(daysLeft)}d overdue`
+      : `${daysLeft} days until re-verify`;
   return (
     <div className="space-y-1">
       <span className="microprint" style={{ color: "var(--muted-strong)" }}>
-        {level === "stale"
-          ? `Re-verify due · ${Math.abs(daysLeft)}d overdue`
-          : `${daysLeft} days until re-verify`}
+        {label}
       </span>
       <div
         className="h-1.5 w-full overflow-hidden rounded-full bg-surface-muted"
@@ -177,7 +186,7 @@ function FreshnessBar({
         />
       </div>
       <span className="microprint block" style={{ color: "var(--muted)" }}>
-        re-verify by {dueBy}
+        {unverifiable ? "re-verify immediately" : `re-verify by ${dueBy}`}
       </span>
     </div>
   );
@@ -199,7 +208,19 @@ function ValidationCard({
       <CardHeader className="flex-wrap gap-y-2 bg-surface-muted/60">
         <div className="font-sans text-[17px] text-foreground">{title}</div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={STATUS_TONE[record.status]}>{record.status}</Badge>
+          {/* When a record is overdue (or its date is unreadable), the freshness
+              state overrides the green "verified" tone so the most prominent
+              badge can't read as authoritatively current while the rule is stale. */}
+          <Badge
+            tone={freshness.level === "stale" ? "danger" : STATUS_TONE[record.status]}
+          >
+            {record.status}
+          </Badge>
+          {freshness.level === "stale" ? (
+            <Badge tone="danger">
+              {freshness.unverifiable ? "Date unreadable" : "Re-verify overdue"}
+            </Badge>
+          ) : null}
           <Badge tone={record.counselApproved ? "success" : "neutral"}>
             {record.counselApproved ? "Counsel signed" : "Counsel pending"}
           </Badge>
@@ -221,6 +242,7 @@ function ValidationCard({
               daysLeft={freshness.daysLeft}
               level={freshness.level}
               dueBy={freshness.dueBy}
+              unverifiable={freshness.unverifiable}
             />
           </Field>
         </dl>
@@ -237,7 +259,7 @@ function ValidationCard({
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ink-link font-sans text-[15.5px] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="ink-link font-sans text-[15.5px] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
                 >
                   {s.title}
                 </a>
@@ -298,19 +320,19 @@ function SiteHeader() {
         <nav className="flex items-center gap-6 font-mono text-[13px] uppercase tracking-document text-muted-strong">
           <Link
             href="/"
-            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >
             Home
           </Link>
           <Link
             href="/qualify"
-            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >
             Qualify
           </Link>
           <Link
             href="/faq"
-            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >
             FAQ
           </Link>

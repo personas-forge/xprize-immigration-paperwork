@@ -27,6 +27,19 @@ test("extractJson: stops at the first balanced object, not the last } (no over-g
   assert.deepEqual(extractJson('{"a":1} note {"b":2}'), { a: 1 });
 });
 
+test("extractJson: skips a non-JSON fence that precedes the JSON fence", () => {
+  // A reasoning ```text``` block (or ```sql```) before the real ```json``` fence
+  // must not shadow it — the first fence WITH a `{` (or the raw text) wins.
+  const out =
+    "```text\nLet me think about this step by step.\n```\n\n```json\n{\"verdict\":\"ok\"}\n```";
+  assert.deepEqual(extractJson(out), { verdict: "ok" });
+});
+
+test("extractJson: falls back to the raw text when a fence has no balanced object", () => {
+  // First json fence is broken; the real object sits unfenced after it.
+  assert.deepEqual(extractJson("```json\n{ oops\n```\nactually {\"a\":9}"), { a: 9 });
+});
+
 test("extractJson: returns null on garbage, broken JSON, or no object", () => {
   assert.equal(extractJson("not json at all"), null);
   assert.equal(extractJson("{ broken"), null);

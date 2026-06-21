@@ -30,7 +30,7 @@ export function FaqEntry({ index, question, answer, defaultOpen = false }: Props
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((o) => !o)}
-        className="group flex w-full items-baseline justify-between gap-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+        className="group flex w-full items-baseline justify-between gap-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
       >
         <span className="flex flex-1 items-baseline gap-4">
           <span className="doc-number shrink-0 text-[14px] text-muted">

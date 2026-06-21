@@ -8,7 +8,13 @@ import { getForms } from "@/lib/data";
 import { type UscisForm } from "@/features/case-file/types";
 import { DISCLAIMER, type GuidanceResponse } from "../guidance";
 import { isModelSource, sourceLabel } from "@/lib/llm/label";
-import { DisclaimerStamp } from "@/components/legal";
+import { DisclaimerStamp, AdjudicationBadge } from "@/components/legal";
+import { type AdjudicationReport } from "@/lib/llm/adjudication-gates";
+
+// The orchestrator attaches a best-effort `{ adjudication }` report to the
+// response body (live UPL screen); the typed envelope doesn't carry it, so
+// augment it locally for the panel.
+type GuidanceResult = GuidanceResponse & { adjudication?: AdjudicationReport };
 
 // — Field-guidance panel ─────────────────────────────────────────────────────
 // Pick a USCIS form + field, describe the situation, and request INFORMATIONAL
@@ -24,7 +30,7 @@ export function FieldGuidancePanel() {
   const [fieldLabel, setFieldLabel] = useState("");
   const [situation, setSituation] = useState("");
   const [status, setStatus] = useState<Status>("idle");
-  const [result, setResult] = useState<GuidanceResponse | null>(null);
+  const [result, setResult] = useState<GuidanceResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formsError, setFormsError] = useState(false);
   // Bumping this re-runs the catalog effect; the Retry handler owns the
@@ -95,7 +101,7 @@ export function FieldGuidancePanel() {
         setStatus("paywall");
         return;
       }
-      const data = (await res.json()) as GuidanceResponse | { error: string };
+      const data = (await res.json()) as GuidanceResult | { error: string };
       if (!res.ok || "error" in data) {
         setError("error" in data ? data.error : "Could not generate guidance.");
         setStatus("error");
@@ -139,7 +145,7 @@ export function FieldGuidancePanel() {
                   id={formSelectId}
                   value={formId}
                   onChange={(e) => onFormChange(e.target.value)}
-                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
                 >
                   {forms.map((f) => (
                     <option key={f.id} value={f.number}>
@@ -155,7 +161,7 @@ export function FieldGuidancePanel() {
                   id={fieldSelectId}
                   value={fieldLabel}
                   onChange={(e) => setFieldLabel(e.target.value)}
-                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
                 >
                   {(activeForm?.commonFields ?? []).map((field) => (
                     <option key={field} value={field}>
@@ -174,7 +180,7 @@ export function FieldGuidancePanel() {
                 onChange={(e) => setSituation(e.target.value)}
                 rows={3}
                 placeholder="e.g. I'm an O-1A researcher with 6 papers and a granted patent…"
-                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               />
             </label>
 
@@ -197,6 +203,17 @@ export function FieldGuidancePanel() {
             </div>
           </form>
         )}
+
+        {/* Persistent live region (always in the DOM) so screen readers reliably
+            hear the generating→ready transition — on a UPL surface, the
+            not-legal-advice note must be spoken, not just shown. WCAG 4.1.3. */}
+        <div role="status" aria-live="polite" className="sr-only">
+          {status === "loading"
+            ? "Generating guidance…"
+            : status === "done"
+              ? "Guidance ready — informational only, not legal advice."
+              : ""}
+        </div>
 
         {status === "loading" ? <GuidanceResultSkeleton /> : null}
 
@@ -228,7 +245,7 @@ export function FieldGuidancePanel() {
               </div>
               <Link
                 href="/billing"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px]"
               >
                 Buy more
                 <span aria-hidden>→</span>
@@ -241,6 +258,10 @@ export function FieldGuidancePanel() {
           <div className="space-y-3">
             {/* Disclaimer renders FIRST and prominently — never optional. */}
             <DisclaimerStamp text={result.disclaimer} />
+            {/* Live UPL screen: flags outcome/advice language in the answer. */}
+            {result.adjudication ? (
+              <AdjudicationBadge report={result.adjudication} />
+            ) : null}
             <div className="relative rounded-control border border-accent/30 bg-surface px-5 py-4">
               <div className="absolute inset-x-0 top-0 perforation h-px" aria-hidden />
               <div className="mb-2 flex items-center justify-between">

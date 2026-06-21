@@ -19,6 +19,14 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   return store ? store.getProfile(userId) : null;
 }
 
+/** The user's most recently recorded consent version, or null. */
+export async function getLatestConsentVersion(
+  userId: string,
+): Promise<string | null> {
+  const store = await getStore();
+  return store ? store.getLatestConsentVersion(userId) : null;
+}
+
 export async function upsertProfileWithConsent(
   input: UpsertConsentInput,
 ): Promise<void> {

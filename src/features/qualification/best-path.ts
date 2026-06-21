@@ -274,6 +274,7 @@ export function parseBestPathResponse(
       criteriaCount: pack.criteria.length,
       threshold: pack.threshold,
       assessment: {
+        classification: c,
         criteria: [],
         likelihood: Math.min(95, Math.round((qualifying / pack.criteria.length) * 100)),
         gaps: [],

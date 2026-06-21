@@ -124,6 +124,21 @@ test("mergeRegeneratedSection: replaces only the focus body, preserving every ot
   ]);
 });
 
+test("mergeRegeneratedSection: with duplicate headings, replaces ONLY the first (no clobber)", () => {
+  const dupes: DraftSection[] = [
+    { heading: "Critical role", body: "first role argument" },
+    { heading: "Press", body: "press argument" },
+    { heading: "Critical role", body: "SECOND distinct role argument" },
+  ];
+  const merged = mergeRegeneratedSection(dupes, "Critical role", "REGENERATED");
+  assert.deepEqual(merged, [
+    { heading: "Critical role", body: "REGENERATED" },
+    { heading: "Press", body: "press argument" },
+    // The second same-named section must survive untouched.
+    { heading: "Critical role", body: "SECOND distinct role argument" },
+  ]);
+});
+
 test("regenerate merge end-to-end (pure): the unsaved intro/conclusion edits survive a section regenerate", () => {
   // What persist does: pick the client base, then merge the new section into it.
   const base = pickMergeBase(clientHeld, "Awards");

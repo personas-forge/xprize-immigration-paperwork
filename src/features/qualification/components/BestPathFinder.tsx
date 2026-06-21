@@ -110,7 +110,7 @@ export function BestPathFinder({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Dr. Anya Krishnan"
-                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               />
             </label>
             <label className="block">
@@ -123,7 +123,7 @@ export function BestPathFinder({
                 onChange={(e) => setProfile(e.target.value)}
                 rows={6}
                 placeholder="Paste your CV highlights or describe your achievements in plain language…"
-                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               />
               <div className="mt-1 flex justify-end">
                 <span
@@ -141,7 +141,7 @@ export function BestPathFinder({
               <button
                 type="button"
                 onClick={() => setProfile(SAMPLE)}
-                className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               >
                 Use a sample
               </button>
@@ -271,7 +271,7 @@ function ProgramCard({
       <button
         type="button"
         onClick={onChoose}
-        className="mt-3 inline-flex items-center gap-1.5 self-start font-mono text-[12px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+        className="mt-3 inline-flex items-center gap-1.5 self-start font-mono text-[12px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
       >
         Screen for {program.classification}
         <span aria-hidden>→</span>

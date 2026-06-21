@@ -5,6 +5,50 @@ import { bundleByKey, bundleByProductId } from "@/lib/tokens/economy";
 import { polarEventToRevenue } from "./relay-revenue";
 import { trackRevenue } from "@/lib/cost-telemetry";
 
+type PolarOrder = {
+  id: string;
+  productId?: string;
+  product_id?: string;
+  order_id?: string;
+  orderId?: string;
+  externalCustomerId?: string;
+  external_customer_id?: string;
+  customer?: { externalId?: string; external_id?: string } | null;
+  metadata?: Record<string, string>;
+};
+
+/** Resolve our user id. Per-order `metadata.userId` is set at checkout but may
+ *  NOT propagate to subscription-cycle (renewal) orders, so fall back to the
+ *  customer external id, which we set (`externalCustomerId`) at checkout and
+ *  which Polar attaches to every order including renewals. */
+function resolveUserId(order: PolarOrder): string | undefined {
+  return (
+    order.metadata?.userId ||
+    order.externalCustomerId ||
+    order.external_customer_id ||
+    order.customer?.externalId ||
+    order.customer?.external_id ||
+    undefined
+  );
+}
+
+/** Resolve the credited bundle. The product id is the SIGNED, paid fact and is
+ *  authoritative; `metadata.bundle` is only a fallback when the product id is
+ *  unmappable. If both resolve and DISAGREE, trust the product and log — never
+ *  mint the metadata bundle (which could be 60x the bundle actually paid for). */
+function resolveBundle(order: PolarOrder, productId: string | undefined) {
+  const byProduct = productId ? bundleByProductId(productId) : undefined;
+  const byMeta = order.metadata?.bundle ? bundleByKey(order.metadata.bundle) : undefined;
+  if (byProduct && byMeta && byProduct.key !== byMeta.key) {
+    console.error(
+      `[polar webhook] bundle mismatch on order=${order.id}: productId=${productId} → ` +
+        `${byProduct.key}, metadata.bundle=${order.metadata?.bundle} → ${byMeta.key}; ` +
+        `crediting the PAID product bundle`,
+    );
+  }
+  return byProduct ?? byMeta;
+}
+
 // Polar -> us. On a paid one-time order, credit the buyer's token balance.
 // Idempotent: credit() de-dupes by the Polar order id.
 export async function POST(request: NextRequest) {
@@ -31,17 +75,10 @@ export async function POST(request: NextRequest) {
   // verify metadata.userId propagates to cycle orders on the first sandbox
   // renewal (checkout metadata → subscription → order).
   if (event.type === "order.paid") {
-    const order = event.data as {
-      id: string;
-      productId?: string;
-      product_id?: string;
-      metadata?: Record<string, string>;
-    };
-    const userId = order.metadata?.userId;
+    const order = event.data as PolarOrder;
+    const userId = resolveUserId(order);
     const productId = order.productId ?? order.product_id;
-    const b =
-      (order.metadata?.bundle && bundleByKey(order.metadata.bundle)) ||
-      (productId ? bundleByProductId(productId) : undefined);
+    const b = resolveBundle(order, productId);
 
     if (userId && b) {
       await credit(userId, b.tokens, "purchase", order.id, { bundle: b.key });
@@ -61,22 +98,14 @@ export async function POST(request: NextRequest) {
 
   // Refund/chargeback reversal (optional clawback). Confirm event name.
   if (event.type === "refund.created" || event.type === "order.refunded") {
-    const order = event.data as {
-      id: string;
-      order_id?: string;
-      orderId?: string;
-      productId?: string;
-      product_id?: string;
-      metadata?: Record<string, string>;
-    };
-    const userId = order.metadata?.userId;
-    // Mirror the paid path's two-step resolution (metadata.bundle, else product
-    // id) so a refund payload that lost metadata.bundle still claws back instead
-    // of silently no-op'ing while the original purchase WAS credited.
+    const order = event.data as PolarOrder;
+    const userId = resolveUserId(order);
+    // Mirror the paid path's resolution (product id authoritative, metadata
+    // bundle only as fallback) so a refund payload that lost metadata.bundle
+    // still claws back instead of silently no-op'ing while the original purchase
+    // WAS credited.
     const productId = order.productId ?? order.product_id;
-    const b =
-      (order.metadata?.bundle && bundleByKey(order.metadata.bundle)) ||
-      (productId ? bundleByProductId(productId) : undefined);
+    const b = resolveBundle(order, productId);
     // Dedupe on the ORIGINAL order id, not the per-attempt refund id. A
     // refund.created payload's root `id` is the refund id (distinct for each
     // refund attempt), so keying the ref on it would let two refunds against the

@@ -7,6 +7,7 @@ import {
   type GuidanceRequest,
 } from "@/features/guidance/guidance";
 import { executeAiOperation } from "@/lib/ai/operation";
+import { runAdjudication } from "@/lib/llm/adjudication-gates";
 
 // USCIS form-field guidance endpoint (migrated to the shared orchestrator,
 // ADR-0004 task 3/6).
@@ -66,5 +67,19 @@ export function POST(request: Request): Promise<NextResponse> {
         guidance,
         source as Parameters<typeof buildGuidanceResponse>[1],
       ) as unknown as Record<string, unknown>,
+    // Live UPL screen: guidance is the most "tell me what to do"-prone route, and
+    // `runAdjudication` ships a dedicated `case "guidance"` (disclaimer + legal-
+    // advice tripwire). Wire it so outcome/advice language is flagged on the
+    // panel via AdjudicationBadge — matching /api/qualify and /api/rfe. There's
+    // no per-criterion grounding here, so inputText is the field + situation.
+    adjudicate: (guidance, req, source, body) =>
+      runAdjudication({
+        operation: "guidance",
+        classification: "",
+        source,
+        result: body,
+        inputText: `${req.fieldLabel} ${req.situation}`,
+        outputText: guidance,
+      }),
   });
 }

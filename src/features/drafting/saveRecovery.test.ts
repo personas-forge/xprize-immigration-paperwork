@@ -82,6 +82,16 @@ test("retrySaveDraft returns ok + version when the save endpoint succeeds", asyn
   assert.deepEqual(result, { ok: true, version: 4 });
 });
 
+test("retrySaveDraft does NOT report saved on a 2xx without a real version (no false 'Saved')", async () => {
+  // Defensive: a 200 that carries no numeric version means nothing persisted —
+  // must surface as still-unsaved, never as ok.
+  const result = await retrySaveDraft(
+    { caseId: "case-1", sections: SECTIONS, source: "mock" },
+    fakeFetch(200, { caseId: "case-1", version: null }),
+  );
+  assert.equal(result.ok, false);
+});
+
 test("retrySaveDraft surfaces the server error on a non-2xx response", async () => {
   const result = await retrySaveDraft(
     { caseId: "case-1", sections: SECTIONS, source: "mock" },

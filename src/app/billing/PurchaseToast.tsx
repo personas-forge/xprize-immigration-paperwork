@@ -34,13 +34,13 @@ export function PurchaseToast() {
         >
           <path d="M20 6 9 17l-5-5" />
         </svg>
-        Payment received — your tokens have been added to your balance.
+        Payment received — your tokens will appear in your balance momentarily.
       </span>
       <button
         type="button"
         onClick={() => setShow(false)}
         aria-label="Dismiss"
-        className="shrink-0 font-mono text-[13px] uppercase tracking-document text-muted-strong transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+        className="shrink-0 font-mono text-[13px] uppercase tracking-document text-muted-strong transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
       >
         Dismiss
       </button>

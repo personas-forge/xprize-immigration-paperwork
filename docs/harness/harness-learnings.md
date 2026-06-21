@@ -259,3 +259,95 @@
   features without persistence. Consumer of #16 (links back to Instant Verdict).
   **Follow-up:** brand FONT in the OG image (Fraunces) needs a font fetch in the
   route — currently Georgia/serif fallback.
+
+## Bug-hunter + UI-perfectionist dual-lens scan (2026-06-20, branch `vibeman/bughunt-uiperf-2026-06-20`)
+
+100 findings / 20 contexts (7C/35H/42M/16L). ALL 8 PLANNED WAVES DONE — 50
+findings closed incl. ALL 7 criticals (one a verified FP, hardened) + every High.
+23 fix + 10 doc commits, UNMERGED off `main`. tsc0 / tests 378→400 / lint /
+`next build` PASS throughout. INDEX + per-wave docs at
+`docs/harness/bughunt-uiperf-2026-06-20/`.
+
+- **2026-06-20 (W8 UI)** — `Button` base now carries `disabled:opacity-60
+  disabled:pointer-events-none` (don't hand-roll per call). New
+  `review/components/SubmitButton.tsx` (`useFormStatus().pending` → disabled +
+  label swap) is the pattern for server-action submit buttons. `Card` has an
+  opt-in `interactive` prop (applies the reduced-motion-safe `.lift`); static by
+  default. `public/manifest.webmanifest` description is guarded by
+  `src/app/manifest.test.ts` (no `$`/flat/attorney-signed/retainer). Paid fetch
+  buttons disable on a `busy` state set in try/finally, not just async `status`.
+
+- **2026-06-20 (W7 reliability)** — provenance ledger (`lib/events/provenance.ts`)
+  now BOUNDS its in-memory window (`DEFAULT_MAX_RECORDS=10k`, evict-oldest) and
+  stamps a monotonic `seq` + `atRegression` flag on each record (metadata, NOT
+  hashed — verifyChain unchanged; sort/audit by `seq`, not `at`). `extractJson`
+  now tries every fence containing `{` then raw text, and every `{` start.
+  `runClaudeCli` kills the whole process TREE on timeout (detached POSIX group /
+  `taskkill /T`). Evidence adapter no-store → `unconfigured` (503) like petition
+  (reserve `store_error` for a throw). `fetchCaseFileData` has a 30s TTL +
+  `clearCaseFileDataCache(caseId?)` — mutations must bust it post-DB-swap.
+  Orchestrator deps are cached-but-config-re-read-per-call (don't cache an
+  env-derived value).
+
+- **2026-06-20 (W6 a11y)** — `Button` now applies the focus ring on its shared
+  BASE (was ghost-only) so all variants are keyboard-visible; the canonical ring
+  is `focus-visible:ring-2 ring-accent-dark ring-offset-2 ring-offset-background`.
+  The whole app rings on `--accent-dark` (4.2/5.6:1), NOT `--accent`/40 (2.63:1) —
+  a 34-file sweep. New convention: result surfaces (verdict, generated text,
+  categorize status) carry an sr-only `role="status"` live region (CriteriaReport,
+  FieldGuidancePanel, EvidenceVault). Clickable table rows keep `<tr onClick>` as
+  a MOUSE enhancement + a labelled link-in-cell for keyboard/SR (don't make the
+  `<tr>` a button — breaks table semantics). `sr-only` is available (Tailwind 4).
+
+### Structural facts
+- **2026-06-20** — The save route (`/api/draft/save`) uses the ADAPTER
+  (`@/lib/data/adapters/petition`), whose `saveDraft` converts a no-store `null`
+  into `err("unconfigured")` → 503 (http.ts maps `unconfigured`→503,
+  `forbidden`→403, `not_found`→404, `store_error`→500). So a no-store save is a
+  503, never a `200 {version:null}` — the "Saved ✓ persists nothing" critical was
+  a FALSE POSITIVE (the subagent traced `@/lib/data/petitions`, the lib, not the
+  adapter). LESSON: verify the import the CONSUMER uses before fixing.
+- **2026-06-20** — The token ledger (`@/lib/tokens/ledger`) is the ONE chokepoint
+  all metered ops + purchases + refunds + grants funnel through; money-validation
+  belongs there. `credit` accepts NEGATIVE amounts (refund clawback) — guards must
+  allow sign but bound magnitude/finiteness. Firestore needs CODE-level balance
+  invariants (`safeBalance`) since it can't express PGlite's integer + `>= 0`
+  CHECK.
+- **2026-06-20** — The orchestrator (`executeAiOperation`) now: runs `spec.guard`
+  OUTSIDE the model try (a guard throw is a billed-parser-regression, logged +
+  reclaimed, not a model failure); skips `spec.adjudicate` when `source==="mock"`
+  (no theater risk score on a template); reclaims at most once via a try/caught
+  `reclaim()` helper.
+- **2026-06-20** — Rate-limit IP derivation (`clientIp`) takes the
+  RIGHTMOST-minus-`TRUSTED_PROXY_HOPS` `x-forwarded-for` hop (the edge-appended,
+  unforgeable one), NOT the leftmost client claim. `enforceCap` hard-evicts to
+  hold `MAX_BUCKETS`. New env: `TRUSTED_PROXY_HOPS` (default 0).
+- **2026-06-20** — `safeNext()` (`@/lib/auth/safe-next`) is the open-redirect
+  guard; EVERY `?next=` consumer must route through it. `next` is now wired
+  login → /welcome → consent action, re-validated each hop.
+- **2026-06-20** — Sign-out (both `/auth/signout` POST and `DELETE
+  /api/auth/session`) now `revokeRefreshTokens(uid)` before clearing the cookie;
+  `getUser` already verifies with `checkRevoked=true`, so this makes sign-out a
+  real logout. `getUser`'s catch now logs the UNEXPECTED (admin/credential) branch.
+- **2026-06-20** — `Store.getLatestConsentVersion(userId)` added; the onboarding
+  gate + `/welcome` re-prompt when it ≠ `CONSENT_VERSION` (consent version was
+  write-only before). `QualifyAssessment.classification` is now pinned into the
+  result so `CriteriaReport` derives the threshold from it, not mutable form state.
+
+### Open follow-ups (from the 2026-06-20 dual-lens scan)
+- **Waves 6-8 NOT run** (no remaining criticals): W6 accessibility (focus-visible
+  on Button variants, criteria-table semantics, verdict aria-live, live regions),
+  W7 reliability/resource (provenance ledger unbounded growth, concurrent-publish
+  ordering, module/cache staleness, orphan grandchild on claude timeout), W8 UI
+  consistency (manifest stale "$2,500" price, header/footer drift, landing-claude
+  duplicate-content, dead Card hover, destructive-remove confirm).
+- **Deferred mediums/lows:** llm-eval #5 (sentence-count fooled by `U.S.`/`C.F.R.`
+  — masking attempt introduced a NUL byte into the single-sourced
+  `adjudication-gates.ts`, reverted; redo with a tokenizer); rate-limit #4 (byUser
+  anon→IP fallback), #5 (single-node doc); auth #5 (/welcome edge protection);
+  drafting #4 (first-generate seeding), #5 (stale Saved-pill); checkout #3 (refund
+  floor), #4 (toast race); token #3 (debit idempotency-by-requestId), #4 (dev
+  grant `||1000`), #5 (metering-unavailable observability); ai #3/#4.
+- **Verify before merge:** `externalCustomerId` propagation on a real Polar
+  sandbox renewal (checkout #2 fix relies on it); `TRUSTED_PROXY_HOPS` set
+  correctly for the actual deployment edge.

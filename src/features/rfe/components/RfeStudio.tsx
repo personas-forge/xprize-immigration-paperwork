@@ -71,6 +71,10 @@ export function RfeStudio({
   const [error, setError] = useState<string | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
   const [adjudication, setAdjudication] = useState<AdjudicationReport | null>(null);
+  // Visible in-flight state — kept in lockstep with busyRef so the paid button
+  // stays DISABLED for the whole charged call (not just while status==="loading"),
+  // so a click during the status-commit gap doesn't look live on a money button.
+  const [busy, setBusy] = useState(false);
   // Synchronous in-flight guard — see DraftStudio. A stale `status` closure can't
   // stop two same-render clicks from both firing a paid POST.
   const busyRef = useRef(false);
@@ -110,6 +114,7 @@ export function RfeStudio({
       return;
     }
     busyRef.current = true;
+    setBusy(true);
     setStatus("loading");
     setError(null);
     setSaveFailed(false);
@@ -150,6 +155,7 @@ export function RfeStudio({
       setStatus("error");
     } finally {
       busyRef.current = false;
+      setBusy(false);
     }
   }
 
@@ -181,12 +187,12 @@ export function RfeStudio({
             onChange={(e) => setRfeText(e.target.value)}
             rows={4}
             placeholder="The evidence does not establish that the beneficiary satisfies…"
-            className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+            className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           />
         </label>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" variant="seal" onClick={generate} disabled={status === "loading"}>
+          <Button type="button" variant="seal" onClick={generate} disabled={busy || status === "loading"}>
             {status === "loading"
               ? "Drafting…"
               : status === "done"
@@ -226,7 +232,7 @@ export function RfeStudio({
               </p>
               <Link
                 href="/billing"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px]"
               >
                 Buy more
                 <span aria-hidden>→</span>
@@ -286,7 +292,7 @@ export function RfeStudio({
                   value={s.body}
                   onChange={(e) => editBody(i, e.target.value)}
                   rows={Math.max(3, Math.ceil(s.body.length / 90))}
-                  className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-[1.7] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-[1.7] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
                 />
               </div>
             ))}

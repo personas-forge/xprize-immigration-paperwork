@@ -1,12 +1,9 @@
 import { Badge, Card, CardBody, CardHeader } from "@/components/ui";
 import { isModelSource, sourceLabel } from "@/lib/llm/label";
 import { DisclaimerStamp } from "@/components/legal";
-import {
-  QUALIFYING_THRESHOLD,
-  statusTone,
-  summarizeCriteria,
-} from "@/features/case-file/criteria";
+import { statusTone, summarizeCriteria } from "@/features/case-file/criteria";
 import { type Criterion } from "@/features/case-file/types";
+import { packFor } from "../packs";
 import { type QualifyResult } from "../qualification";
 
 // — Qualification report ──────────────────────────────────────────────────────
@@ -25,15 +22,12 @@ function statusAccent(status: string): string {
       : "border-l-transparent";
 }
 
-export function CriteriaReport({
-  result,
-  threshold = QUALIFYING_THRESHOLD,
-}: {
-  result: QualifyResult;
-  /** Minimum qualifying criteria for THIS classification's pack (O-1A defaults
-   *  to 3; the caller passes the pack threshold so EB-1A/UK don't misreport). */
-  threshold?: number;
-}) {
+export function CriteriaReport({ result }: { result: QualifyResult }) {
+  // The qualifying threshold is derived from the classification the result was
+  // actually SCORED against (pinned into the result), NOT from mutable form
+  // state — otherwise changing the visa-type dropdown after a screening would
+  // render the verdict against the wrong program's rule (a legal-correctness bug).
+  const threshold = packFor(result.classification).threshold;
   // summarizeCriteria is documented to be robust to arbitrary row shapes; the
   // ScoredCriterion union (which adds "None") is intentionally passed through —
   // "None"/unknown rows are ignored rather than counted (the safe direction).
@@ -46,6 +40,13 @@ export function CriteriaReport({
     <div className="space-y-4">
       {/* Disclaimer FIRST — UPL safeguard, never dismissible. */}
       <DisclaimerStamp text={result.disclaimer} />
+
+      {/* Screen-reader announcement of the VERDICT — the outcome of the screening,
+          which the visual likelihood meter alone doesn't convey to AT. role=status
+          (polite) so it's spoken when the report swaps in without stealing focus. */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {`Screening result: ${summary.meetsThreshold ? "meets" : "below"} the qualifying threshold — ${summary.qualifying} of ${result.criteria.length} criteria supported, ${threshold} needed. Informational only, not legal advice.`}
+      </p>
 
       {/* Likelihood + summary */}
       <Card className="overflow-hidden">

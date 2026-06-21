@@ -83,13 +83,25 @@ export function pickMergeBase(
   return clientSections.map((s) => ({ heading: s.heading, body: s.body }));
 }
 
-/** Replace the focused section's body in `base`, preserving every other section. */
+/** Replace the focused section's body in `base`, preserving every other section.
+ *  Replaces ONLY THE FIRST heading match — section headings are free-form
+ *  user/model text and can collide (two "Critical role" entries, or a model that
+ *  emits "Introduction" twice). Matching every occurrence would overwrite a
+ *  distinct argument section with an unrelated body, silently corrupting a paid
+ *  draft the attorney may file. */
 export function mergeRegeneratedSection(
   base: readonly DraftSection[],
   focus: string,
   body: string,
 ): DraftSection[] {
-  return base.map((s) => (s.heading === focus ? { heading: focus, body } : s));
+  let replaced = false;
+  return base.map((s) => {
+    if (!replaced && s.heading === focus) {
+      replaced = true;
+      return { heading: focus, body };
+    }
+    return s;
+  });
 }
 
 export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
@@ -159,6 +171,25 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
       // exhibit-free draft rather than failing a payable generation.
       const docs = await evidence.getDocuments(access, caseId);
       const req = docs.ok ? attachExhibits(parsed.value, docs.value) : parsed.value;
+      // A section regenerate (focus) bills draft_section but can only PERSIST with
+      // a merge base — the client's current sections containing the focus, OR a
+      // stored latest draft. With neither, persist would charge then save nothing
+      // (the work would survive only in component state). Reject BEFORE charging
+      // with a 409 so the user isn't billed for an un-persistable regenerate.
+      // (A full-letter draft seeds the chain, so it has no such precondition.)
+      if (focus && !pickMergeBase(clientSections, focus)) {
+        const latest = await petitions.getLatestDraft(access, caseId);
+        const hasStoredBase = latest.ok && latest.value !== null;
+        if (!hasStoredBase) {
+          return {
+            ok: false,
+            response: NextResponse.json(
+              { error: "Generate the full letter first, then regenerate a section." },
+              { status: 409 },
+            ),
+          };
+        }
+      }
       return { ok: true, value: { req, focus, caseId, clientSections } };
     }
 

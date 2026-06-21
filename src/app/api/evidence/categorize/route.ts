@@ -93,6 +93,8 @@ export function POST(request: Request): Promise<NextResponse> {
     // adapter error (forbidden / store fault) yields no document, never an error.
     // `source` records whether the categorization was model- or mock-generated.
     persist: async (assessment, input, user, source) => {
+      // No caseId (or no user) → no save was attempted; a null document here is
+      // the legitimate keyless/no-case path, NOT a failure.
       if (!user || !input.caseId) return { document: null };
       const saved = await evidence.addDocument(
         { userId: user.id, email: user.email ?? null },
@@ -104,8 +106,13 @@ export function POST(request: Request): Promise<NextResponse> {
           source,
         },
       );
-      return { document: saved.ok ? saved.value : null };
+      if (saved.ok) return { document: saved.value };
+      // A caseId WAS supplied but the save failed (forbidden / not_found / store
+      // fault). Don't collapse this into the no-case null — emit saveFailed so the
+      // user (who was charged) is told their evidence didn't persist instead of
+      // seeing a phantom doc that vanishes on reload.
+      return { document: null, saveFailed: true };
     },
-    onPersistError: () => ({ document: null }),
+    onPersistError: (input) => ({ document: null, saveFailed: input.caseId != null }),
   });
 }

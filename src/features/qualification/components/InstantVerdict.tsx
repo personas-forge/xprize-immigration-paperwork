@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { Seal, Guilloche } from "@/components/brand";
 import { Rise } from "@/components/Motion";
-import { VISA_PACKS, packFor, type Classification } from "../packs";
+import { VISA_PACKS, type Classification } from "../packs";
 import { livePrograms } from "../jurisdictions";
 import { type QualifyResult } from "../qualification";
 import { CriteriaReport } from "./CriteriaReport";
@@ -111,7 +111,7 @@ export function InstantVerdict({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Dr. Anya Krishnan"
-                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
                 />
               </label>
               <label className="block">
@@ -120,7 +120,7 @@ export function InstantVerdict({
                   id={classId}
                   value={classification}
                   onChange={(e) => setClassification(e.target.value as Classification)}
-                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
                 >
                   {PROGRAMS.map((c) => (
                     <option key={c} value={c}>
@@ -141,7 +141,7 @@ export function InstantVerdict({
                 onChange={(e) => setProfile(e.target.value)}
                 rows={6}
                 placeholder="Paste your CV highlights or describe your achievements in plain language…"
-                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               />
               <div className="mt-1 flex justify-end">
                 <span
@@ -164,7 +164,7 @@ export function InstantVerdict({
               <button
                 type="button"
                 onClick={() => setProfile(SAMPLE)}
-                className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               >
                 Use a sample
               </button>
@@ -193,10 +193,7 @@ export function InstantVerdict({
             petitioner={name.trim() || "Applicant"}
             classification={classification}
           >
-            <CriteriaReport
-              result={result}
-              threshold={packFor(classification).threshold}
-            />
+            <CriteriaReport result={result} />
           </Certificate>
           <LettersPatentShare
             name={name}
@@ -279,7 +276,7 @@ function SoftGate({
       <Link
         href="/qualify"
         onClick={onGoDeeper}
-        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 active:translate-y-[1px]"
+        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px]"
       >
         Continue ({likelihood}%)
         <span aria-hidden>→</span>

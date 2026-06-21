@@ -6,6 +6,7 @@ export {
   buildRfeResult,
   buildRfeForecastPrompt,
   buildRfeForecastResult,
+  hasReliedCriteria,
   mockRfe,
   mockRfeForecast,
   parseRfeRequest,

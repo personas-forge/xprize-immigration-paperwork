@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Badge, Button, Card, CardBody, CardHeader, type BadgeTone } from "@/components/ui";
+import { SubmitButton } from "./SubmitButton";
 import {
   addReviewNote,
   attorneyRecordDecision,
@@ -103,9 +104,9 @@ export function ReviewPanel({
 
         {inDrafting && isOwner ? (
           <form action={submitForReview.bind(null, caseId)} className="space-y-2">
-            <Button type="submit" variant="seal">
+            <SubmitButton variant="seal" pendingLabel="Submitting…">
               Submit for attorney review
-            </Button>
+            </SubmitButton>
             <p className="microprint" style={{ color: "var(--muted)" }}>
               {hasDraft
                 ? "Sends your drafted petition to the attorney of record."
@@ -134,11 +135,11 @@ export function ReviewPanel({
                 name="feedback"
                 rows={3}
                 placeholder="Required changes for the applicant…"
-                className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               />
-              <Button type="submit" variant="secondary">
+              <SubmitButton variant="secondary" pendingLabel="Returning…">
                 Return with changes
-              </Button>
+              </SubmitButton>
             </form>
           </div>
         ) : null}
@@ -152,16 +153,16 @@ export function ReviewPanel({
               <span className="microprint">USCIS decision</span>
               <select
                 name="decision"
-                className="mt-1.5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                className="mt-1.5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               >
                 <option value="Approved">Approved</option>
                 <option value="RFE issued">RFE issued</option>
                 <option value="Denied">Denied</option>
               </select>
             </label>
-            <Button type="submit" variant="secondary">
+            <SubmitButton variant="secondary" pendingLabel="Recording…">
               Record decision
-            </Button>
+            </SubmitButton>
           </form>
         ) : null}
 
@@ -207,11 +208,11 @@ export function ReviewPanel({
               name="body"
               rows={2}
               placeholder="Add a note to the thread…"
-              className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+              className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
             />
-            <Button type="submit" variant="ghost" size="sm">
+            <SubmitButton variant="ghost" size="sm" pendingLabel="Adding…">
               Add note
-            </Button>
+            </SubmitButton>
           </form>
         ) : null}
       </CardBody>
@@ -259,9 +260,9 @@ function SignAndFileAction({ caseId }: { caseId: string }) {
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <form action={attorneySignAndFile.bind(null, caseId)}>
-          <Button type="submit" variant="seal">
+          <SubmitButton variant="seal" pendingLabel="Filing with USCIS…">
             Confirm — sign &amp; file
-          </Button>
+          </SubmitButton>
         </form>
         <Button type="button" variant="secondary" onClick={() => setConfirming(false)}>
           Cancel

@@ -9,6 +9,7 @@ import {
   buildRfeResult,
   buildRfeForecastPrompt,
   buildRfeForecastResult,
+  hasReliedCriteria,
   mockRfe,
   mockRfeForecast,
   parseRfeRequest,
@@ -31,6 +32,18 @@ const valid: RfeRequest = {
     { name: "Press", status: "None", evidence: "", rationale: "None found." },
   ],
 };
+
+// — Forecast pre-charge gate ─────────────────────────────────────────────────
+
+test("hasReliedCriteria: true with any Met/Strong/Partial, false when all None", () => {
+  assert.equal(hasReliedCriteria(valid), true);
+  const allNone: RfeRequest = {
+    ...valid,
+    criteria: valid.criteria.map((c) => ({ ...c, status: "None" })),
+  };
+  assert.equal(hasReliedCriteria(allNone), false);
+  assert.equal(hasReliedCriteria({ ...valid, criteria: [] }), false);
+});
 
 // — Validation ────────────────────────────────────────────────────────────
 

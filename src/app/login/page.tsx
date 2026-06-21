@@ -12,6 +12,7 @@ import Link from "next/link";
 import { signInWithPopup } from "firebase/auth";
 import { isDevAuth } from "@/lib/auth/devAuth";
 import { authProvider } from "@/lib/auth/provider";
+import { safeNext } from "@/lib/auth/safe-next";
 import { firebaseAuth, googleProvider } from "@/lib/firebase/client";
 import { PageFrame, Guilloche, Stamp, ChapterMark } from "@/components/brand";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -36,8 +37,11 @@ export default function LoginPage() {
         body: JSON.stringify({ idToken }),
       });
       if (!res.ok) throw new Error("Could not establish a session.");
-      // /welcome onboards first-timers and bounces onboarded users to /dashboard.
-      window.location.href = "/welcome";
+      // Carry the (validated) deep-link destination through onboarding. safeNext
+      // rejects off-site / protocol-relative targets so this can't become an
+      // open redirect; /welcome forwards an onboarded user straight to it.
+      const dest = safeNext(new URLSearchParams(window.location.search).get("next"));
+      window.location.href = `/welcome?next=${encodeURIComponent(dest)}`;
     } catch (e) {
       setBusy(false);
       setError(
@@ -83,7 +87,7 @@ export default function LoginPage() {
               <div className="space-y-3">
                 <Link
                   href="/dashboard"
-                  className="group inline-flex items-center justify-center gap-3 rounded-control border border-foreground bg-foreground px-6 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-[transform,background-color] hover:-translate-y-[1px] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40"
+                  className="group inline-flex items-center justify-center gap-3 rounded-control border border-foreground bg-foreground px-6 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-[transform,background-color] hover:-translate-y-[1px] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
                 >
                   Continue as developer →
                 </Link>
@@ -96,7 +100,7 @@ export default function LoginPage() {
                 <button
                   onClick={signInWithGoogleFirebase}
                   disabled={busy}
-                  className="group inline-flex items-center justify-center gap-3 rounded-control border border-foreground bg-foreground px-6 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-[transform,background-color] hover:-translate-y-[1px] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/40 disabled:opacity-60"
+                  className="group inline-flex items-center justify-center gap-3 rounded-control border border-foreground bg-foreground px-6 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-[transform,background-color] hover:-translate-y-[1px] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] disabled:opacity-60"
                 >
                   <GoogleGlyph />
                   {busy ? "Signing in…" : "Continue with Google"}

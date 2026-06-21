@@ -92,7 +92,7 @@ export function parseSaveDraftRequest(
 }
 
 export type RetrySaveResult =
-  | { ok: true; version: number | null }
+  | { ok: true; version: number }
   | { ok: false; error: string };
 
 /**
@@ -111,7 +111,7 @@ export async function retrySaveDraft(
       body: JSON.stringify(payload),
     });
     const data = (await res.json().catch(() => null)) as
-      | { version?: number | null; error?: string }
+      | { version?: number | null; persisted?: boolean; error?: string }
       | null;
     if (!res.ok) {
       return {
@@ -119,7 +119,16 @@ export async function retrySaveDraft(
         error: data?.error ?? "Saving failed again — please try once more.",
       };
     }
-    return { ok: true, version: data?.version ?? null };
+    // A 2xx alone is NOT proof of persistence — require a real version number
+    // (the route's `persisted` contract). A null version means nothing was
+    // written, so report it as still-unsaved rather than a false "Saved ✓".
+    if (typeof data?.version !== "number") {
+      return {
+        ok: false,
+        error: "Saving is unavailable right now — the draft is still unsaved.",
+      };
+    }
+    return { ok: true, version: data.version };
   } catch {
     return { ok: false, error: "Network error — the draft is still unsaved." };
   }
