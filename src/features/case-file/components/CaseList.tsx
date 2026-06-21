@@ -233,14 +233,14 @@ export function CaseList() {
             <table className="w-full text-base">
               <thead className="bg-background-tint/40 text-left">
                 <tr>
-                  <th className="px-4 py-2.5 microprint font-medium">File №</th>
-                  <th className="px-4 py-2.5 microprint font-medium">Petitioner</th>
-                  <th className="px-4 py-2.5 microprint font-medium">Visa</th>
-                  <th className="px-4 py-2.5 microprint font-medium">Status</th>
-                  <th className="px-4 py-2.5 microprint text-right font-medium">
+                  <th scope="col" className="px-4 py-2.5 microprint font-medium">File №</th>
+                  <th scope="col" className="px-4 py-2.5 microprint font-medium">Petitioner</th>
+                  <th scope="col" className="px-4 py-2.5 microprint font-medium">Visa</th>
+                  <th scope="col" className="px-4 py-2.5 microprint font-medium">Status</th>
+                  <th scope="col" className="px-4 py-2.5 microprint text-right font-medium">
                     Likelihood
                   </th>
-                  <th className="px-4 py-2.5 microprint text-right font-medium">
+                  <th scope="col" className="px-4 py-2.5 microprint text-right font-medium">
                     Target file
                   </th>
                 </tr>
@@ -249,13 +249,18 @@ export function CaseList() {
                 {visible.map((c) => (
                   <tr
                     key={c.id}
+                    // Whole-row click is a MOUSE enhancement. The keyboard-/SR-
+                    // accessible action is the labelled file-number link below
+                    // (making the <tr> itself a button would break table
+                    // semantics — the recommended pattern is a link in a cell).
                     onClick={() => router.push(`/dashboard/cases/${c.id}`)}
                     className="cursor-pointer border-t border-dotted border-rule transition-[background-color] duration-200 hover:bg-accent-soft/35"
                   >
                     <td className="px-4 py-3 doc-number text-[14px] text-foreground">
                       <Link
                         href={`/dashboard/cases/${c.id}`}
-                        className="hover:underline focus-visible:underline focus-visible:outline-none"
+                        aria-label={`Open case ${c.fileNumber} — ${c.petitioner}`}
+                        className="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] rounded-[2px]"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {c.fileNumber}
