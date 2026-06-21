@@ -45,6 +45,20 @@ export interface ChargeOutcome {
   balance: number;
 }
 
+/** One row of a user's token ledger, for the billing activity read-out. */
+export interface LedgerEntry {
+  /** Signed token movement (debit negative, credit/grant/refund positive). */
+  delta: number;
+  /** purchase | reclaim | refund | adjustment | enterprise_grant | debit | signup_grant. */
+  reason: string;
+  /** The metered operation for a debit (e.g. "draft"), else null. */
+  operation: string | null;
+  /** Running balance after this entry. */
+  balanceAfter: number;
+  /** ISO timestamp, or null. */
+  createdAt: string | null;
+}
+
 // ── Domain: immigration petition pipeline ────────────────────────────────────
 
 /** A criterion row to persist alongside a case (denormalized in Firestore). */
@@ -185,6 +199,9 @@ export interface Store {
    *  they have never consented. Used to re-prompt when the terms version bumps. */
   getLatestConsentVersion(userId: string): Promise<string | null>;
   getBalance(userId: string): Promise<number>;
+  /** A user's recent token-ledger entries, newest first (capped at `limit`) —
+   *  for the billing "Recent activity" read-out. */
+  getLedgerForUser(userId: string, limit: number): Promise<LedgerEntry[]>;
   /** Atomic debit. Refuses (ok:false) when the balance is insufficient. */
   charge(
     userId: string,

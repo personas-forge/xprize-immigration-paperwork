@@ -194,6 +194,28 @@ export const firestoreStore: Store = {
     return snap.exists ? safeBalance(snap.get("balance"), userId) : 0;
   },
 
+  async getLedgerForUser(userId, limit) {
+    // Query by user_id only (single-field auto-index) then sort + slice in memory
+    // — avoids requiring a composite (user_id, created_at) index, same convention
+    // as getLatestConsentVersion. A user's ledger is bounded (purchases + ops).
+    const q = await adminDb()
+      .collection(col("token_ledger"))
+      .where("user_id", "==", userId)
+      .get();
+    const ms = (v: unknown): number => (v instanceof Timestamp ? v.toMillis() : 0);
+    return q.docs
+      .map((d) => d.data())
+      .sort((a, b) => ms(b.created_at) - ms(a.created_at))
+      .slice(0, Math.max(0, Math.floor(limit)))
+      .map((v) => ({
+        delta: Number(v.delta ?? 0),
+        reason: String(v.reason ?? ""),
+        operation: v.operation == null ? null : String(v.operation),
+        balanceAfter: Number(v.balance_after ?? 0),
+        createdAt: tsToIso(v.created_at),
+      }));
+  },
+
   async charge(userId, cost, operation, ref) {
     const fs = adminDb();
     const accRef = fs.collection(col("token_accounts")).doc(userId);

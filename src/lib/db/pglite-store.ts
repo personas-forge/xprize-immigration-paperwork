@@ -309,6 +309,21 @@ export async function getPgliteStore(): Promise<Store> {
       return num(r.rows[0]?.balance);
     },
 
+    async getLedgerForUser(userId, limit) {
+      const r = await pg.query(
+        `select delta, reason, operation, balance_after, created_at
+           from token_ledger where user_id = $1 order by id desc limit $2`,
+        [userId, Math.max(0, Math.floor(limit))],
+      );
+      return r.rows.map((row) => ({
+        delta: num(row.delta),
+        reason: str(row.reason),
+        operation: row.operation == null ? null : str(row.operation),
+        balanceAfter: num(row.balance_after),
+        createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : null,
+      }));
+    },
+
     // DEBIT IDEMPOTENCY CONTRACT (load-bearing — do not "optimize" the lock away):
     // `ref` is the orchestrator's per-request requestId (or an Idempotency-Key-
     // derived id). A retry of the same logical charge must debit AT MOST once. That
