@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { DisclaimerStamp } from "@/components/legal";
+import { costOf } from "@/lib/tokens/registry";
 import { type RfeChallenge, type RfeForecastResult } from "@/features/rfe";
 
 // — RFE Risk Radar (moonshot #20) ─────────────────────────────────────────────
@@ -98,7 +99,7 @@ export function RfeRiskRadar({
           <Button type="button" variant="primary" onClick={forecast} disabled={status === "loading"}>
             {status === "loading" ? "Forecasting…" : "Forecast RFE risk"}
             <span className="ml-2 rounded-full bg-background/15 px-1.5 py-0.5 font-mono text-[12px] tracking-document">
-              5 tokens
+              {costOf("rfe")} tokens
             </span>
           </Button>
           <span className="microprint" style={{ color: "var(--muted)" }}>
@@ -159,7 +160,7 @@ export function RfeRiskRadar({
                       >
                         {reinforcing === c.criterion ? "Reinforcing…" : "Reinforce this section"}
                         <span className="ml-2 rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-accent-dark">
-                          5 tokens
+                          {costOf("draft_section")} tokens
                         </span>
                       </Button>
                     </div>

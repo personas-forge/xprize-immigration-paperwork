@@ -145,6 +145,13 @@ export const VISA_PACKS: Record<Classification, VisaPack> = {
   "EB-1A": {
     classification: "EB-1A",
     label: "Extraordinary ability — green-card self-petition",
+    // DECISION (feature-ambiguity 2026-06-21): EB-1A clears at 3 criteria here,
+    // scored identically to O-1A, BUT clearing 3 is only STEP ONE of the two-step
+    // Kazarian analysis — USCIS then weighs the totality on a higher "final merits"
+    // bar (validation note). We surface that as an explicit caveat in
+    // CriteriaReport rather than damping the likelihood band (keeping the score
+    // math uniform + auditable). Do NOT "simplify away" the caveat: a green
+    // "Meets threshold · 78%" with no caveat over-claims on a green-card path.
     threshold: 3,
     criteria: [
       AWARDS,

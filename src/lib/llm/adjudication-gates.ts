@@ -315,6 +315,12 @@ export interface AdjudicationContext {
   inputText: string;
   /** The human-readable model output, concatenated, for the scans. */
   outputText: string;
+  /** Exhibit numbers the draft/RFE CITES that are NOT on file in the case vault
+   *  (computed by the route via `auditDraftCitations`). `undefined` = the route
+   *  didn't audit citations (gate skipped); `[]` = audited, all resolved (pass);
+   *  non-empty = a hard fail (cites evidence that doesn't exist). Kept as data on
+   *  the context so this module stays pure (no import of the drafting layer). */
+  unresolvedCitations?: number[];
 }
 
 /** Disclaimer invariant — present + unaltered on every AI output. */
@@ -356,6 +362,27 @@ function caseLawGate(ctx: AdjudicationContext): Adjudication {
   return hits.length === 0
     ? a("caselaw-review", "pass", "no case-law citations")
     : a("caselaw-review", "warn", `cites case law — attorney must verify: ${hits.slice(0, 4).join(" | ")}`);
+}
+
+/** Exhibit-citation integrity (draft / RFE) — the "you can never ship a letter
+ *  that cites evidence you don't have" guarantee. A section that cites
+ *  "(Exhibit 9)" with no Exhibit 9 on file is a credibility / RFE-denial risk, so
+ *  any unresolved citation is a HARD fail (turns attorney-ready false). The
+ *  unresolved list is computed by the route (auditDraftCitations) and passed on
+ *  the context. Returns [] when the route didn't audit (`undefined`) so the gate
+ *  simply doesn't run for ops that don't carry exhibits. */
+function exhibitCitationGate(ctx: AdjudicationContext): Adjudication[] {
+  if (ctx.unresolvedCitations === undefined) return [];
+  const unresolved = ctx.unresolvedCitations;
+  return unresolved.length === 0
+    ? [a("exhibit-citations-resolved", "pass", "every exhibit citation resolves to a filed exhibit")]
+    : [
+        a(
+          "exhibit-citations-resolved",
+          "fail",
+          `cites exhibit(s) not on file: ${unresolved.map((n) => `Ex. ${n}`).join(", ")}`,
+        ),
+      ];
 }
 
 /** Classification consistency — no other visa code leaked into a letter. */
@@ -436,6 +463,7 @@ export function runAdjudication(ctx: AdjudicationContext): AdjudicationReport {
         fabricationGate(ctx),
         groundingGate(ctx),
         caseLawGate(ctx),
+        ...exhibitCitationGate(ctx),
       );
       break;
     case "qualify":

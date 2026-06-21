@@ -334,6 +334,105 @@ findings closed incl. ALL 7 criticals (one a verified FP, hardened) + every High
   write-only before). `QualifyAssessment.classification` is now pinned into the
   result so `CriteriaReport` derives the threshold from it, not mutable form state.
 
+## Feature-scout + ambiguity-guardian dual-lens scan (2026-06-21, branch `vibeman/feature-ambiguity-2026-06-21`)
+
+100 findings / 20 contexts (6C/49H/44M/1L; 45 feature-scout / 55 ambiguity-guardian),
+count-verified 3 ways. Correctness waves W1–4 (25 findings: ALL 6 criticals + the
+in-scope highs) SHIPPED on the branch, UNMERGED off `main`. 23 fix/doc commits;
+tsc0 / tests 409→427 / next build PASS throughout. INDEX + 20 reports +
+FIXES-WAVES-1-4 (with an 11-item pattern catalogue) at
+`docs/harness/feature-ambiguity-2026-06-21/`.
+
+### Structural facts
+- **2026-06-21** — The AI orchestrator (`executeAiOperation`) now has an opt-in
+  `onBlocked(input, body, report)` hook: when `adjudicate` returns
+  `attorneyReady:false`, the orchestrator RECLAIMS the charge and replaces the
+  body (wired for guidance → advice-free mock). It also honors a client
+  `Idempotency-Key` header — validated `[A-Za-z0-9_.:-]{1,200}`, folded into the
+  ledger ref as `idem:${userId}:${op}:${key}` so a retry de-dupes the charge.
+- **2026-06-21** — `isMeteringEnforced(env?)` in `@/lib/db/config` is the SINGLE
+  source of truth for "is the token economy on?" (`!TOKENS_BYPASS && isStoreConfigured()`).
+  `isDevAuth`/`dbDriver`/`isStoreConfigured`/`firestoreProjectId` are now
+  env-injectable. `isMeteringBypassed` is just `!isMeteringEnforced`. DATABASE_URL
+  is NOT a store signal (the store is driver-selected). The guard + billing page +
+  isMeteringBypassed all derive from the one predicate.
+- **2026-06-21** — `isAttorney` (roles.ts) fails CLOSED in production when
+  ATTORNEY_EMAILS is empty (demo unlock is dev-only) + warns once. `AppUser` now
+  carries `emailVerified` (Firebase `email_verified`; dev user = true); the free
+  signup grant gates on it.
+- **2026-06-21** — `CONSENT_VERSION` derives from ordered `CONSENT_VERSIONS`
+  (append on copy change); `isKnownConsentVersion` membership check rejects an
+  unknown env override. Firestore `getLatestConsentVersion` orders by the version
+  STRING (chronological dates), `created_at` only breaks an exact tie.
+- **2026-06-21** — `PetitionAdapter` now exposes `listOwnedCases(access)` +
+  `listReviewQueue(access)` (the cross-tenant queue IDOR gate lives in the seam:
+  forbidden unless configured attorney|ops). The dashboard, review queue, and
+  `saved-cases` all read lists through it.
+- **2026-06-21** — Evidence vault is SOFT-DELETE: `case_documents.deleted_at`/
+  `deleted_by` (PGlite cols + idempotent ALTER; Firestore fields), filtered out of
+  `getCaseDocuments`, blocked from refile; `Store.restoreCaseDocument` +
+  `EvidenceAdapter.restoreDocument` recover it (ordinal is non-reused). The live
+  adjudication engine has an `exhibitCitationGate` (unresolved `(Exhibit N)` → hard
+  fail) fed by `auditDraftCitations` via `ctx.unresolvedCitations`.
+- **2026-06-21** — `callGemini` (engines.ts) is bounded by a per-tier deadline
+  (`GEMINI_TIMEOUT_MS` fast 60s/long 120s, rejects → reclaim+mock) + bounded
+  transient retry (`isTransientGeminiError`, exported). `FIRM_FEE` (range+verb) in
+  `@/lib/site` is the one marketing firm-fee anchor.
+
+### Conventions enforced (this scan)
+- **2026-06-21** — A safety SIGNAL must be ENFORCED server-side, not just badged:
+  UPL-flagged guidance is withheld (onBlocked), unresolved exhibit citations fail
+  the adjudication gate. A client-only badge still ships the offending payload.
+- **2026-06-21** — Money/price COPY must derive from the single source (`costOf`,
+  `FIRM_FEE`, centralized `PREVIEW_RATE_LIMIT`) — never a hand-authored literal
+  that can drift from what's charged.
+- **2026-06-21** — Backticks inside a SQL TEMPLATE LITERAL (the pglite schema
+  string) terminate the literal — use plain words / single quotes in SQL comments,
+  not `code` backticks. (Hit + fixed this session.)
+
+### Structural facts (feature waves W5–8, 2026-06-21)
+- **2026-06-21** — `attorneySignAndFile` now PRE-FILE gates on a non-empty draft
+  (adapter `getLatestDraft`) and takes an optional real USCIS receipt
+  (`isUscisReceipt` = `(EAC|WAC|LIN|SRC|IOE|MSC|YSC|NBC)\d{10}`); a generated demo
+  receipt carries `metadata.demo` and ReviewPanel flags it (derived from the filed
+  event body containing "DEMO").
+- **2026-06-21** — `resolveNotifyFn(env, deps?)` (events/subscribers/attorney-notify)
+  is the real delivery sink: POSTs to `ATTORNEY_NOTIFY_WEBHOOK_URL` (+ optional
+  `ATTORNEY_NOTIFY_WEBHOOK_TOKEN`) with `attorneyAllowlist()` recipients, 5s
+  timeout; console fallback. Wired in `getDomainBus()`.
+- **2026-06-21** — `DraftStudio` done view exports via `draftClipboardText` (Copy +
+  Download .txt). `CaseDetailView` shows the real eligibility read-out via
+  `summarizeCriteria(criteria, packFor(classification).threshold)` — threshold is
+  ALWAYS the case's own pack, never the O-1A constant. `CriteriaReport` shows an
+  EB-1A final-merits caveat (decision recorded in packs.ts; likelihood NOT damped).
+- **2026-06-21** — `Store.getLedgerForUser(userId, limit)` (both drivers — PGlite
+  `order by id desc`; Firestore single-field query + in-memory sort to avoid a
+  composite index) + `ledger.getLedgerForUser` feed the /billing "Recent activity"
+  list. New `Store.LedgerEntry` type.
+- **2026-06-21** — FAQ page emits `FAQPage` JSON-LD from the QA array. The llm-eval
+  harness sends `temperature: 0` for qualify to match prod.
+- **2026-06-21 LESSON** — `git commit -m` with an apostrophe (can't, doesn't) in a
+  single-quoted bash string terminates the quote → use a heredoc message FILE
+  (`git commit -F`).
+- **2026-06-21 (GDPR)** — `Store.exportUserData(userId)`/`deleteUserData(userId)`
+  (both drivers) + `auth/db.ts` wrappers. PGlite delete CASCADES via
+  `cases(id) ON DELETE CASCADE` on all 5 child tables (criteria/petition_drafts/
+  rfe_responses/case_documents/case_reviews) in one tx, then profile/consents/
+  token rows by user id; Firestore has NO FK cascade → gather every keyed doc +
+  per-case children and `batch.delete` (450/batch, idempotent). `GET /api/me/export`
+  (auth-gated, session-uid-keyed JSON download). `/dashboard/account` page: export
+  link + Danger-zone delete (two-step + typed `delete my account` → cascade →
+  `adminAuth().deleteUser` [skipped for dev-auth] → clear `SESSION_COOKIE`). Order
+  is DATA-first then auth-account so a failed data delete is retryable. "Account"
+  link in `@/components/SiteChrome` nav.
+- **2026-06-21 (consent self-service)** — `Store.getConsentHistory(userId)` (full
+  append-only log, newest first) + `recordConsent(input)` (appends a consent row
+  WITHOUT the profile mutation — distinct from `upsertProfileWithConsent`). The
+  `/dashboard/account` page shows the consent receipt log + a marketing-preference
+  toggle (`updateMarketingPreference` action records a NEW consent row with the
+  flipped `marketing_opt_in`, current `CONSENT_VERSION`, terms/privacy=true). The
+  page derives current marketing/version from `getConsentHistory()[0]` (newest).
+
 ### Open follow-ups (from the 2026-06-20 dual-lens scan)
 - **Waves 6-8 NOT run** (no remaining criticals): W6 accessibility (focus-visible
   on Button variants, criteria-table semantics, verdict aria-live, live regions),

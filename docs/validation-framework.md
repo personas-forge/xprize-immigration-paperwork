@@ -18,13 +18,17 @@ Each program and each load-bearing compliance claim has a `ValidationRecord`
 | `sources` | titles + URLs, tagged `primary-law` / `agency-guidance` / `court-order` / `secondary` |
 | `lastVerified` | yyyy-mm-dd of the last check |
 | `verifiedBy` | who/what verified it |
-| `counselApproved` | attorney/adviser of record sign-off — the bar for **filing** |
+| `counselApproved` | counsel sign-off on **this program's rule-set** (a per-program readiness status) — NOT the per-case filing gate |
 
 ### Two layers of correctness
 - **`status: "verified"`** — matches the **primary sources**. This is what the
   team (and CI) can establish via research. **It is not legal advice.**
-- **`counselApproved`** — the licensed attorney/adviser of record has signed off.
-  Required before anything is actually **filed**. Tracked separately.
+- **`counselApproved`** — the licensed attorney/adviser of record has signed off
+  on **this program's validated rule-set** (a framework-level readiness status,
+  surfaced on `/validation`). It is **not** the bar for an actual filing: every
+  individual petition is gated case-by-case by the attorney-of-record review &
+  e-sign workflow (`src/features/review`). Tracked separately, and `false` until
+  counsel reviews the framework itself.
 
 ## The CI gate
 

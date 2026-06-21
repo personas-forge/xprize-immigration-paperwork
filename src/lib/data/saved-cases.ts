@@ -7,11 +7,11 @@
  * read from the server-only `Store` (Firestore in prod, PGlite locally). A
  * "use server" action bridges that boundary: the client can `await getCases()`
  * with no args; the action derives the user server-side and queries the Store
- * via `getCasesForUser`. Graceful degradation is preserved — no auth / no store
- * yields an empty portfolio (the keyless demo simply shows no saved cases).
+ * via the owner-scoped PetitionAdapter seam. Graceful degradation is preserved —
+ * no auth / no store yields an empty portfolio (the keyless demo shows no cases).
  */
 import { getUser } from "@/lib/auth/session";
-import { getCasesForUser } from "@/lib/data/petitions";
+import { petitions } from "@/lib/data/adapters/petition";
 import { type PetitionCase, type VisaClassification } from "@/features/case-file/types";
 
 const CLASSIFICATIONS: readonly VisaClassification[] = ["O-1A", "O-1B", "EB-1A"];
@@ -26,7 +26,8 @@ function asClassification(value: string): VisaClassification {
 export async function getCases(): Promise<readonly PetitionCase[]> {
   const user = await getUser();
   if (!user) return [];
-  const stored = await getCasesForUser(user.id);
+  const owned = await petitions.listOwnedCases({ userId: user.id, email: user.email ?? null });
+  const stored = owned.ok ? owned.value : [];
   return stored.map(
     (c): PetitionCase => ({
       id: c.id,

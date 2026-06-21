@@ -67,16 +67,26 @@ export async function submitConsent(
     };
   }
 
-  // Grant the one-time free tokens BEST-EFFORT. It's a non-essential bonus and is
-  // idempotent per user, so a token-store hiccup must NOT block onboarding or be
-  // misreported as a consent failure. Log it (for operator/top-up re-grant); the
-  // user still enters the workspace.
-  try {
-    await grantSignupTokens(user.id, FREE_SIGNUP_GRANT);
-  } catch (err) {
-    console.error("[welcome] signup token grant failed (non-blocking)", {
+  // Grant the one-time free tokens BEST-EFFORT, gated on a VERIFIED identity. The
+  // signup grant is the most directly farmable money path — an unverified,
+  // one-click account must not mint spendable AI credit — so require a verified
+  // email (Google sign-in is always verified; the dev user is trusted). Per-user
+  // idempotency stays the second layer. The grant is non-essential + idempotent,
+  // so a token-store hiccup must NOT block onboarding or be misreported as a
+  // consent failure; we log it (for operator/top-up re-grant) and the user still
+  // enters the workspace. (Disposable-domain rejection is a possible follow-up.)
+  if (user.emailVerified) {
+    try {
+      await grantSignupTokens(user.id, FREE_SIGNUP_GRANT);
+    } catch (err) {
+      console.error("[welcome] signup token grant failed (non-blocking)", {
+        userId: user.id,
+        err,
+      });
+    }
+  } else {
+    console.warn("[welcome] signup grant deferred — email not verified", {
       userId: user.id,
-      err,
     });
   }
 

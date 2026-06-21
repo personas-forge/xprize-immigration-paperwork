@@ -13,7 +13,7 @@
  * this module loads under `tsx --test` and the suite injects fakes.
  */
 
-import { isConfiguredAttorney } from "@/lib/auth/roles";
+import { isConfiguredAttorney, isConfiguredOps } from "@/lib/auth/roles";
 import type {
   CreatedCase,
   CriterionInput,
@@ -32,6 +32,12 @@ import { type AdapterResult, err, ok } from "./result";
 
 /** Everything the adapter calls, injected so the unit suite can supply fakes. */
 export interface PetitionDeps extends CaseGateDeps {
+  /** Every case a user OWNS (owner-scoped list). */
+  getCasesForUser(userId: string): Promise<readonly StoredCase[]>;
+  /** Every case awaiting attorney review — CROSS-TENANT; gated in the adapter. */
+  getCasesInReview(): Promise<readonly StoredCase[]>;
+  /** Read-only ops/case-manager allow-list check (queue VIEW co-gate). */
+  isConfiguredOps(email: string | null | undefined): boolean;
   createCaseWithCriteria(input: {
     userId: string;
     petitioner: string;
@@ -66,6 +72,8 @@ async function defaultDeps(): Promise<PetitionDeps> {
   cached = {
     getCaseForUser: data.getCaseForUser,
     getCaseAnyOwner: data.getCaseAnyOwner,
+    getCasesForUser: data.getCasesForUser,
+    getCasesInReview: data.getCasesInReview,
     createCaseWithCriteria: data.createCaseWithCriteria,
     getCriteriaForCase: data.getCriteriaForCase,
     saveDraft: data.saveDraft,
@@ -73,6 +81,7 @@ async function defaultDeps(): Promise<PetitionDeps> {
     saveRfeResponse: data.saveRfeResponse,
     getLatestRfeResponse: data.getLatestRfeResponse,
     isConfiguredAttorney,
+    isConfiguredOps,
     storeConfigured: async () => (await store.getStore()) !== null,
   };
   return cached;
@@ -91,6 +100,44 @@ export class PetitionAdapter {
     caseId: string,
   ): Promise<AdapterResult<StoredCase>> {
     return resolveCase(await this.deps(), access, caseId);
+  }
+
+  /**
+   * Every case the caller OWNS, newest first. Owner-scoped list analogue of
+   * `getCaseForUser` — fail-closed when there's no user id. A no-store build
+   * degrades to an empty list (ok([])), matching the single-case read.
+   */
+  async listOwnedCases(
+    access: CaseAccess,
+  ): Promise<AdapterResult<readonly StoredCase[]>> {
+    if (!access.userId) return err("forbidden");
+    const deps = await this.deps();
+    try {
+      return ok(await deps.getCasesForUser(access.userId));
+    } catch (cause) {
+      return err("store_error", cause);
+    }
+  }
+
+  /**
+   * The CROSS-TENANT attorney/ops review queue (every applicant's case awaiting
+   * review). The IDOR gate lives HERE, not at the call site (ADR-0010's whole
+   * promise): fail-closed unless the caller is a configured attorney OR a
+   * read-only ops/case-manager. A second review surface can never forget the
+   * `canView` line now — it's enforced inside the seam.
+   */
+  async listReviewQueue(
+    access: CaseAccess,
+  ): Promise<AdapterResult<readonly StoredCase[]>> {
+    const deps = await this.deps();
+    const allowed =
+      deps.isConfiguredAttorney(access.email) || deps.isConfiguredOps(access.email);
+    if (!allowed) return err("forbidden");
+    try {
+      return ok(await deps.getCasesInReview());
+    } catch (cause) {
+      return err("store_error", cause);
+    }
   }
 
   /** Persist a qualification as a new owned case + criteria. */

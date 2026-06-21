@@ -11,6 +11,7 @@ import {
 } from "@/features/evidence";
 import { executeAiOperation } from "@/lib/ai/operation";
 import { evidence } from "@/lib/data/adapters/evidence";
+import { petitions } from "@/lib/data/adapters/petition";
 
 // Evidence categorization endpoint (migrated to the shared orchestrator, ADR-0004).
 //
@@ -55,7 +56,12 @@ export function POST(request: Request): Promise<NextResponse> {
         };
       }
       const record = (body ?? {}) as Record<string, unknown>;
-      const classification =
+      // Body classification is ONLY a fallback for the keyless / no-case path. For
+      // a real case we re-derive it server-side from the resolved case below — a
+      // stale/crafted body could otherwise bucket a doc against the wrong visa
+      // pack (e.g. an O-1A award filed under O-1B) and corrupt the case's
+      // coverage/gap analysis. Never trust the client's classification on a case.
+      let classification =
         typeof record.classification === "string" ? record.classification : "O-1A";
       const caseId = typeof record.caseId === "string" ? record.caseId : null;
       // Whole-vault context (G2.1/PN-EVID-01): summarize what's already filed so
@@ -65,10 +71,13 @@ export function POST(request: Request): Promise<NextResponse> {
       if (caseId) {
         const user = await resolveUser();
         if (user) {
-          const docs = await evidence.getDocuments(
-            { userId: user.id, email: user.email ?? null },
-            caseId,
-          );
+          const access = { userId: user.id, email: user.email ?? null };
+          // Server-authoritative classification from the gated case (owner-or-
+          // attorney via resolveCase). On forbidden/not-found we keep the body
+          // fallback; persistence will then fail-closed (saveFailed) anyway.
+          const resolved = await petitions.resolveCase(access, caseId);
+          if (resolved.ok) classification = resolved.value.classification;
+          const docs = await evidence.getDocuments(access, caseId);
           if (docs.ok) existingBuckets = summarizeVaultBuckets(docs.value);
         }
       }

@@ -8,11 +8,14 @@ if (typeof window !== "undefined") {
 
 import {
   getStore,
+  type ConsentExport,
   type Profile,
+  type RecordConsentInput,
   type UpsertConsentInput,
+  type UserDataExport,
 } from "@/lib/db/store";
 
-export type { Profile };
+export type { ConsentExport, Profile, RecordConsentInput, UserDataExport };
 
 export async function getProfile(userId: string): Promise<Profile | null> {
   const store = await getStore();
@@ -27,6 +30,23 @@ export async function getLatestConsentVersion(
   return store ? store.getLatestConsentVersion(userId) : null;
 }
 
+/** The user's full append-only consent history (newest first). Empty when no store. */
+export async function getConsentHistory(userId: string): Promise<ConsentExport[]> {
+  const store = await getStore();
+  return store ? store.getConsentHistory(userId) : [];
+}
+
+/** Append a consent/preference row (e.g. a marketing opt-in change). Throws when
+ *  no store is configured (a silently-dropped preference change is worse than an
+ *  error on a compliance surface). */
+export async function recordConsent(input: RecordConsentInput): Promise<void> {
+  const store = await getStore();
+  if (!store) {
+    throw new Error("No database configured — cannot record the preference change.");
+  }
+  return store.recordConsent(input);
+}
+
 export async function upsertProfileWithConsent(
   input: UpsertConsentInput,
 ): Promise<void> {
@@ -37,4 +57,29 @@ export async function upsertProfileWithConsent(
     );
   }
   return store.upsertProfileWithConsent(input);
+}
+
+/** The complete bundle of a user's data, for "download my data" (GDPR/CCPA).
+ *  Returns an empty bundle when no store is configured. */
+export async function exportUserData(userId: string): Promise<UserDataExport> {
+  const store = await getStore();
+  if (!store) {
+    return {
+      userId,
+      profile: null,
+      consents: [],
+      tokenBalance: 0,
+      tokenLedger: [],
+      cases: [],
+    };
+  }
+  return store.exportUserData(userId);
+}
+
+/** PERMANENTLY delete every record keyed to this user. Irreversible. No-op when
+ *  no store is configured. The caller must remove the auth account separately. */
+export async function deleteUserData(userId: string): Promise<void> {
+  const store = await getStore();
+  if (!store) return;
+  return store.deleteUserData(userId);
 }

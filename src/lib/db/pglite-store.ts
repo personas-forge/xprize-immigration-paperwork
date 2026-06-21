@@ -63,6 +63,10 @@ create table if not exists token_ledger (
 );
 create unique index if not exists token_ledger_signup_once
   on token_ledger(user_id) where reason = 'signup_grant';
+-- Per-(ref, reason) idempotency. reason is part of the key ON PURPOSE: a charge
+-- (reason='debit') and its later reclaim (reason='reclaim') share the request id
+-- in ref but must BOTH be allowed — they differ only by reason. So this index
+-- alone does NOT enforce debit idempotency by itself; see the charge() contract.
 create unique index if not exists token_ledger_ref_once
   on token_ledger(ref, reason) where ref is not null;
 create index if not exists token_ledger_user on token_ledger(user_id);
@@ -117,8 +121,17 @@ create table if not exists case_documents (
   status     text not null default 'Received',
   facts      jsonb not null default '[]'::jsonb,
   source     text not null default 'mock',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Soft-delete: a removed exhibit keeps its row (and its never-reused ordinal)
+  -- so a disputed/accidental deletion of filed legal evidence is recoverable +
+  -- auditable. NULL deleted_at = live.
+  deleted_at timestamptz,
+  deleted_by text
 );
+-- Backfill the soft-delete columns on a pre-existing local DB (create-table-if-
+-- not-exists won't add columns to a table that already exists).
+alter table case_documents add column if not exists deleted_at timestamptz;
+alter table case_documents add column if not exists deleted_by text;
 create index if not exists case_documents_case_idx on case_documents (case_id);
 
 create table if not exists rfe_responses (
@@ -288,6 +301,42 @@ export async function getPgliteStore(): Promise<Store> {
       return typeof v === "string" ? v : null;
     },
 
+    async getConsentHistory(userId) {
+      const r = await pg.query(
+        `select consent_version, terms_accepted, privacy_accepted, marketing_opt_in,
+                ip, user_agent, created_at
+           from consents where user_id = $1 order by id desc`,
+        [userId],
+      );
+      return r.rows.map((row) => ({
+        consentVersion: str(row.consent_version),
+        termsAccepted: Boolean(row.terms_accepted),
+        privacyAccepted: Boolean(row.privacy_accepted),
+        marketingOptIn: Boolean(row.marketing_opt_in),
+        ip: row.ip == null ? null : str(row.ip),
+        userAgent: row.user_agent == null ? null : str(row.user_agent),
+        createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : null,
+      }));
+    },
+
+    async recordConsent(input) {
+      await pg.query(
+        `insert into consents
+           (user_id, consent_version, terms_accepted, privacy_accepted,
+            marketing_opt_in, ip, user_agent)
+         values ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          input.userId,
+          input.consentVersion,
+          input.terms,
+          input.privacy,
+          input.marketing,
+          input.ip,
+          input.userAgent,
+        ],
+      );
+    },
+
     async getBalance(userId) {
       const r = await pg.query(
         `select balance from token_accounts where user_id = $1`,
@@ -296,6 +345,35 @@ export async function getPgliteStore(): Promise<Store> {
       return num(r.rows[0]?.balance);
     },
 
+    async getLedgerForUser(userId, limit) {
+      const r = await pg.query(
+        `select delta, reason, operation, balance_after, created_at
+           from token_ledger where user_id = $1 order by id desc limit $2`,
+        [userId, Math.max(0, Math.floor(limit))],
+      );
+      return r.rows.map((row) => ({
+        delta: num(row.delta),
+        reason: str(row.reason),
+        operation: row.operation == null ? null : str(row.operation),
+        balanceAfter: num(row.balance_after),
+        createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : null,
+      }));
+    },
+
+    // DEBIT IDEMPOTENCY CONTRACT (load-bearing — do not "optimize" the lock away):
+    // `ref` is the orchestrator's per-request requestId (or an Idempotency-Key-
+    // derived id). A retry of the same logical charge must debit AT MOST once. That
+    // guarantee comes from TWO mechanisms acting together, NOT the index alone:
+    //   1. the `for update` row lock on token_accounts serialises every charge for
+    //      a user, so the read-then-write below is atomic per user; and
+    //   2. the seen-check (`ref` + reason='debit') runs INSIDE that locked tx.
+    // The `(ref, reason)` partial unique index is the backstop (a duplicate insert
+    // would error), but correctness relies on the in-transaction seen-check, which
+    // MUST stay inside the lock. Moving it outside the tx, or dropping the
+    // `for update`, reintroduces double-debits under concurrency. The Firestore
+    // driver gets the same guarantee structurally via a deterministic `debit_${ref}`
+    // doc id. charge (debit) and reclaim (reclaim) never collide: same `ref`,
+    // different `reason`.
     async charge(userId, cost, operation, ref) {
       return pg.transaction(async (tx) => {
         await tx.query(
@@ -308,8 +386,8 @@ export async function getPgliteStore(): Promise<Store> {
           [userId],
         );
         const balance = num(cur.rows[0]?.balance);
-        // Idempotent by requestId (ref): an app-level retry of the same logical
-        // charge must not debit twice (mirrors credit's ref dedupe).
+        // Seen-check INSIDE the lock (see the contract above): an app-level retry
+        // of the same logical charge must not debit twice.
         const seen = await tx.query(
           `select 1 from token_ledger where ref = $1 and reason = 'debit' limit 1`,
           [ref],
@@ -720,7 +798,7 @@ export async function getPgliteStore(): Promise<Store> {
       const r = await pg.query(
         `select id, name, criterion, exhibit, status, facts, source
            from case_documents
-          where case_id = $1
+          where case_id = $1 and deleted_at is null
           order by ord asc`,
         [caseId],
       );
@@ -737,9 +815,21 @@ export async function getPgliteStore(): Promise<Store> {
       );
     },
 
-    async removeCaseDocument(caseId, documentId) {
+    async removeCaseDocument(caseId, documentId, deletedBy = null) {
+      // Soft-delete: mark the row deleted (keeps the ordinal) only if it's still
+      // live, so re-deleting an already-deleted doc affects 0 rows → not_found.
       const r = await pg.query(
-        `delete from case_documents where id = $1 and case_id = $2`,
+        `update case_documents set deleted_at = now(), deleted_by = $3
+          where id = $1 and case_id = $2 and deleted_at is null`,
+        [documentId, caseId, deletedBy],
+      );
+      return (r.affectedRows ?? 0) > 0;
+    },
+
+    async restoreCaseDocument(caseId, documentId) {
+      const r = await pg.query(
+        `update case_documents set deleted_at = null, deleted_by = null
+          where id = $1 and case_id = $2 and deleted_at is not null`,
         [documentId, caseId],
       );
       return (r.affectedRows ?? 0) > 0;
@@ -747,10 +837,119 @@ export async function getPgliteStore(): Promise<Store> {
 
     async refileCaseDocument(caseId, documentId, criterion) {
       const r = await pg.query(
-        `update case_documents set criterion = $3 where id = $1 and case_id = $2`,
+        `update case_documents set criterion = $3
+          where id = $1 and case_id = $2 and deleted_at is null`,
         [documentId, caseId, criterion],
       );
       return (r.affectedRows ?? 0) > 0;
+    },
+
+    async exportUserData(userId) {
+      const iso = (v: unknown) => (v ? new Date(v as string).toISOString() : null);
+
+      const profileR = await pg.query(
+        `select id, email, full_name, avatar_url, onboarded_at from profiles where id = $1`,
+        [userId],
+      );
+      const prow = profileR.rows[0];
+      const profile = prow
+        ? {
+            id: str(prow.id),
+            email: prow.email == null ? null : str(prow.email),
+            full_name: prow.full_name == null ? null : str(prow.full_name),
+            avatar_url: prow.avatar_url == null ? null : str(prow.avatar_url),
+            onboarded_at: iso(prow.onboarded_at),
+          }
+        : null;
+
+      const consentsR = await pg.query(
+        `select consent_version, terms_accepted, privacy_accepted, marketing_opt_in,
+                ip, user_agent, created_at
+           from consents where user_id = $1 order by id`,
+        [userId],
+      );
+      const consents = consentsR.rows.map((r) => ({
+        consentVersion: str(r.consent_version),
+        termsAccepted: Boolean(r.terms_accepted),
+        privacyAccepted: Boolean(r.privacy_accepted),
+        marketingOptIn: Boolean(r.marketing_opt_in),
+        ip: r.ip == null ? null : str(r.ip),
+        userAgent: r.user_agent == null ? null : str(r.user_agent),
+        createdAt: iso(r.created_at),
+      }));
+
+      const balR = await pg.query(
+        `select balance from token_accounts where user_id = $1`,
+        [userId],
+      );
+      const tokenBalance = num(balR.rows[0]?.balance);
+
+      const ledgerR = await pg.query(
+        `select delta, reason, operation, balance_after, created_at
+           from token_ledger where user_id = $1 order by id desc`,
+        [userId],
+      );
+      const tokenLedger = ledgerR.rows.map((r) => ({
+        delta: num(r.delta),
+        reason: str(r.reason),
+        operation: r.operation == null ? null : str(r.operation),
+        balanceAfter: num(r.balance_after),
+        createdAt: iso(r.created_at),
+      }));
+
+      const casesR = await pg.query(
+        `select ${CASE_COLUMNS} from cases where user_id = $1 order by created_at`,
+        [userId],
+      );
+      // Group every child table by case_id in one pass each (no N+1).
+      const scope = `(select id from cases where user_id = $1)`;
+      const [critR, draftR, rfeR, docR, revR] = await Promise.all([
+        pg.query(`select case_id, id, name, status, evidence, rationale, exhibit from criteria where case_id in ${scope} order by ord`, [userId]),
+        pg.query(`select case_id, version, sections, source, created_at from petition_drafts where case_id in ${scope} order by version`, [userId]),
+        pg.query(`select case_id, version, rfe_text, sections, source, created_at from rfe_responses where case_id in ${scope} order by version`, [userId]),
+        pg.query(`select case_id, id, name, criterion, exhibit, status, facts, source, deleted_at from case_documents where case_id in ${scope} order by ord`, [userId]),
+        pg.query(`select case_id, id, author_role, kind, body, metadata, created_at from case_reviews where case_id in ${scope} order by created_at`, [userId]),
+      ]);
+      const group = <T>(rows: Row[], make: (r: Row) => T): Map<string, T[]> => {
+        const m = new Map<string, T[]>();
+        for (const r of rows) {
+          const k = str(r.case_id);
+          (m.get(k) ?? m.set(k, []).get(k)!).push(make(r));
+        }
+        return m;
+      };
+      const critByCase = group(critR.rows, (r) => ({ id: str(r.id), name: str(r.name), status: str(r.status), evidence: str(r.evidence), rationale: str(r.rationale), exhibit: str(r.exhibit) }));
+      const draftByCase = group(draftR.rows, (r) => ({ version: num(r.version), sections: Array.isArray(r.sections) ? (r.sections as DraftSection[]) : [], source: str(r.source), createdAt: iso(r.created_at) }));
+      const rfeByCase = group(rfeR.rows, (r) => ({ version: num(r.version), rfeText: str(r.rfe_text), sections: Array.isArray(r.sections) ? (r.sections as DraftSection[]) : [], source: str(r.source), createdAt: iso(r.created_at) }));
+      const docByCase = group(docR.rows, (r) => ({ id: str(r.id), name: str(r.name), criterion: str(r.criterion), exhibit: str(r.exhibit), status: str(r.status), facts: Array.isArray(r.facts) ? (r.facts as string[]) : [], source: str(r.source), deletedAt: iso(r.deleted_at) }));
+      const revByCase = group(revR.rows, (r) => ({ id: str(r.id), authorRole: str(r.author_role), kind: str(r.kind) as ReviewEvent["kind"], body: str(r.body), metadata: (r.metadata ?? {}) as Record<string, unknown>, createdAt: iso(r.created_at) ?? "" }));
+
+      const cases = (casesR.rows as unknown as CaseRow[]).map((row) => {
+        const c = toStoredCase(row);
+        return {
+          case: c,
+          criteria: critByCase.get(c.id) ?? [],
+          drafts: draftByCase.get(c.id) ?? [],
+          rfeResponses: rfeByCase.get(c.id) ?? [],
+          documents: docByCase.get(c.id) ?? [],
+          reviews: revByCase.get(c.id) ?? [],
+        };
+      });
+
+      return { userId, profile, consents, tokenBalance, tokenLedger, cases };
+    },
+
+    async deleteUserData(userId) {
+      // One transaction. Deleting the user's cases CASCADES to criteria, drafts,
+      // rfe_responses, case_documents and case_reviews (all FK ON DELETE CASCADE);
+      // the rest are keyed by user id directly. Irreversible.
+      await pg.transaction(async (tx) => {
+        await tx.query(`delete from cases where user_id = $1`, [userId]);
+        await tx.query(`delete from token_ledger where user_id = $1`, [userId]);
+        await tx.query(`delete from token_accounts where user_id = $1`, [userId]);
+        await tx.query(`delete from consents where user_id = $1`, [userId]);
+        await tx.query(`delete from profiles where id = $1`, [userId]);
+      });
     },
   };
 }

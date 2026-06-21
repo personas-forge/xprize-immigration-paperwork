@@ -98,7 +98,11 @@ async function execute(
       if (!p.ok) throw new Error(`invalid input: ${p.error}`);
       const prompt = buildQualifyPrompt(p.value);
       if (!llm) return { prompt, raw: "", result: {}, outputText: "", source: "mock" };
-      const raw = await llm.generate(prompt, opts);
+      // Match PRODUCTION: /api/qualify (+ the preview/best-path routes) send
+      // temperature: 0 for a deterministic screening. The eval (and its --repeat
+      // stability story) must test the SAME config, not a higher-variance default,
+      // on the exact op the docs flag as the top stability risk.
+      const raw = await llm.generate(prompt, { ...opts, temperature: 0 });
       const assessment = parseQualifyResponse(raw, p.value);
       const result = buildQualifyResult(assessment, llm.name);
       const outputText =

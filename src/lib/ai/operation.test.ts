@@ -253,6 +253,72 @@ test("adjudicate runs on a model answer but is skipped on a mock", async () => {
   assert.equal((await mock.json()).adjudication, undefined, "mock must not be adjudicated");
 });
 
+// 7d. onBlocked: a blocked adjudication (attorneyReady:false) withholds the
+//     flagged model text, reclaims the charge, and ships the safe replacement.
+// ---------------------------------------------------------------------------
+test("onBlocked → flagged model text withheld, charge reclaimed, safe body sent", async () => {
+  const spy = chargeSpy({ ok: true, cost: 1, balance: 9, reclaim: async () => {} });
+  const blocked = { gates: [], risk: "blocked" as const, attorneyReady: false };
+  const res = await executeAiOperation(
+    jsonRequest({ text: "hi" }),
+    baseSpec({
+      adjudicate: () => blocked,
+      onBlocked: () => ({ result: "SAFE_TEMPLATE", source: "mock", disclaimer: DISCLAIMER, blocked: true }),
+    }),
+    deps({ charge: spy.charge, getLlm: () => llmReturning("you should file an O-1A", "gemini") }),
+  );
+  const body = await res.json();
+  assert.equal(body.result, "SAFE_TEMPLATE", "flagged model text must not be shipped");
+  assert.equal(body.source, "mock", "substituted body labels source mock");
+  assert.equal(body.blocked, true);
+  assert.deepEqual(body.adjudication, blocked, "the block report still rides along");
+  assert.equal(spy.calls.reclaimed, 1, "a withheld (blocked) answer must be reclaimed, not billed");
+});
+
+test("onBlocked is NOT triggered when adjudication clears (attorneyReady:true)", async () => {
+  const spy = chargeSpy({ ok: true, cost: 1, balance: 9, reclaim: async () => {} });
+  const ready = { gates: [], risk: "ready" as const, attorneyReady: true };
+  const res = await executeAiOperation(
+    jsonRequest({ text: "hi" }),
+    baseSpec({
+      adjudicate: () => ready,
+      onBlocked: () => ({ result: "SAFE_TEMPLATE", source: "mock", disclaimer: DISCLAIMER }),
+    }),
+    deps({ charge: spy.charge, getLlm: () => llmReturning("REAL ANSWER", "gemini") }),
+  );
+  const body = await res.json();
+  assert.equal(body.result, "REAL ANSWER", "a clean answer is shipped as-is");
+  assert.equal(spy.calls.reclaimed, 0, "a clean billed answer must not reclaim");
+});
+
+// 7e. Idempotency-Key folds into a stable ledger ref so a retry de-dupes.
+// ---------------------------------------------------------------------------
+test("Idempotency-Key → stable ledger ref across retries; absent → fresh id", async () => {
+  const seen: string[] = [];
+  const charge = async (_op: string, requestId: string): Promise<ChargeOutcome> => {
+    seen.push(requestId);
+    return { ok: true, cost: 1, balance: 9, reclaim: async () => {} };
+  };
+  const mk = (key?: string) =>
+    new Request("http://test.local/api/op", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(key ? { "Idempotency-Key": key } : {}),
+      },
+      body: JSON.stringify({ text: "hi" }),
+    });
+  await executeAiOperation(mk("abc-123"), baseSpec(), deps({ charge, getLlm: () => llmReturning("X") }));
+  await executeAiOperation(mk("abc-123"), baseSpec(), deps({ charge, getLlm: () => llmReturning("X") }));
+  assert.equal(seen[0], seen[1], "same Idempotency-Key must produce the same ledger ref");
+  assert.match(seen[0], /abc-123/);
+  await executeAiOperation(mk(), baseSpec(), deps({ charge, getLlm: () => llmReturning("X") }));
+  assert.notEqual(seen[2], seen[0], "absent key falls back to a fresh per-call id");
+  // a malformed key (too long / bad chars) is ignored → fresh id, not used as a ref
+  await executeAiOperation(mk("bad key with spaces"), baseSpec(), deps({ charge, getLlm: () => llmReturning("X") }));
+  assert.equal(seen[3], "req-fixed", "an invalid Idempotency-Key is rejected, not used as a ref");
+});
+
 // ---------------------------------------------------------------------------
 // 8. happy path → source = engine name, no reclaim
 // ---------------------------------------------------------------------------

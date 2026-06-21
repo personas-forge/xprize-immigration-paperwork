@@ -138,6 +138,21 @@ export interface AiOperationSpec<TInput, TOutput> {
     source: string,
     body: Record<string, unknown>,
   ) => AdjudicationReport | null;
+  /**
+   * UPL hard-stop. When `adjudicate` BLOCKS the output (`attorneyReady === false`
+   * / `risk === "blocked"`) — i.e. the live screen caught legal-advice or
+   * outcome-prediction language — this hook returns the body that should be sent
+   * INSTEAD of the flagged model text, so the offending output never reaches the
+   * client at all (a client-only badge would still ship the text over the wire).
+   * The returned fields REPLACE the built body. The charge is reclaimed first
+   * (the withheld model answer is not billed — the same honesty invariant as a
+   * mock fallback), so a block-substituted body should label `source: "mock"`.
+   */
+  onBlocked?: (
+    input: TInput,
+    body: Record<string, unknown>,
+    report: AdjudicationReport,
+  ) => Record<string, unknown>;
   /** Best-effort persistence. Returns fields merged into the response body.
    *  Receives the resolved `source` ("mock" | engine name) so it can record the
    *  provenance of what it persists (e.g. the document's categorization source). */
@@ -173,6 +188,18 @@ export interface AiOperationDeps {
     ctx: { customerId?: string; feature?: string },
     fn: () => Promise<T>,
   ) => Promise<T>;
+}
+
+/** A client idempotency key must be a short, safe token to be used as a ledger
+ *  ref — bound the length and charset so an untrusted header can't inject a huge
+ *  or weird ref. Returns the trimmed key, or null when absent/invalid. */
+const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_.:-]{1,200}$/;
+function readIdempotencyKey(request: Request): string | null {
+  const raw =
+    request.headers.get("Idempotency-Key") ?? request.headers.get("idempotency-key");
+  if (!raw) return null;
+  const key = raw.trim();
+  return IDEMPOTENCY_KEY_RE.test(key) ? key : null;
 }
 
 let cachedDefaults: AiOperationDeps | null = null;
@@ -277,7 +304,18 @@ export async function executeAiOperation<TInput, TOutput>(
   //    the model. Free pass in keyless/dev builds (handled inside the guard).
   const operationKey =
     typeof spec.operation === "function" ? spec.operation(input) : spec.operation;
-  const requestId = d.newRequestId();
+  // Request idempotency: a client that retries a dropped/timed-out request (or
+  // double-clicks an expensive draft/rfe button) can pass an `Idempotency-Key`
+  // header. We fold it into the ledger ref so the retry's charge DE-DUPES against
+  // the first (the store keys debits on `(ref, reason)`) — no double-billing.
+  // Scoped by user id so two different users can't collide on the same key. (The
+  // model may still re-run on the retry; full response-replay/caching is a
+  // separate follow-up — this closes the double-CHARGE, the money leak.) Absent
+  // or malformed key → a fresh per-call id, i.e. the prior behaviour.
+  const idemKey = readIdempotencyKey(request);
+  const requestId = idemKey
+    ? `idem:${(await resolveUser())?.id ?? "anon"}:${operationKey}:${idemKey}`
+    : d.newRequestId();
   const charged = await d.charge(operationKey, requestId);
   if (!charged.ok) {
     if (charged.reason === "unauthenticated") {
@@ -409,6 +447,18 @@ export async function executeAiOperation<TInput, TOutput>(
   //    Skipped on a mock: a deterministic template's "risk score" would be
   //    constant theater that reads like a real assessment of the user's case
   //    (mirrors the "a mock is never billed as model output" honesty invariant).
+  //
+  //    CONTRACT (persist-always vs adjudicate-skip-on-mock): step 6 persists EVERY
+  //    non-error outcome, INCLUDING a mock — so a persisted draft/qualify/RFE may
+  //    carry NO adjudication report while an engine-generated twin does. This is
+  //    intentional and safe: (a) a mock is a deterministic TEMPLATE — it has no
+  //    fabricated specifics / leaked codes / invented case law for the gate to
+  //    catch, so adjudicating it would be theater; (b) `source: "mock"` is
+  //    persisted end-to-end (persist receives `source`) and the UI flags
+  //    "Placeholder output" before any attorney action; (c) filing is separately
+  //    guarded (pre-file draft-exists gate + the exhibit-citation gate). So an
+  //    unadjudicated mock can be SAVED but never silently presents as a screened,
+  //    attorney-ready work product. Do not "fix" this by adjudicating mocks.
   let adjudication: AdjudicationReport | null = null;
   if (spec.adjudicate && source !== "mock") {
     try {
@@ -418,8 +468,20 @@ export async function executeAiOperation<TInput, TOutput>(
     }
   }
 
+  // 9. UPL hard-stop. If the live screen BLOCKED the output and the route opts in
+  //    via `onBlocked`, withhold the flagged model text entirely: reclaim the
+  //    charge (a withheld answer is not billed) and send the safe replacement
+  //    body instead. Without this, a `risk: "blocked"` answer (e.g. "you should
+  //    file an O-1A") would still be shipped to the client and merely badged —
+  //    the exact unauthorized-practice text the gate exists to suppress.
+  let finalBody = responseBody;
+  if (adjudication && adjudication.attorneyReady === false && spec.onBlocked) {
+    await reclaim();
+    finalBody = spec.onBlocked(input, responseBody, adjudication);
+  }
+
   return NextResponse.json({
-    ...responseBody,
+    ...finalBody,
     ...persisted,
     ...(adjudication ? { adjudication } : {}),
   });

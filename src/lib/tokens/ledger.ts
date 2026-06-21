@@ -6,10 +6,10 @@ if (typeof window !== "undefined") {
   throw new Error("@/lib/tokens/ledger must not be imported on the client.");
 }
 
-import { getStore, type ChargeOutcome, type CreditReason } from "@/lib/db/store";
+import { getStore, type ChargeOutcome, type CreditReason, type LedgerEntry } from "@/lib/db/store";
 import { isStoreConfigured } from "@/lib/db/config";
 
-export type { ChargeOutcome };
+export type { ChargeOutcome, LedgerEntry };
 
 /** The no-store free-pass below is correct for the genuinely keyless/dev build,
  *  but if a store is CONFIGURED (prod) yet `getStore()` resolved null (admin-init
@@ -55,6 +55,15 @@ function assertCreditAmount(amount: number): void {
 export async function getBalance(userId: string): Promise<number> {
   const store = await getStore();
   return store ? store.getBalance(userId) : 0;
+}
+
+/** A user's recent token-ledger entries, newest first. Empty when no store. */
+export async function getLedgerForUser(
+  userId: string,
+  limit = 25,
+): Promise<LedgerEntry[]> {
+  const store = await getStore();
+  return store ? store.getLedgerForUser(userId, limit) : [];
 }
 
 /** Atomic debit. Refuses (ok:false) if insufficient. Free pass if no store. */

@@ -33,6 +33,19 @@ export interface UpsertConsentInput {
   userAgent: string | null;
 }
 
+/** Append-only consent/preference record (no profile mutation) — e.g. a later
+ *  marketing opt-in/out, which is recorded as a NEW consent row so the audit
+ *  trail of "what they agreed to, and when" is never edited in place. */
+export interface RecordConsentInput {
+  userId: string;
+  consentVersion: string;
+  terms: boolean;
+  privacy: boolean;
+  marketing: boolean;
+  ip: string | null;
+  userAgent: string | null;
+}
+
 export type CreditReason =
   | "purchase"
   | "reclaim"
@@ -43,6 +56,20 @@ export type CreditReason =
 export interface ChargeOutcome {
   ok: boolean;
   balance: number;
+}
+
+/** One row of a user's token ledger, for the billing activity read-out. */
+export interface LedgerEntry {
+  /** Signed token movement (debit negative, credit/grant/refund positive). */
+  delta: number;
+  /** purchase | reclaim | refund | adjustment | enterprise_grant | debit | signup_grant. */
+  reason: string;
+  /** The metered operation for a debit (e.g. "draft"), else null. */
+  operation: string | null;
+  /** Running balance after this entry. */
+  balanceAfter: number;
+  /** ISO timestamp, or null. */
+  createdAt: string | null;
 }
 
 // ── Domain: immigration petition pipeline ────────────────────────────────────
@@ -178,13 +205,78 @@ export interface AddDocumentInput {
   status?: string;
 }
 
+// ── GDPR / data-portability bundle ───────────────────────────────────────────
+
+/** One recorded consent event (terms/privacy/marketing), for the data export. */
+export interface ConsentExport {
+  consentVersion: string;
+  termsAccepted: boolean;
+  privacyAccepted: boolean;
+  marketingOptIn: boolean;
+  ip: string | null;
+  userAgent: string | null;
+  createdAt: string | null;
+}
+
+export interface ExportedDraft extends StoredDraft {
+  createdAt: string | null;
+}
+export interface ExportedRfe extends StoredRfe {
+  createdAt: string | null;
+}
+/** A document in the export — includes SOFT-DELETED exhibits (still the user's
+ *  data) with their deletion stamp. */
+export interface ExportedDocument extends StoredDocument {
+  deletedAt: string | null;
+}
+
+export interface ExportedCase {
+  case: StoredCase;
+  criteria: StoredCriterion[];
+  /** All draft versions (non-destructive history), oldest first. */
+  drafts: ExportedDraft[];
+  /** All RFE response versions, oldest first. */
+  rfeResponses: ExportedRfe[];
+  /** All documents incl. soft-deleted. */
+  documents: ExportedDocument[];
+  reviews: ReviewEvent[];
+}
+
+/** The complete bundle of a user's data, for "download my data" (GDPR/CCPA). The
+ *  route stamps `exportedAt`; the store gathers everything keyed to the user. */
+export interface UserDataExport {
+  userId: string;
+  profile: Profile | null;
+  consents: ConsentExport[];
+  tokenBalance: number;
+  tokenLedger: LedgerEntry[];
+  cases: ExportedCase[];
+}
+
 export interface Store {
   getProfile(userId: string): Promise<Profile | null>;
   upsertProfileWithConsent(input: UpsertConsentInput): Promise<void>;
+  /** Gather everything keyed to this user — profile, consents, balance + ledger,
+   *  and every case with its criteria/drafts/RFEs/documents/reviews — for the
+   *  "download my data" export (GDPR/CCPA). Read-only. */
+  exportUserData(userId: string): Promise<UserDataExport>;
+  /** PERMANENTLY delete every record keyed to this user (profile, consents, token
+   *  account + ledger, and all cases + their cascaded children). Irreversible —
+   *  the caller is responsible for the auth-account removal + confirmation. */
+  deleteUserData(userId: string): Promise<void>;
   /** The `consent_version` of the user's most recent consent row, or null if
    *  they have never consented. Used to re-prompt when the terms version bumps. */
   getLatestConsentVersion(userId: string): Promise<string | null>;
+  /** The user's full append-only consent history, NEWEST first — the data behind
+   *  a "what you agreed to" receipt / consent log on the account page. */
+  getConsentHistory(userId: string): Promise<ConsentExport[]>;
+  /** Append a consent/preference row (no profile change). Used for a later
+   *  marketing opt-in/out so the audit trail is preserved, not edited in place. */
+  recordConsent(input: RecordConsentInput): Promise<void>;
   getBalance(userId: string): Promise<number>;
+  /** A user's recent token-ledger entries, newest first (capped at `limit`) —
+   *  for the billing "Recent activity" read-out. */
+  getLedgerForUser(userId: string, limit: number): Promise<LedgerEntry[]>;
   /** Atomic debit. Refuses (ok:false) when the balance is insufficient. */
   charge(
     userId: string,
@@ -263,12 +355,23 @@ export interface Store {
   addCaseDocument(input: AddDocumentInput): Promise<StoredDocument>;
   /** Every document in a case's vault, by exhibit order. */
   getCaseDocuments(caseId: string): Promise<StoredDocument[]>;
-  /** Remove a document from a case's vault. Returns true iff a row was removed
-   *  (false = no matching doc for that case, so callers can report not-found
-   *  instead of a false success). */
-  removeCaseDocument(caseId: string, documentId: string): Promise<boolean>;
+  /** SOFT-delete a document from a case's vault — marks it deleted (keeps the row
+   *  + its never-reused exhibit ordinal) rather than hard-deleting, so an
+   *  accidental/disputed removal of filed legal evidence is recoverable and
+   *  auditable (`deletedBy`). Returns true iff a LIVE row was deleted (false = no
+   *  matching live doc — already deleted or wrong case — so callers report
+   *  not-found instead of a false success). */
+  removeCaseDocument(
+    caseId: string,
+    documentId: string,
+    deletedBy?: string | null,
+  ): Promise<boolean>;
+  /** Restore a soft-deleted document. Returns true iff a DELETED row was restored
+   *  (false = no matching deleted doc). The exhibit ordinal is non-reused, so the
+   *  restored document keeps its original `Ex. N`. */
+  restoreCaseDocument(caseId: string, documentId: string): Promise<boolean>;
   /** Re-file a document under a different criterion bucket. Returns true iff a
-   *  matching row was updated. */
+   *  matching LIVE row was updated (a soft-deleted doc can't be refiled). */
   refileCaseDocument(
     caseId: string,
     documentId: string,

@@ -18,12 +18,18 @@ type Stage = {
   eta: string;
 };
 
+// Illustrative self-serve flow — NOT a managed full-service pipeline. We don't
+// supply the attorney, run a voice interview, or file on the user's behalf
+// (faq/page.tsx, page.tsx Promises). The copy below mirrors the four-step
+// Process band: you screen → you generate → YOUR attorney reviews & signs →
+// YOUR attorney files. Keep it truthful — over-promising representation is a
+// UPL / FTC-deception risk for an immigration product.
 const STAGES: Stage[] = [
-  { name: "Intake",          status: "Voice interview booked — discovery in 24 hours.",          eta: "Est. same week" },
-  { name: "Drafting",        status: "Gemini assembling petition letter & exhibits.",             eta: "Est. 3 days" },
-  { name: "Attorney Review", status: "Stage 3: Attorney reviewing every paragraph.",              eta: "Est. 2 weeks" },
-  { name: "Filed",           status: "I-129 e-filed with USCIS (premium processing).",            eta: "Receipt issued" },
-  { name: "Approved",        status: "Approval notice received. Status updated on the file.",     eta: "Decision in hand" },
+  { name: "Screen",          status: "Answer the guided questionnaire — your profile is screened against the criteria.", eta: "Est. same day" },
+  { name: "Drafting",        status: "Gemini drafts your petition letter and exhibit index.",       eta: "Est. minutes" },
+  { name: "Attorney Review", status: "Your own attorney of record reviews every paragraph and signs.", eta: "Your timeline" },
+  { name: "Filed",           status: "Your attorney files the petition with USCIS.",                eta: "Receipt issued" },
+  { name: "Approved",        status: "Approval notice received. Your case file is updated.",         eta: "Decision in hand" },
 ];
 
 export function PetitionStepper() {
@@ -38,7 +44,7 @@ export function PetitionStepper() {
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <div className="microprint" style={{ color: "var(--accent-dark)" }}>
-              § Live · Petition File O1-241
+              § Illustrative · A sample petition file
             </div>
             <h2 className="display mt-4 text-[clamp(2rem,5vw,3.4rem)]">
               Every stage <em>sealed</em>, on the record.

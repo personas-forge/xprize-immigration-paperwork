@@ -32,6 +32,7 @@ function deps(over: Partial<EvidenceDeps> = {}): EvidenceDeps {
     addCaseDocument: async () => DOC,
     getCaseDocuments: async () => [DOC],
     removeCaseDocument: async () => true,
+    restoreCaseDocument: async () => true,
     refileCaseDocument: async () => true,
     getCaseForUser: async () => CASE,
     getCaseAnyOwner: async () => CASE,
@@ -109,6 +110,38 @@ test("removeDocument: no row matched (wrong case / gone) → not_found, not a fa
   const a = new EvidenceAdapter(deps({ removeCaseDocument: async () => false }));
   const r = await a.removeDocument(OWNER, "c1", "missing");
   assert.deepEqual(r, { ok: false, error: { kind: "not_found" } });
+});
+
+test("removeDocument: soft-delete records the remover (deletedBy = access.userId)", async () => {
+  let deletedBy: string | null | undefined = "SENTINEL";
+  const a = new EvidenceAdapter(
+    deps({ removeCaseDocument: async (_c, _d, by) => ((deletedBy = by), true) }),
+  );
+  await a.removeDocument(OWNER, "c1", "d1");
+  assert.equal(deletedBy, OWNER.userId, "the soft-delete must record who removed the exhibit");
+});
+
+test("restoreDocument: gated; restores a deleted doc, not_found when nothing to restore", async () => {
+  // gate denies a non-owner before any restore
+  let touched = false;
+  const denied = await new EvidenceAdapter(
+    deps({
+      getCaseForUser: async () => null,
+      restoreCaseDocument: async () => ((touched = true), true),
+    }),
+  ).restoreDocument({ userId: "intruder", email: "x@x.com" }, "c1", "d1");
+  assert.equal(denied.ok, false);
+  assert.equal(touched, false, "a denied caller must never reach restore");
+  // owner restoring a deleted doc → ok
+  assert.deepEqual(await new EvidenceAdapter(deps()).restoreDocument(OWNER, "c1", "d1"), {
+    ok: true,
+    value: undefined,
+  });
+  // nothing deleted to restore → not_found
+  assert.deepEqual(
+    await new EvidenceAdapter(deps({ restoreCaseDocument: async () => false })).restoreDocument(OWNER, "c1", "d1"),
+    { ok: false, error: { kind: "not_found" } },
+  );
 });
 
 test("refileDocument: no matching document → not_found", async () => {

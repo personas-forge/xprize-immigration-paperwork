@@ -65,11 +65,20 @@ export async function resolveCase(
       const any = await deps.getCaseAnyOwner(caseId);
       return any ? ok(any) : err("not_found");
     }
-    // Not the owner and not a configured attorney → deny. But a `null` from
-    // getCaseForUser can also mean the store went unavailable mid-call (a driver
-    // that yields no rows on a dropped connection, not a throw). Re-probe so a
-    // transient outage surfaces as `unconfigured` (503 "try again") rather than a
-    // wrong, alarming `forbidden` (403) to the legitimate owner.
+    // Not the owner and not a configured attorney → deny. DECISION (recorded):
+    // we re-probe `storeConfigured()` before denying, and downgrade to
+    // `unconfigured` (503 "try again") if the store has since gone away. This
+    // defends the specific window where `getStore()` resolved a backend at the
+    // top of this call (so we got past the first `unconfigured` check) but FLIPPED
+    // to null mid-request (an admin-init flap / transient store unavailability) —
+    // the petition data fns return `null` (not a throw) when there's no store, so
+    // without this re-probe a legitimate owner would get a wrong, alarming
+    // `forbidden` (403) instead of a retryable 503 during a store blip. A real
+    // backend FAULT (dropped connection mid-query) throws and is already caught
+    // below as `store_error`; this branch is only the no-store-now case. The cost
+    // is bounded: a genuine non-owner pays one extra cheap `storeConfigured()`
+    // call, and (store still up) still lands on `forbidden`. Pinned by
+    // access.test.ts ("store vanished mid-call …").
     if (!(await deps.storeConfigured())) return err("unconfigured");
     // Deny without revealing whether the case exists (fail-closed; mirrors the
     // prior HIGH findings on cross-tenant PII egress).

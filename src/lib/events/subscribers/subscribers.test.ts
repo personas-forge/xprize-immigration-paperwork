@@ -10,6 +10,7 @@ import type {
 import { registerAuditLog, toAuditRecord, type AuditRecord } from "./audit-log";
 import {
   registerAttorneyNotify,
+  resolveNotifyFn,
   shouldNotify,
   toNotification,
   type AttorneyNotification,
@@ -76,6 +77,37 @@ test("audit subscriber records every event through the injected sink", async () 
 });
 
 // ── attorney-notify ──────────────────────────────────────────────────────────
+
+test("resolveNotifyFn: no webhook URL → console default (does not POST)", async () => {
+  let posted = false;
+  const sink = resolveNotifyFn({}, { fetchImpl: (async () => ((posted = true), new Response("", { status: 200 })) ) as unknown as typeof fetch });
+  await sink({ caseId: "c1", status: "Filed", at: AT, reason: "x" });
+  assert.equal(posted, false, "with no URL configured nothing is POSTed");
+});
+
+test("resolveNotifyFn: webhook URL set → POSTs notification + recipients; non-2xx throws", async () => {
+  const calls: { url: string; body: unknown }[] = [];
+  const fetchImpl = (async (url: string, init: RequestInit) => {
+    calls.push({ url, body: JSON.parse(String(init.body)) });
+    return new Response("", { status: 200 });
+  }) as unknown as typeof fetch;
+  const sink = resolveNotifyFn(
+    { ATTORNEY_NOTIFY_WEBHOOK_URL: "https://hook.example/notify", ATTORNEY_EMAILS: "a@firm.com,b@firm.com" },
+    { fetchImpl },
+  );
+  await sink({ caseId: "c1", status: "RFE", at: AT, reason: "status update" });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "https://hook.example/notify");
+  assert.deepEqual((calls[0].body as { recipients: string[] }).recipients, ["a@firm.com", "b@firm.com"]);
+  assert.equal((calls[0].body as { caseId: string }).caseId, "c1");
+
+  // a non-2xx must throw so registerAttorneyNotify logs NOT-DELIVERED
+  const failing = resolveNotifyFn(
+    { ATTORNEY_NOTIFY_WEBHOOK_URL: "https://hook.example/notify" },
+    { fetchImpl: (async () => new Response("", { status: 500 })) as unknown as typeof fetch, recipients: () => [] },
+  );
+  await assert.rejects(() => Promise.resolve(failing({ caseId: "c1", status: "Filed", at: AT, reason: "x" })));
+});
 
 test("shouldNotify matches the notify-worthy statuses case-insensitively", () => {
   assert.equal(shouldNotify("In Review"), true);

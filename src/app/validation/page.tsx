@@ -10,6 +10,7 @@ import {
   REVALIDATE_AFTER_DAYS,
   VISA_PACKS,
   freshnessOf,
+  stalePrograms,
   todayIso,
   type Classification,
   type JurisdictionCode,
@@ -47,12 +48,29 @@ const COMPLIANCE_TITLE: Record<string, string> = {
 
 export default function ValidationPage() {
   const now = todayIso();
+  // Live programs whose validation record is overdue. By contract (see
+  // `stalePrograms`) runtime does NOT withdraw them — CI is the hard pre-deploy
+  // gate — but we surface an honest banner so an overdue-in-production state is
+  // visible to anyone reading the page, not silently served as current.
+  const stale = stalePrograms(now);
 
   return (
     <PageFrame>
       <SiteHeader />
 
       <section className="mx-auto max-w-4xl px-8 pb-16 pt-16">
+        {stale.length > 0 ? (
+          <div
+            role="status"
+            className="mb-8 rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[15px] text-danger"
+          >
+            <strong>Re-verification overdue:</strong> {stale.join(", ")} —{" "}
+            {stale.length === 1 ? "this program's" : "these programs'"} validated
+            rule-set passed its {REVALIDATE_AFTER_DAYS}-day review window. The rules
+            are still as last verified; we are re-confirming them against primary
+            sources.
+          </div>
+        ) : null}
         <Rise>
           <ChapterMark numeral="VI" label="Validation & sources" />
           <h1 className="display mt-5 text-[clamp(2.2rem,5.5vw,3.8rem)]">
@@ -63,8 +81,10 @@ export default function ValidationPage() {
             legal sources, with a citation and a review date. Correctness has{" "}
             <strong>two layers</strong>: <em>verified</em> means it matches the
             primary sources; <em>counsel-approved</em> means a licensed attorney
-            or adviser of record has signed off — which is required before
-            anything is filed. <strong>Verified is not legal advice.</strong>
+            or adviser of record has signed off on this program&apos;s rule-set.
+            Every individual petition is separately reviewed and signed by{" "}
+            <em>your</em> attorney of record before filing.{" "}
+            <strong>Verified is not legal advice.</strong>
           </p>
         </Rise>
 

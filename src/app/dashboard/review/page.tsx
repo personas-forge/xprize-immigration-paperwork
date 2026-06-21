@@ -1,7 +1,7 @@
 import { requireOnboardedUser } from "@/lib/auth/session";
 import { isConfiguredAttorney, isConfiguredOps } from "@/lib/auth/roles";
 import { getBalance } from "@/lib/tokens/ledger";
-import { getCasesInReview } from "@/lib/data/petitions";
+import { petitions } from "@/lib/data/adapters/petition";
 import { ReviewQueueView } from "@/features/review/components/ReviewQueueView";
 
 // Attorney-of-record review queue. Lists every case awaiting review — a
@@ -18,10 +18,14 @@ export default async function ReviewQueuePage() {
   const attorney = isConfiguredAttorney(user.email);
   const canView = attorney || isConfiguredOps(user.email);
 
-  const [balance, cases] = await Promise.all([
+  // The cross-tenant gate now lives IN the adapter (listReviewQueue fail-closes
+  // unless attorney|ops). `canView` is recomputed only for the view's not-
+  // authorized state; the data path can't leak the queue even if it drifted.
+  const [balance, queue] = await Promise.all([
     getBalance(user.id),
-    canView ? getCasesInReview() : Promise.resolve([] as const),
+    petitions.listReviewQueue({ userId: user.id, email: user.email ?? null }),
   ]);
+  const cases = queue.ok ? queue.value : [];
 
   return (
     <ReviewQueueView
@@ -35,6 +39,15 @@ export default async function ReviewQueuePage() {
         classification: c.classification,
         status: c.status,
         approvalLikelihood: c.approvalLikelihood,
+        // QUEUE-AGE CONTRACT (recorded — prior decision UAT 2026-06-20 F3): the SLA
+        // clock is "time since this case last ENTERED review", which is exactly
+        // updated_at here. A case in Attorney Review reached it via the submit
+        // transition (which set updated_at) and no transition fires again until the
+        // attorney acts (which MOVES it out of the queue); plain notes
+        // (addReviewEvent) do NOT bump updated_at. A changes-requested→resubmit
+        // therefore intentionally RESTARTS the clock — a re-submitted case is a
+        // fresh review request. So updated_at is correct for an in-queue case; it
+        // is deliberately NOT a frozen original-submission timestamp.
         submittedAt: c.updatedAt,
       }))}
     />

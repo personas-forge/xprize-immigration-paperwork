@@ -80,14 +80,65 @@ export interface GeminiCall {
   latencyMs: number;
 }
 
-/** Call Gemini for a prompt. The caller decides whether to track / guard the
- *  result — this only does the model call. */
+/**
+ * Per-tier wall-clock deadline for ONE Gemini generation. The Claude CLI path has
+ * always been bounded by {@link CLAUDE_TIMEOUT_MS}; the production engine was
+ * UNBOUNDED — a hung upstream (network stall, model slowness) pinned an already-
+ * charged route forever with no reclaim. On expiry we REJECT so `operation.ts`'s
+ * catch reclaims the charge and serves the deterministic mock — converting a hang
+ * into the already-handled fallback path. `long` (full-letter drafts) gets more
+ * headroom than `fast` (screening/categorize/guidance).
+ */
+const GEMINI_TIMEOUT_MS: Record<LlmTier, number> = { fast: 60_000, long: 120_000 };
+
+/**
+ * Bounded retry for TRANSIENT Gemini failures so a momentary blip (a 429/5xx, a
+ * socket reset, an empty-candidates response) doesn't permanently downgrade a
+ * PAID result to the non-AI template — a retry 1-2s later usually succeeds.
+ * Non-transient errors (auth, safety refusal) are NOT retried.
+ */
+const GEMINI_MAX_ATTEMPTS = 3; // initial + 2 retries
+const GEMINI_BACKOFF_BASE_MS = 400;
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/** Reject a promise if it doesn't settle within `ms`. Does not cancel the inner
+ *  work (the SDK has no abort here) but UNBLOCKS the route so the charge is
+ *  reclaimed and the mock served, instead of hanging on the upstream. */
+function withDeadline<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    p.then(
+      (v) => { clearTimeout(t); resolve(v); },
+      (e) => { clearTimeout(t); reject(e); },
+    );
+  });
+}
+
+/** Classify a Gemini error as transient (worth a retry) vs. terminal. Errs toward
+ *  terminal: only known-recoverable signals (rate-limit / 5xx / network / our own
+ *  deadline) retry. Exported for unit coverage of the retry decision. */
+export function isTransientGeminiError(err: unknown): boolean {
+  const status = (err as { status?: number })?.status;
+  if (status === 429 || status === 500 || status === 502 || status === 503 || status === 504) {
+    return true;
+  }
+  const msg = String((err as Error)?.message ?? err).toLowerCase();
+  return /\b(429|500|502|503|504|rate.?limit|unavailable|overloaded|deadline|timed out|timeout|econnreset|etimedout|enotfound|socket hang up|network|fetch failed)\b/.test(
+    msg,
+  );
+}
+
+/** Call Gemini for a prompt, bounded by a per-tier deadline and retried on
+ *  transient failures. The caller decides whether to track / guard the result —
+ *  this only does the model call. */
 export async function callGemini(
   prompt: string,
   options: GenerateOptions = {},
 ): Promise<GeminiCall> {
   const genAI = geminiSdk();
-  const model = geminiModelFor(options.tier ?? "fast");
+  const tier = options.tier ?? "fast";
+  const model = geminiModelFor(tier);
   const m = genAI.getGenerativeModel({
     model,
     generationConfig: {
@@ -95,9 +146,32 @@ export async function callGemini(
       ...(typeof options.temperature === "number" ? { temperature: options.temperature } : {}),
     },
   });
-  const startedAt = Date.now();
-  const r = await m.generateContent(prompt);
-  return { text: r.response.text(), response: r.response, model, latencyMs: Date.now() - startedAt };
+  const deadline = GEMINI_TIMEOUT_MS[tier];
+
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= GEMINI_MAX_ATTEMPTS; attempt++) {
+    try {
+      const startedAt = Date.now();
+      const r = await withDeadline(m.generateContent(prompt), deadline, `gemini ${model}`);
+      return {
+        text: r.response.text(),
+        response: r.response,
+        model,
+        latencyMs: Date.now() - startedAt,
+      };
+    } catch (err) {
+      lastErr = err;
+      if (attempt >= GEMINI_MAX_ATTEMPTS || !isTransientGeminiError(err)) throw err;
+      // Exponential backoff + jitter, capped so total retry time stays bounded
+      // well under the per-tier deadline budget.
+      const base = Math.min(deadline, GEMINI_BACKOFF_BASE_MS * 2 ** (attempt - 1));
+      console.warn(
+        `[llm] gemini ${model} transient error (attempt ${attempt}/${GEMINI_MAX_ATTEMPTS}); retrying`,
+      );
+      await sleep(base + Math.floor(Math.random() * base * 0.25));
+    }
+  }
+  throw lastErr;
 }
 
 const CLAUDE_TIMEOUT_MS = 180_000;

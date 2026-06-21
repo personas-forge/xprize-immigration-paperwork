@@ -18,6 +18,11 @@
 export interface AppUser {
   id: string;
   email: string | null;
+  /** Whether the identity provider has verified this email. Gates the farmable
+   *  one-time signup grant (an unverified, one-click account must not mint
+   *  spendable credit). Google sign-in is always verified; the synthetic dev
+   *  user is trusted (true). */
+  emailVerified?: boolean;
   user_metadata?: {
     avatar_url?: string | null;
     full_name?: string | null;
@@ -26,17 +31,17 @@ export interface AppUser {
   };
 }
 
-/** True only outside production with the dev flag set. */
-export function isDevAuth(): boolean {
-  return (
-    process.env.NEXT_PUBLIC_DEV_AUTH === "1" &&
-    process.env.NODE_ENV !== "production"
-  );
+/** True only outside production with the dev flag set. `env` is injectable so
+ *  store/metering predicates that thread an explicit env (for unit tests) share
+ *  one definition instead of re-inlining the flag check. */
+export function isDevAuth(env: Record<string, string | undefined> = process.env): boolean {
+  return env.NEXT_PUBLIC_DEV_AUTH === "1" && env.NODE_ENV !== "production";
 }
 
 /** The synthetic developer identity used in dev-auth mode. */
 export const DEV_USER: AppUser = {
   id: "00000000-0000-4000-8000-000000000001",
   email: "developer@localhost",
+  emailVerified: true,
   user_metadata: { full_name: "Developer", avatar_url: null },
 };

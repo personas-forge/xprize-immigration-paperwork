@@ -84,6 +84,9 @@ export async function getUser(): Promise<AppUser | null> {
       return {
         id: decoded.uid,
         email: decoded.email ?? null,
+        // Firebase exposes email_verified on the decoded token. Default to false
+        // (fail-closed for the grant gate) when the provider doesn't assert it.
+        emailVerified: decoded.email_verified === true,
         user_metadata: {
           name: (decoded.name as string | undefined) ?? null,
           avatar_url: (decoded.picture as string | undefined) ?? null,
@@ -132,6 +135,13 @@ export async function requireOnboardedUser(): Promise<{
   // The version is WRITTEN on every consent but must also be READ back, or a
   // terms bump silently leaves users operating under terms they never accepted.
   // Dev-auth is auto-seeded at the current version, so this never fires for it.
+  //
+  // INTENT (recorded): the onboarding gate keys on the consent VERSION only. A
+  // user's MARKETING preference is intentionally NOT a re-prompt trigger — it is
+  // mutable independently (a changed marketing choice is recorded as a new
+  // append-only consent row, surfaced/edited via the account page) and must not
+  // force a terms re-acceptance. So "version match ⇒ skip" deliberately ignores
+  // marketing state; it is not an oversight.
   if (!isDevAuth()) {
     const consented = await getLatestConsentVersion(user.id);
     if (consented !== CONSENT_VERSION) redirect("/welcome");

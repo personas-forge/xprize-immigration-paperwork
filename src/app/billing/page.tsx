@@ -3,9 +3,10 @@ import { PageFrame, ChapterMark, Seal } from "@/components/brand";
 import { Rise } from "@/components/Motion";
 import { SiteHeader, SiteFooter } from "@/components/SiteChrome";
 import { getUser } from "@/lib/auth/session";
-import { getBalance } from "@/lib/tokens/ledger";
+import { getBalance, getLedgerForUser, type LedgerEntry } from "@/lib/tokens/ledger";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { isDevAuth } from "@/lib/auth/devAuth";
+import { isMeteringEnforced } from "@/lib/db/config";
 import { BUNDLES, ENTERPRISE_CONTACT, FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
 import { costOf, labelOf, type OperationKey } from "@/lib/tokens/registry";
 import { BundleGrid } from "./BundleGrid";
@@ -39,6 +40,29 @@ export const dynamic = "force-dynamic";
 // with the header ThemeToggle (no theme-specific markup). When auth/DB isn't
 // configured the balance reads "∞" (the guard gives a free, unmetered pass).
 
+/** Human label for a ledger row: a debit names its operation; credits name their
+ *  reason. Keeps the raw `reason`/`operation` out of the user-facing list. */
+function activityLabel(e: LedgerEntry): string {
+  switch (e.reason) {
+    case "debit":
+      return e.operation ? labelOf(e.operation as OperationKey) : "AI operation";
+    case "purchase":
+      return "Token purchase";
+    case "reclaim":
+      return "Refund — unusable result";
+    case "refund":
+      return "Refund / chargeback";
+    case "signup_grant":
+      return "Signup bonus";
+    case "adjustment":
+      return "Balance adjustment";
+    case "enterprise_grant":
+      return "Enterprise grant";
+    default:
+      return e.reason;
+  }
+}
+
 export default async function BillingPage({
   searchParams,
 }: {
@@ -46,9 +70,13 @@ export default async function BillingPage({
 }) {
   const purchaseSuccess = (await searchParams).status === "success";
   const user = isFirebaseConfigured() || isDevAuth() ? await getUser() : null;
-  // "∞" when the token economy isn't enforced (no auth/DB → guard free-passes).
-  const balance =
-    user && process.env.DATABASE_URL ? await getBalance(user.id) : null;
+  // "∞" when the token economy isn't enforced (the guard free-passes). Use the
+  // canonical isMeteringEnforced() — NOT a raw DATABASE_URL read, which would
+  // wrongly show "∞" on Firestore prod (no DATABASE_URL) while the guard charges.
+  const metered = user !== null && isMeteringEnforced();
+  const [balance, activity] = metered
+    ? await Promise.all([getBalance(user!.id), getLedgerForUser(user!.id, 25)])
+    : [null, [] as LedgerEntry[]];
   const balanceLabel = balance === null ? "∞" : balance.toLocaleString();
 
   return (
@@ -98,6 +126,48 @@ export default async function BillingPage({
             </div>
           </div>
         </Rise>
+
+        {/* Recent activity — read back the token_ledger (already records every
+            debit/credit/reclaim/refund/grant) so a prepaid user can self-verify
+            where their tokens went, instead of only seeing a bare balance. */}
+        {activity.length > 0 ? (
+          <Rise className="mt-8">
+            <div className="microprint mb-3" style={{ color: "var(--accent-dark)" }}>
+              § Recent activity
+            </div>
+            <div className="overflow-hidden rounded-card border border-border-strong bg-surface">
+              <ul className="divide-y divide-rule">
+                {activity.map((e, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center justify-between gap-4 px-5 py-3"
+                  >
+                    <div>
+                      <div className="font-sans text-[15.5px] text-foreground">
+                        {activityLabel(e)}
+                      </div>
+                      <div className="microprint" style={{ color: "var(--muted)" }}>
+                        {e.createdAt ? e.createdAt.slice(0, 10) : "—"}
+                      </div>
+                    </div>
+                    <div className="flex items-baseline gap-4">
+                      <span
+                        className={`doc-number text-[15px] ${e.delta < 0 ? "text-muted-strong" : "text-success"}`}
+                        style={{ fontVariantNumeric: "tabular-nums" }}
+                      >
+                        {e.delta > 0 ? "+" : ""}
+                        {e.delta.toLocaleString()}
+                      </span>
+                      <span className="microprint" style={{ color: "var(--muted)" }}>
+                        bal {e.balanceAfter.toLocaleString()}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Rise>
+        ) : null}
 
         {/* Bundles */}
         <Rise className="mt-12">

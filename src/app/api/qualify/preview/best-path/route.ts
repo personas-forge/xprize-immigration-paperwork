@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { parseQualifyRequest } from "@/features/qualification";
 import { recommendBestPath } from "@/features/qualification/best-path";
 import {
+  PREVIEW_RATE_LIMIT,
   checkRateLimit,
   isRateLimitEnabled,
   rateLimitKey,
@@ -20,13 +21,11 @@ import { DISCLAIMER } from "@/lib/result";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PREVIEW_LIMIT = 30;
-
 export async function POST(request: Request): Promise<NextResponse> {
   if (isRateLimitEnabled()) {
     const rl = checkRateLimit(
       rateLimitKey(request, "best_path_preview"),
-      PREVIEW_LIMIT,
+      PREVIEW_RATE_LIMIT,
     );
     if (!rl.ok) {
       return NextResponse.json(

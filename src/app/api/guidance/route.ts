@@ -87,5 +87,15 @@ export function POST(request: Request): Promise<NextResponse> {
         inputText: `${req.fieldLabel} ${req.situation}`,
         outputText: guidance,
       }),
+    // UPL hard-stop (guidance #1). When the live screen flags the model text as
+    // legal-advice / outcome-prediction (`risk: "blocked"`), DO NOT ship that
+    // text — replace it with the advice-free deterministic template, which is
+    // UPL-safe by construction. The orchestrator reclaims the charge first, so
+    // labelling the substitute `source: "mock"` keeps the "mock is never billed"
+    // invariant. The AdjudicationBadge still renders the block reason.
+    onBlocked: (req) => ({
+      ...buildGuidanceResponse(mockGuidance(req), "mock"),
+      blocked: true,
+    }),
   });
 }

@@ -47,14 +47,27 @@ export async function getCaseDocuments(
   return store.getCaseDocuments(caseId);
 }
 
-/** Remove a document from a case's vault. No-op when no store. */
+/** SOFT-delete a document from a case's vault (recoverable; keeps the ordinal).
+ *  No-op when no store. `deletedBy` records who removed it for the audit trail. */
 export async function removeCaseDocument(
+  caseId: string,
+  documentId: string,
+  deletedBy?: string | null,
+): Promise<boolean> {
+  const store = await getStore();
+  if (!store) return false;
+  return store.removeCaseDocument(caseId, documentId, deletedBy);
+}
+
+/** Restore a soft-deleted document. False when no store or no matching deleted
+ *  document. */
+export async function restoreCaseDocument(
   caseId: string,
   documentId: string,
 ): Promise<boolean> {
   const store = await getStore();
   if (!store) return false;
-  return store.removeCaseDocument(caseId, documentId);
+  return store.restoreCaseDocument(caseId, documentId);
 }
 
 /** Re-file a document under a different criterion bucket. False when no store or

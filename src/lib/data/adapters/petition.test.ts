@@ -20,6 +20,8 @@ function deps(over: Partial<PetitionDeps> = {}): PetitionDeps {
   return {
     getCaseForUser: async () => CASE,
     getCaseAnyOwner: async () => CASE,
+    getCasesForUser: async () => [CASE],
+    getCasesInReview: async () => [CASE],
     createCaseWithCriteria: async () => ({ id: "c2", fileNumber: "O1-2000" }),
     getCriteriaForCase: async () => [],
     saveDraft: async () => 3,
@@ -27,12 +29,41 @@ function deps(over: Partial<PetitionDeps> = {}): PetitionDeps {
     saveRfeResponse: async () => 2,
     getLatestRfeResponse: async () => null,
     isConfiguredAttorney: () => false,
+    isConfiguredOps: () => false,
     storeConfigured: async () => true,
     ...over,
   };
 }
 
 const OWNER = { userId: "u1", email: "owner@x.com" };
+
+test("listOwnedCases: owner-scoped; no user id → forbidden", async () => {
+  const a = new PetitionAdapter(deps());
+  const ok = await a.listOwnedCases(OWNER);
+  assert.equal(ok.ok, true);
+  assert.equal(ok.ok && ok.value.length, 1);
+  const denied = await a.listOwnedCases({ userId: null, email: null });
+  assert.equal(denied.ok, false);
+  assert.equal(!denied.ok && denied.error.kind, "forbidden");
+});
+
+test("listReviewQueue: fail-closed unless attorney OR ops (IDOR gate in the seam)", async () => {
+  // neither attorney nor ops → forbidden, queue never read
+  let read = false;
+  const denied = await new PetitionAdapter(
+    deps({ getCasesInReview: async () => ((read = true), [CASE]) }),
+  ).listReviewQueue(OWNER);
+  assert.equal(denied.ok, false);
+  assert.equal(!denied.ok && denied.error.kind, "forbidden");
+  assert.equal(read, false, "a non-attorney/non-ops caller must never reach the cross-tenant read");
+  // attorney → allowed
+  const asAttorney = await new PetitionAdapter(deps({ isConfiguredAttorney: () => true })).listReviewQueue(OWNER);
+  assert.equal(asAttorney.ok, true);
+  assert.equal(asAttorney.ok && asAttorney.value.length, 1);
+  // ops-only → allowed (read-only view)
+  const asOps = await new PetitionAdapter(deps({ isConfiguredOps: () => true })).listReviewQueue(OWNER);
+  assert.equal(asOps.ok, true);
+});
 
 test("createCase: requires a user, then persists", async () => {
   const a = new PetitionAdapter(deps());

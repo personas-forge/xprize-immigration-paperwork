@@ -23,6 +23,7 @@
 import { NextResponse } from "next/server";
 import {
   attachExhibits,
+  auditDraftCitations,
   buildDraftPrompt,
   buildDraftResult,
   buildSectionPrompt,
@@ -249,6 +250,12 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
       input.req.criteria
         .map((c) => `${c.name} ${c.evidence} ${c.rationale}`)
         .join(" ") + ` ${input.req.petitioner}`;
+    // Exhibit-citation integrity (petition-drafting #2): a section that cites
+    // "(Exhibit N)" with no Exhibit N attached to the request is the "can't ship
+    // evidence you don't have" failure. Feed the unresolved numbers into the
+    // adjudication report so attorney-ready turns FALSE server-side — previously
+    // `unresolved` was advisory-only (a client badge), never gating anything.
+    const unresolvedCitations = auditDraftCitations(sections, input.req).unresolved;
     return runAdjudication({
       operation: input.focus ? "draft_section" : "draft",
       classification: input.req.classification,
@@ -256,6 +263,7 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
       result: body,
       inputText,
       outputText,
+      unresolvedCitations,
     });
   },
 

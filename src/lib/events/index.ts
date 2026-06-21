@@ -11,7 +11,7 @@
 import type { Store } from "../db/store";
 import { EventBus } from "./bus";
 import { withEvents } from "./store-events";
-import { registerAttorneyNotify } from "./subscribers/attorney-notify";
+import { registerAttorneyNotify, resolveNotifyFn } from "./subscribers/attorney-notify";
 import { registerProvenanceLedger, type ProvenanceChain } from "./provenance";
 
 // Process-lifetime singleton: there is no reset/teardown export and none is
@@ -36,7 +36,11 @@ export function getDomainBus(): EventBus {
     // only double-log. Wire `registerAuditLog(bus, durableSink)` here when a
     // durable AuditSink lands — until then there is no second, dormant trail.
     provenance = registerProvenanceLedger(bus).chain;
-    registerAttorneyNotify(bus);
+    // Real delivery when ATTORNEY_NOTIFY_WEBHOOK_URL is set (provider-agnostic
+    // POST), else the console default — so a milestone (RFE/Decision/Filed) can
+    // actually reach the attorney of record once an operator wires a channel,
+    // instead of only a server log nobody watches.
+    registerAttorneyNotify(bus, resolveNotifyFn());
   }
   return bus;
 }

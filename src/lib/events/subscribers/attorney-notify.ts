@@ -10,6 +10,7 @@
  * the vocabulary can grow without touching the bus or the Store.
  */
 
+import { attorneyAllowlist } from "@/lib/auth/roles";
 import type { EventBus } from "../bus";
 import type { CaseStatusChanged } from "../types";
 
@@ -34,6 +35,48 @@ export const NOTIFY_ON: ReadonlySet<string> = new Set(
 
 const defaultNotify: NotifyFn = (n) =>
   console.info(`[attorney-notify] ${n.caseId} → ${n.status} (${n.reason})`);
+
+const WEBHOOK_TIMEOUT_MS = 5000;
+
+/**
+ * Resolve the ACTIVE delivery sink. When an operator sets
+ * `ATTORNEY_NOTIFY_WEBHOOK_URL`, each notification is delivered for real by POSTing
+ * it as JSON (provider-agnostic — point it at Resend/SendGrid/Slack/Zapier or a
+ * custom relay) with the configured attorney recipients + an optional
+ * `ATTORNEY_NOTIFY_WEBHOOK_TOKEN` bearer header; a non-2xx or a 5s timeout THROWS
+ * so `registerAttorneyNotify` logs the NOT-DELIVERED line (and a future durable
+ * outbox can replay it). With no URL configured it falls back to the console
+ * default (local dev / unconfigured) — so the seam ships functional but inert
+ * until an operator wires a channel. `env`/`deps` are injectable for tests.
+ */
+export function resolveNotifyFn(
+  env: Record<string, string | undefined> = process.env,
+  deps: { fetchImpl?: typeof fetch; recipients?: () => string[] } = {},
+): NotifyFn {
+  const url = env.ATTORNEY_NOTIFY_WEBHOOK_URL?.trim();
+  if (!url) return defaultNotify;
+  const token = env.ATTORNEY_NOTIFY_WEBHOOK_TOKEN?.trim();
+  const doFetch = deps.fetchImpl ?? fetch;
+  const recipientsOf = deps.recipients ?? (() => attorneyAllowlist(env));
+  return async (n) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), WEBHOOK_TIMEOUT_MS);
+    try {
+      const res = await doFetch(url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ ...n, recipients: recipientsOf() }),
+        signal: ctrl.signal,
+      });
+      if (!res.ok) throw new Error(`attorney-notify webhook returned ${res.status}`);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+}
 
 /** True when a status transition is one an attorney should be told about. */
 export function shouldNotify(status: string): boolean {

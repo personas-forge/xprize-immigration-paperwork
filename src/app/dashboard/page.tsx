@@ -2,7 +2,7 @@ import { DashboardView } from "@/features/dashboard/DashboardView";
 import { requireOnboardedUser } from "@/lib/auth/session";
 import { canReviewQueue } from "@/lib/auth/roles";
 import { getBalance } from "@/lib/tokens/ledger";
-import { getCasesForUser } from "@/lib/data/petitions";
+import { petitions } from "@/lib/data/adapters/petition";
 import { isStoreConfigured } from "@/lib/db/config";
 import { type SavedCaseSummary } from "@/features/case-file/types";
 
@@ -24,9 +24,11 @@ export default async function DashboardPage() {
     // Surface the review-queue nav to anyone who can actually view it — the
     // attorney of record OR a read-only ops/case-manager (both fail-closed).
     showReviewQueue = canReviewQueue(user.email);
-    // The user's real, persisted cases (from the qualification flow). Empty in
-    // the keyless/no-DB demo, where only the mock case file shows.
-    cases = (await getCasesForUser(user.id)).map((c) => ({
+    // The user's real, persisted cases (from the qualification flow), through the
+    // owner-scoped adapter seam. Empty in the keyless/no-DB demo, where only the
+    // mock case file shows.
+    const owned = await petitions.listOwnedCases({ userId: user.id, email: user.email ?? null });
+    cases = (owned.ok ? owned.value : []).map((c) => ({
       id: c.id,
       fileNumber: c.fileNumber,
       petitioner: c.petitioner,
