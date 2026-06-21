@@ -39,6 +39,7 @@ export {
   allValidations,
   freshnessOf,
   isStale,
+  stalePrograms,
   todayIso,
   type Freshness,
   type FreshnessLevel,

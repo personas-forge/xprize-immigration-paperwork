@@ -13,6 +13,7 @@ import {
   daysBetween,
   freshnessOf,
   isStale,
+  stalePrograms,
   todayIso,
   validationFor,
   type ValidationRecord,
@@ -134,4 +135,16 @@ test("every LIVE program's validation record is currently fresh (not stale)", ()
       `${code} is overdue for re-verification (lastVerified ${r.lastVerified}) — re-verify and bump the date before shipping`,
     );
   }
+});
+
+test("stalePrograms() reports overdue live programs (none today, all when far future)", () => {
+  // Today: every live program is fresh, so the runtime monitor is empty.
+  assert.deepEqual(stalePrograms(todayIso()), [], "no live program should be stale today");
+  // Far past the window: every live program is overdue → all surfaced.
+  const farFuture = addDays(todayIso(), REVALIDATE_AFTER_DAYS + 365);
+  assert.deepEqual(
+    [...stalePrograms(farFuture)].sort(),
+    [...livePrograms()].sort(),
+    "every live program is overdue once we are well past the window",
+  );
 });

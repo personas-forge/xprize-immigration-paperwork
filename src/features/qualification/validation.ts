@@ -10,13 +10,20 @@
  * Two layers of correctness:
  *   - status "verified"   → confirmed against PRIMARY sources (what the team can
  *     do via research). This is what CI gates on.
- *   - counselApproved     → signed off by the attorney/adviser of record. This
- *     is the bar for actually FILING, tracked here but not the same as verified.
+ *   - counselApproved     → counsel has signed off on THIS PROGRAM'S validated
+ *     rule-set (a per-program operational-readiness STATUS surfaced on
+ *     /validation). It is NOT a per-case filing gate: the bar for an actual
+ *     filing is the per-case attorney-of-record review & e-sign workflow
+ *     (`src/features/review`), which gates each individual petition — not this
+ *     framework-level flag. All records sit at `false` until counsel reviews the
+ *     framework itself; the product is still filable because each case is gated
+ *     case-by-case by the attorney of record.
  *
  * This is product/source validation, not legal advice — see docs/validation-framework.md.
  */
 
 import { type Classification } from "./packs";
+import { livePrograms } from "./jurisdictions";
 
 export type ValidationStatus = "verified" | "provisional" | "needs-review";
 
@@ -38,7 +45,10 @@ export interface ValidationRecord {
   lastVerified: string;
   /** "web-research (primary sources)" until counsel signs off. */
   verifiedBy: string;
-  /** True once the attorney/adviser of record has signed off (filing bar). */
+  /** True once counsel has signed off on THIS PROGRAM'S validated rule-set — a
+   *  per-program operational-readiness status shown on /validation. NOT the
+   *  per-case filing gate (that is the attorney-of-record review & e-sign
+   *  workflow in `src/features/review`, applied to each individual petition). */
   counselApproved: boolean;
   sources: SourceRef[];
   notes?: string;
@@ -279,4 +289,29 @@ export function freshnessOf(record: ValidationRecord, today: string): Freshness 
  *  place — used by the CI freshness guard. */
 export function isStale(record: ValidationRecord, today: string): boolean {
   return freshnessOf(record, today).level === "stale";
+}
+
+/**
+ * RUNTIME STALENESS CONTRACT (recorded so the red /validation badge is not
+ * mistaken for an enforced runtime block):
+ *
+ *  - `validation.test.ts` is the HARD gate. CI fails if any LIVE program is stale
+ *    as of the commit date, so a stale rule-set cannot SHIP.
+ *  - At runtime we deliberately do NOT withdraw an already-verified program once
+ *    it crosses {@link REVALIDATE_AFTER_DAYS}. Hiding a program whose rules are
+ *    still correct (merely overdue for re-confirmation) would deny service on a
+ *    good rule-set — a worse failure than serving a slightly-overdue-but-verified
+ *    rule, and `livePrograms()`/`isLiveProgram()` therefore ignore freshness.
+ *  - The assumption this rests on — a deployed build is re-shipped within the
+ *    window — is made CHECKABLE by {@link stalePrograms}: wire it into a monitor
+ *    or an ops banner (the /validation page already shows per-record freshness).
+ *
+ * Returns the live program codes whose validation record is stale (or missing /
+ * unverifiable) as of `today` — empty in the normal, fresh case.
+ */
+export function stalePrograms(today: string = todayIso()): Classification[] {
+  return livePrograms().filter((code) => {
+    const record = validationFor(code);
+    return record ? isStale(record, today) : true;
+  });
 }
