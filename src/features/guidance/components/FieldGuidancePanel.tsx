@@ -204,6 +204,17 @@ export function FieldGuidancePanel() {
           </form>
         )}
 
+        {/* Persistent live region (always in the DOM) so screen readers reliably
+            hear the generating→ready transition — on a UPL surface, the
+            not-legal-advice note must be spoken, not just shown. WCAG 4.1.3. */}
+        <div role="status" aria-live="polite" className="sr-only">
+          {status === "loading"
+            ? "Generating guidance…"
+            : status === "done"
+              ? "Guidance ready — informational only, not legal advice."
+              : ""}
+        </div>
+
         {status === "loading" ? <GuidanceResultSkeleton /> : null}
 
         {status === "error" && error ? (

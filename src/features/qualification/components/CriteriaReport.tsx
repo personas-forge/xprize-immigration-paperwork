@@ -41,6 +41,13 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
       {/* Disclaimer FIRST — UPL safeguard, never dismissible. */}
       <DisclaimerStamp text={result.disclaimer} />
 
+      {/* Screen-reader announcement of the VERDICT — the outcome of the screening,
+          which the visual likelihood meter alone doesn't convey to AT. role=status
+          (polite) so it's spoken when the report swaps in without stealing focus. */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {`Screening result: ${summary.meetsThreshold ? "meets" : "below"} the qualifying threshold — ${summary.qualifying} of ${result.criteria.length} criteria supported, ${threshold} needed. Informational only, not legal advice.`}
+      </p>
+
       {/* Likelihood + summary */}
       <Card className="overflow-hidden">
         <CardHeader className="bg-surface-muted/60">

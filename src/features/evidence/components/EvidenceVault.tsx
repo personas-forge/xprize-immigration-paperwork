@@ -52,6 +52,8 @@ export function EvidenceVault({
   const [error, setError] = useState<string | null>(null);
   // Non-fatal: the doc was categorized but couldn't be saved to the case.
   const [warning, setWarning] = useState<string | null>(null);
+  // SR announcement of categorize progress/result (the visual bar is aria-hidden).
+  const [announce, setAnnounce] = useState("");
   const [, startTransition] = useTransition();
   // Synchronous re-entrancy guard: `disabled={status === "adding"}` only blocks
   // the button AFTER the next render, so a rapid double-click could fire two
@@ -73,6 +75,7 @@ export function EvidenceVault({
     setStatus("adding");
     setError(null);
     setWarning(null);
+    setAnnounce("Categorizing the document…");
     try {
       const res = await fetch("/api/evidence/categorize", {
         method: "POST",
@@ -108,6 +111,7 @@ export function EvidenceVault({
           source: data.source,
         };
       setDocuments((prev) => [...prev, doc]);
+      setAnnounce(`Document categorized under ${doc.criterion}, exhibit ${doc.exhibit}.`);
       // A case-backed save that failed: the categorization is shown, but warn
       // that it didn't persist (the user was charged) so it isn't mistaken for
       // a saved exhibit that will vanish on reload.
@@ -168,6 +172,11 @@ export function EvidenceVault({
         {/* UPL safeguard on the surface itself — a forwarded vault screenshot
             must carry the not-legal-advice stamp (the categorize payload does too). */}
         <DisclaimerStamp text={DISCLAIMER} />
+        {/* SR announcement for the categorize flow — the progress bar is
+            aria-hidden, so without this the AI categorization is silent to AT. */}
+        <div role="status" aria-live="polite" className="sr-only">
+          {announce}
+        </div>
         {/* Add a document */}
         <div className="space-y-3 rounded-control border border-border-strong bg-surface px-4 py-3">
           <div className="grid grid-cols-1 gap-3">
