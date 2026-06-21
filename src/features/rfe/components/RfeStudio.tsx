@@ -71,6 +71,10 @@ export function RfeStudio({
   const [error, setError] = useState<string | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
   const [adjudication, setAdjudication] = useState<AdjudicationReport | null>(null);
+  // Visible in-flight state — kept in lockstep with busyRef so the paid button
+  // stays DISABLED for the whole charged call (not just while status==="loading"),
+  // so a click during the status-commit gap doesn't look live on a money button.
+  const [busy, setBusy] = useState(false);
   // Synchronous in-flight guard — see DraftStudio. A stale `status` closure can't
   // stop two same-render clicks from both firing a paid POST.
   const busyRef = useRef(false);
@@ -110,6 +114,7 @@ export function RfeStudio({
       return;
     }
     busyRef.current = true;
+    setBusy(true);
     setStatus("loading");
     setError(null);
     setSaveFailed(false);
@@ -150,6 +155,7 @@ export function RfeStudio({
       setStatus("error");
     } finally {
       busyRef.current = false;
+      setBusy(false);
     }
   }
 
@@ -186,7 +192,7 @@ export function RfeStudio({
         </label>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" variant="seal" onClick={generate} disabled={status === "loading"}>
+          <Button type="button" variant="seal" onClick={generate} disabled={busy || status === "loading"}>
             {status === "loading"
               ? "Drafting…"
               : status === "done"

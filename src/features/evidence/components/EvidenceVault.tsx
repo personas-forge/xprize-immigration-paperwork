@@ -132,6 +132,16 @@ export function EvidenceVault({
   }
 
   function onRemove(id: string) {
+    // Removal is irreversible and BURNS the exhibit number (a consumed high-water
+    // mark — re-adding gets a new, higher ordinal), so confirm before deleting.
+    const doc = documents.find((d) => d.id === id);
+    const label = doc ? `"${doc.name}" (exhibit ${doc.exhibit})` : "this document";
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(`Remove ${label}? Its exhibit number can't be reused.`)
+    ) {
+      return;
+    }
     setDocuments((prev) => prev.filter((d) => d.id !== id));
     startTransition(() => {
       void removeDocument(caseId, id);

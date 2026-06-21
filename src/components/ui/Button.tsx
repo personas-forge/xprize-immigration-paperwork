@@ -50,6 +50,9 @@ export function Button({
         // light, 5.6:1 dark). The offset is pinned to the themed background so the
         // gap never falls back to white.
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-[1px]",
+        // A consistent disabled affordance for every variant (in-flight submits,
+        // gated actions) so callers don't each hand-roll `disabled:opacity-*`.
+        "disabled:opacity-60 disabled:pointer-events-none",
         variantClass[variant],
         sizeClass[size],
         className,

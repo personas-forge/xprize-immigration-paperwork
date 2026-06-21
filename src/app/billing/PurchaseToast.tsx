@@ -34,7 +34,7 @@ export function PurchaseToast() {
         >
           <path d="M20 6 9 17l-5-5" />
         </svg>
-        Payment received — your tokens have been added to your balance.
+        Payment received — your tokens will appear in your balance momentarily.
       </span>
       <button
         type="button"
