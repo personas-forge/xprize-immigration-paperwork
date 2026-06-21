@@ -334,6 +334,62 @@ findings closed incl. ALL 7 criticals (one a verified FP, hardened) + every High
   write-only before). `QualifyAssessment.classification` is now pinned into the
   result so `CriteriaReport` derives the threshold from it, not mutable form state.
 
+## Feature-scout + ambiguity-guardian dual-lens scan (2026-06-21, branch `vibeman/feature-ambiguity-2026-06-21`)
+
+100 findings / 20 contexts (6C/49H/44M/1L; 45 feature-scout / 55 ambiguity-guardian),
+count-verified 3 ways. Correctness waves W1–4 (25 findings: ALL 6 criticals + the
+in-scope highs) SHIPPED on the branch, UNMERGED off `main`. 23 fix/doc commits;
+tsc0 / tests 409→427 / next build PASS throughout. INDEX + 20 reports +
+FIXES-WAVES-1-4 (with an 11-item pattern catalogue) at
+`docs/harness/feature-ambiguity-2026-06-21/`.
+
+### Structural facts
+- **2026-06-21** — The AI orchestrator (`executeAiOperation`) now has an opt-in
+  `onBlocked(input, body, report)` hook: when `adjudicate` returns
+  `attorneyReady:false`, the orchestrator RECLAIMS the charge and replaces the
+  body (wired for guidance → advice-free mock). It also honors a client
+  `Idempotency-Key` header — validated `[A-Za-z0-9_.:-]{1,200}`, folded into the
+  ledger ref as `idem:${userId}:${op}:${key}` so a retry de-dupes the charge.
+- **2026-06-21** — `isMeteringEnforced(env?)` in `@/lib/db/config` is the SINGLE
+  source of truth for "is the token economy on?" (`!TOKENS_BYPASS && isStoreConfigured()`).
+  `isDevAuth`/`dbDriver`/`isStoreConfigured`/`firestoreProjectId` are now
+  env-injectable. `isMeteringBypassed` is just `!isMeteringEnforced`. DATABASE_URL
+  is NOT a store signal (the store is driver-selected). The guard + billing page +
+  isMeteringBypassed all derive from the one predicate.
+- **2026-06-21** — `isAttorney` (roles.ts) fails CLOSED in production when
+  ATTORNEY_EMAILS is empty (demo unlock is dev-only) + warns once. `AppUser` now
+  carries `emailVerified` (Firebase `email_verified`; dev user = true); the free
+  signup grant gates on it.
+- **2026-06-21** — `CONSENT_VERSION` derives from ordered `CONSENT_VERSIONS`
+  (append on copy change); `isKnownConsentVersion` membership check rejects an
+  unknown env override. Firestore `getLatestConsentVersion` orders by the version
+  STRING (chronological dates), `created_at` only breaks an exact tie.
+- **2026-06-21** — `PetitionAdapter` now exposes `listOwnedCases(access)` +
+  `listReviewQueue(access)` (the cross-tenant queue IDOR gate lives in the seam:
+  forbidden unless configured attorney|ops). The dashboard, review queue, and
+  `saved-cases` all read lists through it.
+- **2026-06-21** — Evidence vault is SOFT-DELETE: `case_documents.deleted_at`/
+  `deleted_by` (PGlite cols + idempotent ALTER; Firestore fields), filtered out of
+  `getCaseDocuments`, blocked from refile; `Store.restoreCaseDocument` +
+  `EvidenceAdapter.restoreDocument` recover it (ordinal is non-reused). The live
+  adjudication engine has an `exhibitCitationGate` (unresolved `(Exhibit N)` → hard
+  fail) fed by `auditDraftCitations` via `ctx.unresolvedCitations`.
+- **2026-06-21** — `callGemini` (engines.ts) is bounded by a per-tier deadline
+  (`GEMINI_TIMEOUT_MS` fast 60s/long 120s, rejects → reclaim+mock) + bounded
+  transient retry (`isTransientGeminiError`, exported). `FIRM_FEE` (range+verb) in
+  `@/lib/site` is the one marketing firm-fee anchor.
+
+### Conventions enforced (this scan)
+- **2026-06-21** — A safety SIGNAL must be ENFORCED server-side, not just badged:
+  UPL-flagged guidance is withheld (onBlocked), unresolved exhibit citations fail
+  the adjudication gate. A client-only badge still ships the offending payload.
+- **2026-06-21** — Money/price COPY must derive from the single source (`costOf`,
+  `FIRM_FEE`, centralized `PREVIEW_RATE_LIMIT`) — never a hand-authored literal
+  that can drift from what's charged.
+- **2026-06-21** — Backticks inside a SQL TEMPLATE LITERAL (the pglite schema
+  string) terminate the literal — use plain words / single quotes in SQL comments,
+  not `code` backticks. (Hit + fixed this session.)
+
 ### Open follow-ups (from the 2026-06-20 dual-lens scan)
 - **Waves 6-8 NOT run** (no remaining criticals): W6 accessibility (focus-visible
   on Button variants, criteria-table semantics, verdict aria-live, live regions),
