@@ -262,10 +262,22 @@
 
 ## Bug-hunter + UI-perfectionist dual-lens scan (2026-06-20, branch `vibeman/bughunt-uiperf-2026-06-20`)
 
-100 findings / 20 contexts (7C/35H/42M/16L). Waves 1-6 closed 37 findings incl.
-ALL 7 criticals (one a verified FP, hardened). 17 fix + 5 doc commits, UNMERGED
-off `main`. tsc0 / tests 378→395 / lint / `next build` PASS throughout. INDEX +
+100 findings / 20 contexts (7C/35H/42M/16L). Waves 1-7 closed 44 findings incl.
+ALL 7 criticals (one a verified FP, hardened). 21 fix + 8 doc commits, UNMERGED
+off `main`. tsc0 / tests 378→399 / lint / `next build` PASS throughout. INDEX +
 per-wave docs at `docs/harness/bughunt-uiperf-2026-06-20/`.
+
+- **2026-06-20 (W7 reliability)** — provenance ledger (`lib/events/provenance.ts`)
+  now BOUNDS its in-memory window (`DEFAULT_MAX_RECORDS=10k`, evict-oldest) and
+  stamps a monotonic `seq` + `atRegression` flag on each record (metadata, NOT
+  hashed — verifyChain unchanged; sort/audit by `seq`, not `at`). `extractJson`
+  now tries every fence containing `{` then raw text, and every `{` start.
+  `runClaudeCli` kills the whole process TREE on timeout (detached POSIX group /
+  `taskkill /T`). Evidence adapter no-store → `unconfigured` (503) like petition
+  (reserve `store_error` for a throw). `fetchCaseFileData` has a 30s TTL +
+  `clearCaseFileDataCache(caseId?)` — mutations must bust it post-DB-swap.
+  Orchestrator deps are cached-but-config-re-read-per-call (don't cache an
+  env-derived value).
 
 - **2026-06-20 (W6 a11y)** — `Button` now applies the focus ring on its shared
   BASE (was ghost-only) so all variants are keyboard-visible; the canonical ring
