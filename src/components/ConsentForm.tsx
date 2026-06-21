@@ -9,7 +9,7 @@
 // SENSITIVE PRODUCT: the UPL / not-legal-advice / attorney-of-record disclaimer
 // renders prominently near sign-up via the shared DisclaimerStamp component.
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { submitConsent, type ConsentState } from "@/app/welcome/actions";
 import { CONSENT_DISCLAIMER } from "@/lib/result";
 import { DisclaimerStamp } from "@/components/legal";
@@ -29,8 +29,28 @@ export function ConsentForm({
     {},
   );
 
+  // Synchronous double-submit guard: the consents table is append-only, so two
+  // submits before `pending` commits would write TWO consent rows for one
+  // acceptance (consent #4). On success the action redirects (never returns, so
+  // the form stays disabled through navigation); on an error return we reset the
+  // guard so the user can correct and resubmit.
+  const submittedRef = useRef(false);
+  useEffect(() => {
+    if (state.error) submittedRef.current = false;
+  }, [state.error]);
+
   return (
-    <form action={action} className="space-y-7">
+    <form
+      action={action}
+      onSubmit={(e) => {
+        if (submittedRef.current) {
+          e.preventDefault();
+          return;
+        }
+        submittedRef.current = true;
+      }}
+      className="space-y-7"
+    >
       {/* Carry the (already-validated) deep-link destination through consent;
           the server action re-validates it before redirecting. */}
       {next ? <input type="hidden" name="next" value={next} /> : null}
