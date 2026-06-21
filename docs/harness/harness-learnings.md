@@ -262,10 +262,20 @@
 
 ## Bug-hunter + UI-perfectionist dual-lens scan (2026-06-20, branch `vibeman/bughunt-uiperf-2026-06-20`)
 
-100 findings / 20 contexts (7C/35H/42M/16L). Waves 1-7 closed 44 findings incl.
-ALL 7 criticals (one a verified FP, hardened). 21 fix + 8 doc commits, UNMERGED
-off `main`. tsc0 / tests 378→399 / lint / `next build` PASS throughout. INDEX +
-per-wave docs at `docs/harness/bughunt-uiperf-2026-06-20/`.
+100 findings / 20 contexts (7C/35H/42M/16L). ALL 8 PLANNED WAVES DONE — 50
+findings closed incl. ALL 7 criticals (one a verified FP, hardened) + every High.
+23 fix + 10 doc commits, UNMERGED off `main`. tsc0 / tests 378→400 / lint /
+`next build` PASS throughout. INDEX + per-wave docs at
+`docs/harness/bughunt-uiperf-2026-06-20/`.
+
+- **2026-06-20 (W8 UI)** — `Button` base now carries `disabled:opacity-60
+  disabled:pointer-events-none` (don't hand-roll per call). New
+  `review/components/SubmitButton.tsx` (`useFormStatus().pending` → disabled +
+  label swap) is the pattern for server-action submit buttons. `Card` has an
+  opt-in `interactive` prop (applies the reduced-motion-safe `.lift`); static by
+  default. `public/manifest.webmanifest` description is guarded by
+  `src/app/manifest.test.ts` (no `$`/flat/attorney-signed/retainer). Paid fetch
+  buttons disable on a `busy` state set in try/finally, not just async `status`.
 
 - **2026-06-20 (W7 reliability)** — provenance ledger (`lib/events/provenance.ts`)
   now BOUNDS its in-memory window (`DEFAULT_MAX_RECORDS=10k`, evict-oldest) and
