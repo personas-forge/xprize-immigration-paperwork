@@ -63,6 +63,10 @@ create table if not exists token_ledger (
 );
 create unique index if not exists token_ledger_signup_once
   on token_ledger(user_id) where reason = 'signup_grant';
+-- Per-(ref, reason) idempotency. reason is part of the key ON PURPOSE: a charge
+-- (reason='debit') and its later reclaim (reason='reclaim') share the request id
+-- in ref but must BOTH be allowed — they differ only by reason. So this index
+-- alone does NOT enforce debit idempotency by itself; see the charge() contract.
 create unique index if not exists token_ledger_ref_once
   on token_ledger(ref, reason) where ref is not null;
 create index if not exists token_ledger_user on token_ledger(user_id);
@@ -296,6 +300,20 @@ export async function getPgliteStore(): Promise<Store> {
       return num(r.rows[0]?.balance);
     },
 
+    // DEBIT IDEMPOTENCY CONTRACT (load-bearing — do not "optimize" the lock away):
+    // `ref` is the orchestrator's per-request requestId (or an Idempotency-Key-
+    // derived id). A retry of the same logical charge must debit AT MOST once. That
+    // guarantee comes from TWO mechanisms acting together, NOT the index alone:
+    //   1. the `for update` row lock on token_accounts serialises every charge for
+    //      a user, so the read-then-write below is atomic per user; and
+    //   2. the seen-check (`ref` + reason='debit') runs INSIDE that locked tx.
+    // The `(ref, reason)` partial unique index is the backstop (a duplicate insert
+    // would error), but correctness relies on the in-transaction seen-check, which
+    // MUST stay inside the lock. Moving it outside the tx, or dropping the
+    // `for update`, reintroduces double-debits under concurrency. The Firestore
+    // driver gets the same guarantee structurally via a deterministic `debit_${ref}`
+    // doc id. charge (debit) and reclaim (reclaim) never collide: same `ref`,
+    // different `reason`.
     async charge(userId, cost, operation, ref) {
       return pg.transaction(async (tx) => {
         await tx.query(
@@ -308,8 +326,8 @@ export async function getPgliteStore(): Promise<Store> {
           [userId],
         );
         const balance = num(cur.rows[0]?.balance);
-        // Idempotent by requestId (ref): an app-level retry of the same logical
-        // charge must not debit twice (mirrors credit's ref dedupe).
+        // Seen-check INSIDE the lock (see the contract above): an app-level retry
+        // of the same logical charge must not debit twice.
         const seen = await tx.query(
           `select 1 from token_ledger where ref = $1 and reason = 'debit' limit 1`,
           [ref],
