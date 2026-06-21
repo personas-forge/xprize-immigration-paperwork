@@ -15,7 +15,17 @@ type PolarOrder = {
   external_customer_id?: string;
   customer?: { externalId?: string; external_id?: string } | null;
   metadata?: Record<string, string>;
+  /** Refunded amount in minor units (cents). `order.refunded` carries
+   *  `refunded_amount`; `refund.created` carries `amount`. Used to claw back
+   *  PROPORTIONALLY rather than always reversing the full bundle. */
+  refunded_amount?: number;
+  amount?: number;
 };
+
+/** A finite, non-negative number, else undefined (for untrusted payload fields). */
+function finiteCents(v: unknown): number | undefined {
+  return typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : undefined;
+}
 
 /** Resolve our user id. Per-order `metadata.userId` is set at checkout but may
  *  NOT propagate to subscription-cycle (renewal) orders, so fall back to the
@@ -114,7 +124,31 @@ export async function POST(request: NextRequest) {
     const originalOrderId =
       event.type === "order.refunded" ? order.id : order.order_id ?? order.orderId;
     if (userId && b && originalOrderId) {
-      await credit(userId, -b.tokens, "refund", `refund:${originalOrderId}`, { bundle: b.key });
+      // Claw back PROPORTIONALLY to the refunded amount, not the whole bundle:
+      // Polar supports PARTIAL refunds, so a $5 goodwill refund on the $150 Scale
+      // bundle must reverse ~1,000 tokens, not all 30,000. refundedCents comes
+      // from the payload (order.refunded → refunded_amount; refund.created →
+      // amount); absent/zero falls back to a full-bundle reversal (a malformed
+      // payload — Polar always sends an amount) and is logged.
+      // DEDUP TRADE-OFF: the ref stays keyed on the ORIGINAL order id so a
+      // re-delivered refund event (and the order.refunded/refund.created pair for
+      // the same refund) can't double-debit. The cost is that a SECOND distinct
+      // partial refund on the same order is deduped (not clawed back) — accepted
+      // as the conservative choice over any risk of double-clawback; revisit with
+      // per-refund keying if multi-partial-refund-per-order becomes common.
+      const refundedCents = finiteCents(order.refunded_amount) ?? finiteCents(order.amount);
+      let clawback = b.tokens;
+      if (refundedCents && refundedCents > 0 && b.priceCents > 0) {
+        clawback = Math.min(b.tokens, Math.round((b.tokens * refundedCents) / b.priceCents));
+      } else {
+        console.warn(
+          `[polar webhook] refund for order=${originalOrderId} has no usable amount; ` +
+            `clawing back the full ${b.key} bundle (${b.tokens} tokens)`,
+        );
+      }
+      if (clawback > 0) {
+        await credit(userId, -clawback, "refund", `refund:${originalOrderId}`, { bundle: b.key });
+      }
     } else {
       // An unresolvable refund (lost metadata.userId / unmapped product / no
       // original order id) silently left the original purchase credited but never
