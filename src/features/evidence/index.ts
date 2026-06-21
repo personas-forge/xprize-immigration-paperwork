@@ -1,5 +1,8 @@
 export {
   DISCLAIMER,
+  MAX_NAME,
+  MIN_CONTENT,
+  MAX_CONTENT,
   O1A_CRITERIA,
   criteriaNames,
   buildCategorizePrompt,

@@ -43,9 +43,11 @@ export interface CategorizeResult extends CategorizeAssessment {
   source: ModelSource;
 }
 
-const MAX_NAME = 200;
-const MIN_CONTENT = 20;
-const MAX_CONTENT = 12000;
+// Input bounds, exported so the client vault caps/validates against the SAME
+// numbers the server enforces (no over-limit round-trips, no magic 20 in the UI).
+export const MAX_NAME = 200;
+export const MIN_CONTENT = 20;
+export const MAX_CONTENT = 12000;
 const MAX_FACTS = 6;
 
 /** Validate and normalize an untrusted request body. */
