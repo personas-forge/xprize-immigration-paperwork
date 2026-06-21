@@ -390,6 +390,31 @@ FIXES-WAVES-1-4 (with an 11-item pattern catalogue) at
   string) terminate the literal — use plain words / single quotes in SQL comments,
   not `code` backticks. (Hit + fixed this session.)
 
+### Structural facts (feature waves W5–8, 2026-06-21)
+- **2026-06-21** — `attorneySignAndFile` now PRE-FILE gates on a non-empty draft
+  (adapter `getLatestDraft`) and takes an optional real USCIS receipt
+  (`isUscisReceipt` = `(EAC|WAC|LIN|SRC|IOE|MSC|YSC|NBC)\d{10}`); a generated demo
+  receipt carries `metadata.demo` and ReviewPanel flags it (derived from the filed
+  event body containing "DEMO").
+- **2026-06-21** — `resolveNotifyFn(env, deps?)` (events/subscribers/attorney-notify)
+  is the real delivery sink: POSTs to `ATTORNEY_NOTIFY_WEBHOOK_URL` (+ optional
+  `ATTORNEY_NOTIFY_WEBHOOK_TOKEN`) with `attorneyAllowlist()` recipients, 5s
+  timeout; console fallback. Wired in `getDomainBus()`.
+- **2026-06-21** — `DraftStudio` done view exports via `draftClipboardText` (Copy +
+  Download .txt). `CaseDetailView` shows the real eligibility read-out via
+  `summarizeCriteria(criteria, packFor(classification).threshold)` — threshold is
+  ALWAYS the case's own pack, never the O-1A constant. `CriteriaReport` shows an
+  EB-1A final-merits caveat (decision recorded in packs.ts; likelihood NOT damped).
+- **2026-06-21** — `Store.getLedgerForUser(userId, limit)` (both drivers — PGlite
+  `order by id desc`; Firestore single-field query + in-memory sort to avoid a
+  composite index) + `ledger.getLedgerForUser` feed the /billing "Recent activity"
+  list. New `Store.LedgerEntry` type.
+- **2026-06-21** — FAQ page emits `FAQPage` JSON-LD from the QA array. The llm-eval
+  harness sends `temperature: 0` for qualify to match prod.
+- **2026-06-21 LESSON** — `git commit -m` with an apostrophe (can't, doesn't) in a
+  single-quoted bash string terminates the quote → use a heredoc message FILE
+  (`git commit -F`).
+
 ### Open follow-ups (from the 2026-06-20 dual-lens scan)
 - **Waves 6-8 NOT run** (no remaining criticals): W6 accessibility (focus-visible
   on Button variants, criteria-table semantics, verdict aria-live, live regions),
