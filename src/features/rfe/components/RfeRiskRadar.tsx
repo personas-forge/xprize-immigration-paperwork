@@ -111,9 +111,14 @@ export function RfeRiskRadar({
         {status === "error" ? (
           <div
             role="alert"
-            className="rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[14px] text-danger"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[14px] text-danger"
           >
-            Could not forecast RFE risk — please try again.
+            <span>Could not forecast RFE risk — please try again.</span>
+            {/* Inline retry — re-runs the same forecast without re-charging until
+                it succeeds (the failed attempt was reclaimed by the orchestrator). */}
+            <Button type="button" variant="secondary" onClick={forecast}>
+              Try again
+            </Button>
           </div>
         ) : null}
 
@@ -154,7 +159,7 @@ export function RfeRiskRadar({
                       >
                         {reinforcing === c.criterion ? "Reinforcing…" : "Reinforce this section"}
                         <span className="ml-2 rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-accent-dark">
-                          5
+                          5 tokens
                         </span>
                       </Button>
                     </div>
