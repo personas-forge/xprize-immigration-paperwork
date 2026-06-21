@@ -79,12 +79,28 @@ export const JURISDICTIONS: Record<JurisdictionCode, Jurisdiction> = {
 
 const ALL: readonly Jurisdiction[] = Object.values(JURISDICTIONS);
 
-/** The jurisdiction a program belongs to (falls back to US for unknown codes). */
+/**
+ * The jurisdiction a program belongs to.
+ *
+ * DEFAULT-US RATIONALE (recorded — the fallback is intentional, not happy-path
+ * convenience): every LIVE program is US by construction (only the US
+ * jurisdiction is `status: "live"`), so a code that matches NO jurisdiction is
+ * corrupt/legacy data or a typo — not a real second live market. We keep the US
+ * default so a known code always resolves, but WARN when the fallback fires on an
+ * UNRECOGNISED code, so a mis-persisted `classification` surfaces in logs instead
+ * of being silently painted with US representation + the US disclaimer (a wrong-
+ * jurisdiction legal disclosure). Known codes — incl. PLANNED ones like
+ * `UK-Global-Talent` — resolve to their real jurisdiction and never warn.
+ */
 export function jurisdictionFor(programCode: string): Jurisdiction {
-  return (
-    ALL.find((j) => (j.programs as readonly string[]).includes(programCode)) ??
-    JURISDICTIONS.US
+  const match = ALL.find((j) => (j.programs as readonly string[]).includes(programCode));
+  if (match) return match;
+  console.warn(
+    `[jurisdictions] unrecognised program code ${JSON.stringify(programCode)} — ` +
+      "defaulting to US jurisdiction (representation + disclaimer). This usually " +
+      "means a corrupt or legacy `classification`; verify the stored value.",
   );
+  return JURISDICTIONS.US;
 }
 
 /** Jurisdictions currently in service. */
