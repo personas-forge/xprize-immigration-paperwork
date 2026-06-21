@@ -2,7 +2,24 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { claudeModel, geminiModelFor, resolveEngine } from "./config";
+import { isTransientGeminiError } from "./engines";
 import { asModelSource, isModelSource, sourceLabel } from "./label";
+
+// — Gemini retry classification ───────────────────────────────────────────────
+
+test("isTransientGeminiError: retries rate-limit / 5xx / network / deadline only", () => {
+  // transient (retry)
+  assert.equal(isTransientGeminiError({ status: 429 }), true);
+  assert.equal(isTransientGeminiError({ status: 503 }), true);
+  assert.equal(isTransientGeminiError(new Error("gemini gemini-3 timed out after 60000ms")), true);
+  assert.equal(isTransientGeminiError(new Error("ECONNRESET socket hang up")), true);
+  assert.equal(isTransientGeminiError(new Error("503 model is overloaded")), true);
+  // terminal (no retry) — auth / safety / bad request
+  assert.equal(isTransientGeminiError({ status: 400 }), false);
+  assert.equal(isTransientGeminiError({ status: 401 }), false);
+  assert.equal(isTransientGeminiError(new Error("API key not valid")), false);
+  assert.equal(isTransientGeminiError(new Error("blocked by safety settings")), false);
+});
 
 // — Engine selection ─────────────────────────────────────────────────────────
 
