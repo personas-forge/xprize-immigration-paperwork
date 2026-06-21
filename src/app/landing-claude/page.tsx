@@ -14,6 +14,12 @@ export const metadata: Metadata = {
   title: "Immigration Concierge — extraordinary ability, on the record",
   description:
     "AI-drafted O-1 and EB-1A extraordinary-ability petitions, ready for your attorney of record to review and sign. Start free — prepaid tokens, no retainers.",
+  // This is an ALTERNATE masthead of the homepage `/`, kept for design reference.
+  // Keep it out of the index and point its canonical at `/` so search engines
+  // don't treat it as duplicate content competing with the real landing page
+  // (marketing #4). It is also no longer linked from the shared site footer.
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/" },
 };
 
 // Alt landing — narrow editorial column. The page is composed as a printed
