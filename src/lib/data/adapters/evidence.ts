@@ -94,7 +94,13 @@ export class EvidenceAdapter {
     if (!gate.ok) return gate;
     try {
       const doc = await deps.addCaseDocument(input);
-      return doc ? ok(doc) : err("store_error");
+      if (doc) return ok(doc);
+      // `addCaseDocument` returns null ONLY when no store is configured (a no-op);
+      // a real store FAULT throws (caught below). Map the no-store case to
+      // `unconfigured` (503 "temporarily unavailable") to match petition.saveDraft
+      // — NOT `store_error` (500), which alarms ops and tells anxious users it's a
+      // non-retryable internal error.
+      return (await deps.storeConfigured()) ? err("store_error") : err("unconfigured");
     } catch (cause) {
       return err("store_error", cause);
     }
