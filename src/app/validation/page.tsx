@@ -178,6 +178,7 @@ function FreshnessBar({
         aria-valuenow={Math.round(pct)}
         aria-valuemin={0}
         aria-valuemax={100}
+        aria-valuetext={label}
         aria-label="Freshness — elapsed since last verification"
       >
         <div
