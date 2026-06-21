@@ -262,10 +262,20 @@
 
 ## Bug-hunter + UI-perfectionist dual-lens scan (2026-06-20, branch `vibeman/bughunt-uiperf-2026-06-20`)
 
-100 findings / 20 contexts (7C/35H/42M/16L). Waves 1-5 closed 29 findings incl.
-ALL 7 criticals (one a verified FP, hardened). 14 fix + 4 doc commits, UNMERGED
+100 findings / 20 contexts (7C/35H/42M/16L). Waves 1-6 closed 37 findings incl.
+ALL 7 criticals (one a verified FP, hardened). 17 fix + 5 doc commits, UNMERGED
 off `main`. tsc0 / tests 378→395 / lint / `next build` PASS throughout. INDEX +
 per-wave docs at `docs/harness/bughunt-uiperf-2026-06-20/`.
+
+- **2026-06-20 (W6 a11y)** — `Button` now applies the focus ring on its shared
+  BASE (was ghost-only) so all variants are keyboard-visible; the canonical ring
+  is `focus-visible:ring-2 ring-accent-dark ring-offset-2 ring-offset-background`.
+  The whole app rings on `--accent-dark` (4.2/5.6:1), NOT `--accent`/40 (2.63:1) —
+  a 34-file sweep. New convention: result surfaces (verdict, generated text,
+  categorize status) carry an sr-only `role="status"` live region (CriteriaReport,
+  FieldGuidancePanel, EvidenceVault). Clickable table rows keep `<tr onClick>` as
+  a MOUSE enhancement + a labelled link-in-cell for keyboard/SR (don't make the
+  `<tr>` a button — breaks table semantics). `sr-only` is available (Tailwind 4).
 
 ### Structural facts
 - **2026-06-20** — The save route (`/api/draft/save`) uses the ADAPTER
