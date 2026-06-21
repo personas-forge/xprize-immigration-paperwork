@@ -31,7 +31,10 @@ export type GuidanceResponse = Omit<Result<string>, "data"> & { guidance: string
 // docstring: `@/lib/result` (ADR-0011). Do not duplicate the prose here.
 export { DISCLAIMER };
 
-const MAX_FIELD = 4000;
+/** Max length for each free-text guidance field (formId/fieldLabel/situation).
+ *  Exported so the client textarea can cap input to the SAME bound the server
+ *  enforces, instead of letting an over-limit request waste a round-trip. */
+export const MAX_FIELD = 4000;
 
 /**
  * Flatten newlines and control characters in an untrusted field to single

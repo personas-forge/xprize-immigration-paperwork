@@ -1,21 +1,31 @@
 import { type ReactNode } from "react";
+import { cn } from "@/lib/cn";
 
 /**
  * Rubber-stamp ornament — a tilted, double-ruled block with monospace label
  * that "stamps" a key fact (qualification, status, etc.). Inspired by the
  * inked admission stamps on a passport page; rotated -3° by default, which
  * makes it feel hand-pressed rather than aligned.
+ *
+ * Decorative by default (the label is duplicated by nearby visible text, so it
+ * is `aria-hidden`). Pass `decorative={false}` when the stamp is the SOLE
+ * conveyor of a status — it is then exposed to AT as an image with a composed
+ * `label — meta` accessible name instead of being hidden.
  */
 export function Stamp({
   label,
   meta,
   tone = "seal",
   rotate = -3,
+  className,
+  decorative = true,
 }: {
   label: string;
   meta?: string;
   tone?: "seal" | "indigo" | "accent";
   rotate?: number;
+  className?: string;
+  decorative?: boolean;
 }) {
   const toneClass = {
     seal: "text-seal border-seal",
@@ -25,9 +35,15 @@ export function Stamp({
 
   return (
     <div
-      className={`inline-flex select-none flex-col items-start gap-0.5 border-2 border-double px-3 py-1.5 ${toneClass}`}
+      className={cn(
+        "inline-flex select-none flex-col items-start gap-0.5 border-2 border-double px-3 py-1.5",
+        toneClass,
+        className,
+      )}
       style={{ transform: `rotate(${rotate}deg)` }}
-      aria-hidden
+      {...(decorative
+        ? { "aria-hidden": true }
+        : { role: "img", "aria-label": meta ? `${label} — ${meta}` : label })}
     >
       <span className="display text-lg font-medium uppercase leading-none tracking-tight">
         {label}

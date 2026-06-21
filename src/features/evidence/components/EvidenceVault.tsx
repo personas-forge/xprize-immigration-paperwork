@@ -5,7 +5,13 @@ import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader } from "@/components/ui";
 import { DisclaimerStamp } from "@/components/legal";
 import { DISCLAIMER } from "@/lib/result";
-import { criteriaNames, summarizeVault } from "@/features/evidence";
+import {
+  criteriaNames,
+  summarizeVault,
+  MAX_NAME,
+  MIN_CONTENT,
+  MAX_CONTENT,
+} from "@/features/evidence";
 import { type StoredDocument } from "@/features/evidence/types";
 import { type ModelSource } from "@/lib/llm/label";
 import { refileDocument, removeDocument } from "../actions";
@@ -66,7 +72,7 @@ export function EvidenceVault({
 
   async function add() {
     if (submitting.current) return; // a request is already in flight
-    if (name.trim() === "" || content.trim().length < 20) {
+    if (name.trim() === "" || content.trim().length < MIN_CONTENT) {
       setError("Name the document and paste or describe its contents.");
       setStatus("error");
       return;
@@ -195,16 +201,27 @@ export function EvidenceVault({
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                maxLength={MAX_NAME}
                 placeholder="e.g. ICML 2024 Best Paper certificate"
                 className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               />
             </label>
             <label className="block">
-              <span className="microprint">Contents — paste the text or describe the document</span>
+              <span className="microprint flex items-baseline justify-between gap-2">
+                <span>Contents — paste the text or describe the document</span>
+                {/* Decorative counter; maxLength enforces the cap (AT announces it).
+                    Below the minimum it nudges toward the server's MIN_CONTENT rule. */}
+                <span aria-hidden style={{ color: "var(--muted)" }}>
+                  {content.trim().length < MIN_CONTENT
+                    ? `${MIN_CONTENT}+ chars`
+                    : `${content.length} / ${MAX_CONTENT}`}
+                </span>
+              </span>
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={3}
+                maxLength={MAX_CONTENT}
                 placeholder="Paste the document text or describe what it shows…"
                 className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               />

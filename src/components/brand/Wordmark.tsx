@@ -20,7 +20,9 @@ export function Wordmark({
       className="group flex items-center gap-3 text-foreground"
       aria-label="Immigration Concierge"
     >
-      <span className="text-foreground transition-transform duration-500 group-hover:rotate-[8deg]">
+      {/* The seal's hover rotate is decorative; gate it behind motion-safe so a
+          `prefers-reduced-motion` user gets a static mark instead of a snap. */}
+      <span className="text-foreground transition-transform duration-500 motion-safe:group-hover:rotate-[8deg]">
         <Seal size={size} />
       </span>
       <span className="leading-tight">

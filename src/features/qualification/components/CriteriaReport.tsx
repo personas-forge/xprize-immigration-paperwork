@@ -95,6 +95,7 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
             aria-valuenow={result.likelihood}
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-valuetext={`${result.likelihood}% estimated likelihood — ${summary.meetsThreshold ? "meets" : "below"} threshold`}
             aria-label="Estimated approval likelihood"
           >
             <div

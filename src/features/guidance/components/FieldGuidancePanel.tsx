@@ -6,7 +6,7 @@ import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/component
 import { costOf } from "@/lib/tokens/registry";
 import { getForms } from "@/lib/data";
 import { type UscisForm } from "@/features/case-file/types";
-import { DISCLAIMER, type GuidanceResponse } from "../guidance";
+import { DISCLAIMER, MAX_FIELD, type GuidanceResponse } from "../guidance";
 import { isModelSource, sourceLabel } from "@/lib/llm/label";
 import { DisclaimerStamp, AdjudicationBadge } from "@/components/legal";
 import { type AdjudicationReport } from "@/lib/llm/adjudication-gates";
@@ -173,12 +173,20 @@ export function FieldGuidancePanel() {
             </div>
 
             <label className="block">
-              <span className="microprint">Describe your situation</span>
+              <span className="microprint flex items-baseline justify-between gap-2">
+                <span>Describe your situation</span>
+                {/* Visible counter; the cap itself is enforced by maxLength (which
+                    AT already announces), so the counter is decorative. */}
+                <span aria-hidden style={{ color: "var(--muted)" }}>
+                  {situation.length} / {MAX_FIELD}
+                </span>
+              </span>
               <textarea
                 id={situationId}
                 value={situation}
                 onChange={(e) => setSituation(e.target.value)}
                 rows={3}
+                maxLength={MAX_FIELD}
                 placeholder="e.g. I'm an O-1A researcher with 6 papers and a granted patent…"
                 className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               />
