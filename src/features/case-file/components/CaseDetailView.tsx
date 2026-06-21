@@ -16,7 +16,7 @@ import { EvidenceVault, type DocumentView } from "@/features/evidence/components
 import { RoadmapStepper } from "./RoadmapStepper";
 import { type ModelSource } from "@/lib/llm/label";
 import { jurisdictionFor } from "@/features/qualification";
-import { statusTone } from "../criteria";
+import { CriteriaRows } from "./CriteriaRows";
 
 // — Case detail view ──────────────────────────────────────────────────────────
 // The DB-backed counterpart to the mock dashboard: one real, user-scoped case
@@ -151,40 +151,7 @@ export function CaseDetailView({
                 </p>
               </CardBody>
             ) : (
-              <table className="w-full text-base">
-                <thead className="bg-background-tint/40 text-left">
-                  <tr>
-                    <th className="px-5 py-3 microprint font-medium">Criterion</th>
-                    <th className="px-5 py-3 microprint font-medium">Status</th>
-                    <th className="px-5 py-3 microprint font-medium">What we found</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {criteria.map((c, i) => (
-                    <tr
-                      key={c.id}
-                      className="border-t border-dotted border-rule transition-[background-color] duration-200 hover:bg-accent-soft/35"
-                    >
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-baseline gap-3">
-                          <span className="doc-number text-[12px] text-muted">
-                            {String(i + 1).padStart(2, "0")}
-                          </span>
-                          <span className="font-sans text-[16.5px] text-foreground">
-                            {c.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <Badge tone={statusTone(c.status)}>{c.status}</Badge>
-                      </td>
-                      <td className="px-5 py-3.5 font-sans text-[15.5px] italic text-muted-strong">
-                        {c.evidence || c.rationale || "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <CriteriaRows criteria={criteria} evidenceHeader="What we found" />
             )}
           </Card>
 

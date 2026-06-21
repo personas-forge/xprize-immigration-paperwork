@@ -1,9 +1,9 @@
 "use client";
 
 import { Badge, Card, CardHeader, Skeleton } from "@/components/ui";
-import { QUALIFYING_THRESHOLD, statusTone, summarizeCriteria } from "../criteria";
+import { QUALIFYING_THRESHOLD, summarizeCriteria } from "../criteria";
 import { type Criterion } from "../types";
-import { CriterionPrimerButton } from "./CriterionPrimerButton";
+import { CriteriaRows } from "./CriteriaRows";
 
 /**
  * The O-1A criteria table. Criteria are no longer fetched here — they arrive as
@@ -50,45 +50,7 @@ export function CriteriaTable({
           ))}
         </div>
       ) : (
-        <table className="w-full text-base">
-          <thead className="bg-background-tint/40 text-left">
-            <tr>
-              <th scope="col" className="px-5 py-3 microprint font-medium">Criterion</th>
-              <th scope="col" className="px-5 py-3 microprint font-medium">Status</th>
-              <th scope="col" className="px-5 py-3 microprint font-medium">Evidence</th>
-              <th scope="col" className="px-5 py-3 microprint text-right font-medium">Ex.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {criteria.map((c, i) => (
-              <tr
-                key={c.id}
-                className="border-t border-dotted border-rule transition-[background-color] duration-200 hover:bg-accent-soft/35"
-              >
-                <td className="px-5 py-3.5">
-                  <div className="flex items-center gap-3">
-                    <span className="doc-number text-[12px] text-muted">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <span className="font-sans text-[16.5px] text-foreground">
-                      {c.name}
-                    </span>
-                    <CriterionPrimerButton criterionName={c.name} />
-                  </div>
-                </td>
-                <td className="px-5 py-3.5">
-                  <Badge tone={statusTone(c.status)}>{c.status}</Badge>
-                </td>
-                <td className="px-5 py-3.5 font-sans text-[15.5px] italic text-muted-strong">
-                  {c.evidence}
-                </td>
-                <td className="px-5 py-3.5 text-right doc-number text-[13px] text-muted">
-                  {c.exhibit}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <CriteriaRows criteria={criteria} showExhibit showPrimer />
       )}
     </Card>
   );

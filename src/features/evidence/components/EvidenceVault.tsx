@@ -100,12 +100,15 @@ export function EvidenceVault({
       }
       // Optimistic exhibit ordinal when persistence is skipped (no store): keep
       // the index MONOTONIC instead of rendering "—" (UAT 2026-06-20 F9).
-      const nextExhibit = String(
+      const nextOrdinal =
         documents.reduce((max, d) => {
           const n = parseInt(String(d.exhibit).replace(/\D/g, ""), 10);
           return Number.isFinite(n) ? Math.max(max, n) : max;
-        }, 0) + 1,
-      );
+        }, 0) + 1;
+      // Mirror the persisted "Ex. N" format the stores assign (pglite/firestore
+      // `Ex. ${ord}`) so an optimistic exhibit doesn't read as a bare "2" beside
+      // saved "Ex. 2" siblings (evidence #2).
+      const nextExhibit = `Ex. ${nextOrdinal}`;
       const doc: DocumentView =
         data.document ?? {
           id: crypto.randomUUID(),

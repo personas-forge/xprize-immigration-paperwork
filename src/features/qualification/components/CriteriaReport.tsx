@@ -68,41 +68,55 @@ export function CriteriaReport({ result }: { result: QualifyResult }) {
         </CardHeader>
 
         <CardBody className="space-y-4">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <div className="microprint" style={{ color: "var(--accent-dark)" }}>
-                Estimated likelihood
+          {/* No criteria supported yet → a likelihood number is noise, not signal
+              (and reads as a harsh "you scored 38%"). Reframe as a starting point
+              and point at the gaps, instead of leading with a discouraging % on an
+              empty profile. */}
+          {summary.qualifying === 0 ? (
+            <p className="font-sans text-[15.5px] leading-relaxed text-muted-strong">
+              No criteria are supported yet, so there&apos;s no meaningful estimate
+              to show — this is a starting point, not a verdict. Begin with the gaps
+              below; the likelihood appears once at least one criterion has evidence.
+            </p>
+          ) : (
+            <>
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <div className="microprint" style={{ color: "var(--accent-dark)" }}>
+                    Estimated likelihood
+                  </div>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span
+                      className="display text-[2.6rem] text-foreground"
+                      style={{ fontVariantNumeric: "tabular-nums" }}
+                    >
+                      {result.likelihood}
+                      <span className="text-[1.4rem] text-muted">%</span>
+                    </span>
+                  </div>
+                </div>
+                <Badge tone={summary.meetsThreshold ? "success" : "warning"}>
+                  {summary.meetsThreshold ? "Meets threshold" : "Below threshold"}
+                </Badge>
               </div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span
-                  className="display text-[2.6rem] text-foreground"
-                  style={{ fontVariantNumeric: "tabular-nums" }}
-                >
-                  {result.likelihood}
-                  <span className="text-[1.4rem] text-muted">%</span>
-                </span>
-              </div>
-            </div>
-            <Badge tone={summary.meetsThreshold ? "success" : "warning"}>
-              {summary.meetsThreshold ? "Meets threshold" : "Below threshold"}
-            </Badge>
-          </div>
 
-          {/* Meter */}
-          <div
-            className="h-2 w-full overflow-hidden rounded-full bg-background-tint/60"
-            role="meter"
-            aria-valuenow={result.likelihood}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuetext={`${result.likelihood}% estimated likelihood — ${summary.meetsThreshold ? "meets" : "below"} threshold`}
-            aria-label="Estimated approval likelihood"
-          >
-            <div
-              className="h-full rounded-full bg-accent transition-[width] duration-700"
-              style={{ width: `${result.likelihood}%` }}
-            />
-          </div>
+              {/* Meter */}
+              <div
+                className="h-2 w-full overflow-hidden rounded-full bg-background-tint/60"
+                role="meter"
+                aria-valuenow={result.likelihood}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuetext={`${result.likelihood}% estimated likelihood — ${summary.meetsThreshold ? "meets" : "below"} threshold`}
+                aria-label="Estimated approval likelihood"
+              >
+                <div
+                  className="h-full rounded-full bg-accent transition-[width] duration-700"
+                  style={{ width: `${result.likelihood}%` }}
+                />
+              </div>
+            </>
+          )}
         </CardBody>
       </Card>
 

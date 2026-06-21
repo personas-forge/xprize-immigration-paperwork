@@ -14,6 +14,7 @@ import {
   type VaultDocLike,
 } from "@/features/drafting";
 import { ExhibitIndex } from "@/features/drafting/components/ExhibitIndex";
+import { isRelied } from "@/features/rfe";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 
 // — RFE response studio ───────────────────────────────────────────────────────
@@ -106,8 +107,24 @@ export function RfeStudio({
   );
   const citedNumbers = useMemo(() => new Set(audit.resolved), [audit]);
 
+  // Criteria the petition actually relies on (Met/Strong/Partial). With none, an
+  // RFE draft is grounded in nothing → generic boilerplate, so we block the
+  // (charged) generate and tell the user to score a criterion first (rfe #4).
+  const addressableCount = useMemo(
+    () => criteria.filter((c) => isRelied(c.status)).length,
+    [criteria],
+  );
+  const nothingToAddress = addressableCount === 0;
+
   async function generate() {
     if (busyRef.current) return; // double-submit guard (charges tokens)
+    if (nothingToAddress) {
+      setError(
+        "Score at least one criterion Met, Strong, or Partial before drafting — an RFE response argues the criteria the petition relies on.",
+      );
+      setStatus("error");
+      return;
+    }
     if (rfeText.trim().length < 20) {
       setError("Paste the text of the RFE you received (a sentence or two is enough).");
       setStatus("error");
@@ -192,7 +209,12 @@ export function RfeStudio({
         </label>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" variant="seal" onClick={generate} disabled={busy || status === "loading"}>
+          <Button
+            type="button"
+            variant="seal"
+            onClick={generate}
+            disabled={busy || status === "loading" || nothingToAddress}
+          >
             {status === "loading"
               ? "Drafting…"
               : status === "done"
@@ -203,6 +225,18 @@ export function RfeStudio({
             Uses 5 tokens · attorney must review &amp; sign
           </span>
         </div>
+
+        {/* Empty-criteria guidance — don't let the user spend tokens on a draft
+            that would be hollow because nothing is scored yet (rfe #4). */}
+        {nothingToAddress ? (
+          <div className="rounded-control border border-dashed border-warning/50 bg-warning-soft/30 px-4 py-2.5">
+            <p className="font-sans text-[14.5px] leading-snug text-muted-strong">
+              None of this case&apos;s criteria are scored yet, so an RFE draft
+              would be generic boilerplate. Score at least one criterion Met,
+              Strong, or Partial — then draft.
+            </p>
+          </div>
+        ) : null}
 
         {status === "loading" ? (
           <div className="space-y-3">

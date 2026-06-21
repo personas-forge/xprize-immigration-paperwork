@@ -207,17 +207,44 @@ const ABBREVIATIONS =
 const INITIALS = /\b(?:[A-Za-z]\.){2,}/g; // A.B.C. / U.S.C. — letter-dot sequences
 const LIST_MARKER = /(^|\n)[ \t]*\d+\./g; // "1." / "2." at the start of a line
 
-export function sentenceCount(text: string): number {
-  // Replace the non-terminal periods with spaces so the terminal-punctuation
-  // split below can't treat them as sentence ends.
-  const masked = text
+// Replace the non-terminal periods with spaces so a terminal-punctuation split
+// can't treat them as sentence ends. Dot→space is 1:1, so the result has the
+// SAME length as the input and character indices stay aligned with it — which is
+// what lets clampSentences slice the original text by a position found here.
+function maskNonTerminalPeriods(text: string): string {
+  return text
     .replace(ABBREVIATIONS, (m) => m.replace(/\./g, " "))
     .replace(INITIALS, (m) => m.replace(/\./g, " "))
     .replace(LIST_MARKER, (m) => m.replace(/\./g, " "));
-  return masked
+}
+
+export function sentenceCount(text: string): number {
+  return maskNonTerminalPeriods(text)
     .split(/(?<=[.!?])\s+/)
     .map((s) => s.trim())
     .filter(Boolean).length;
+}
+
+/**
+ * Trim `text` to at most `max` sentences, preserving the original characters.
+ * Masking only affects boundary detection (it's length-preserving), so a
+ * boundary index in the masked string slices the real text correctly. Used to
+ * ENFORCE the guidance "3–6 short sentences" contract on model output that
+ * overshoots — under-length text is returned unchanged.
+ */
+export function clampSentences(text: string, max: number): string {
+  const trimmed = text.trim();
+  if (max <= 0) return trimmed;
+  const masked = maskNonTerminalPeriods(trimmed);
+  const boundary = /[.!?]\s+/g;
+  let count = 0;
+  let m: RegExpExecArray | null;
+  while ((m = boundary.exec(masked)) !== null) {
+    count += 1;
+    // Cut right after the terminal punctuation of the max-th sentence.
+    if (count >= max) return trimmed.slice(0, m.index + 1).trim();
+  }
+  return trimmed;
 }
 
 // Phrases that cross the line from "informational" into legal advice / outcome
