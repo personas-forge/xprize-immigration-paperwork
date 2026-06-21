@@ -138,6 +138,21 @@ export interface AiOperationSpec<TInput, TOutput> {
     source: string,
     body: Record<string, unknown>,
   ) => AdjudicationReport | null;
+  /**
+   * UPL hard-stop. When `adjudicate` BLOCKS the output (`attorneyReady === false`
+   * / `risk === "blocked"`) — i.e. the live screen caught legal-advice or
+   * outcome-prediction language — this hook returns the body that should be sent
+   * INSTEAD of the flagged model text, so the offending output never reaches the
+   * client at all (a client-only badge would still ship the text over the wire).
+   * The returned fields REPLACE the built body. The charge is reclaimed first
+   * (the withheld model answer is not billed — the same honesty invariant as a
+   * mock fallback), so a block-substituted body should label `source: "mock"`.
+   */
+  onBlocked?: (
+    input: TInput,
+    body: Record<string, unknown>,
+    report: AdjudicationReport,
+  ) => Record<string, unknown>;
   /** Best-effort persistence. Returns fields merged into the response body.
    *  Receives the resolved `source` ("mock" | engine name) so it can record the
    *  provenance of what it persists (e.g. the document's categorization source). */
@@ -418,8 +433,20 @@ export async function executeAiOperation<TInput, TOutput>(
     }
   }
 
+  // 9. UPL hard-stop. If the live screen BLOCKED the output and the route opts in
+  //    via `onBlocked`, withhold the flagged model text entirely: reclaim the
+  //    charge (a withheld answer is not billed) and send the safe replacement
+  //    body instead. Without this, a `risk: "blocked"` answer (e.g. "you should
+  //    file an O-1A") would still be shipped to the client and merely badged —
+  //    the exact unauthorized-practice text the gate exists to suppress.
+  let finalBody = responseBody;
+  if (adjudication && adjudication.attorneyReady === false && spec.onBlocked) {
+    await reclaim();
+    finalBody = spec.onBlocked(input, responseBody, adjudication);
+  }
+
   return NextResponse.json({
-    ...responseBody,
+    ...finalBody,
     ...persisted,
     ...(adjudication ? { adjudication } : {}),
   });
