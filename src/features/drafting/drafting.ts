@@ -624,8 +624,13 @@ export function buildExhibitIndex(req: DraftRequest): ExhibitIndexEntry[] {
  * The result of auditing a draft's inline citations against the exhibits
  * actually on file. `unresolved` is the load-bearing safety signal: a cited
  * exhibit number with no matching vault document — the "you can never ship a
- * letter that cites evidence you don't have" guarantee. `coverage` is exhibit
- * UTILIZATION (known exhibits cited ÷ known exhibits), not a claim-level meter.
+ * letter that cites evidence you don't have" guarantee. As of the
+ * feature-ambiguity pass this is ENFORCED, not advisory: `draftOperation`'s
+ * `adjudicate` feeds `unresolved` to the live adjudication report
+ * (`exhibitCitationGate`), so any unresolved citation FAILS the gate and turns
+ * `attorneyReady` false — the badge + the server-side report agree. `coverage`
+ * is exhibit UTILIZATION (known exhibits cited ÷ known exhibits), not a
+ * claim-level meter.
  */
 export interface CitationAudit {
   /** Distinct exhibit numbers cited across all sections, sorted. */

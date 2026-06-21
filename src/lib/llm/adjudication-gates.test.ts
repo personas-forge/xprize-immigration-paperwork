@@ -89,6 +89,25 @@ test("runAdjudication: a clean draft is attorney-ready (all pass)", () => {
   assert.ok(report.gates.every((g) => g.verdict === "pass"));
 });
 
+test("exhibitCitationGate: unresolved citations are a HARD fail (blocks attorney-ready)", () => {
+  // undefined → gate not run (op carries no exhibits): no exhibit gate emitted.
+  assert.equal(
+    runAdjudication(draftCtx()).gates.find((g) => g.id === "exhibit-citations-resolved"),
+    undefined,
+  );
+  // [] → audited, all resolved → a pass gate, still attorney-ready.
+  const clean = runAdjudication(draftCtx({ unresolvedCitations: [] }));
+  assert.equal(clean.gates.find((g) => g.id === "exhibit-citations-resolved")?.verdict, "pass");
+  assert.equal(clean.attorneyReady, true);
+  // non-empty → cites evidence not on file → FAIL + blocked.
+  const bad = runAdjudication(draftCtx({ unresolvedCitations: [9, 12] }));
+  const g = bad.gates.find((x) => x.id === "exhibit-citations-resolved");
+  assert.equal(g?.verdict, "fail");
+  assert.match(g?.detail ?? "", /Ex\. 9/);
+  assert.equal(bad.attorneyReady, false, "an unresolved exhibit citation must block attorney-ready");
+  assert.equal(bad.risk, "blocked");
+});
+
 // — qualitative fabrication: named entities + award status (LLM-2) ────────────
 
 test("unsupportedEntities: flags a named entity absent from the record, not a grounded one", () => {
