@@ -25,6 +25,26 @@ function draftEvent(caseId = "c1"): DraftGenerated {
   };
 }
 
+test("publish() does not hang on a slow subscriber — it times out → onError", async () => {
+  const errors: unknown[] = [];
+  const bus = new EventBus({
+    handlerTimeoutMs: 30,
+    onError: (e) => errors.push(e),
+  });
+  // A handler that never settles must not block publish forever.
+  bus.onAny(() => new Promise<void>(() => {}));
+  // A well-behaved sibling still runs.
+  let siblingRan = false;
+  bus.onAny(() => {
+    siblingRan = true;
+  });
+
+  await bus.publish(statusEvent()); // resolves despite the hung handler
+  assert.equal(siblingRan, true, "the fast sibling still delivered");
+  assert.equal(errors.length, 1, "the slow handler was reported once");
+  assert.match(String(errors[0]), /timed out/);
+});
+
 test("on() delivers only the matching event type", async () => {
   const bus = new EventBus();
   const seen: string[] = [];

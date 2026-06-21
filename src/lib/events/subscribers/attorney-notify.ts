@@ -57,8 +57,20 @@ export function registerAttorneyNotify(
   bus: EventBus,
   notify: NotifyFn = defaultNotify,
 ) {
-  return bus.on("CaseStatusChanged", (event) => {
+  return bus.on("CaseStatusChanged", async (event) => {
     const notification = toNotification(event);
-    if (notification) notify(notification);
+    if (!notification) return;
+    try {
+      await notify(notification);
+    } catch (err) {
+      // A lost nudge on a deadline-relevant milestone (RFE/Decision/Filed) must be
+      // VISIBLE and DISTINCT from the bus's generic "[events] handler failed" line
+      // so it can be alerted on / replayed. (A durable outbox is the real fix;
+      // this at least makes the loss observable instead of success theater.)
+      console.error(
+        `[attorney-notify] NOT DELIVERED — case ${notification.caseId} → ${notification.status} (${notification.reason})`,
+        err,
+      );
+    }
   });
 }
