@@ -4,7 +4,7 @@ import { authProvider } from "@/lib/auth/provider";
 import { SESSION_COOKIE } from "@/lib/firebase/config";
 
 // Routes that require a session. Keep marketing pages public
-// (/, /pricing, /faq, /landing-claude stay public for this app).
+// (/, /pricing, /faq stay public for this app).
 const PROTECTED_PREFIXES = ["/dashboard"];
 
 function isProtected(pathname: string): boolean {
