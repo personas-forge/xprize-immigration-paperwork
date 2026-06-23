@@ -41,8 +41,6 @@ export interface ValidationRecord {
   threshold?: string;
   /** ISO date (yyyy-mm-dd) the facts were last checked against the sources. */
   lastVerified: string;
-  /** "web-research (primary sources)" until counsel signs off. */
-  verifiedBy: string;
   /** True once counsel has signed off on THIS PROGRAM'S validated rule-set — a
    *  per-program operational-readiness status shown on /validation. NOT the
    *  per-case filing gate (that is the attorney-of-record review & e-sign
@@ -64,9 +62,7 @@ export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
     status: "verified",
     legalBasis: "8 CFR 214.2(o)(3)(iii)",
     threshold: "3 of 8 criteria (or a qualifying one-time major award)",
-    lastVerified: TODAY,
-    verifiedBy: "web-research (primary sources)",
-    counselApproved: false,
+    lastVerified: TODAY,    counselApproved: false,
     sources: [
       {
         title: "8 CFR 214.2 — O classification (eCFR)",
@@ -87,9 +83,7 @@ export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
     status: "verified",
     legalBasis: "8 CFR 214.2(o)(3)(iv)",
     threshold: "3 of 6 criteria (or a qualifying major award/nomination)",
-    lastVerified: TODAY,
-    verifiedBy: "web-research (primary sources)",
-    counselApproved: false,
+    lastVerified: TODAY,    counselApproved: false,
     sources: [
       {
         title: "8 CFR 214.2 — O classification (eCFR)",
@@ -110,9 +104,7 @@ export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
     status: "verified",
     legalBasis: "8 CFR 204.5(h)(3)",
     threshold: "3 of 10 criteria (or a qualifying one-time major award)",
-    lastVerified: TODAY,
-    verifiedBy: "web-research (primary sources)",
-    counselApproved: false,
+    lastVerified: TODAY,    counselApproved: false,
     sources: [
       {
         title: "8 CFR 204.5(h)(3) — Extraordinary ability (Cornell LII)",
@@ -132,9 +124,7 @@ export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
   "UK-Global-Talent": {
     status: "needs-review",
     legalBasis: "UK Immigration Rules Appendix Global Talent (endorsement-based)",
-    lastVerified: TODAY,
-    verifiedBy: "web-research (primary sources)",
-    counselApproved: false,
+    lastVerified: TODAY,    counselApproved: false,
     sources: [
       {
         title: "Global Talent visa — GOV.UK",
@@ -157,9 +147,7 @@ export const COMPLIANCE_VALIDATIONS: Record<string, ValidationRecord> = {
   "us-federal-practice": {
     status: "verified",
     legalBasis: "8 CFR 1001.1(f); 8 CFR 1.2; 8 CFR 1292.1",
-    lastVerified: TODAY,
-    verifiedBy: "web-research (primary sources)",
-    counselApproved: false,
+    lastVerified: TODAY,    counselApproved: false,
     sources: [
       {
         title: "8 CFR 1001.1(f) — definition of 'attorney' (Cornell LII)",
@@ -181,9 +169,7 @@ export const COMPLIANCE_VALIDATIONS: Record<string, ValidationRecord> = {
   "us-arizona-abs": {
     status: "verified",
     legalBasis: "Arizona Supreme Court Order R-20-0034 (eff. 2021-01-01); ER 5.4 eliminated",
-    lastVerified: TODAY,
-    verifiedBy: "web-research (primary sources)",
-    counselApproved: false,
+    lastVerified: TODAY,    counselApproved: false,
     sources: [
       {
         title: "Arizona Supreme Court Order R-20-0034 (Final Order)",
