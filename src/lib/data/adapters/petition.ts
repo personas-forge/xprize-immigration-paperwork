@@ -26,7 +26,9 @@ import type {
 import {
   type CaseAccess,
   type CaseGateDeps,
+  makeCached,
   resolveCase,
+  storeConfigured,
 } from "./access";
 import { type AdapterResult, err, ok } from "./result";
 
@@ -61,15 +63,9 @@ export interface PetitionDeps extends CaseGateDeps {
   getLatestRfeResponse(caseId: string): Promise<StoredRfe | null>;
 }
 
-let cached: PetitionDeps | null = null;
-
-async function defaultDeps(): Promise<PetitionDeps> {
-  if (cached) return cached;
-  const [data, store] = await Promise.all([
-    import("@/lib/data/petitions"),
-    import("@/lib/db/store"),
-  ]);
-  cached = {
+const defaultDeps = makeCached<PetitionDeps>(async () => {
+  const data = await import("@/lib/data/petitions");
+  return {
     getCaseForUser: data.getCaseForUser,
     getCaseAnyOwner: data.getCaseAnyOwner,
     getCasesForUser: data.getCasesForUser,
@@ -82,10 +78,9 @@ async function defaultDeps(): Promise<PetitionDeps> {
     getLatestRfeResponse: data.getLatestRfeResponse,
     isConfiguredAttorney,
     isConfiguredOps,
-    storeConfigured: async () => (await store.getStore()) !== null,
+    storeConfigured,
   };
-  return cached;
-}
+});
 
 export class PetitionAdapter {
   constructor(private readonly injected?: PetitionDeps) {}

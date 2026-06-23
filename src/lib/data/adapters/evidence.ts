@@ -18,7 +18,9 @@ import type { StoredCase } from "@/lib/data/petitions";
 import {
   type CaseAccess,
   type CaseGateDeps,
+  makeCached,
   resolveCase,
+  storeConfigured,
 } from "./access";
 import { type AdapterResult, err, ok } from "./result";
 
@@ -46,16 +48,12 @@ export interface EvidenceDeps extends CaseGateDeps {
   ): Promise<boolean>;
 }
 
-let cached: EvidenceDeps | null = null;
-
-async function defaultDeps(): Promise<EvidenceDeps> {
-  if (cached) return cached;
-  const [evidence, petitions, store] = await Promise.all([
+const defaultDeps = makeCached<EvidenceDeps>(async () => {
+  const [evidence, petitions] = await Promise.all([
     import("@/lib/data/evidence"),
     import("@/lib/data/petitions"),
-    import("@/lib/db/store"),
   ]);
-  cached = {
+  return {
     addCaseDocument: evidence.addCaseDocument,
     getCaseDocuments: evidence.getCaseDocuments,
     removeCaseDocument: evidence.removeCaseDocument,
@@ -64,10 +62,9 @@ async function defaultDeps(): Promise<EvidenceDeps> {
     getCaseForUser: petitions.getCaseForUser,
     getCaseAnyOwner: petitions.getCaseAnyOwner,
     isConfiguredAttorney,
-    storeConfigured: async () => (await store.getStore()) !== null,
+    storeConfigured,
   };
-  return cached;
-}
+});
 
 export class EvidenceAdapter {
   constructor(private readonly injected?: EvidenceDeps) {}
