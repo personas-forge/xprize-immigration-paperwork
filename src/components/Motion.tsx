@@ -1,6 +1,5 @@
 "use client";
 
-import { type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { easeArrival, fadeUp } from "@/lib/motion";
 
@@ -53,35 +52,5 @@ export function Rise({
     >
       {children}
     </MotionTag>
-  );
-}
-
-/**
- * Hover lift — a 3px upward translate on hover, the same restrained motion
- * the v2 `.lift` CSS class provides but as a wrapper so a non-CSS element
- * can opt in without redefining styles. Inherits any extra props.
- */
-export function HoverCard({
-  children,
-  className,
-  ...rest
-}: DivProps & { children: ReactNode }) {
-  const reduce = useReducedMotion();
-  if (reduce) {
-    return (
-      <div className={className} {...rest}>
-        {children}
-      </div>
-    );
-  }
-  return (
-    <motion.div
-      className={className}
-      whileHover={{ y: -3 }}
-      transition={{ duration: 0.36, ease: easeArrival }}
-      {...(rest as React.ComponentProps<typeof motion.div>)}
-    >
-      {children}
-    </motion.div>
   );
 }

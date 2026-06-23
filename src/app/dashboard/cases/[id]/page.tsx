@@ -53,10 +53,10 @@ export default async function CaseDetailPage({
   const stored = gate.value;
 
   // isOwner drives owner-only UI; StoredCase carries no owner field, so re-resolve
-  // owner-only (email: null) — the pattern review/actions.ts uses. `attorney`
-  // drives the sign/file affordances and must stay isConfiguredAttorney.
-  const ownerGate = await petitions.resolveCase({ userId: user.id, email: null }, id);
-  const isOwner = ownerGate.ok;
+  // owner-only via the adapter's `isCaseOwner` (the same gate review/actions.ts
+  // uses). `attorney` drives the sign/file affordances and must stay
+  // isConfiguredAttorney.
+  const isOwner = await petitions.isCaseOwner(user.id, id);
   const attorney = isConfiguredAttorney(user.email);
 
   const [criteria, draft, balance, events, rfe, documents] = await Promise.all([

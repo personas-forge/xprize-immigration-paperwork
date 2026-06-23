@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Stamp } from "@/components/brand";
-import { HoverCard } from "@/components/Motion";
 import {
   bundlePriceLabel,
   formatCentsPerToken,
@@ -84,9 +83,9 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
         {bundles.map((b) => {
           const isBest = b.featured ?? false;
           return (
-            <HoverCard
+            <div
               key={b.key}
-              className={`relative flex h-full flex-col rounded-card border bg-surface p-6 shadow-leaf ${
+              className={`lift relative flex h-full flex-col rounded-card border bg-surface p-6 shadow-leaf ${
                 isBest ? "border-accent/60 bg-accent-soft/30 shadow-seal" : "border-border"
               }`}
             >
@@ -151,7 +150,7 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
                 {status.key === b.key ? "Opening…" : "Buy tokens"}
                 <span aria-hidden>→</span>
               </button>
-            </HoverCard>
+            </div>
           );
         })}
       </div>

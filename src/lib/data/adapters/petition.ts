@@ -95,6 +95,17 @@ export class PetitionAdapter {
   }
 
   /**
+   * Owner-only check: is `userId` the OWNER of `caseId`? Resolves with
+   * `email: null` so the configured-attorney cross-tenant fallback never fires —
+   * the single home for the `email: null ⇒ owner-only` trick the review actions
+   * and case-detail page used to each re-express inline. Fail-closed: any non-ok
+   * resolve (forbidden / not_found / unconfigured / store_error) ⇒ not owner.
+   */
+  async isCaseOwner(userId: string, caseId: string): Promise<boolean> {
+    return (await this.resolveCase({ userId, email: null }, caseId)).ok;
+  }
+
+  /**
    * Every case the caller OWNS, newest first. Owner-scoped list analogue of
    * `getCaseForUser` — fail-closed when there's no user id. A no-store build
    * degrades to an empty list (ok([])), matching the single-case read.

@@ -32,6 +32,12 @@ export interface CaseFileDataState {
  * concurrently (see `fetchCaseFileData`) and exposes unified loading/error
  * state, replacing the three independent `useEffect` fetches the dashboard and
  * side panels used to run. Results are drilled into the child cards as props.
+ *
+ * NOTE: `caseId` is reserved — there is no live per-case data source yet (the
+ * in-memory fixtures ignore it), and the sole caller (CaseFileDashboard) invokes
+ * this with no argument, so `caseId` is always `undefined` in production. The
+ * param + cache-key seam are kept for the eventual per-case source; don't expand
+ * them further until one lands.
  */
 export function useCaseFileData(caseId?: string): CaseFileDataState {
   const [state, setState] = useState<Omit<CaseFileDataState, "reload">>({

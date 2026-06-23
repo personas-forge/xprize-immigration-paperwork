@@ -1,5 +1,5 @@
 import { type BadgeTone } from "@/components/ui";
-import { type Criterion, type CriterionStatus } from "./types";
+import { type CriterionStatus } from "./types";
 
 /**
  * O-1A petitions must satisfy at least this many criteria to qualify.
@@ -72,7 +72,10 @@ export interface CriteriaSummary {
  * read-out honest regardless of upstream data-shape drift.
  */
 export function summarizeCriteria(
-  items: readonly Criterion[],
+  // Reads ONLY `status`, so it accepts any row that carries one — this lets a
+  // `DetailCriterion[]` (or a ScoredCriterion[]) pass without an `as unknown as
+  // Criterion[]` double-cast at the call site, while staying robust to drift.
+  items: readonly { status?: unknown }[],
   threshold: number = QUALIFYING_THRESHOLD,
 ): CriteriaSummary {
   const list = Array.isArray(items) ? items : [];
