@@ -171,7 +171,9 @@ export function tryParseCategorizeResponse(
   return { criterion: coerceBucket(obj.criterion, classification), facts };
 }
 
-/** Normalize a model response, falling back to the deterministic keyword mock. */
+/** Normalize a model response, falling back to the deterministic keyword mock.
+ *  Used by the offline eval harness (scripts/llm-eval); the live route wires
+ *  tryParse + mock separately so it can reclaim a charge on a silent fallback. */
 export function parseCategorizeResponse(
   text: string,
   req: CategorizeRequest,
