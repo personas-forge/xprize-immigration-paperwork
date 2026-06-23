@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { getUser } from "@/lib/auth/session";
-import { credit } from "@/lib/tokens/ledger";
+import { credit, MAX_LEDGER_AMOUNT } from "@/lib/tokens/ledger";
 import { firestoreProjectId } from "@/lib/db/config";
 
 // DEV/TEST ONLY — simulate a top-up without Polar, so the ledger/economy can be
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
   // 1000 default — a probe of "grant 0" silently minted 1000. Use a finiteness
   // check (and truncate) so only a genuinely absent/unparseable amount defaults.
   const raw = Number(amount);
-  const n = Number.isFinite(raw) ? Math.max(1, Math.min(1_000_000, Math.trunc(raw))) : 1000;
+  const n = Number.isFinite(raw) ? Math.max(1, Math.min(MAX_LEDGER_AMOUNT, Math.trunc(raw))) : 1000;
   const balance = await credit(user.id, n, "adjustment", `dev:${Date.now()}:${user.id}`, {
     dev: true,
     requested: amount ?? null, // audit the requested-vs-granted amount

@@ -29,8 +29,10 @@ function warnIfMeteringExpected(where: string): void {
 // from any present-or-future caller (a computed refund, a webhook trusting a
 // Polar quantity, a metered-by-usage op) is rejected before it can invert a
 // debit into a credit or overflow a balance. 1,000,000 is well above the
-// largest bundle (30k) and matches the dev-route clamp, far under pg int max.
-const MAX_LEDGER_AMOUNT = 1_000_000;
+// largest bundle (30k), far under pg int max. Exported so other callers that
+// must honor the same ceiling (e.g. the dev grant route) import it rather than
+// retyping the literal.
+export const MAX_LEDGER_AMOUNT = 1_000_000;
 
 /** A debit cost must be a non-negative bounded integer — a NEGATIVE cost would
  *  turn `charge` into a silent credit. */
