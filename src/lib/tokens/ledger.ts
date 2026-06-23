@@ -34,22 +34,24 @@ function warnIfMeteringExpected(where: string): void {
 // retyping the literal.
 export const MAX_LEDGER_AMOUNT = 1_000_000;
 
-/** A debit cost must be a non-negative bounded integer — a NEGATIVE cost would
- *  turn `charge` into a silent credit. */
-function assertChargeCost(cost: number): void {
-  if (!Number.isInteger(cost) || cost < 0 || cost > MAX_LEDGER_AMOUNT) {
-    throw new Error(
-      `[ledger] charge cost must be an integer in [0, ${MAX_LEDGER_AMOUNT}]; got ${cost}`,
-    );
-  }
-}
+/** Free-pass balance sentinel: an unmetered (keyless/dev) success reports an
+ *  infinite balance. Exported so the guard and the ledger encode "unmetered
+ *  success" ONE way instead of each open-coding `Number.POSITIVE_INFINITY`. */
+export const FREE_PASS_BALANCE = Number.POSITIVE_INFINITY;
 
-/** A credit amount may be negative (refund clawback) but must be a bounded
- *  finite integer — never NaN/Infinity, never magnitude-unbounded. */
-function assertCreditAmount(amount: number): void {
-  if (!Number.isInteger(amount) || Math.abs(amount) > MAX_LEDGER_AMOUNT) {
+/** Assert `value` is a bounded integer. `allowNegative` permits the refund-
+ *  clawback range [-MAX, MAX]; otherwise (a charge/grant) it must be in [0, MAX]
+ *  — a negative would turn `charge` into a silent credit. One validator so the
+ *  integer check, the magnitude check, and the bound share a single definition. */
+function assertBoundedInt(
+  value: number,
+  opts: { allowNegative: boolean; what: string },
+): void {
+  const belowFloor = opts.allowNegative ? value < -MAX_LEDGER_AMOUNT : value < 0;
+  if (!Number.isInteger(value) || belowFloor || value > MAX_LEDGER_AMOUNT) {
+    const lo = opts.allowNegative ? -MAX_LEDGER_AMOUNT : 0;
     throw new Error(
-      `[ledger] credit amount must be an integer in [-${MAX_LEDGER_AMOUNT}, ${MAX_LEDGER_AMOUNT}]; got ${amount}`,
+      `[ledger] ${opts.what} must be an integer in [${lo}, ${MAX_LEDGER_AMOUNT}]; got ${value}`,
     );
   }
 }
@@ -75,11 +77,11 @@ export async function charge(
   operation: string,
   ref: string,
 ): Promise<ChargeOutcome> {
-  assertChargeCost(cost);
+  assertBoundedInt(cost, { allowNegative: false, what: "charge cost" });
   const store = await getStore();
   if (!store) {
     warnIfMeteringExpected("charge");
-    return { ok: true, balance: Number.POSITIVE_INFINITY };
+    return { ok: true, balance: FREE_PASS_BALANCE };
   }
   return store.charge(userId, cost, operation, ref);
 }
@@ -92,7 +94,7 @@ export async function credit(
   ref: string | null,
   metadata: Record<string, unknown> = {},
 ): Promise<number> {
-  assertCreditAmount(amount);
+  assertBoundedInt(amount, { allowNegative: true, what: "credit amount" });
   const store = await getStore();
   return store ? store.credit(userId, amount, reason, ref, metadata) : 0;
 }
@@ -112,7 +114,7 @@ export async function grantSignupTokens(
   userId: string,
   amount: number,
 ): Promise<void> {
-  assertChargeCost(amount); // a grant is a non-negative bounded integer
+  assertBoundedInt(amount, { allowNegative: false, what: "grant amount" });
   const store = await getStore();
   if (!store) return;
   return store.grantSignupTokens(userId, amount);

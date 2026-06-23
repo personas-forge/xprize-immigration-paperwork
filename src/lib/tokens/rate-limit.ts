@@ -80,7 +80,7 @@ export const RATE_LIMITS = {
  */
 export const PREVIEW_RATE_LIMIT = 30;
 
-export const RATE_WINDOW_MS = 60_000;
+const RATE_WINDOW_MS = 60_000;
 
 // ⚠ SINGLE-NODE: counts live in THIS process's memory. The caps in RATE_LIMITS
 // are correct only on ONE instance — under horizontal scaling (PM2 cluster,
@@ -175,7 +175,7 @@ function isValidIp(value: string): boolean {
 /** Number of TRUSTED reverse-proxy hops in front of the app (the platform edge
  *  + any CDN you control), from `TRUSTED_PROXY_HOPS` (default 0 = one trusted
  *  edge appends the client IP as the rightmost `x-forwarded-for` entry). */
-export function trustedProxyHops(
+function trustedProxyHops(
   env: Record<string, string | undefined> = process.env,
 ): number {
   const n = Number(env.TRUSTED_PROXY_HOPS);

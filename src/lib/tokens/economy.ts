@@ -8,23 +8,7 @@
 // (`registry.ts`, the single source of truth) — import `costOf` / `TIER_COST` /
 // `OpTier` from there directly.
 
-import { isMeteringEnforced } from "@/lib/db/config";
-
 export const FREE_SIGNUP_GRANT = 150; // granted once, at first onboarding
-
-/**
- * True when the token economy is NOT enforced and AI routes should run as a
- * free, unmetered pass. Thin inverse of the canonical {@link isMeteringEnforced}
- * so every "is metering off?" caller shares ONE definition — previously this
- * keyed on `!DATABASE_URL`, a pglite-only signal that wrongly reported "bypassed"
- * for the Firestore-prod config (no DATABASE_URL, yet metering IS on). `env` is
- * injectable for tests.
- */
-export function isMeteringBypassed(
-  env: Record<string, string | undefined> = process.env,
-): boolean {
-  return !isMeteringEnforced(env);
-}
 
 // Purchasable bundles — discount grows with size. `polarProductId` is filled
 // from env after you create the products in the Polar dashboard.

@@ -9,8 +9,8 @@ import {
   bundlePriceLabel,
   formatCentsPerToken,
   formatUsdCents,
-  isMeteringBypassed,
 } from "./economy";
+import { isMeteringEnforced } from "@/lib/db/config";
 
 // Per-operation cost (`costOf` / `TIER_COST` / `OpTier`) lives in the
 // OperationRegistry and is tested in registry.test.ts. This suite covers what
@@ -93,30 +93,30 @@ test("FREE_SIGNUP_GRANT is a positive integer", () => {
 
 // — Guard bypass branch ──────────────────────────────────────────────────────
 
-test("isMeteringBypassed: TOKENS_BYPASS=1 forces a free pass even with a store", () => {
+test("isMeteringEnforced: TOKENS_BYPASS=1 forces a free pass even with a store", () => {
   assert.equal(
-    isMeteringBypassed({ TOKENS_BYPASS: "1", DB_DRIVER: "pglite" }),
-    true,
+    isMeteringEnforced({ TOKENS_BYPASS: "1", DB_DRIVER: "pglite" }),
+    false,
   );
 });
 
-test("isMeteringBypassed: no store configured → free pass (keyless build/dev)", () => {
-  assert.equal(isMeteringBypassed({ TOKENS_BYPASS: "" }), true);
-  assert.equal(isMeteringBypassed({}), true);
+test("isMeteringEnforced: no store configured → free pass (keyless build/dev)", () => {
+  assert.equal(isMeteringEnforced({ TOKENS_BYPASS: "" }), false);
+  assert.equal(isMeteringEnforced({}), false);
 });
 
-test("isMeteringBypassed: store configured (pglite) and no bypass → economy IS enforced", () => {
-  assert.equal(isMeteringBypassed({ DB_DRIVER: "pglite" }), false);
+test("isMeteringEnforced: store configured (pglite) and no bypass → economy IS enforced", () => {
+  assert.equal(isMeteringEnforced({ DB_DRIVER: "pglite" }), true);
 });
 
-test("isMeteringBypassed: Firestore-prod shape (no DATABASE_URL) is ENFORCED, not bypassed", () => {
+test("isMeteringEnforced: Firestore-prod shape (no DATABASE_URL) is ENFORCED, not bypassed", () => {
   // The exact config the three predicates used to disagree on: prod + a Firestore
   // project, NO DATABASE_URL. The guard charges here, so metering must read on.
   assert.equal(
-    isMeteringBypassed({ NODE_ENV: "production", FIRESTORE_PROJECT_ID: "p" }),
-    false,
+    isMeteringEnforced({ NODE_ENV: "production", FIRESTORE_PROJECT_ID: "p" }),
+    true,
   );
   // A bare DATABASE_URL is NOT a store signal (the store is driver-selected) —
   // the old !DATABASE_URL heuristic is gone.
-  assert.equal(isMeteringBypassed({ DATABASE_URL: "postgres://x" }), true);
+  assert.equal(isMeteringEnforced({ DATABASE_URL: "postgres://x" }), false);
 });
