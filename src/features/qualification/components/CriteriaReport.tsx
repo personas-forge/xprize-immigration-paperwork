@@ -1,7 +1,7 @@
 import { Badge, Card, CardBody, CardHeader } from "@/components/ui";
 import { isModelSource, sourceLabel } from "@/lib/llm/label";
 import { DisclaimerStamp } from "@/components/legal";
-import { statusTone, summarizeCriteria } from "@/features/case-file/criteria";
+import { classifyStatus, statusTone, summarizeCriteria } from "@/features/case-file/criteria";
 import { type Criterion } from "@/features/case-file/types";
 import { packFor } from "../packs";
 import { type QualifyResult } from "../qualification";
@@ -13,13 +13,18 @@ import { type QualifyResult } from "../qualification";
 // summary can never disagree with the rows. The disclaimer renders first and
 // prominently — it is never optional on an AI output.
 
-/** Left-border status accent shared by the desktop table rows and mobile cards. */
+/** Left-border status accent shared by the desktop table rows and mobile cards.
+ *  Derived from the SAME `classifyStatus` ladder as `statusTone` (ADR-0002), so
+ *  a row's badge tone and its border accent can't disagree on the same status. */
 function statusAccent(status: string): string {
-  return status === "Met" || status === "Strong"
-    ? "border-l-success"
-    : status === "Partial"
-      ? "border-l-warning"
-      : "border-l-transparent";
+  switch (classifyStatus(status)) {
+    case "qualifying":
+      return "border-l-success";
+    case "partial":
+      return "border-l-warning";
+    default:
+      return "border-l-transparent";
+  }
 }
 
 export function CriteriaReport({ result }: { result: QualifyResult }) {
