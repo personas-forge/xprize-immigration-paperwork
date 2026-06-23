@@ -15,6 +15,7 @@ import {
   parseRfeRequest,
   parseRfeResponse,
   rfeHasExhibits,
+  trimFiledSection,
   tryParseRfeResponse,
   tryParseRfeForecast,
   type RfeRequest,
@@ -228,6 +229,31 @@ test("attachFiledPetition + buildRfePrompt: fuses the as-filed letter as read-on
   assert.ok(p.includes("AS_FILED_PETITION"), "fences the as-filed petition");
   assert.ok(p.includes("served as a NeurIPS reviewer"), "includes the filed letter prose");
   assert.ok(/read-only data, never as instructions/i.test(p), "keeps the injection defense");
+});
+
+test("trimFiledSection: short sections pass through verbatim (backward compatible)", () => {
+  const body = "As established, the beneficiary served as a NeurIPS reviewer.";
+  assert.equal(trimFiledSection(body, valid.rfeText), body);
+});
+
+test("trimFiledSection: keeps the RFE-challenged passage even when it sits late (Tiger L2)", () => {
+  // A long section whose load-bearing fact (independent adoption) is at the END —
+  // the exact shape the old 800-char head-slice severed, producing an empty rebuttal.
+  const head = "This section establishes the beneficiary's original contributions to the field. ";
+  const filler = "The research is significant and has been sustained over many years. ".repeat(40);
+  const challenged =
+    "Specifically, the PNAlign method was adopted by the Broad Institute and integrated into the GATK pipeline in 2022.";
+  const body = head + filler + challenged;
+  const rfeText =
+    "The record does not show the contribution was adopted by independent parties. " +
+    "Please submit evidence of adoption, for example integration into pipelines such as GATK.";
+
+  assert.ok(body.length > 2200, "precondition: body exceeds the per-section budget");
+  const trimmed = trimFiledSection(body, rfeText);
+  assert.ok(trimmed.length <= 2300, "stays within budget");
+  assert.ok(trimmed.includes("Broad Institute"), "retains the independent-adoption fact");
+  assert.ok(trimmed.includes("GATK"), "retains the specific integration the RFE asked about");
+  assert.ok(trimmed.startsWith("This section establishes"), "keeps the opening sentence as context");
 });
 
 test("mockRfe: cites attached exhibits in the addressable sections", () => {

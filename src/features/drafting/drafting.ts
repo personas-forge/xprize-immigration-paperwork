@@ -210,6 +210,28 @@ export function draftFraming(classification: string): string[] {
 }
 
 /**
+ * Sub-threshold-fact rescue (Tiger L2 2026-06-23). The letter writes one section
+ * per QUALIFYING (Met/Strong) criterion, so a concrete, load-bearing fact filed
+ * under a criterion scored only "Partial" was silently dropped from the letter
+ * entirely — e.g. an EB-1A architect's flagship project (the single strongest
+ * proof of impact) vanished because its criterion was under-scored. These lines
+ * keep such facts out of an unearned dedicated section but route them into the
+ * Introduction/Conclusion totality, which is exactly where an EB-1A final-merits
+ * "top of the field" argument is won. No fabrication — Rule 1 still binds.
+ */
+function totalityRule(names: readonly string[]): string[] {
+  return [
+    'Some criteria are scored only "Partial" (supporting, not independently strong):',
+    `  ${names.join(", ")}.`,
+    "Do NOT give these their own section and do NOT present them as independently",
+    "met, but DO weave their concrete supplied facts into the Introduction and the",
+    "Conclusion's totality argument where they reinforce the overall case (this",
+    "matters most for an EB-1A final-merits totality). Use only the facts already",
+    "provided for them; invent nothing.",
+  ];
+}
+
+/**
  * The full-letter prompt. Strict citation discipline: the model may argue ONLY
  * from the provided criteria/evidence and must not fabricate specifics. When the
  * case has vault exhibits, every factual claim must carry an inline (Exhibit N)
@@ -217,6 +239,11 @@ export function draftFraming(classification: string): string[] {
  */
 export function buildDraftPrompt(req: DraftRequest): string {
   const withExhibits = hasExhibits(req);
+  // Facts filed under a supporting-but-undrafted criterion (Partial, with
+  // evidence) must still reach the totality — route them, don't drop them.
+  const supporting = undraftedSupportedCriteria(req.criteria).filter(
+    (c) => c.evidence.trim() !== "",
+  );
   return [
     `You are drafting a U.S. ${req.classification} immigration petition letter as work`,
     "product for a licensed immigration attorney of record to review, edit, and sign.",
@@ -249,6 +276,7 @@ export function buildDraftPrompt(req: DraftRequest): string {
     '{ "sections": [ { "heading": "Introduction", "body": "..." }, { "heading": "<criterion name>", "body": "..." }, { "heading": "Conclusion", "body": "..." } ] }',
     "Include an Introduction, ONE section for each criterion scored \"Met\" or",
     '"Strong" (use the criterion name as the heading), and a Conclusion.',
+    ...(supporting.length ? totalityRule(supporting.map((c) => c.name)) : []),
     "Return the JSON now.",
   ].join("\n");
 }

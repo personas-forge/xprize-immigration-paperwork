@@ -28,6 +28,16 @@ test("buildQualifyPrompt: carries the field-norm guidance (LLM-3) without droppi
   assert.ok(/invent\s+nothing/i.test(p), "still reaffirms no fabrication");
 });
 
+test("buildQualifyPrompt: instructs specific evidence capture for the drafting handoff (Tiger L2 1b)", () => {
+  const p = buildQualifyPrompt(valid);
+  // The seam is named: evidence is reused downstream, so specifics must be preserved.
+  assert.ok(/reused verbatim/i.test(p), "tells the model the evidence feeds a later drafting step");
+  assert.ok(/names|named entities|numbers|venues|metrics/i.test(p), "asks for the concrete specifics");
+  assert.ok(/cannot appear in the petition/i.test(p), "explains the consequence of dropping a fact");
+  // Still bounded to no-fabrication.
+  assert.ok(/invent\s+nothing/i.test(p), "specificity push never loosens no-fabrication");
+});
+
 // — Validation ────────────────────────────────────────────────────────────
 
 test("parseQualifyRequest: accepts and trims a well-formed body", () => {
