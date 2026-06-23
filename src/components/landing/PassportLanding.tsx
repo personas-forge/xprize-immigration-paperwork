@@ -33,6 +33,14 @@ const SECTIONS = [
   { id: "depart", n: "05", label: "Begin" },
 ] as const;
 
+// The Pro bundle's price/tokens for the cost-comparison caption — derived from
+// the BUNDLES catalog (same source the pricing cards render) so the headline
+// comparison can't quote a stale price the grid has moved past.
+const PRO_BUNDLE = BUNDLES.find((b) => b.key === "pro");
+const PRO_PRICE_CAPTION = PRO_BUNDLE
+  ? `${bundlePriceLabel(PRO_BUNDLE)} for ${PRO_BUNDLE.tokens.toLocaleString("en-US")} tokens`
+  : "$48 for 8,000 tokens";
+
 export function PassportLanding() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { active, index } = useActiveSection(
@@ -452,7 +460,7 @@ function Evidence() {
         <Reveal delay={0.06}>
           <Panel
             title="A firm's fee, vs a Pro bundle"
-            caption={`${FIRM_FEE.range} ${FIRM_FEE.verb} · vs $48 for 8,000 tokens`}
+            caption={`${FIRM_FEE.range} ${FIRM_FEE.verb} · vs ${PRO_PRICE_CAPTION}`}
           >
             <CostCompareBars height={200} />
           </Panel>

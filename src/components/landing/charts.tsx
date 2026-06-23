@@ -20,6 +20,8 @@ import {
 import { CHART_FONT, type Palette } from "./palette";
 import { useThemePalette } from "./useThemePalette";
 import { ClientOnly } from "./ClientOnly";
+import { FIRM_FEE } from "@/lib/site";
+import { BUNDLES, bundlePriceLabel } from "@/lib/tokens/economy";
 
 // ── Themed Recharts set for the landing ─────────────────────────────────────
 // Every chart is dressed to read as a piece of the engraved-document system:
@@ -105,10 +107,24 @@ export function CriteriaRadar({ height = 340 }: { height?: number }) {
 }
 
 /* ── 2 · Cost comparison ─────────────────────────────────────────────────── */
-// Firm packet vs a Pro bundle. The point is the gulf — yours is a sliver.
+// Firm packet vs a Pro bundle. The point is the gulf — yours is a sliver. Both
+// bars derive from the single sources (FIRM_FEE, the Pro BUNDLE) so the chart
+// can't quote a stale firm fee or bundle price the rest of the page has moved on
+// from.
+const PRO_BUNDLE = BUNDLES.find((b) => b.key === "pro");
 const COST_DATA = [
-  { name: "Law-firm packet", value: 11500, label: "$8k–15k commonly quoted" },
-  { name: "Your draft · Pro bundle", value: 48, label: "$48 · 8,000 tokens" },
+  {
+    name: "Law-firm packet",
+    value: FIRM_FEE.midpointUsd,
+    label: `${FIRM_FEE.range} ${FIRM_FEE.verb}d`,
+  },
+  {
+    name: "Your draft · Pro bundle",
+    value: PRO_BUNDLE ? Math.round(PRO_BUNDLE.priceCents / 100) : 48,
+    label: PRO_BUNDLE
+      ? `${bundlePriceLabel(PRO_BUNDLE)} · ${PRO_BUNDLE.tokens.toLocaleString("en-US")} tokens`
+      : "$48 · 8,000 tokens",
+  },
 ];
 
 export function CostCompareBars({ height = 220 }: { height?: number }) {

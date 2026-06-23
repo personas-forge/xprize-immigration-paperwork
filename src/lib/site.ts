@@ -19,8 +19,19 @@ export const SITE_URL =
  *
  * Estimate basis: typical attorney quotes to assemble an O-1/EB-1A petition
  * packet, as of 2026. Re-confirm the range (and the year) before changing it.
+ *
+ * The numeric bounds are the SOURCE OF TRUTH: the display `range` string and the
+ * `midpointUsd` (used for the cost-comparison bar height in the landing chart)
+ * both derive from them, so the prose, the chart label, and the bar can't drift.
  */
+const FIRM_FEE_LOW_USD = 8000;
+const FIRM_FEE_HIGH_USD = 15000;
+
 export const FIRM_FEE = {
-  range: "$8,000–$15,000",
+  lowUsd: FIRM_FEE_LOW_USD,
+  highUsd: FIRM_FEE_HIGH_USD,
+  range: `$${FIRM_FEE_LOW_USD.toLocaleString("en-US")}–$${FIRM_FEE_HIGH_USD.toLocaleString("en-US")}`,
+  /** Midpoint of the range, for the illustrative cost-comparison bar. */
+  midpointUsd: Math.round((FIRM_FEE_LOW_USD + FIRM_FEE_HIGH_USD) / 2),
   verb: "commonly quote",
 } as const;
