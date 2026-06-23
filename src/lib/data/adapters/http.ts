@@ -32,6 +32,12 @@ const MESSAGE: Record<AdapterErrorKind, string> = {
   store_error: "We couldn't reach your case file just now. Please try again in a moment.",
 };
 
+// — Test-only exports ─────────────────────────────────────────────────────────
+// httpStatusForError / adapterErrorBody / ErrorEnvelope are exported so http.test.ts
+// can assert the status/body mapping without the framework. Only `toErrorResponse`
+// (below) has production consumers; there is no client-side fetch wrapper that
+// consumes ErrorEnvelope today.
+
 /** Pure: the HTTP status for an adapter error kind. */
 export function httpStatusForError(kind: AdapterErrorKind): number {
   return STATUS[kind];

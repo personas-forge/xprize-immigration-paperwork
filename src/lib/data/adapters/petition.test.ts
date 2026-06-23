@@ -27,7 +27,6 @@ function deps(over: Partial<PetitionDeps> = {}): PetitionDeps {
     saveDraft: async () => 3,
     getLatestDraft: async () => null,
     saveRfeResponse: async () => 2,
-    getLatestRfeResponse: async () => null,
     isConfiguredAttorney: () => false,
     isConfiguredOps: () => false,
     storeConfigured: async () => true,

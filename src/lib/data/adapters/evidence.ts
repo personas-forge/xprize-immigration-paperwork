@@ -22,7 +22,7 @@ import {
   resolveCase,
   storeConfigured,
 } from "./access";
-import { type AdapterResult, err, ok } from "./result";
+import { type AdapterResult, err, ok, wrapStore } from "./result";
 
 /** Everything the adapter calls, injected so the unit suite can supply fakes. */
 export interface EvidenceDeps extends CaseGateDeps {
@@ -118,11 +118,7 @@ export class EvidenceAdapter {
     const deps = await this.deps();
     const gate = await this.gate(deps, access, caseId);
     if (!gate.ok) return gate;
-    try {
-      return ok(await deps.getCaseDocuments(caseId));
-    } catch (cause) {
-      return err("store_error", cause);
-    }
+    return wrapStore(() => deps.getCaseDocuments(caseId));
   }
 
   /** SOFT-delete a document from a case's vault (recoverable via

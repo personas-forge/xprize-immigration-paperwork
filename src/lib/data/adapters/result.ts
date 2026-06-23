@@ -41,6 +41,18 @@ export function ok<T>(value: T): AdapterResult<T> {
   return { ok: true, value };
 }
 
+/** Run a Store call and normalize a throw into `store_error` — the try/catch
+ *  envelope nearly every adapter method's tail repeats. Use as
+ *  `return wrapStore(() => deps.getCriteriaForCase(caseId))`. Methods that need
+ *  not_found/unconfigured mapping keep their explicit form. */
+export async function wrapStore<T>(fn: () => Promise<T>): Promise<AdapterResult<T>> {
+  try {
+    return ok(await fn());
+  } catch (cause) {
+    return err("store_error", cause);
+  }
+}
+
 /** Construct a failure result. `cause` is only attached for `store_error`. */
 export function err<T = never>(
   kind: AdapterErrorKind,
