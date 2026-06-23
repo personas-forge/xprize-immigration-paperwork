@@ -6,7 +6,7 @@ if (typeof window !== "undefined") {
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { CONSENT_VERSION } from "@/lib/auth/consent";
+import { CONSENT_VERSION, isFullyConsented } from "@/lib/auth/consent";
 import { SESSION_COOKIE } from "@/lib/firebase/config";
 import { adminAuth } from "@/lib/firebase/admin";
 import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
@@ -131,20 +131,14 @@ export async function requireOnboardedUser(): Promise<{
   if (!user) redirect("/login");
   const profile = await getProfile(user.id);
   if (!profile || !profile.onboarded_at) redirect("/welcome");
-  // Re-prompt when the consent copy has changed since the user last agreed.
-  // The version is WRITTEN on every consent but must also be READ back, or a
-  // terms bump silently leaves users operating under terms they never accepted.
-  // Dev-auth is auto-seeded at the current version, so this never fires for it.
-  //
-  // INTENT (recorded): the onboarding gate keys on the consent VERSION only. A
-  // user's MARKETING preference is intentionally NOT a re-prompt trigger — it is
-  // mutable independently (a changed marketing choice is recorded as a new
-  // append-only consent row, surfaced/edited via the account page) and must not
-  // force a terms re-acceptance. So "version match ⇒ skip" deliberately ignores
-  // marketing state; it is not an oversight.
+  // Re-prompt when the accepted consent version is behind CONSENT_VERSION, using
+  // the same isFullyConsented predicate the welcome page uses (so the gate can't
+  // drift to two polarities). Dev-auth is auto-seeded at the current version, so
+  // the version check is skipped for it. Marketing preference is mutable
+  // independently (account page) and intentionally NOT a re-prompt trigger.
   if (!isDevAuth()) {
     const consented = await getLatestConsentVersion(user.id);
-    if (consented !== CONSENT_VERSION) redirect("/welcome");
+    if (!isFullyConsented(profile, consented)) redirect("/welcome");
   }
   return { user, profile };
 }

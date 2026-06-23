@@ -52,3 +52,14 @@ function resolveConsentVersion(
 /** Bump by appending to CONSENT_VERSIONS when consent copy changes; recorded
  *  against each consent row and compared by the onboarding gate. */
 export const CONSENT_VERSION: string = resolveConsentVersion();
+
+/** True when a profile has finished onboarding AND its recorded consent version
+ *  matches the live {@link CONSENT_VERSION}. The ONE predicate the re-consent
+ *  gate is built on (`requireOnboardedUser` and the welcome page), so the two
+ *  can't drift to opposite-polarity hand-rolled copies of the same invariant. */
+export function isFullyConsented(
+  profile: { onboarded_at?: string | null } | null | undefined,
+  consentedVersion: string | null | undefined,
+): boolean {
+  return Boolean(profile?.onboarded_at) && consentedVersion === CONSENT_VERSION;
+}
