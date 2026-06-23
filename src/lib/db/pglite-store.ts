@@ -10,6 +10,7 @@ if (typeof window !== "undefined") {
 }
 
 import { pglitePath } from "./config";
+import { formatExhibit } from "@/lib/exhibits";
 import type {
   DraftSection,
   ReviewEvent,
@@ -763,7 +764,7 @@ export async function getPgliteStore(): Promise<Store> {
           `update cases set doc_seq = $2, updated_at = now() where id = $1`,
           [input.caseId, ord],
         );
-        const exhibit = `Ex. ${ord}`;
+        const exhibit = formatExhibit(ord);
         const status = input.status ?? "Received";
         const facts = [...input.facts].map((f) => String(f));
         const r = await tx.query(

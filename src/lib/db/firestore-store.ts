@@ -26,6 +26,7 @@ if (typeof window !== "undefined") {
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firestore/admin";
 import { COLLECTION_PREFIX } from "./config";
+import { formatExhibit } from "@/lib/exhibits";
 import type {
   AddDocumentInput,
   AddReviewEventInput,
@@ -620,7 +621,7 @@ export const firestoreStore: Store = {
     return fs.runTransaction(async (t) => {
       const caseSnap = await t.get(caseRef);
       const ord = (caseSnap.exists ? Number(caseSnap.get("doc_ord") ?? 0) : 0) + 1;
-      const exhibit = `Ex. ${ord}`;
+      const exhibit = formatExhibit(ord);
       const status = input.status ?? "Received";
       const facts = [...input.facts].map((f) => String(f));
       t.set(docRef, {

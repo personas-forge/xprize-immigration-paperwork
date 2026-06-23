@@ -14,6 +14,7 @@ import {
 } from "@/features/evidence";
 import { type StoredDocument } from "@/features/evidence/types";
 import { type ModelSource } from "@/lib/llm/label";
+import { formatExhibit, parseExhibitOrdinal } from "@/lib/exhibits";
 import { refileDocument, removeDocument } from "../actions";
 
 // — Evidence vault ────────────────────────────────────────────────────────────
@@ -101,14 +102,14 @@ export function EvidenceVault({
       // Optimistic exhibit ordinal when persistence is skipped (no store): keep
       // the index MONOTONIC instead of rendering "—" (UAT 2026-06-20 F9).
       const nextOrdinal =
-        documents.reduce((max, d) => {
-          const n = parseInt(String(d.exhibit).replace(/\D/g, ""), 10);
-          return Number.isFinite(n) ? Math.max(max, n) : max;
-        }, 0) + 1;
-      // Mirror the persisted "Ex. N" format the stores assign (pglite/firestore
-      // `Ex. ${ord}`) so an optimistic exhibit doesn't read as a bare "2" beside
-      // saved "Ex. 2" siblings (evidence #2).
-      const nextExhibit = `Ex. ${nextOrdinal}`;
+        documents.reduce(
+          (max, d) => Math.max(max, parseExhibitOrdinal(String(d.exhibit))),
+          0,
+        ) + 1;
+      // Mirror the persisted "Ex. N" format the stores assign — single-sourced as
+      // formatExhibit so an optimistic exhibit can't drift from saved siblings
+      // (evidence #2).
+      const nextExhibit = formatExhibit(nextOrdinal);
       const doc: DocumentView =
         data.document ?? {
           id: crypto.randomUUID(),
