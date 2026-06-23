@@ -269,6 +269,18 @@ async function appendConsentRow(
   ]);
 }
 
+/** Project a token_ledger row into a LedgerEntry — shared by getLedgerForUser
+ *  (billing read-out) and exportUserData (GDPR), so the two can't drift. */
+function toLedgerEntry(row: Record<string, unknown>) {
+  return {
+    delta: num(row.delta),
+    reason: str(row.reason),
+    operation: row.operation == null ? null : str(row.operation),
+    balanceAfter: num(row.balance_after),
+    createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : null,
+  };
+}
+
 export async function getPgliteStore(): Promise<Store> {
   const pg = await open();
 
@@ -355,13 +367,7 @@ export async function getPgliteStore(): Promise<Store> {
            from token_ledger where user_id = $1 order by id desc limit $2`,
         [userId, Math.max(0, Math.floor(limit))],
       );
-      return r.rows.map((row) => ({
-        delta: num(row.delta),
-        reason: str(row.reason),
-        operation: row.operation == null ? null : str(row.operation),
-        balanceAfter: num(row.balance_after),
-        createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : null,
-      }));
+      return r.rows.map(toLedgerEntry);
     },
 
     // DEBIT IDEMPOTENCY CONTRACT (load-bearing — do not "optimize" the lock away):
@@ -893,13 +899,7 @@ export async function getPgliteStore(): Promise<Store> {
            from token_ledger where user_id = $1 order by id desc`,
         [userId],
       );
-      const tokenLedger = ledgerR.rows.map((r) => ({
-        delta: num(r.delta),
-        reason: str(r.reason),
-        operation: r.operation == null ? null : str(r.operation),
-        balanceAfter: num(r.balance_after),
-        createdAt: iso(r.created_at),
-      }));
+      const tokenLedger = ledgerR.rows.map(toLedgerEntry);
 
       const casesR = await pg.query(
         `select ${CASE_COLUMNS} from cases where user_id = $1 order by created_at`,

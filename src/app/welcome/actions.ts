@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getUser, profileFieldsFromUser } from "@/lib/auth/session";
 import { upsertProfileWithConsent } from "@/lib/auth/db";
-import { CONSENT_VERSION } from "@/lib/auth/consent";
+import { CONSENT_FIELDS, CONSENT_VERSION } from "@/lib/auth/consent";
 import { grantSignupTokens } from "@/lib/tokens/ledger";
 import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
 import { clientIp } from "@/lib/tokens/rate-limit";
@@ -19,10 +19,10 @@ export async function submitConsent(
   const user = await getUser();
   if (!user) redirect("/login");
 
-  const fullName = String(formData.get("full_name") ?? "").trim();
-  const terms = formData.get("terms") === "on";
-  const privacy = formData.get("privacy") === "on";
-  const marketing = formData.get("marketing") === "on";
+  const fullName = String(formData.get(CONSENT_FIELDS.fullName) ?? "").trim();
+  const terms = formData.get(CONSENT_FIELDS.terms) === "on";
+  const privacy = formData.get(CONSENT_FIELDS.privacy) === "on";
+  const marketing = formData.get(CONSENT_FIELDS.marketing) === "on";
   // Re-validate the deep-link destination server-side (never trust the hidden
   // field) — safeNext rejects off-site targets, defaulting to /dashboard.
   const dest = safeNext(formData.get("next")?.toString());
@@ -40,6 +40,9 @@ export async function submitConsent(
   // Validated — an invalid/spoofed forwarded header is stored as null rather than
   // trusted into the consent record (shared with the rate limiter's hardening).
   const ip = clientIp(h);
+  // Only the avatar is taken from the provider profile here; the display name
+  // comes from the form's `full_name` field (resolved above), not provider metadata.
+  const { avatarUrl } = profileFieldsFromUser(user);
 
   // Persist consent FIRST — it is the essential, legally-meaningful write, and
   // ONLY its failure should block onboarding (it leaves the user not-onboarded →
@@ -50,7 +53,7 @@ export async function submitConsent(
       userId: user.id,
       email: user.email ?? null,
       fullName,
-      avatarUrl: profileFieldsFromUser(user).avatarUrl,
+      avatarUrl,
       consentVersion: CONSENT_VERSION,
       terms,
       privacy,

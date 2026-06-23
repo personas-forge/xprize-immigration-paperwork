@@ -93,6 +93,19 @@ interface CaseDoc {
   updated_at?: unknown;
 }
 
+/** Project a raw token_ledger doc into a LedgerEntry — shared by getLedgerForUser
+ *  (the billing read-out) and exportUserData (GDPR), so the two can't report a
+ *  different ledger shape for the same rows. */
+function toLedgerEntry(v: Record<string, unknown>) {
+  return {
+    delta: Number(v.delta ?? 0),
+    reason: String(v.reason ?? ""),
+    operation: v.operation == null ? null : String(v.operation),
+    balanceAfter: Number(v.balance_after ?? 0),
+    createdAt: tsToIso(v.created_at),
+  };
+}
+
 function toStoredCase(id: string, d: CaseDoc): StoredCase {
   return {
     id,
@@ -252,13 +265,7 @@ export const firestoreStore: Store = {
       .map((d) => d.data())
       .sort((a, b) => ms(b.created_at) - ms(a.created_at))
       .slice(0, Math.max(0, Math.floor(limit)))
-      .map((v) => ({
-        delta: Number(v.delta ?? 0),
-        reason: String(v.reason ?? ""),
-        operation: v.operation == null ? null : String(v.operation),
-        balanceAfter: Number(v.balance_after ?? 0),
-        createdAt: tsToIso(v.created_at),
-      }));
+      .map(toLedgerEntry);
   },
 
   async charge(userId, cost, operation, ref) {
@@ -756,13 +763,7 @@ export const firestoreStore: Store = {
     const tokenLedger = lSnap.docs
       .map((d) => d.data())
       .sort((a, b) => tsMs(b.created_at) - tsMs(a.created_at))
-      .map((v) => ({
-        delta: Number(v.delta ?? 0),
-        reason: String(v.reason ?? ""),
-        operation: v.operation == null ? null : String(v.operation),
-        balanceAfter: Number(v.balance_after ?? 0),
-        createdAt: tsToIso(v.created_at),
-      }));
+      .map(toLedgerEntry);
 
     const casesSnap = await fs.collection(col("cases")).where("user_id", "==", userId).get();
     const cases = await Promise.all(
