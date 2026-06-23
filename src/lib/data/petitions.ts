@@ -11,7 +11,19 @@ import "server-only";
  * null / empty), so the keyless build still runs and the result is simply not
  * saved.
  */
-import { getStore } from "@/lib/db/store";
+import { getStore, type DraftSection, type Store } from "@/lib/db/store";
+
+/** Run `fn` against the configured store, or return `fallback` when no store is
+ *  configured (the graceful-degradation contract — see the module JSDoc). Collapses
+ *  the repeated `getStore() → no-op-if-null → delegate` boilerplate. */
+async function withStore<T>(
+  fallback: T,
+  fn: (store: Store) => Promise<T>,
+): Promise<T> {
+  const store = await getStore();
+  if (!store) return fallback;
+  return fn(store);
+}
 
 /** A criterion row to persist. Structural (not imported from the feature) so the
  *  data layer stays decoupled from the qualification module. */
@@ -94,9 +106,7 @@ export async function createCaseWithCriteria(input: {
 export async function getCasesForUser(
   userId: string,
 ): Promise<readonly StoredCase[]> {
-  const store = await getStore();
-  if (!store) return [];
-  return store.getCasesForUser(userId);
+  return withStore([], (store) => store.getCasesForUser(userId));
 }
 
 /** A single case scoped to its owner, or `null` (also when no store / wrong owner). */
@@ -104,9 +114,7 @@ export async function getCaseForUser(
   userId: string,
   caseId: string,
 ): Promise<StoredCase | null> {
-  const store = await getStore();
-  if (!store) return null;
-  return store.getCaseForUser(userId, caseId);
+  return withStore(null, (store) => store.getCaseForUser(userId, caseId));
 }
 
 /**
@@ -116,31 +124,24 @@ export async function getCaseForUser(
  * default. Returns `null` when no store or the case doesn't exist.
  */
 export async function getCaseAnyOwner(caseId: string): Promise<StoredCase | null> {
-  const store = await getStore();
-  if (!store) return null;
-  return store.getCaseAnyOwner(caseId);
+  return withStore(null, (store) => store.getCaseAnyOwner(caseId));
 }
 
 /** All cases awaiting attorney review (the review queue). Attorney-gated. */
 export async function getCasesInReview(): Promise<readonly StoredCase[]> {
-  const store = await getStore();
-  if (!store) return [];
-  return store.getCasesInReview();
+  return withStore([], (store) => store.getCasesInReview());
 }
 
 /** The scored criteria for a case, in canonical order. Empty when no store. */
 export async function getCriteriaForCase(
   caseId: string,
 ): Promise<readonly StoredCriterion[]> {
-  const store = await getStore();
-  if (!store) return [];
-  return store.getCriteriaForCase(caseId);
+  return withStore([], (store) => store.getCriteriaForCase(caseId));
 }
 
-export interface DraftSectionRow {
-  heading: string;
-  body: string;
-}
+/** A draft section row to persist. Reuses the store's canonical {@link DraftSection}
+ *  shape (both are lib-layer) so the persistence contract has a single anchor. */
+export type DraftSectionRow = DraftSection;
 
 export interface StoredDraft {
   version: number;
@@ -158,16 +159,12 @@ export async function saveDraft(
   sections: readonly DraftSectionRow[],
   source: string,
 ): Promise<number | null> {
-  const store = await getStore();
-  if (!store) return null;
-  return store.saveDraft(caseId, sections, source);
+  return withStore(null, (store) => store.saveDraft(caseId, sections, source));
 }
 
 /** The latest draft version for a case, or `null` (also when no store / none yet). */
 export async function getLatestDraft(caseId: string): Promise<StoredDraft | null> {
-  const store = await getStore();
-  if (!store) return null;
-  return store.getLatestDraft(caseId);
+  return withStore(null, (store) => store.getLatestDraft(caseId));
 }
 
 export interface StoredRfe {
@@ -185,16 +182,14 @@ export async function saveRfeResponse(
   sections: readonly DraftSectionRow[],
   source: string,
 ): Promise<number | null> {
-  const store = await getStore();
-  if (!store) return null;
-  return store.saveRfeResponse(caseId, rfeText, sections, source);
+  return withStore(null, (store) =>
+    store.saveRfeResponse(caseId, rfeText, sections, source),
+  );
 }
 
 /** The latest RFE response for a case, or `null` (also when no store / none yet). */
 export async function getLatestRfeResponse(
   caseId: string,
 ): Promise<StoredRfe | null> {
-  const store = await getStore();
-  if (!store) return null;
-  return store.getLatestRfeResponse(caseId);
+  return withStore(null, (store) => store.getLatestRfeResponse(caseId));
 }

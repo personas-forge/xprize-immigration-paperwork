@@ -462,6 +462,35 @@ export function overallCritiqueScore(critiques: readonly SectionCritique[]): num
   return Math.round(critiques.reduce((sum, c) => sum + c.score, 0) / critiques.length);
 }
 
+/** Score at/above which a section/draft reads as filing-ready (success tone). */
+export const STRONG_SCORE = 80;
+/** Score at/above which it is borderline (warning tone); below is danger. */
+export const BORDERLINE_SCORE = 60;
+
+/** Map a 0-100 section/draft score to a badge tone — the UI twin of the redline
+ *  banding (shares the strong/borderline thresholds). */
+export function scoreTone(score: number): "success" | "warning" | "danger" {
+  if (score >= STRONG_SCORE) return "success";
+  if (score >= BORDERLINE_SCORE) return "warning";
+  return "danger";
+}
+
+/** Reduce a critique list to a `heading → critique` map (last wins on a
+ *  duplicate heading — matches the client's keying). */
+export function critiquesByHeading(
+  critiques: readonly SectionCritique[],
+): Record<string, SectionCritique> {
+  const map: Record<string, SectionCritique> = {};
+  for (const c of critiques) map[c.heading] = c;
+  return map;
+}
+
+/** Coerce an untrusted version field to a number, or null. A persisted draft
+ *  carries a numeric version; anything else means "unsaved". */
+export function numericVersion(value: unknown): number | null {
+  return typeof value === "number" ? value : null;
+}
+
 /**
  * Strict parse: the model's critique ONLY when it returned usable JSON, matched
  * back to the draft's real section headings (so a renamed/hallucinated heading

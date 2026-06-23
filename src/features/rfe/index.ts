@@ -14,6 +14,7 @@ export {
   parseRfeRequest,
   parseRfeResponse,
   rfeHasExhibits,
+  toRfeCriterion,
   tryParseRfeResponse,
   tryParseRfeForecast,
   type DraftExhibit,

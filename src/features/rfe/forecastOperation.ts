@@ -13,6 +13,7 @@ import {
   buildRfeForecastResult,
   hasReliedCriteria,
   mockRfeForecast,
+  toRfeCriterion,
   tryParseRfeForecast,
   type RfeChallenge,
   type RfeCriterion,
@@ -79,12 +80,7 @@ export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {
       const req: RfeRequest = {
         petitioner,
         classification: r.case.classification,
-        criteria: criteria.value.map((c) => ({
-          name: c.name,
-          status: c.status,
-          evidence: c.evidence,
-          rationale: c.rationale,
-        })),
+        criteria: criteria.value.map(toRfeCriterion),
         rfeText: "", // forecast is pre-RFE — the prompt never reads it
       };
       if (!hasReliedCriteria(req)) return noReliedToForecast();

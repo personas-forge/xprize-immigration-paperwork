@@ -14,7 +14,7 @@ import {
   type VaultDocLike,
 } from "@/features/drafting";
 import { ExhibitIndex } from "@/features/drafting/components/ExhibitIndex";
-import { isRelied, MIN_RFE } from "@/features/rfe";
+import { isRelied, MIN_RFE, toRfeCriterion } from "@/features/rfe";
 import { costOf } from "@/lib/tokens/registry";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 
@@ -90,12 +90,7 @@ export function RfeStudio({
           {
             petitioner: petitioner || "the beneficiary",
             classification,
-            criteria: criteria.map((c) => ({
-              name: c.name,
-              status: c.status,
-              evidence: c.evidence,
-              rationale: c.rationale,
-            })),
+            criteria: criteria.map(toRfeCriterion),
           },
           documents,
         ),
@@ -145,12 +140,7 @@ export function RfeStudio({
           rfeText,
           petitioner,
           classification,
-          criteria: criteria.map((c) => ({
-            name: c.name,
-            status: c.status,
-            evidence: c.evidence,
-            rationale: c.rationale,
-          })),
+          criteria: criteria.map(toRfeCriterion),
         }),
       });
       if (res.status === 402) {

@@ -12,7 +12,10 @@ import {
   attachExhibits,
   auditCitations,
   buildExhibitIndex,
+  critiquesByHeading,
   mergeRegeneratedSection,
+  numericVersion,
+  scoreTone,
   undraftedSupportedCriteria,
   type DraftSection,
   type SectionCritique,
@@ -20,6 +23,7 @@ import {
 } from "@/features/drafting";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 import {
+  copyButtonLabel,
   copyDraftToClipboard,
   draftClipboardText,
   retrySaveDraft,
@@ -207,7 +211,7 @@ export function DraftStudio({
       setResolvedCaseId(data.caseId ?? caseId);
       // A fresh draft is persisted server-side with a version; reflect it (and
       // clear any stale "Saved ✓" from a prior draft). null version → unsaved.
-      const v = typeof data.version === "number" ? data.version : null;
+      const v = numericVersion(data.version);
       setVersion(v);
       setEditSaveState(v !== null ? "saved" : "idle");
       setStatus("done");
@@ -255,7 +259,7 @@ export function DraftStudio({
       // saved a NEW version (v1 even when no draft was stored yet) — surface it
       // so the pill isn't a stale "Saved ✓" from before the regenerate and the
       // un-stored-draft case no longer silently stays version=null (#4/#5).
-      const v = typeof data.version === "number" ? data.version : null;
+      const v = numericVersion(data.version);
       setVersion(v);
       setEditSaveState(v !== null ? "saved" : "idle");
     } catch {
@@ -290,9 +294,7 @@ export function DraftStudio({
         setCritiqueStatus("error");
         return;
       }
-      const map: Record<string, SectionCritique> = {};
-      for (const c of data.critiques) map[c.heading] = c;
-      setCritiques(map);
+      setCritiques(critiquesByHeading(data.critiques));
       setCritiqueScore(data.overallScore);
       setCritiqueStatus("idle");
     } catch {
@@ -502,7 +504,7 @@ export function DraftStudio({
                 the save-failed alert) — the product's core deliverable. */}
             <div className="flex flex-wrap items-center gap-2.5">
               <Button type="button" variant="secondary" size="sm" onClick={copyDraft}>
-                {copyState === "copied" ? "Copied ✓" : copyState === "failed" ? "Copy failed — retry" : "Copy letter"}
+                {copyButtonLabel(copyState, { idle: "Copy letter", failed: "Copy failed — retry" })}
               </Button>
               <Button type="button" variant="ghost" size="sm" onClick={downloadDraft}>
                 Download .txt
@@ -710,13 +712,6 @@ export function DraftStudio({
       </CardBody>
     </Card>
   );
-}
-
-/** Map a 0-100 section/draft score to a badge tone. */
-function scoreTone(score: number): "success" | "warning" | "danger" {
-  if (score >= WEAK_SECTION_SCORE) return "success";
-  if (score >= 60) return "warning";
-  return "danger";
 }
 
 /**
