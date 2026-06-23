@@ -292,6 +292,24 @@ export function buildRfePrompt(req: RfeRequest): string {
 }
 
 /**
+ * The grounding text the live adjudication gate scores the response against — the
+ * full case record the response may legitimately argue from: the scored criteria,
+ * the beneficiary, the RFE notice, AND the as-filed petition prose. The filed
+ * petition was previously OMITTED (Tiger #9), so a response that legitimately
+ * tracked/quoted the as-filed letter (which the prompt explicitly invites — it is
+ * in the model's context) could be false-flagged as fabricated. We ground against
+ * the FULL filed sections (the real record), not the prompt-trimmed view: a fact
+ * that is in the filed petition is grounded whether or not the trim surfaced it.
+ */
+export function rfeGroundingText(req: RfeRequest): string {
+  const criteria = req.criteria
+    .map((c) => `${c.name} ${c.evidence} ${c.rationale}`)
+    .join(" ");
+  const filed = req.filedPetition?.map((s) => ` ${s.heading} ${s.body}`).join("") ?? "";
+  return `${criteria} ${req.petitioner} ${req.rfeText}${filed}`;
+}
+
+/**
  * Strict parse: return the model's response ONLY when it produced usable JSON,
  * else `null`. Lets the route distinguish a real model response from a silent
  * fallback, so it can reclaim the token and label the result "mock" rather than

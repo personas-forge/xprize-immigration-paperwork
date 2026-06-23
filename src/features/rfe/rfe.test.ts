@@ -14,6 +14,7 @@ import {
   mockRfeForecast,
   parseRfeRequest,
   parseRfeResponse,
+  rfeGroundingText,
   rfeHasExhibits,
   trimFiledSection,
   tryParseRfeResponse,
@@ -263,6 +264,24 @@ test("trimFiledSection: keeps the RFE-challenged passage even when it sits late 
   assert.ok(trimmed.includes("Broad Institute"), "retains the independent-adoption fact");
   assert.ok(trimmed.includes("GATK"), "retains the specific integration the RFE asked about");
   assert.ok(trimmed.startsWith("This section establishes"), "keeps the opening sentence as context");
+});
+
+test("rfeGroundingText: grounds adjudication in criteria + RFE notice + the as-filed prose (#9)", () => {
+  const base = rfeGroundingText(valid);
+  assert.ok(base.includes(valid.petitioner), "includes the beneficiary");
+  assert.ok(base.includes("Best-paper award"), "includes criterion evidence");
+  assert.ok(/judging criterion/i.test(base), "includes the RFE notice");
+  assert.ok(!/NeurIPS reviewer/i.test(base), "no filed petition attached → its prose is absent");
+
+  // With the as-filed petition attached, its prose enters the grounding text, so a
+  // response that legitimately quotes the filed letter is not flagged as fabricated.
+  const withFiled = attachFiledPetition(valid, [
+    { heading: "Judging", body: "As established, the beneficiary served as a NeurIPS reviewer." },
+  ]);
+  assert.ok(
+    /served as a NeurIPS reviewer/i.test(rfeGroundingText(withFiled)),
+    "as-filed petition prose is now in the grounding text (#9 fix)",
+  );
 });
 
 test("mockRfe: cites attached exhibits in the addressable sections", () => {

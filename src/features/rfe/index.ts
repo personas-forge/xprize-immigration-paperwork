@@ -13,6 +13,7 @@ export {
   mockRfeForecast,
   parseRfeRequest,
   parseRfeResponse,
+  rfeGroundingText,
   rfeHasExhibits,
   toRfeCriterion,
   tryParseRfeResponse,

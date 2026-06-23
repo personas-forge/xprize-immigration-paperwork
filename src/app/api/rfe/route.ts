@@ -6,6 +6,7 @@ import {
   buildRfeResult,
   mockRfe,
   parseRfeRequest,
+  rfeGroundingText,
   tryParseRfeResponse,
   type RfeRequest,
   type RfeResponse,
@@ -103,14 +104,12 @@ export function POST(request: Request): Promise<NextResponse> {
     // Live adjudication PARITY with /api/draft (moonshot #1): an RFE response is
     // equally signable, attorney-of-record work product, so it gets the same
     // runtime fabricated-specifics / leaked-case-law / wrong-classification scan.
-    // The grounding text includes the RFE notice itself so specifics the response
-    // legitimately quotes from the RFE aren't flagged as fabricated.
+    // The grounding text includes the RFE notice AND the as-filed petition prose
+    // (rfeGroundingText) so specifics the response legitimately quotes from either
+    // aren't flagged as fabricated (Tiger #9).
     adjudicate: (response, input, source, body) => {
       const outputText = response.sections.map((s) => `${s.heading} ${s.body}`).join("\n");
-      const inputText =
-        input.req.criteria
-          .map((c) => `${c.name} ${c.evidence} ${c.rationale}`)
-          .join(" ") + ` ${input.req.petitioner} ${input.req.rfeText}`;
+      const inputText = rfeGroundingText(input.req);
       return runAdjudication({
         operation: "rfe",
         classification: input.req.classification,
