@@ -167,7 +167,6 @@ test("addCaseDocument emits EvidenceUploaded from the stored doc", async () => {
       at: FIXED,
       caseId: "case-5",
       documentId: "doc-9",
-      name: "passport.pdf",
       criterion: "Awards",
       exhibit: "Exhibit 3",
       source: "mock",

@@ -40,7 +40,6 @@ export interface EvidenceUploaded {
   at: string;
   caseId: string;
   documentId: string;
-  name: string;
   criterion: string;
   exhibit: string;
   source: string;

@@ -116,7 +116,6 @@ export function withEvents(
               at: now(),
               caseId: input.caseId,
               documentId: doc.id,
-              name: doc.name,
               criterion: doc.criterion,
               exhibit: doc.exhibit,
               source: doc.source,
