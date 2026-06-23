@@ -15,7 +15,7 @@ import { runAdjudication } from "@/lib/llm/adjudication-gates";
 import { petitions } from "@/lib/data/adapters/petition";
 import { evidence } from "@/lib/data/adapters/evidence";
 import { type CaseAccess } from "@/lib/data/adapters/access";
-import { resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
+import { parseCaseId, resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
 import { toErrorResponse } from "@/lib/data/adapters/http";
 
 // RFE (Request for Evidence) response drafting endpoint (migrated to the shared
@@ -53,10 +53,7 @@ export function POST(request: Request): Promise<NextResponse> {
     unauthenticatedError: "Sign in to draft an RFE response.",
     parse: async ({ body, resolveUser }) => {
       const record = (body ?? {}) as Record<string, unknown>;
-      const caseId =
-        typeof record.caseId === "string" && record.caseId.trim() !== ""
-          ? record.caseId.trim()
-          : null;
+      const caseId = parseCaseId(record);
 
       // DB path: resolve the case fail-closed (owner or configured attorney) and
       // load its criteria through the adapter gate, BEFORE any charge.

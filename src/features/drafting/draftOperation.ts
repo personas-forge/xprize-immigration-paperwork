@@ -43,7 +43,7 @@ import {
 import { petitions } from "@/lib/data/adapters/petition";
 import { evidence } from "@/lib/data/adapters/evidence";
 import { type CaseAccess } from "@/lib/data/adapters/access";
-import { resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
+import { parseCaseId, resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
 import { runAdjudication } from "@/lib/llm/adjudication-gates";
 import { toErrorResponse } from "@/lib/data/adapters/http";
 import { type AiOperationSpec } from "@/lib/ai/operation";
@@ -98,10 +98,7 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
   parse: async ({ body, resolveUser }) => {
     const record = (body ?? {}) as Record<string, unknown>;
     const focus = parseFocus(record.focus);
-    const caseId =
-      typeof record.caseId === "string" && record.caseId.trim() !== ""
-        ? record.caseId.trim()
-        : null;
+    const caseId = parseCaseId(record);
     // The client's current sections (regenerate path) — sanitized with the same
     // toSection validator the save route uses. Used only to pick the merge base
     // in persist; null when absent so legacy clients keep the stored-draft merge.

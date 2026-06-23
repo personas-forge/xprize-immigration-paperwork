@@ -8,6 +8,16 @@ import { toErrorResponse } from "./http";
  *  email. Structural so callers needn't import AppUser. */
 type ParseUser = { id: string; email?: string | null };
 
+/** Extract a non-empty, trimmed caseId from a parsed request body, else null —
+ *  the idiom every AI spec's parse opens with. (The categorize route previously
+ *  skipped the trim, so a whitespace-padded id reached the data layer
+ *  un-normalized; this folds it onto the same rule.) */
+export function parseCaseId(record: Record<string, unknown>): string | null {
+  return typeof record.caseId === "string" && record.caseId.trim() !== ""
+    ? record.caseId.trim()
+    : null;
+}
+
 /**
  * The owner/attorney case-resolve preamble every AI spec runs at the top of its
  * `parse` stage, BEFORE any charge: authenticate → build the access context →

@@ -26,7 +26,7 @@ import {
   type SectionCritique,
 } from "./index";
 import { str, MAX_PETITIONER } from "./criteria-text";
-import { resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
+import { parseCaseId, resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
 import { type AiOperationSpec } from "@/lib/ai/operation";
 
 const MAX_SECTIONS = 24;
@@ -65,10 +65,7 @@ export const critiqueSpec: AiOperationSpec<CritiqueInput, SectionCritique[]> = {
         ),
       };
     }
-    const caseId =
-      typeof record.caseId === "string" && record.caseId.trim() !== ""
-        ? record.caseId.trim()
-        : null;
+    const caseId = parseCaseId(record);
     const petitioner = str(record.petitioner, MAX_PETITIONER) || "the beneficiary";
     let classification = str(record.classification, 40) || "O-1A";
 
