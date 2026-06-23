@@ -15,14 +15,11 @@ import {
   callGemini,
   runClaudeCli,
   selectEngine,
-  type GenerateOptions,
   type Llm,
 } from "@/lib/llm/engines";
 
-export type { GenerateOptions, Llm };
-
-export function getLlm(opts: { requiresImages?: boolean } = {}): Llm | null {
-  const engine = selectEngine(opts);
+export function getLlm(): Llm | null {
+  const engine = selectEngine();
   if (engine === "gemini") {
     return {
       name: "gemini",

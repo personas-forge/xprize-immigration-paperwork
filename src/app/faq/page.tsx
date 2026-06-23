@@ -123,13 +123,13 @@ export default function FaqPage() {
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/#start"
-              className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+              className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background hover:bg-foreground-soft focus-ring"
             >
               Take the qualification
             </Link>
             <Link
               href="/billing"
-              className="rounded-control border border-border-strong px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-foreground hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+              className="rounded-control border border-border-strong px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-foreground hover:border-foreground focus-ring"
             >
               See the fees
             </Link>

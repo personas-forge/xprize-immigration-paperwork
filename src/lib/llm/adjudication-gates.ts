@@ -23,7 +23,7 @@
  * reuses exactly what ships.
  */
 
-import { DISCLAIMER } from "@/features/guidance/guidance";
+import { DISCLAIMER } from "@/lib/result";
 import { criteriaNames } from "@/features/qualification/packs";
 
 // — Verdict shapes ────────────────────────────────────────────────────────────

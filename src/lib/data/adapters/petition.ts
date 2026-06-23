@@ -21,14 +21,15 @@ import type {
   StoredCase,
   StoredCriterion,
   StoredDraft,
-  StoredRfe,
 } from "@/lib/data/petitions";
 import {
   type CaseAccess,
   type CaseGateDeps,
+  makeCached,
   resolveCase,
+  storeConfigured,
 } from "./access";
-import { type AdapterResult, err, ok } from "./result";
+import { type AdapterResult, err, ok, wrapStore } from "./result";
 
 /** Everything the adapter calls, injected so the unit suite can supply fakes. */
 export interface PetitionDeps extends CaseGateDeps {
@@ -58,18 +59,11 @@ export interface PetitionDeps extends CaseGateDeps {
     sections: readonly DraftSectionRow[],
     source: string,
   ): Promise<number | null>;
-  getLatestRfeResponse(caseId: string): Promise<StoredRfe | null>;
 }
 
-let cached: PetitionDeps | null = null;
-
-async function defaultDeps(): Promise<PetitionDeps> {
-  if (cached) return cached;
-  const [data, store] = await Promise.all([
-    import("@/lib/data/petitions"),
-    import("@/lib/db/store"),
-  ]);
-  cached = {
+const defaultDeps = makeCached<PetitionDeps>(async () => {
+  const data = await import("@/lib/data/petitions");
+  return {
     getCaseForUser: data.getCaseForUser,
     getCaseAnyOwner: data.getCaseAnyOwner,
     getCasesForUser: data.getCasesForUser,
@@ -79,13 +73,11 @@ async function defaultDeps(): Promise<PetitionDeps> {
     saveDraft: data.saveDraft,
     getLatestDraft: data.getLatestDraft,
     saveRfeResponse: data.saveRfeResponse,
-    getLatestRfeResponse: data.getLatestRfeResponse,
     isConfiguredAttorney,
     isConfiguredOps,
-    storeConfigured: async () => (await store.getStore()) !== null,
+    storeConfigured,
   };
-  return cached;
-}
+});
 
 export class PetitionAdapter {
   constructor(private readonly injected?: PetitionDeps) {}
@@ -103,6 +95,17 @@ export class PetitionAdapter {
   }
 
   /**
+   * Owner-only check: is `userId` the OWNER of `caseId`? Resolves with
+   * `email: null` so the configured-attorney cross-tenant fallback never fires —
+   * the single home for the `email: null ⇒ owner-only` trick the review actions
+   * and case-detail page used to each re-express inline. Fail-closed: any non-ok
+   * resolve (forbidden / not_found / unconfigured / store_error) ⇒ not owner.
+   */
+  async isCaseOwner(userId: string, caseId: string): Promise<boolean> {
+    return (await this.resolveCase({ userId, email: null }, caseId)).ok;
+  }
+
+  /**
    * Every case the caller OWNS, newest first. Owner-scoped list analogue of
    * `getCaseForUser` — fail-closed when there's no user id. A no-store build
    * degrades to an empty list (ok([])), matching the single-case read.
@@ -111,12 +114,9 @@ export class PetitionAdapter {
     access: CaseAccess,
   ): Promise<AdapterResult<readonly StoredCase[]>> {
     if (!access.userId) return err("forbidden");
+    const userId = access.userId;
     const deps = await this.deps();
-    try {
-      return ok(await deps.getCasesForUser(access.userId));
-    } catch (cause) {
-      return err("store_error", cause);
-    }
+    return wrapStore(() => deps.getCasesForUser(userId));
   }
 
   /**
@@ -133,11 +133,7 @@ export class PetitionAdapter {
     const allowed =
       deps.isConfiguredAttorney(access.email) || deps.isConfiguredOps(access.email);
     if (!allowed) return err("forbidden");
-    try {
-      return ok(await deps.getCasesInReview());
-    } catch (cause) {
-      return err("store_error", cause);
-    }
+    return wrapStore(() => deps.getCasesInReview());
   }
 
   /** Persist a qualification as a new owned case + criteria. */
@@ -181,11 +177,7 @@ export class PetitionAdapter {
     const gate = await this.resolveCase(access, caseId);
     if (!gate.ok) return gate;
     const deps = await this.deps();
-    try {
-      return ok(await deps.getCriteriaForCase(caseId));
-    } catch (cause) {
-      return err("store_error", cause);
-    }
+    return wrapStore(() => deps.getCriteriaForCase(caseId));
   }
 
   /** Persist a petition draft as a new version. Gated. Returns the version. */
@@ -214,11 +206,7 @@ export class PetitionAdapter {
     const gate = await this.resolveCase(access, caseId);
     if (!gate.ok) return gate;
     const deps = await this.deps();
-    try {
-      return ok(await deps.getLatestDraft(caseId));
-    } catch (cause) {
-      return err("store_error", cause);
-    }
+    return wrapStore(() => deps.getLatestDraft(caseId));
   }
 
   /** Persist an RFE response as a new version. Gated. Returns the version. */
@@ -245,20 +233,6 @@ export class PetitionAdapter {
     }
   }
 
-  /** The latest RFE response (`null` = none yet — still a success). Gated. */
-  async getLatestRfeResponse(
-    access: CaseAccess,
-    caseId: string,
-  ): Promise<AdapterResult<StoredRfe | null>> {
-    const gate = await this.resolveCase(access, caseId);
-    if (!gate.ok) return gate;
-    const deps = await this.deps();
-    try {
-      return ok(await deps.getLatestRfeResponse(caseId));
-    } catch (cause) {
-      return err("store_error", cause);
-    }
-  }
 }
 
 /** Shared singleton for route/action callers that don't inject deps. */

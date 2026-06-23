@@ -30,7 +30,6 @@ export const dynamic = "force-dynamic";
 
 const STATUS_TONE: Record<ValidationStatus, BadgeTone> = {
   verified: "success",
-  provisional: "warning",
   "needs-review": "warning",
 };
 
@@ -39,11 +38,6 @@ const SOURCE_KIND_LABEL: Record<SourceRef["kind"], string> = {
   "agency-guidance": "Agency guidance",
   "court-order": "Court order",
   secondary: "Secondary",
-};
-
-const COMPLIANCE_TITLE: Record<string, string> = {
-  "us-federal-practice": "Federal practice of immigration law",
-  "us-arizona-abs": "Law-firm structure (Arizona ABS)",
 };
 
 export default function ValidationPage() {
@@ -109,7 +103,7 @@ export default function ValidationPage() {
             {Object.keys(COMPLIANCE_VALIDATIONS).map((key) => (
               <ValidationCard
                 key={key}
-                title={COMPLIANCE_TITLE[key] ?? key}
+                title={COMPLIANCE_VALIDATIONS[key].title ?? key}
                 record={COMPLIANCE_VALIDATIONS[key]}
                 now={now}
               />
@@ -279,7 +273,7 @@ function ValidationCard({
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ink-link font-sans text-[15.5px] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                  className="ink-link font-sans text-[15.5px] text-foreground-soft focus-ring"
                 >
                   {s.title}
                 </a>
@@ -314,7 +308,7 @@ function Legend() {
         Status
       </span>
       <LegendItem tone="success" label="verified — matches primary sources" />
-      <LegendItem tone="warning" label="provisional / needs-review" />
+      <LegendItem tone="warning" label="needs-review" />
       <LegendItem tone="success" label="counsel signed — cleared to file" />
       <LegendItem tone="neutral" label="counsel pending" />
     </div>

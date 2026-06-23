@@ -33,6 +33,14 @@ const SECTIONS = [
   { id: "depart", n: "05", label: "Begin" },
 ] as const;
 
+// The Pro bundle's price/tokens for the cost-comparison caption — derived from
+// the BUNDLES catalog (same source the pricing cards render) so the headline
+// comparison can't quote a stale price the grid has moved past.
+const PRO_BUNDLE = BUNDLES.find((b) => b.key === "pro");
+const PRO_PRICE_CAPTION = PRO_BUNDLE
+  ? `${bundlePriceLabel(PRO_BUNDLE)} for ${PRO_BUNDLE.tokens.toLocaleString("en-US")} tokens`
+  : "$48 for 8,000 tokens";
+
 export function PassportLanding() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { active, index } = useActiveSection(
@@ -264,13 +272,13 @@ function Arrival() {
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 href="/qualify"
-                className="inline-flex items-center gap-2 rounded-control bg-foreground px-7 py-4 font-mono text-[14px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="inline-flex items-center gap-2 rounded-control bg-foreground px-7 py-4 font-mono text-[14px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-ring"
               >
                 Take the free qualification <span aria-hidden>→</span>
               </Link>
               <Link
                 href="/dashboard"
-                className="rounded-control border border-border-strong px-7 py-4 font-mono text-[14px] uppercase tracking-document text-foreground transition-colors hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="rounded-control border border-border-strong px-7 py-4 font-mono text-[14px] uppercase tracking-document text-foreground transition-colors hover:border-foreground focus-ring"
               >
                 See the case file
               </Link>
@@ -452,7 +460,7 @@ function Evidence() {
         <Reveal delay={0.06}>
           <Panel
             title="A firm's fee, vs a Pro bundle"
-            caption={`${FIRM_FEE.range} ${FIRM_FEE.verb} · vs $48 for 8,000 tokens`}
+            caption={`${FIRM_FEE.range} ${FIRM_FEE.verb} · vs ${PRO_PRICE_CAPTION}`}
           >
             <CostCompareBars height={200} />
           </Panel>
@@ -521,7 +529,7 @@ function Allowance() {
               price={bundlePriceLabel(b)}
               tokens={b.tokens}
               discount={b.discountLabel}
-              highlight={b.key === "pro"}
+              highlight={b.featured ?? false}
             />
           </Reveal>
         ))}
@@ -531,7 +539,7 @@ function Allowance() {
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <Link
             href="/billing"
-            className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-ring"
           >
             See the token ledger →
           </Link>
@@ -625,13 +633,13 @@ function Depart() {
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/qualify"
-              className="rounded-control bg-seal px-8 py-4 font-mono text-[14px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+              className="rounded-control bg-seal px-8 py-4 font-mono text-[14px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[2px] focus-ring"
             >
               Begin qualification
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-control border border-border-strong px-8 py-4 font-mono text-[14px] uppercase tracking-document text-foreground transition-colors hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+              className="rounded-control border border-border-strong px-8 py-4 font-mono text-[14px] uppercase tracking-document text-foreground transition-colors hover:border-foreground focus-ring"
             >
               See the case file
             </Link>

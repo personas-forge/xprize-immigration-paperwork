@@ -28,6 +28,7 @@ import {
   buildDraftResult,
   buildSectionPrompt,
   buildSectionResult,
+  mergeRegeneratedSection,
   mockDraft,
   mockSection,
   parseDraftRequest,
@@ -42,6 +43,7 @@ import {
 import { petitions } from "@/lib/data/adapters/petition";
 import { evidence } from "@/lib/data/adapters/evidence";
 import { type CaseAccess } from "@/lib/data/adapters/access";
+import { parseCaseId, resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
 import { runAdjudication } from "@/lib/llm/adjudication-gates";
 import { toErrorResponse } from "@/lib/data/adapters/http";
 import { type AiOperationSpec } from "@/lib/ai/operation";
@@ -84,27 +86,6 @@ export function pickMergeBase(
   return clientSections.map((s) => ({ heading: s.heading, body: s.body }));
 }
 
-/** Replace the focused section's body in `base`, preserving every other section.
- *  Replaces ONLY THE FIRST heading match — section headings are free-form
- *  user/model text and can collide (two "Critical role" entries, or a model that
- *  emits "Introduction" twice). Matching every occurrence would overwrite a
- *  distinct argument section with an unrelated body, silently corrupting a paid
- *  draft the attorney may file. */
-export function mergeRegeneratedSection(
-  base: readonly DraftSection[],
-  focus: string,
-  body: string,
-): DraftSection[] {
-  let replaced = false;
-  return base.map((s) => {
-    if (!replaced && s.heading === focus) {
-      replaced = true;
-      return { heading: focus, body };
-    }
-    return s;
-  });
-}
-
 export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
   // Full letter bills "draft" (xl); a single-section regenerate bills the
   // cheaper "draft_section" (heavy).
@@ -117,10 +98,7 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
   parse: async ({ body, resolveUser }) => {
     const record = (body ?? {}) as Record<string, unknown>;
     const focus = parseFocus(record.focus);
-    const caseId =
-      typeof record.caseId === "string" && record.caseId.trim() !== ""
-        ? record.caseId.trim()
-        : null;
+    const caseId = parseCaseId(record);
     // The client's current sections (regenerate path) — sanitized with the same
     // toSection validator the save route uses. Used only to pick the merge base
     // in persist; null when absent so legacy clients keep the stored-draft merge.
@@ -133,35 +111,17 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
     // access never degrades to the inline payload) and load its criteria, all
     // before any charge.
     if (caseId) {
-      const user = await resolveUser();
-      if (!user) {
-        return {
-          ok: false,
-          response: NextResponse.json(
-            { error: "Sign in to draft from a saved case." },
-            { status: 401 },
-          ),
-        };
-      }
-      const access: CaseAccess = { userId: user.id, email: null };
-      const gate = await petitions.resolveCase(access, caseId);
-      if (!gate.ok) {
-        if (gate.error.kind === "forbidden" || gate.error.kind === "not_found") {
-          return {
-            ok: false,
-            response: NextResponse.json(
-              { error: "You don't have access to this case." },
-              { status: 403 },
-            ),
-          };
-        }
-        return { ok: false, response: toErrorResponse(gate.error) };
-      }
+      const r = await resolveCaseForParse(resolveUser, caseId, {
+        unauthenticatedError: "Sign in to draft from a saved case.",
+        ownerOnly: true,
+      });
+      if (!r.ok) return r;
+      const { access } = r;
       const criteria = await petitions.getCriteria(access, caseId);
       if (!criteria.ok) return { ok: false, response: toErrorResponse(criteria.error) };
       const parsed = parseDraftRequest({
-        petitioner: gate.value.petitioner,
-        classification: gate.value.classification,
+        petitioner: r.case.petitioner,
+        classification: r.case.classification,
         criteria: criteria.value,
       });
       if (!parsed.ok) {

@@ -26,6 +26,7 @@ if (typeof window !== "undefined") {
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firestore/admin";
 import { COLLECTION_PREFIX } from "./config";
+import { formatExhibit } from "@/lib/exhibits";
 import type {
   AddDocumentInput,
   AddReviewEventInput,
@@ -43,6 +44,30 @@ import type {
 } from "./store";
 
 const col = (entity: string) => `${COLLECTION_PREFIX}_${entity}`;
+
+/** The append-only consent row body — ONE shape written by both the onboarding
+ *  upsert (inside its transaction) and the standalone recordConsent, so a schema
+ *  change to the consent record can't leave the two paths writing different rows. */
+function consentRow(input: {
+  userId: string;
+  consentVersion: string;
+  terms: boolean;
+  privacy: boolean;
+  marketing: boolean;
+  ip: string | null | undefined;
+  userAgent: string | null | undefined;
+}) {
+  return {
+    user_id: input.userId,
+    consent_version: input.consentVersion,
+    terms_accepted: input.terms,
+    privacy_accepted: input.privacy,
+    marketing_opt_in: input.marketing,
+    ip: input.ip,
+    user_agent: input.userAgent,
+    created_at: FieldValue.serverTimestamp(),
+  };
+}
 
 function tsToIso(v: unknown): string | null {
   return v instanceof Timestamp ? v.toDate().toISOString() : null;
@@ -66,6 +91,19 @@ interface CaseDoc {
   receipt_number?: string | null;
   created_at?: unknown;
   updated_at?: unknown;
+}
+
+/** Project a raw token_ledger doc into a LedgerEntry — shared by getLedgerForUser
+ *  (the billing read-out) and exportUserData (GDPR), so the two can't report a
+ *  different ledger shape for the same rows. */
+function toLedgerEntry(v: Record<string, unknown>) {
+  return {
+    delta: Number(v.delta ?? 0),
+    reason: String(v.reason ?? ""),
+    operation: v.operation == null ? null : String(v.operation),
+    balanceAfter: Number(v.balance_after ?? 0),
+    createdAt: tsToIso(v.created_at),
+  };
 }
 
 function toStoredCase(id: string, d: CaseDoc): StoredCase {
@@ -145,16 +183,7 @@ export const firestoreStore: Store = {
         { merge: true },
       );
       // consents are append-only → auto-id doc.
-      t.set(fs.collection(col("consents")).doc(), {
-        user_id: input.userId,
-        consent_version: input.consentVersion,
-        terms_accepted: input.terms,
-        privacy_accepted: input.privacy,
-        marketing_opt_in: input.marketing,
-        ip: input.ip,
-        user_agent: input.userAgent,
-        created_at: FieldValue.serverTimestamp(),
-      });
+      t.set(fs.collection(col("consents")).doc(), consentRow(input));
     });
   },
 
@@ -210,18 +239,9 @@ export const firestoreStore: Store = {
   },
 
   async recordConsent(input) {
-    // Append-only auto-id doc — same shape as upsertProfileWithConsent's consent
-    // write, but WITHOUT the profile mutation.
-    await adminDb().collection(col("consents")).doc().set({
-      user_id: input.userId,
-      consent_version: input.consentVersion,
-      terms_accepted: input.terms,
-      privacy_accepted: input.privacy,
-      marketing_opt_in: input.marketing,
-      ip: input.ip,
-      user_agent: input.userAgent,
-      created_at: FieldValue.serverTimestamp(),
-    });
+    // Append-only auto-id doc — the same consentRow shape as the onboarding
+    // upsert, but WITHOUT the profile mutation.
+    await adminDb().collection(col("consents")).doc().set(consentRow(input));
   },
 
   async getBalance(userId) {
@@ -245,13 +265,7 @@ export const firestoreStore: Store = {
       .map((d) => d.data())
       .sort((a, b) => ms(b.created_at) - ms(a.created_at))
       .slice(0, Math.max(0, Math.floor(limit)))
-      .map((v) => ({
-        delta: Number(v.delta ?? 0),
-        reason: String(v.reason ?? ""),
-        operation: v.operation == null ? null : String(v.operation),
-        balanceAfter: Number(v.balance_after ?? 0),
-        createdAt: tsToIso(v.created_at),
-      }));
+      .map(toLedgerEntry);
   },
 
   async charge(userId, cost, operation, ref) {
@@ -437,18 +451,6 @@ export const firestoreStore: Store = {
       }));
   },
 
-  async setCaseStatus(caseId, status, receiptNumber): Promise<void> {
-    const update: Record<string, unknown> = {
-      status,
-      updated_at: FieldValue.serverTimestamp(),
-    };
-    if (receiptNumber !== undefined) update.receipt_number = receiptNumber;
-    await adminDb()
-      .collection(col("cases"))
-      .doc(caseId)
-      .set(update, { merge: true });
-  },
-
   async transitionCase(input): Promise<boolean> {
     const fs = adminDb();
     const caseRef = fs.collection(col("cases")).doc(input.caseId);
@@ -620,7 +622,7 @@ export const firestoreStore: Store = {
     return fs.runTransaction(async (t) => {
       const caseSnap = await t.get(caseRef);
       const ord = (caseSnap.exists ? Number(caseSnap.get("doc_ord") ?? 0) : 0) + 1;
-      const exhibit = `Ex. ${ord}`;
+      const exhibit = formatExhibit(ord);
       const status = input.status ?? "Received";
       const facts = [...input.facts].map((f) => String(f));
       t.set(docRef, {
@@ -749,13 +751,7 @@ export const firestoreStore: Store = {
     const tokenLedger = lSnap.docs
       .map((d) => d.data())
       .sort((a, b) => tsMs(b.created_at) - tsMs(a.created_at))
-      .map((v) => ({
-        delta: Number(v.delta ?? 0),
-        reason: String(v.reason ?? ""),
-        operation: v.operation == null ? null : String(v.operation),
-        balanceAfter: Number(v.balance_after ?? 0),
-        createdAt: tsToIso(v.created_at),
-      }));
+      .map(toLedgerEntry);
 
     const casesSnap = await fs.collection(col("cases")).where("user_id", "==", userId).get();
     const cases = await Promise.all(

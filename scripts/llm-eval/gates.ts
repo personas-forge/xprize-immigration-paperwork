@@ -37,6 +37,17 @@ function r(id: string, verdict: Verdict, detail = ""): GateResult {
   return { id, verdict, detail };
 }
 
+/** Crude grounding overlap: the fraction of `text`'s tokens that also appear in
+ *  `sourceTokens`, or `null` when `text` has no tokens (caller skips it). ONE
+ *  definition so the qualify-evidence and evidence-facts grounding checks can't
+ *  drift on the tokenize + empty-token semantics (the thresholds differ and stay
+ *  at the call sites). Reuses the single-sourced `tokens` scanner. */
+function groundingOverlap(text: string, sourceTokens: Set<string>): number | null {
+  const t = [...tokens(text)];
+  if (t.length === 0) return null;
+  return t.filter((tok) => sourceTokens.has(tok)).length / t.length;
+}
+
 // — universal gates (every site) ──────────────────────────────────────────────
 
 function universal(ctx: GateContext): GateResult[] {
@@ -166,11 +177,10 @@ function qualifyGates(ctx: GateContext): GateResult[] {
   const weak: string[] = [];
   for (const c of criteria) {
     if (c.status !== "Met" && c.status !== "Strong") continue;
-    const ev = String(c.evidence ?? "");
-    const et = [...tokens(ev)];
-    if (et.length === 0) continue;
-    const overlap = et.filter((t) => profTok.has(t)).length / et.length;
-    if (overlap < 0.34) weak.push(`${c.name} (${Math.round(overlap * 100)}% in profile)`);
+    const overlap = groundingOverlap(String(c.evidence ?? ""), profTok);
+    if (overlap !== null && overlap < 0.34) {
+      weak.push(`${c.name} (${Math.round(overlap * 100)}% in profile)`);
+    }
   }
   out.push(
     weak.length === 0
@@ -320,9 +330,8 @@ function evidenceGates(ctx: GateContext): GateResult[] {
   const content = String((ctx.scenario.input as Record<string, unknown>).content ?? "");
   const cTok = tokens(content);
   const ungrounded = facts.filter((f) => {
-    const ft = [...tokens(f)];
-    if (!ft.length) return false;
-    return ft.filter((t) => cTok.has(t)).length / ft.length < 0.5;
+    const overlap = groundingOverlap(f, cTok);
+    return overlap !== null && overlap < 0.5;
   });
   out.push(
     ungrounded.length === 0

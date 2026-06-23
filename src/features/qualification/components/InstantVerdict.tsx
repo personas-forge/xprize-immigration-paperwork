@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { Seal, Guilloche } from "@/components/brand";
@@ -10,7 +10,7 @@ import { livePrograms } from "../jurisdictions";
 import { type QualifyResult } from "../qualification";
 import { CriteriaReport } from "./CriteriaReport";
 import { LettersPatentShare } from "./LettersPatentShare";
-import { writeQualifyPrefill } from "../prefill";
+import { SAMPLE_PROFILE, writeQualifyPrefill } from "../prefill";
 
 // — Instant Verdict (moonshot #16) ────────────────────────────────────────────
 // The landing hero IS the product: paste a CV / bio and an engraved "Certificate
@@ -23,10 +23,6 @@ import { writeQualifyPrefill } from "../prefill";
 
 const PROGRAMS = livePrograms();
 
-const SAMPLE =
-  "Senior research engineer. 6 peer-reviewed papers (412 citations), best-paper " +
-  "award at a top ML conference, one granted US patent. Featured in TechCrunch. " +
-  "Founding engineer at a Series B startup; $320K salary plus equity.";
 
 type Status = "idle" | "loading" | "done" | "error";
 
@@ -43,9 +39,6 @@ export function InstantVerdict({
   const [result, setResult] = useState<QualifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const nameId = useId();
-  const classId = useId();
-  const profileId = useId();
   const busy = useRef(false);
 
   async function reveal(e: React.FormEvent) {
@@ -107,20 +100,18 @@ export function InstantVerdict({
               <label className="block">
                 <span className="microprint">Your name (optional)</span>
                 <input
-                  id={nameId}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Dr. Anya Krishnan"
-                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-ring"
                 />
               </label>
               <label className="block">
                 <span className="microprint">Visa type</span>
                 <select
-                  id={classId}
                   value={classification}
                   onChange={(e) => setClassification(e.target.value as Classification)}
-                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-ring"
                 >
                   {PROGRAMS.map((c) => (
                     <option key={c} value={c}>
@@ -136,12 +127,11 @@ export function InstantVerdict({
                 Your background — awards, publications, press, patents, roles, salary
               </span>
               <textarea
-                id={profileId}
                 value={profile}
                 onChange={(e) => setProfile(e.target.value)}
                 rows={6}
                 placeholder="Paste your CV highlights or describe your achievements in plain language…"
-                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
               />
               <div className="mt-1 flex justify-end">
                 <span
@@ -163,8 +153,8 @@ export function InstantVerdict({
               </Button>
               <button
                 type="button"
-                onClick={() => setProfile(SAMPLE)}
-                className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                onClick={() => setProfile(SAMPLE_PROFILE)}
+                className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-ring"
               >
                 Use a sample
               </button>
@@ -276,7 +266,7 @@ function SoftGate({
       <Link
         href="/qualify"
         onClick={onGoDeeper}
-        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px]"
+        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-ring active:translate-y-[1px]"
       >
         Continue ({likelihood}%)
         <span aria-hidden>→</span>

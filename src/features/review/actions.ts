@@ -24,6 +24,7 @@ import { getUser } from "@/lib/auth/session";
 import { isConfiguredAttorney } from "@/lib/auth/roles";
 import { petitions } from "@/lib/data/adapters/petition";
 import { addReviewEvent, transitionCase } from "@/lib/data/reviews";
+import { USCIS_DECISIONS } from "./decisions";
 
 /** Result every review action returns so the form (via useActionState) can show
  *  a visible error instead of silently doing nothing — on a legal filing flow a
@@ -102,12 +103,13 @@ export async function submitForReview(
 ): Promise<ReviewActionState> {
   const user = await getUser();
   if (!user) return fail("Sign in to submit your case.");
-  // Owner-only gate via the PetitionAdapter (ADR-0010). `email` is omitted so the
-  // adapter's single resolveCase resolves owner-only (the configured-attorney
-  // cross-tenant fallback never fires) — preserving the prior owner-only
-  // `getCaseForUser` semantics while the adapter owns null/store-error handling.
-  const gate = await petitions.resolveCase({ userId: user.id, email: null }, caseId);
-  if (!gate.ok) return fail("Only the case owner can submit it for review.");
+  // Owner-only gate via the PetitionAdapter (ADR-0010). `isCaseOwner` resolves
+  // owner-only (the configured-attorney cross-tenant fallback never fires),
+  // preserving the prior owner-only `getCaseForUser` semantics while the adapter
+  // owns null/store-error handling.
+  if (!(await petitions.isCaseOwner(user.id, caseId))) {
+    return fail("Only the case owner can submit it for review.");
+  }
   return applyTransition({
     caseId,
     fromStatuses: ["Intake", "Drafting"],
@@ -133,9 +135,9 @@ export async function addReviewNote(
   if (!user) return fail("Sign in to add a note.");
   const body = formField(formData, "body");
   if (!body) return fail("Enter a note before submitting.");
-  // Owner-or-attorney gate. Owner resolves through the adapter (email omitted ⇒
-  // owner-only, fail-closed). `owned` also drives the author-role attribution.
-  const owned = (await petitions.resolveCase({ userId: user.id, email: null }, caseId)).ok;
+  // Owner-or-attorney gate. Owner resolves through the adapter (owner-only,
+  // fail-closed). `owned` also drives the author-role attribution.
+  const owned = await petitions.isCaseOwner(user.id, caseId);
   if (!owned) {
     if (!isConfiguredAttorney(user.email)) {
       return fail("You don't have access to this case.");
@@ -259,11 +261,12 @@ export async function attorneyRecordDecision(
 ): Promise<ReviewActionState> {
   const user = await requireAttorney();
   if (!user) return fail("Attorney-of-record access is required.");
-  const decision = String(formData.get("decision") ?? "Approved");
-  // Server-side allowlist: the ReviewPanel <select> only offers these three, but
-  // a crafted POST could otherwise write an arbitrary string into the append-only
-  // review log (and only "Approved" is terminal). Reject anything else.
-  if (!["Approved", "RFE issued", "Denied"].includes(decision)) {
+  const decision = formField(formData, "decision") || "Approved";
+  // Server-side allowlist: the ReviewPanel <select> only offers these, but a
+  // crafted POST could otherwise write an arbitrary string into the append-only
+  // review log (and only "Approved" is terminal). Reject anything else. Same
+  // USCIS_DECISIONS source the <select> renders from, so the two can't drift.
+  if (!(USCIS_DECISIONS as readonly string[]).includes(decision)) {
     return fail("Unrecognized decision.");
   }
   // Only a Filed case can receive a decision. "Approved" is terminal; any other

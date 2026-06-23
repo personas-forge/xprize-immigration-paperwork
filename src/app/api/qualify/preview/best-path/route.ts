@@ -6,6 +6,7 @@ import {
   checkRateLimit,
   isRateLimitEnabled,
   rateLimitKey,
+  tooManyRequestsResponse,
 } from "@/lib/tokens/rate-limit";
 import { DISCLAIMER } from "@/lib/result";
 
@@ -27,16 +28,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       rateLimitKey(request, "best_path_preview"),
       PREVIEW_RATE_LIMIT,
     );
-    if (!rl.ok) {
-      return NextResponse.json(
-        {
-          error: "rate_limited",
-          retryAfterSec: rl.retryAfterSec,
-          disclaimer: DISCLAIMER,
-        },
-        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
-      );
-    }
+    if (!rl.ok) return tooManyRequestsResponse(rl, DISCLAIMER);
   }
 
   let body: unknown;

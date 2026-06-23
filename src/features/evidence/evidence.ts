@@ -18,7 +18,7 @@
  * shared `DISCLAIMER`.
  */
 
-import { DISCLAIMER } from "@/features/guidance/guidance";
+import { DISCLAIMER } from "@/lib/result";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
 import { O1A_CRITERIA, criteriaNames, packFor } from "@/features/qualification";
@@ -49,6 +49,10 @@ export const MAX_NAME = 200;
 export const MIN_CONTENT = 20;
 export const MAX_CONTENT = 12000;
 const MAX_FACTS = 6;
+/** Max sibling names listed per bucket in the vault summary (keeps the prompt bounded). */
+const MAX_BUCKET_NAMES = 6;
+/** Max characters per extracted fact (model + mock truncate identically). */
+const MAX_FACT_LEN = 240;
 
 /** Validate and normalize an untrusted request body. */
 export function parseCategorizeRequest(
@@ -95,8 +99,9 @@ export function summarizeVaultBuckets(
   }
   return [...byCriterion.entries()]
     .map(([criterion, names]) => {
-      const shown = names.slice(0, 6).join("; ");
-      const extra = names.length > 6 ? ` (+${names.length - 6} more)` : "";
+      const shown = names.slice(0, MAX_BUCKET_NAMES).join("; ");
+      const extra =
+        names.length > MAX_BUCKET_NAMES ? ` (+${names.length - MAX_BUCKET_NAMES} more)` : "";
       return `- ${criterion}: ${shown}${extra}`;
     })
     .join("\n");
@@ -165,13 +170,15 @@ export function tryParseCategorizeResponse(
   const facts = Array.isArray(obj.facts)
     ? obj.facts
         .filter((f): f is string => typeof f === "string" && f.trim() !== "")
-        .map((f) => f.trim().slice(0, 240))
+        .map((f) => f.trim().slice(0, MAX_FACT_LEN))
         .slice(0, MAX_FACTS)
     : [];
   return { criterion: coerceBucket(obj.criterion, classification), facts };
 }
 
-/** Normalize a model response, falling back to the deterministic keyword mock. */
+/** Normalize a model response, falling back to the deterministic keyword mock.
+ *  Used by the offline eval harness (scripts/llm-eval); the live route wires
+ *  tryParse + mock separately so it can reclaim a charge on a silent fallback. */
 export function parseCategorizeResponse(
   text: string,
   req: CategorizeRequest,
@@ -196,7 +203,7 @@ export function mockCategorize(
     .map((s) => s.trim())
     .filter((s) => s.length > 0)
     .slice(0, 2)
-    .map((s) => s.slice(0, 240));
+    .map((s) => s.slice(0, MAX_FACT_LEN));
   return { criterion, facts };
 }
 

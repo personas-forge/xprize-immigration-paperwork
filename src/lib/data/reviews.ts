@@ -4,8 +4,8 @@ import "server-only";
  * Data layer — the attorney-review thread and case status transitions.
  *
  * `case_reviews` is an append-only log of workflow events (submitted, changes
- * requested, signed, filed, decision) and free-form notes; `setCaseStatus`
- * advances the case lifecycle. Delegates to the unified `Store` (Firestore in
+ * requested, signed, filed, decision) and free-form notes; `transitionCase`
+ * advances the case lifecycle (compare-and-set; the only sanctioned mutator). Delegates to the unified `Store` (Firestore in
  * prod, PGlite locally — see @/lib/db/store). Same graceful-degradation
  * contract as the rest of the data layer: every function no-ops without a store.
  *

@@ -91,6 +91,22 @@ export function parseSaveDraftRequest(
   return { ok: true, value: { caseId, sections, source } };
 }
 
+/** The copy-button state machine, shared by the studio's "Copy letter" button
+ *  and the save-failed alert's "Copy draft" button. */
+export type CopyState = "idle" | "copied" | "failed";
+
+/** Map a {@link CopyState} to its button label. "Copied ✓" is shared; the idle
+ *  and failure copy differ per call site, so both are passed in. Single-sourced
+ *  so the state→label mapping can't drift between the two buttons. */
+export function copyButtonLabel(
+  state: CopyState,
+  labels: { idle: string; failed: string },
+): string {
+  if (state === "copied") return "Copied ✓";
+  if (state === "failed") return labels.failed;
+  return labels.idle;
+}
+
 export type RetrySaveResult =
   | { ok: true; version: number }
   | { ok: false; error: string };

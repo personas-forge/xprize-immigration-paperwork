@@ -15,6 +15,7 @@ import { runAdjudication } from "@/lib/llm/adjudication-gates";
 import { petitions } from "@/lib/data/adapters/petition";
 import { evidence } from "@/lib/data/adapters/evidence";
 import { type CaseAccess } from "@/lib/data/adapters/access";
+import { parseCaseId, resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
 import { toErrorResponse } from "@/lib/data/adapters/http";
 
 // RFE (Request for Evidence) response drafting endpoint (migrated to the shared
@@ -52,44 +53,21 @@ export function POST(request: Request): Promise<NextResponse> {
     unauthenticatedError: "Sign in to draft an RFE response.",
     parse: async ({ body, resolveUser }) => {
       const record = (body ?? {}) as Record<string, unknown>;
-      const caseId =
-        typeof record.caseId === "string" && record.caseId.trim() !== ""
-          ? record.caseId.trim()
-          : null;
+      const caseId = parseCaseId(record);
 
       // DB path: resolve the case fail-closed (owner or configured attorney) and
       // load its criteria through the adapter gate, BEFORE any charge.
       if (caseId) {
-        const user = await resolveUser();
-        if (!user) {
-          return {
-            ok: false,
-            response: NextResponse.json(
-              { error: "Sign in to respond to an RFE on a saved case." },
-              { status: 401 },
-            ),
-          };
-        }
-        const access: CaseAccess = { userId: user.id, email: user.email ?? null };
-        const gate = await petitions.resolveCase(access, caseId);
-        if (!gate.ok) {
-          // forbidden/not_found -> 403 (no existence leak); store faults -> typed.
-          if (gate.error.kind === "forbidden" || gate.error.kind === "not_found") {
-            return {
-              ok: false,
-              response: NextResponse.json(
-                { error: "You don't have access to this case." },
-                { status: 403 },
-              ),
-            };
-          }
-          return { ok: false, response: toErrorResponse(gate.error) };
-        }
+        const r = await resolveCaseForParse(resolveUser, caseId, {
+          unauthenticatedError: "Sign in to respond to an RFE on a saved case.",
+        });
+        if (!r.ok) return r;
+        const { access } = r;
         const criteria = await petitions.getCriteria(access, caseId);
         if (!criteria.ok) return { ok: false, response: toErrorResponse(criteria.error) };
         const parsed = parseRfeRequest({
-          petitioner: gate.value.petitioner,
-          classification: gate.value.classification,
+          petitioner: r.case.petitioner,
+          classification: r.case.classification,
           criteria: criteria.value,
           rfeText: record.rfeText,
         });

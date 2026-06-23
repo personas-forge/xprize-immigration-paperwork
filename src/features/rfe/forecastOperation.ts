@@ -13,14 +13,15 @@ import {
   buildRfeForecastResult,
   hasReliedCriteria,
   mockRfeForecast,
+  toRfeCriterion,
   tryParseRfeForecast,
   type RfeChallenge,
   type RfeCriterion,
   type RfeRequest,
 } from "./index";
-import { str, MAX_PETITIONER, MAX_TEXT, MAX_CRITERIA } from "@/features/drafting/criteria-text";
+import { str, MAX_PETITIONER, parseCriteriaArray } from "@/features/drafting/criteria-text";
 import { petitions } from "@/lib/data/adapters/petition";
-import { type CaseAccess } from "@/lib/data/adapters/access";
+import { parseCaseId, resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
 import { type AiOperationSpec } from "@/lib/ai/operation";
 
 export interface ForecastInput {
@@ -42,19 +43,9 @@ function noReliedToForecast() {
   };
 }
 
-/** Validate an untrusted `criteria` array into RfeCriterion[]. */
+/** Validate an untrusted `criteria` array into RfeCriterion[] (shared normalizer). */
 function parseCriteria(value: unknown): RfeCriterion[] {
-  const raw = Array.isArray(value) ? value : [];
-  return raw
-    .slice(0, MAX_CRITERIA)
-    .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
-    .map((c) => ({
-      name: str(c.name, 120),
-      status: str(c.status, 20),
-      evidence: str(c.evidence, MAX_TEXT),
-      rationale: str(c.rationale, MAX_TEXT),
-    }))
-    .filter((c) => c.name !== "");
+  return parseCriteriaArray(value);
 }
 
 export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {
@@ -64,45 +55,18 @@ export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {
 
   parse: async ({ body, resolveUser }) => {
     const record = (body ?? {}) as Record<string, unknown>;
-    const caseId =
-      typeof record.caseId === "string" && record.caseId.trim() !== ""
-        ? record.caseId.trim()
-        : null;
+    const caseId = parseCaseId(record);
     const petitioner = str(record.petitioner, MAX_PETITIONER) || "the beneficiary";
 
     // DB path: owner-only gate + authoritative criteria from the case.
     if (caseId) {
-      const user = await resolveUser();
-      if (!user) {
-        return {
-          ok: false,
-          response: NextResponse.json(
-            { error: "Sign in to forecast a saved case." },
-            { status: 401 },
-          ),
-        };
-      }
-      // Mirror the responder's access (api/rfe/route.ts): pass the caller's email
-      // so a configured attorney-of-record can forecast a case they can already
-      // draft. Hardcoding `email: null` made forecast owner-only and diverged from
-      // the responder — an attorney got 403 on the risk radar but 200 on the draft.
-      const access: CaseAccess = { userId: user.id, email: user.email ?? null };
-      const gate = await petitions.resolveCase(access, caseId);
-      if (!gate.ok) {
-        if (gate.error.kind === "forbidden" || gate.error.kind === "not_found") {
-          return {
-            ok: false,
-            response: NextResponse.json(
-              { error: "You don't have access to this case." },
-              { status: 403 },
-            ),
-          };
-        }
-        return {
-          ok: false,
-          response: NextResponse.json({ error: "Forecast unavailable." }, { status: 503 }),
-        };
-      }
+      // Pass the caller's email (NOT owner-only) so a configured attorney of
+      // record can forecast a case they can already draft — matching the responder.
+      const r = await resolveCaseForParse(resolveUser, caseId, {
+        unauthenticatedError: "Sign in to forecast a saved case.",
+      });
+      if (!r.ok) return r;
+      const { access } = r;
       const criteria = await petitions.getCriteria(access, caseId);
       if (!criteria.ok) {
         return {
@@ -112,13 +76,8 @@ export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {
       }
       const req: RfeRequest = {
         petitioner,
-        classification: gate.value.classification,
-        criteria: criteria.value.map((c) => ({
-          name: c.name,
-          status: c.status,
-          evidence: c.evidence,
-          rationale: c.rationale,
-        })),
+        classification: r.case.classification,
+        criteria: criteria.value.map(toRfeCriterion),
         rfeText: "", // forecast is pre-RFE — the prompt never reads it
       };
       if (!hasReliedCriteria(req)) return noReliedToForecast();

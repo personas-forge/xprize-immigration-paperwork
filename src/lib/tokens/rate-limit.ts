@@ -16,6 +16,7 @@
  * the node test runner; it is only ever imported from server route handlers.
  */
 
+import { NextResponse } from "next/server";
 import { OPERATION_REGISTRY } from "./registry";
 
 export interface RateLimitResult {
@@ -24,6 +25,24 @@ export interface RateLimitResult {
   remaining: number;
   /** Seconds until the current window resets (for the Retry-After header). */
   retryAfterSec: number;
+}
+
+/**
+ * The canonical 429 for a denied {@link RateLimitResult} — the `rate_limited`
+ * error key, the `retryAfterSec` field, the `Retry-After` header, and the
+ * caller-supplied disclaimer. ONE definition so the orchestrator and the
+ * non-orchestrated routes (the two anonymous previews, draft/save) can't drift on
+ * the wire contract (the disclaimer was once dropped on one path). The disclaimer
+ * is passed in so the limiter needn't import a feature constant.
+ */
+export function tooManyRequestsResponse(
+  rl: RateLimitResult,
+  disclaimer: string,
+): NextResponse {
+  return NextResponse.json(
+    { error: "rate_limited", retryAfterSec: rl.retryAfterSec, disclaimer },
+    { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+  );
 }
 
 interface Bucket {
@@ -61,7 +80,7 @@ export const RATE_LIMITS = {
  */
 export const PREVIEW_RATE_LIMIT = 30;
 
-export const RATE_WINDOW_MS = 60_000;
+const RATE_WINDOW_MS = 60_000;
 
 // ⚠ SINGLE-NODE: counts live in THIS process's memory. The caps in RATE_LIMITS
 // are correct only on ONE instance — under horizontal scaling (PM2 cluster,
@@ -156,7 +175,7 @@ function isValidIp(value: string): boolean {
 /** Number of TRUSTED reverse-proxy hops in front of the app (the platform edge
  *  + any CDN you control), from `TRUSTED_PROXY_HOPS` (default 0 = one trusted
  *  edge appends the client IP as the rightmost `x-forwarded-for` entry). */
-export function trustedProxyHops(
+function trustedProxyHops(
   env: Record<string, string | undefined> = process.env,
 ): number {
   const n = Number(env.TRUSTED_PROXY_HOPS);

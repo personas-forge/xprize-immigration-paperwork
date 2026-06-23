@@ -8,23 +8,7 @@
 // (`registry.ts`, the single source of truth) — import `costOf` / `TIER_COST` /
 // `OpTier` from there directly.
 
-import { isMeteringEnforced } from "@/lib/db/config";
-
 export const FREE_SIGNUP_GRANT = 150; // granted once, at first onboarding
-
-/**
- * True when the token economy is NOT enforced and AI routes should run as a
- * free, unmetered pass. Thin inverse of the canonical {@link isMeteringEnforced}
- * so every "is metering off?" caller shares ONE definition — previously this
- * keyed on `!DATABASE_URL`, a pglite-only signal that wrongly reported "bypassed"
- * for the Firestore-prod config (no DATABASE_URL, yet metering IS on). `env` is
- * injectable for tests.
- */
-export function isMeteringBypassed(
-  env: Record<string, string | undefined> = process.env,
-): boolean {
-  return !isMeteringEnforced(env);
-}
 
 // Purchasable bundles — discount grows with size. `polarProductId` is filled
 // from env after you create the products in the Polar dashboard.
@@ -44,12 +28,16 @@ export type Bundle = {
   discountLabel?: string;
   polarProductId?: string;
   recurring?: boolean;
+  /** The merchandising "Best value" highlight. A catalog property (one decision)
+   *  so the billing grid and the landing page can't disagree on which bundle is
+   *  recommended — was a `b.key === "pro"` magic string in each. */
+  featured?: boolean;
 };
 
 export const BUNDLES: Bundle[] = [
   { key: "starter", label: "Starter", tokens: 500, priceCents: 500, centsPerToken: 1.0, polarProductId: process.env.POLAR_PRODUCT_STARTER },
   { key: "builder", label: "Builder", tokens: 2000, priceCents: 1500, centsPerToken: 0.75, discountLabel: "25% off", polarProductId: process.env.POLAR_PRODUCT_BUILDER },
-  { key: "pro", label: "Pro", tokens: 8000, priceCents: 4800, centsPerToken: 0.6, discountLabel: "40% off", polarProductId: process.env.POLAR_PRODUCT_PRO },
+  { key: "pro", label: "Pro", tokens: 8000, priceCents: 4800, centsPerToken: 0.6, discountLabel: "40% off", featured: true, polarProductId: process.env.POLAR_PRODUCT_PRO },
   { key: "scale", label: "Scale", tokens: 30000, priceCents: 15000, centsPerToken: 0.5, discountLabel: "50% off", polarProductId: process.env.POLAR_PRODUCT_SCALE },
   // Monthly subscription — ~builder rate as a convenience plan, renews itself.
   { key: "monthly", label: "Monthly", tokens: 2500, priceCents: 1900, centsPerToken: 0.76, recurring: true, polarProductId: process.env.POLAR_PRODUCT_MONTHLY },

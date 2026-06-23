@@ -22,6 +22,27 @@
 import type { StoredCase } from "@/lib/data/petitions";
 import { type AdapterResult, err, ok } from "./result";
 
+/** Memoize an async builder — the lazy-DI singleton each adapter uses to load
+ *  the `server-only` data layer exactly once (a dynamic import that must NOT run
+ *  at module load, so the suite can inject fakes). Each call creates its own
+ *  cache, so adapters don't share one. */
+export function makeCached<T>(build: () => Promise<T>): () => Promise<T> {
+  let cached: T | null = null;
+  return async () => {
+    if (cached) return cached;
+    cached = await build();
+    return cached;
+  };
+}
+
+/** The shared `storeConfigured` probe every adapter's deps wire — true when a
+ *  backend is configured. Dynamic import so this module stays free of the
+ *  `server-only` store at load time. */
+export async function storeConfigured(): Promise<boolean> {
+  const { getStore } = await import("@/lib/db/store");
+  return (await getStore()) !== null;
+}
+
 /** Request-scoped identity the gate decides on. `null` = anonymous / no email. */
 export interface CaseAccess {
   userId: string | null;

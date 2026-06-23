@@ -8,7 +8,7 @@
  * interface and every call site are untouched — the decorator is applied once,
  * centrally, in `getStore()`.
  *
- *   setCaseStatus / transitionCase → CaseStatusChanged
+ *   transitionCase                 → CaseStatusChanged
  *   saveDraft                      → DraftGenerated
  *   addCaseDocument                → EvidenceUploaded
  *
@@ -37,11 +37,24 @@ import type {
   TransitionCaseInput,
 } from "../db/store";
 import type { EventBus } from "./bus";
+import type { CaseStatusChanged } from "./types";
 
 /** Injectable clock — defaults to wall-clock ISO time; tests pin it. */
 export type Clock = () => string;
 
 const wallClock: Clock = () => new Date().toISOString();
+
+/** Build a CaseStatusChanged event — one factory for the shape (the `guarded`
+ *  arg stays a parameter for any future second publisher). */
+function caseStatusChanged(
+  at: string,
+  caseId: string,
+  status: string,
+  receiptNumber: string | undefined,
+  guarded: boolean,
+): CaseStatusChanged {
+  return { type: "CaseStatusChanged", at, caseId, status, receiptNumber, guarded };
+}
 
 export function withEvents(
   store: Store,
@@ -51,37 +64,15 @@ export function withEvents(
   return new Proxy(store, {
     get(target, prop, receiver) {
       switch (prop) {
-        case "setCaseStatus":
-          return async (
-            caseId: string,
-            status: string,
-            receiptNumber?: string,
-          ): Promise<void> => {
-            await target.setCaseStatus(caseId, status, receiptNumber);
-            await bus.publish({
-              type: "CaseStatusChanged",
-              at: now(),
-              caseId,
-              status,
-              receiptNumber,
-              guarded: false,
-            });
-          };
-
         case "transitionCase":
           return async (input: TransitionCaseInput): Promise<boolean> => {
             const applied = await target.transitionCase(input);
             // Only a transition that actually moved the case is a domain event;
             // a failed compare-and-set is a no-op and must stay silent.
             if (applied) {
-              await bus.publish({
-                type: "CaseStatusChanged",
-                at: now(),
-                caseId: input.caseId,
-                status: input.toStatus,
-                receiptNumber: input.receiptNumber,
-                guarded: true,
-              });
+              await bus.publish(
+                caseStatusChanged(now(), input.caseId, input.toStatus, input.receiptNumber, true),
+              );
             }
             return applied;
           };
@@ -112,7 +103,6 @@ export function withEvents(
               at: now(),
               caseId: input.caseId,
               documentId: doc.id,
-              name: doc.name,
               criterion: doc.criterion,
               exhibit: doc.exhibit,
               source: doc.source,

@@ -26,7 +26,7 @@
  * stub tracker. See ADR-0008 for the three-arg rationale.
  */
 import type { GuardRules, LightTrack } from "@/lib/lighttrack";
-import type { Llm } from "./client";
+import type { Llm } from "./engines";
 
 /**
  * The single output guard applied to every LLM engine: non-empty, bounded
@@ -35,7 +35,11 @@ import type { Llm } from "./client";
  * `mustMatch`/`mustNotMatch`, `maxWords`, and `noPII` (+ its PII regexes), but
  * the app opts into length checks only. Those richer branches are therefore
  * unexercised in this codebase by design (not a coverage gap, and not prunable
- * — lighttrack is vendored, kept in sync with upstream). To harden, e.g. add
+ * — lighttrack is vendored, kept in sync with upstream). In particular the
+ * vendored `json`/`jsonKeys` branch is SUPERSEDED for THIS app by `extractJson`
+ * (`lib/llm/json.ts`), the tolerant fences+balanced-brace parser each JSON
+ * route's `spec.guard` runs; the vendored strict `JSON.parse` is too strict for
+ * prose-wrapped model output and stays inert here. To harden, e.g. add
  * `json: true, jsonKeys: ["sections"]` here or pass a per-route rule to
  * `withGuards`; that turns the dormant branches into used code.
  *

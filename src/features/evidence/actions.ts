@@ -1,8 +1,9 @@
 "use server";
 
 /**
- * Server actions for managing the evidence vault: remove a document, or re-file
- * it under a different criterion. Each re-derives the user and routes the
+ * Server actions for managing the evidence vault: remove a document, restore a
+ * soft-deleted one (undo), or re-file it under a different criterion. Each
+ * re-derives the user and routes the
  * mutation through the {@link EvidenceAdapter} (ADR-0010), then revalidates the
  * case page. No-op without auth/DB (graceful degradation), matching the rest of
  * the app.
@@ -38,6 +39,21 @@ export async function removeDocument(
   // owner-only), so the real email is passed for resolveCase to evaluate.
   const access: CaseAccess = { userId: user.id, email: user.email ?? null };
   const result = await evidence.removeDocument(access, caseId, documentId);
+  if (!result.ok) return;
+  revalidatePath(`/dashboard/cases/${caseId}`);
+}
+
+/** Undo a removal: restore a soft-deleted document (it keeps its original exhibit
+ *  ordinal). Same owner-or-attorney gate as removeDocument; no-op on any non-ok
+ *  outcome (e.g. `not_found` when there's no matching deleted row). */
+export async function restoreDocument(
+  caseId: string,
+  documentId: string,
+): Promise<void> {
+  const user = await getUser();
+  if (!user) return;
+  const access: CaseAccess = { userId: user.id, email: user.email ?? null };
+  const result = await evidence.restoreDocument(access, caseId, documentId);
   if (!result.ok) return;
   revalidatePath(`/dashboard/cases/${caseId}`);
 }

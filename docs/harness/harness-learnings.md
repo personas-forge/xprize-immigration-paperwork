@@ -450,3 +450,86 @@ FIXES-WAVES-1-4 (with an 11-item pattern catalogue) at
 - **Verify before merge:** `externalCustomerId` propagation on a real Polar
   sandbox renewal (checkout #2 fix relies on it); `TRUSTED_PROXY_HOPS` set
   correctly for the actual deployment edge.
+
+## Code-refactor scan (2026-06-23, branch `vibeman/code-refactor-2026-06-23`)
+
+98 findings / 20 contexts (2C/31H/41M/24L; 45% duplication). Waves 1–5 closed the
+2 criticals + 28 highs (+3 folded mediums) = 31 findings across 25 atomic commits,
+UNMERGED off `main`. tsc 0 / tests 429→428 (−1 = removed dead `checklistToCsv`
+test) / lint clean / `next build` PASS after each wave. INDEX + 20 reports +
+FIXES-WAVES-1-5 at `docs/harness/code-refactor-2026-06-23/`.
+
+### Structural facts
+- **2026-06-23** — New SHARED seams: `lib/exhibits.ts` (`formatExhibit`/
+  `parseExhibitOrdinal`, used by BOTH store drivers + the optimistic client);
+  `api/polar/webhook/polar-fields.ts` (`pickStr`/`productId`/`resolveUserId`/
+  `finiteCents` — credit path AND revenue relay read Polar fields through these,
+  so a renewal attributes to the same user on both); `features/review/decisions.ts`
+  (`USCIS_DECISIONS` — the `<select>` + the server allowlist); `lib/auth/
+  session-cookie.ts` (`revokeAndClearSession` — both sign-out routes);
+  `lib/data/adapters/parse-gate.ts` (`resolveCaseForParse` — THE owner/attorney
+  gate preamble for all four AI specs; `ownerOnly` flag = draft/critique vs
+  rfe/forecast; store-fault leg settled on `toErrorResponse` everywhere).
+- **2026-06-23** — `drafting.withAttachedExhibits<C>` is the generic exhibit-
+  grouping core; `attachExhibits` (draft) and `attachRfeExhibits` (rfe) are thin
+  wrappers over it. `mergeRegeneratedSection` was RELOCATED from `draftOperation.ts`
+  (server-only — it imports `next/server`) into the pure `drafting.ts` so the
+  client `DraftStudio` can import it (was hand-rolled inline before).
+- **2026-06-23** — `lib/tokens/rate-limit.ts` now imports `next/server` and exports
+  `tooManyRequestsResponse(rl, disclaimer)` — the one 429 envelope (orchestrator +
+  the 3 non-orchestrated routes). It still loads under `tsx --test` (next/server is
+  tsx-safe here, as http.ts already proved). `ledger.MAX_LEDGER_AMOUNT` is now
+  exported. `consent.isFullyConsented(profile, version)` is the one re-consent
+  predicate (welcome page + `requireOnboardedUser`). `Button.buttonClasses(variant,
+  size, className)` lets a `<Link>` render as a Button (CTA drift fix). `FIRM_FEE`
+  now carries numeric `lowUsd`/`highUsd`/`midpointUsd` (range string + chart bar
+  derive from them).
+- **2026-06-23** — Per-driver consent-row writers: Firestore `consentRow(input)`
+  body builder; PGlite `appendConsentRow(queryable, input)` over `INSERT_CONSENT`
+  (called with `tx` from the upsert, `pg` from recordConsent). Adapter DI scaffold
+  is shared via `access.makeCached`/`access.storeConfigured`.
+
+### Anti-patterns / lessons
+- **2026-06-23 LESSON (verify-before-fix)** — a "dead code" grep scoped to `src/`
+  MISSES the eval harness (`scripts/llm-eval/`) and `e2e/`. `parseCategorizeResponse`
+  was flagged dead but is called by `scripts/llm-eval/run.ts`; tsc caught the
+  deletion, reverted. Grep `src/ scripts/ e2e/` before deleting an EXPORTED symbol.
+- **2026-06-23** — `next/server` (NextResponse) IS importable under `tsx --test` in
+  this repo; adding it to a tested lib (rate-limit.ts) is safe. A pure helper in a
+  server-only module is NOT client-importable — relocate it, don't re-export.
+
+### Context-map drift (refresh these contexts)
+- **2026-06-23** — Several context `file_paths` point at moved/absent files:
+  `qualification/questionnaire.ts`, `lib/data/documents.ts`,
+  `events/subscribers/analytics.ts` don't exist; `rate-limit.ts` is now under
+  `src/lib/tokens/`; legal components are in `src/components/legal/`; landing
+  components (`charts.tsx`, `PassportLanding.tsx`) are in `src/components/landing/`;
+  `brand-design-system` listed `SectionHeader`/`StatCard`/`lib/format.ts` which
+  don't exist. Re-run `refresh_context` on those.
+
+### Open follow-ups (from the 2026-06-23 code-refactor scan)
+- **brand#2 (High) — DONE.** Added a shared `.focus-ring` utility in globals.css
+  (box-shadow mirroring the Button's Tailwind ring: `0 0 0 2px --background, 0 0 0
+  4px --accent-dark`) and swept all 79 inline copies across 34 files; reconciled
+  the global `:focus-visible` fallback `--accent`→`--accent-dark`. VISUAL change
+  (elements gained the ring-offset) — NO visual tests; eyeball or `npm run e2e`.
+  The inline form was perfectly consistent (one variation, 79×), so the sweep was
+  one perl fixed-string replace. `.focus-ring` is plain CSS (opaque to
+  tailwind-merge), safe in `cn()` className strings.
+- **data-adapter#2 (High) — DONE (wired, not deleted)**: added a `restoreDocument`
+  server action + an Undo affordance in EvidenceVault (restores a removed document
+  with its original exhibit ordinal). Completed the soft-delete recovery design the
+  backend already supported, rather than deleting a deliberate capability.
+- **65-item medium/low tail — COMPLETED** (continuation, same branch). ~60 closed
+  across ~17 commits (sub-waves T1–T8 direct + 5 parallel subagents over disjoint
+  file areas). Gates green: tsc 0, tests 428→427 (−1 = removed redundant
+  setCaseStatus emit test), lint, `next build` PASS. New seams: assertBoundedInt,
+  FREE_PASS_BALANCE, wrapStore, parseCriteriaArray, toRfeCriterion, parseCaseId,
+  isCaseOwner, CONSENT_FIELDS, toLedgerEntry, CASE_STATUSES/VISA_CLASSIFICATIONS +
+  CLASSIFICATION_OPTIONS/STATUS_OPTIONS, copyButtonLabel, withStore. Deleted:
+  setCaseStatus (unguarded setter, interface+drivers+proxy), Stagger/staggerParent,
+  HoverCard (→`.lift`), .double-rule, "provisional", isMeteringBypassed,
+  getLatestRfeResponse (adapter), ParseContext.request, dead useId, "na" verdict.
+  Intentionally LEFT (scan recommended keep): ai#3 requiresImages (OCR forward-design),
+  ai#5 build-cast (type-required), rate-limit#4 windowMs (test seam), eb#5 (would add code).
+  Verify-before-fix FP: evidence#1 parseCategorizeResponse is live (eval harness).

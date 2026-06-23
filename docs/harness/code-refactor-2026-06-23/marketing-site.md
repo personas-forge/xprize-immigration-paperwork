@@ -1,0 +1,51 @@
+# Code Refactor — Marketing Site
+> Total: 5 (C0/H3/M1/L1)
+
+Scope note: `src/app/landing-claude/page.tsx` — the prior-flagged duplicate/alternate homepage — **no longer exists in `src/`** (verified: `Glob src/app/landing-claude/**` → none; `Grep "landing-claude" src/` → no source hits, only docs/CHANGELOG/harness history). The duplicate-content concern is resolved at the code level. What remains is stale *documentation* of it (finding #4). The homepage (`page.tsx`) is now a 10-line wrapper around `@/components/landing/PassportLanding`, which carries all the marketing content.
+
+---
+
+## 1. `PetitionStepper.tsx` is dead — rendered by nothing
+- **Severity**: High
+- **Category**: dead-code
+- **File**: `src/components/PetitionStepper.tsx:35` (whole 183-line component)
+- **Scenario**: The component is never imported or rendered anywhere in the app. Grep used: `Grep "PetitionStepper" path=C:\Users\mkdol\xprice\immigration-paperwork glob=!**/node_modules/**`. The ONLY `src/` hits are (a) the component's own definition (`PetitionStepper.tsx:35`) and (b) a passing comment in `src/features/case-file/types.ts:23` ("mirroring the five PetitionStepper stages"). Every other hit is documentation/harness history (README.md:273, README_work.md:235, docs/plans, docs/harness). No JSX `<PetitionStepper />` exists in `src/app/**` or `src/components/**`. The homepage that historically hosted it now renders `PassportLanding`, whose inline `Checkpoints()` four-step "How the petition is built" grid (`PassportLanding.tsx:397-427`) fully replaces the stepper's role.
+- **Root cause**: The "Passport / Arrival" homepage redesign (`page.tsx` → `PassportLanding`) dropped the old stepper section but the standalone component file was never deleted. It's a 183-line orphan pulling in `framer-motion`, `Guilloche`, `stampIn`/`easeArrival`, and `cn`.
+- **Impact**: ~183 lines of unreachable client-component code in the marketing surface; misleads readers (and prior scans — see `docs/harness/feature-ambiguity-2026-06-21/marketing-site.md` which audited it as if live) into believing it ships. Carries a UPL/truthfulness caveat in its own header comment that no longer applies because nobody sees it. Dead weight in the bundle graph and a maintenance trap.
+- **Fix sketch**: Delete `src/components/PetitionStepper.tsx`. Reword the lone comment reference in `case-file/types.ts:23` to describe the five lifecycle states without naming the deleted component (or drop the name). Remove its row from README.md:273 and README_work.md:235 (see #4).
+
+## 2. Cost-comparison literal in `charts.tsx` duplicates `FIRM_FEE`
+- **Severity**: High
+- **Category**: duplication
+- **File**: `src/components/landing/charts.tsx:110` (vs single source `src/lib/site.ts:23-26`)
+- **Scenario**: `FIRM_FEE` in `@/lib/site` is the intentional single source for the firm-fee anchor: `range: "$8,000–$15,000"`, `verb: "commonly quote"`, with a doc comment explicitly warning the surfaces "can't drift to two different firm fees." `PassportLanding.tsx` honors this — it reads `FIRM_FEE.range`/`FIRM_FEE.verb` at line 256-257 and builds the chart-panel caption from them at line 455 (`${FIRM_FEE.range} ${FIRM_FEE.verb} · ...`). But the bar chart *data* the caption sits above hand-authors the same numbers as a string literal: `COST_DATA = [{ name: "Law-firm packet", value: 11500, label: "$8k–15k commonly quoted" }, ...]` (`charts.tsx:110`). Grep used: `Grep -i "FIRM_FEE|8,000|15,000|commonly quote" src/`. This is precisely the anti-pattern the grounding calls out — "a hand-authored price literal duplicating it IS a valid finding."
+- **Root cause**: `charts.tsx` predates / sits outside the `FIRM_FEE` import seam and never adopted it; the `label` string ("$8k–15k commonly quoted") and the bar `value` (11500, the midpoint of $8k–15k) were typed by hand.
+- **Impact**: Real divergence risk on a regulated-adjacent legal claim — the `site.ts` comment says "Re-confirm the range before changing it," but a maintainer who edits `FIRM_FEE.range` to e.g. `$9,000–$16,000` updates the hero (line 256) and the panel caption (line 455) automatically, while the chart bar still reads `$8k–15k commonly quoted` and the bar height stays at 11500. The chart and the caption directly above it would then state two different firm fees — exactly the FTC comparative-claim drift `site.ts` exists to prevent.
+- **Fix sketch**: Derive the chart label/verb from `FIRM_FEE` instead of literals (e.g. `label: \`${FIRM_FEE.range} ${FIRM_FEE.verb}d\`` or a short-form helper in `site.ts`). If a numeric midpoint is genuinely needed for bar height, derive or co-locate it with `FIRM_FEE` (e.g. export a `FIRM_FEE.midpointUsd`) and comment that it tracks `range`, so all three (hero, caption, chart) read from one place.
+
+## 3. `$48 / 8,000 tokens` bundle price hard-coded in two places, neither sourced from token economy
+- **Severity**: High
+- **Category**: duplication
+- **File**: `src/components/landing/charts.tsx:111` and `src/components/landing/PassportLanding.tsx:455`
+- **Scenario**: The "Pro bundle" comparison value `$48 for 8,000 tokens` appears as a hand-authored literal twice: (a) `charts.tsx:111` — `{ name: "Your draft · Pro bundle", value: 48, label: "$48 · 8,000 tokens" }`; (b) `PassportLanding.tsx:455` caption — `vs $48 for 8,000 tokens`. Yet `PassportLanding` already imports `BUNDLES` and `bundlePriceLabel` from `@/lib/tokens/economy` and renders the *actual* pricing cards from them (`Allowance()`, lines 500-528, including the `pro` bundle: `b.key === "pro"`). So the page derives its pricing grid from the economy module but states the same Pro bundle's "$48 / 8,000 tokens" as frozen prose in two adjacent spots. Grep used: `Grep -i "8,000|commonly quote" src/` plus reading both files.
+- **Root cause**: The cost-comparison copy was written before/independently of the `BUNDLES` seam and never wired to it; the "$48" and "8,000" were transcribed from the Pro bundle by hand.
+- **Impact**: If the Pro bundle's price or token count changes in `@/lib/tokens/economy` (the authoritative source the rest of the page already trusts), the pricing cards update but the cost-comparison chart bar and its caption keep claiming "$48 · 8,000 tokens" — the homepage would simultaneously advertise the real new price in the grid and a stale price in the headline comparison. Two literals to forget, on the highest-traffic marketing surface.
+- **Fix sketch**: Resolve the Pro bundle once (`const pro = BUNDLES.find(b => b.key === "pro")`) and build both the chart datum label and the panel caption from `bundlePriceLabel(pro)` + `pro.tokens.toLocaleString()`, mirroring how `Allowance()` already renders bundles. Pass the resolved label into `CostCompareBars` (or compute the caption from it) rather than re-typing `$48`/`8,000`.
+
+## 4. README route table + component tree document deleted/dead marketing surfaces
+- **Severity**: Medium
+- **Category**: cleanup
+- **File**: `README.md:267,273` and `README_work.md:182,235` (also the homepage description at `README_work.md:179`)
+- **Scenario**: Both READMEs still document marketing artifacts that are gone or dead: (a) the file tree lists `landing-claude/page.tsx` (`README.md:267`) and the route table has a `/landing-claude` "Alternate masthead" row (`README_work.md:182`) — but that file no longer exists (`Glob src/app/landing-claude/** → none`). (b) Both list `PetitionStepper.tsx` ("5-stage rosette stepper") as a live component (`README.md:273`, `README_work.md:235`) — it's dead per finding #1. (c) `README_work.md:179` still describes `/` as "Marketing landing — hero, **petition stepper demo**, promises, process, pricing, closing seal," which is the old pre-redesign homepage, not the current `PassportLanding` (Arrival / Criteria / Process / Evidence / Pricing / Begin). (d) `README_work.md:180` describes `/pricing` as a live "Schedule of fees — three petition tiers," but `pricing/page.tsx` is now just `redirect("/billing")`.
+- **Root cause**: The homepage redesign and the `/pricing` → `/billing` retirement updated code but not the human-facing docs; the docs accreted past states.
+- **Impact**: Onboarding/maintenance confusion — a developer reading the README will look for a `/landing-claude` page and a rendered stepper that don't exist, and will mis-model `/pricing` as a real page. Documentation that lies about the route surface is a slow tax on every newcomer.
+- **Fix sketch**: Drop the `landing-claude` tree entry and route-table row; drop the `PetitionStepper.tsx` tree entry (or mark removed) once #1 lands; update the `/` description to the current `PassportLanding` sections and the `/pricing` row to "permanent redirect to `/billing`."
+
+## 5. `/pricing` redirect still advertised in sitemap as an indexable page
+- **Severity**: Low
+- **Category**: cleanup
+- **File**: `src/app/sitemap.ts:18`
+- **Scenario**: `pricing/page.tsx` is now exclusively `redirect("/billing")` (no content). The generated sitemap still lists `/pricing` as a first-class static page: `{ url: url("/pricing"), changeFrequency: "monthly", priority: 0.6 }` (`sitemap.ts:18`) — a higher priority than `/faq` (0.5) and `/validation` (0.4). Meanwhile the canonical pricing surface `/billing` is not in the sitemap at all, and every internal "pricing" link already points to `/billing` (Grep `"/pricing" src/` → only `middleware.ts` public-route comment + this sitemap line; the homepage and FAQ "Pricing"/"See the fees" links go to `/billing`, e.g. `PassportLanding.tsx:533,648`, `faq/page.tsx:131`).
+- **Root cause**: When `/pricing` was converted to a redirect, the sitemap entry was left pointing at the old route rather than retargeted to `/billing` (or dropped).
+- **Impact**: Cosmetic/SEO hygiene — the sitemap submits a permanent-redirect URL as a canonical monthly page while the real pricing page (`/billing`) is omitted. Search engines waste a crawl hop and never see `/billing` advertised. Low severity because the redirect keeps users/links working, but it's a small inconsistency between the route reality and what the sitemap claims.
+- **Fix sketch**: Replace the `/pricing` sitemap entry with `/billing` (keeping it if `/billing` should be indexable), or remove it. Keep the `/pricing` *route* as the back-compat redirect for old external links — just don't list the redirect itself in the sitemap.

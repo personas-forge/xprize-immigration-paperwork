@@ -14,7 +14,8 @@ import {
 } from "@/features/evidence";
 import { type StoredDocument } from "@/features/evidence/types";
 import { type ModelSource } from "@/lib/llm/label";
-import { refileDocument, removeDocument } from "../actions";
+import { formatExhibit, parseExhibitOrdinal } from "@/lib/exhibits";
+import { refileDocument, removeDocument, restoreDocument } from "../actions";
 
 // — Evidence vault ────────────────────────────────────────────────────────────
 // Add a document (paste its text / describe it) → it's AI-categorized into the
@@ -66,6 +67,9 @@ export function EvidenceVault({
   // concurrent add() calls (charged twice + duplicate exhibit). A ref flips
   // immediately, before any await.
   const submitting = useRef(false);
+  // The most-recently removed document, kept so the removal can be UNDONE
+  // (restore keeps its original exhibit ordinal). Cleared on undo or a new add.
+  const [lastRemoved, setLastRemoved] = useState<DocumentView | null>(null);
 
   const BUCKETS: readonly string[] = [...criteriaNames(classification), "Unsorted"];
   const summary = summarizeVault(documents, classification);
@@ -81,6 +85,7 @@ export function EvidenceVault({
     setStatus("adding");
     setError(null);
     setWarning(null);
+    setLastRemoved(null);
     setAnnounce("Categorizing the document…");
     try {
       const res = await fetch("/api/evidence/categorize", {
@@ -101,14 +106,14 @@ export function EvidenceVault({
       // Optimistic exhibit ordinal when persistence is skipped (no store): keep
       // the index MONOTONIC instead of rendering "—" (UAT 2026-06-20 F9).
       const nextOrdinal =
-        documents.reduce((max, d) => {
-          const n = parseInt(String(d.exhibit).replace(/\D/g, ""), 10);
-          return Number.isFinite(n) ? Math.max(max, n) : max;
-        }, 0) + 1;
-      // Mirror the persisted "Ex. N" format the stores assign (pglite/firestore
-      // `Ex. ${ord}`) so an optimistic exhibit doesn't read as a bare "2" beside
-      // saved "Ex. 2" siblings (evidence #2).
-      const nextExhibit = `Ex. ${nextOrdinal}`;
+        documents.reduce(
+          (max, d) => Math.max(max, parseExhibitOrdinal(String(d.exhibit))),
+          0,
+        ) + 1;
+      // Mirror the persisted "Ex. N" format the stores assign — single-sourced as
+      // formatExhibit so an optimistic exhibit can't drift from saved siblings
+      // (evidence #2).
+      const nextExhibit = formatExhibit(nextOrdinal);
       const doc: DocumentView =
         data.document ?? {
           id: crypto.randomUUID(),
@@ -141,19 +146,36 @@ export function EvidenceVault({
   }
 
   function onRemove(id: string) {
-    // Removal is irreversible and BURNS the exhibit number (a consumed high-water
-    // mark — re-adding gets a new, higher ordinal), so confirm before deleting.
+    // Removal soft-deletes (the row + its exhibit ordinal survive in the DB).
+    // Confirm — then offer Undo, which restores the SAME document with its
+    // original ordinal. Without an undo, a re-add gets a new, higher ordinal.
     const doc = documents.find((d) => d.id === id);
     const label = doc ? `"${doc.name}" (exhibit ${doc.exhibit})` : "this document";
     if (
       typeof window !== "undefined" &&
-      !window.confirm(`Remove ${label}? Its exhibit number can't be reused.`)
+      !window.confirm(`Remove ${label}? You can undo right after; otherwise its exhibit number can't be reused.`)
     ) {
       return;
     }
     setDocuments((prev) => prev.filter((d) => d.id !== id));
+    if (doc) setLastRemoved(doc);
     startTransition(() => {
       void removeDocument(caseId, id);
+    });
+  }
+
+  function onUndo() {
+    const doc = lastRemoved;
+    if (!doc) return;
+    // Re-insert optimistically (restore keeps the original exhibit ordinal) and
+    // restore server-side; clear the undo affordance.
+    setDocuments((prev) =>
+      prev.some((d) => d.id === doc.id) ? prev : [...prev, doc],
+    );
+    setLastRemoved(null);
+    setAnnounce(`Restored ${doc.name}, exhibit ${doc.exhibit}.`);
+    startTransition(() => {
+      void restoreDocument(caseId, doc.id);
     });
   }
 
@@ -196,6 +218,25 @@ export function EvidenceVault({
         <div role="status" aria-live="polite" className="sr-only">
           {announce}
         </div>
+        {/* Undo a just-removed document (restores it with its original exhibit
+            ordinal). The soft-delete backend makes this safe and reversible. */}
+        {lastRemoved ? (
+          <div
+            role="status"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-border-strong bg-surface-muted/60 px-4 py-2.5"
+          >
+            <span className="font-sans text-[15px] text-foreground-soft">
+              Removed <span className="text-foreground">{lastRemoved.name}</span> ({lastRemoved.exhibit}).
+            </span>
+            <button
+              type="button"
+              onClick={onUndo}
+              className="font-mono text-[13px] uppercase tracking-document text-accent-dark hover:text-foreground focus-ring"
+            >
+              Undo
+            </button>
+          </div>
+        ) : null}
         {/* Add a document */}
         <div className="space-y-3 rounded-control border border-border-strong bg-surface px-4 py-3">
           <div className="grid grid-cols-1 gap-3">
@@ -206,7 +247,7 @@ export function EvidenceVault({
                 onChange={(e) => setName(e.target.value)}
                 maxLength={MAX_NAME}
                 placeholder="e.g. ICML 2024 Best Paper certificate"
-                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-ring"
               />
             </label>
             <label className="block">
@@ -226,7 +267,7 @@ export function EvidenceVault({
                 rows={3}
                 maxLength={MAX_CONTENT}
                 placeholder="Paste the document text or describe what it shows…"
-                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
               />
             </label>
           </div>
@@ -331,7 +372,7 @@ export function EvidenceVault({
                               id={`refile-${d.id}`}
                               value={d.criterion}
                               onChange={(e) => onRefile(d.id, e.target.value)}
-                              className="rounded-control border border-border-strong bg-surface px-2 py-1 font-mono text-[12px] uppercase tracking-document text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                              className="rounded-control border border-border-strong bg-surface px-2 py-1 font-mono text-[12px] uppercase tracking-document text-foreground focus-ring"
                             >
                               {BUCKETS.map((b) => (
                                 <option key={b} value={b}>
@@ -343,7 +384,7 @@ export function EvidenceVault({
                               type="button"
                               onClick={() => onRemove(d.id)}
                               aria-label={`Remove ${d.name}`}
-                              className="rounded-control border border-border-strong px-2 py-1 font-mono text-[13px] text-muted-strong hover:border-seal hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                              className="rounded-control border border-border-strong px-2 py-1 font-mono text-[13px] text-muted-strong hover:border-seal hover:text-seal focus-ring"
                             >
                               ×
                             </button>

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Stamp } from "@/components/brand";
-import { HoverCard } from "@/components/Motion";
 import {
   bundlePriceLabel,
   formatCentsPerToken,
@@ -82,11 +81,11 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {bundles.map((b) => {
-          const isBest = b.key === "pro";
+          const isBest = b.featured ?? false;
           return (
-            <HoverCard
+            <div
               key={b.key}
-              className={`relative flex h-full flex-col rounded-card border bg-surface p-6 shadow-leaf ${
+              className={`lift relative flex h-full flex-col rounded-card border bg-surface p-6 shadow-leaf ${
                 isBest ? "border-accent/60 bg-accent-soft/30 shadow-seal" : "border-border"
               }`}
             >
@@ -142,7 +141,7 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
                 onClick={() => buy(b.key)}
                 disabled={loading}
                 aria-busy={status.key === b.key}
-                className={`mt-6 inline-flex items-center justify-center gap-2 rounded-control px-5 py-3 font-mono text-[14px] uppercase tracking-document transition-[background-color,border-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px] disabled:opacity-60 ${
+                className={`mt-6 inline-flex items-center justify-center gap-2 rounded-control px-5 py-3 font-mono text-[14px] uppercase tracking-document transition-[background-color,border-color,transform] focus-ring active:translate-y-[1px] disabled:opacity-60 ${
                   isBest
                     ? "bg-seal text-background hover:bg-[color:var(--accent-dark)]"
                     : "border border-border-strong bg-transparent text-foreground hover:border-foreground"
@@ -151,7 +150,7 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
                 {status.key === b.key ? "Opening…" : "Buy tokens"}
                 <span aria-hidden>→</span>
               </button>
-            </HoverCard>
+            </div>
           );
         })}
       </div>

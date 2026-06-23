@@ -1,9 +1,9 @@
-import { type CaseDocument, type PetitionCase } from "./types";
+import { type PetitionCase } from "./types";
 
 /**
- * Pure CSV serialization for case-list and checklist export. No DOM, no
- * Blob — the component layer turns the returned string into a download. Kept
- * pure so the (fiddly) quoting/escaping rules are unit-tested directly.
+ * Pure CSV serialization for the case list. No DOM, no Blob — the component
+ * layer turns the returned string into a download. Kept pure so the (fiddly)
+ * quoting/escaping rules are unit-tested directly.
  */
 
 /** RFC-4180-ish escaping: quote when the cell contains "," | '"' | newline. */
@@ -44,17 +44,6 @@ export function casesToCsv(cases: readonly PetitionCase[]): string {
         c.attorney,
       ]),
     );
-  }
-  return rows.join("\r\n");
-}
-
-const DOC_HEADERS = ["Exhibit", "Document", "Status", "Owner"] as const;
-
-/** Serialize an evidence-vault checklist to CSV. */
-export function checklistToCsv(documents: readonly CaseDocument[]): string {
-  const rows = [toRow([...DOC_HEADERS])];
-  for (const d of documents) {
-    rows.push(toRow([d.exhibit, d.name, d.status, d.owner]));
   }
   return rows.join("\r\n");
 }

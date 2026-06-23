@@ -138,7 +138,7 @@ export default async function AccountPage() {
               <a
                 href="/api/me/export"
                 download
-                className="inline-flex w-fit items-center justify-center gap-2 rounded-control border border-border-strong bg-surface px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-foreground transition-[background-color] hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="inline-flex w-fit items-center justify-center gap-2 rounded-control border border-border-strong bg-surface px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-foreground transition-[background-color] hover:bg-surface-muted focus-ring"
               >
                 Download my data (.json)
                 <span aria-hidden>↓</span>

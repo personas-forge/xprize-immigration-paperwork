@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { costOf } from "@/lib/tokens/registry";
 import { DISCLAIMER } from "@/lib/result";
 import { type QualifyResult } from "../qualification";
 import { VISA_PACKS, isClassification, type Classification } from "../packs";
-import { readQualifyPrefill } from "../prefill";
+import { SAMPLE_PROFILE, readQualifyPrefill } from "../prefill";
 import { jurisdictionFor, livePrograms } from "../jurisdictions";
 import { validationFor } from "../validation";
 
@@ -32,10 +32,6 @@ type QualifyApiResponse = QualifyResult & {
   adjudication?: AdjudicationReport;
 };
 
-const SAMPLE =
-  "Senior research engineer. 6 peer-reviewed papers (412 citations), best-paper " +
-  "award at a top ML conference, one granted US patent. Featured in TechCrunch. " +
-  "Founding engineer at a Series B startup; $320K salary plus equity.";
 
 export function QualifyPanel() {
   const [name, setName] = useState("");
@@ -65,9 +61,6 @@ export function QualifyPanel() {
     }
   }, []);
 
-  const nameId = useId();
-  const classId = useId();
-  const profileId = useId();
   // Synchronous in-flight guard: the disabled button doesn't stop an Enter-key
   // repeat or requestSubmit() from firing two concurrent /api/qualify calls
   // (each charges tokens and creates a separate case) before the re-render.
@@ -128,21 +121,19 @@ export function QualifyPanel() {
               <label className="block">
                 <span className="microprint">Your name (optional)</span>
                 <input
-                  id={nameId}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Dr. Anya Krishnan"
-                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-ring"
                 />
               </label>
 
               <label className="block">
                 <span className="microprint">Visa type</span>
                 <select
-                  id={classId}
                   value={classification}
                   onChange={(e) => setClassification(e.target.value as Classification)}
-                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-ring"
                 >
                   {PROGRAMS.map((c) => (
                     <option key={c} value={c}>
@@ -174,12 +165,11 @@ export function QualifyPanel() {
                 Your background — awards, publications, press, patents, roles, salary
               </span>
               <textarea
-                id={profileId}
                 value={profile}
                 onChange={(e) => setProfile(e.target.value)}
                 rows={7}
                 placeholder="Paste your CV highlights or describe your achievements in plain language…"
-                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
               />
               <div className="mt-1 flex justify-end">
                 <span
@@ -213,8 +203,8 @@ export function QualifyPanel() {
               </Button>
               <button
                 type="button"
-                onClick={() => setProfile(SAMPLE)}
-                className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                onClick={() => setProfile(SAMPLE_PROFILE)}
+                className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-ring"
               >
                 Use a sample
               </button>
@@ -255,7 +245,7 @@ export function QualifyPanel() {
             </div>
             <Link
               href="/billing"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px]"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-ring active:translate-y-[1px]"
             >
               Buy more
               <span aria-hidden>→</span>
@@ -334,7 +324,7 @@ function NextStepsPanel() {
         <div className="mt-5">
           <Link
             href="/login"
-            className="inline-flex items-center justify-center gap-2 rounded-control bg-[color:var(--accent)] px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px]"
+            className="inline-flex items-center justify-center gap-2 rounded-control bg-[color:var(--accent)] px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-ring active:translate-y-[1px]"
           >
             Get started
             <span aria-hidden>→</span>

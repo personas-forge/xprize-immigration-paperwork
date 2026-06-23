@@ -17,7 +17,7 @@ test("charge rejects negative, NaN, fractional, and over-cap costs", async () =>
 
 test("grantSignupTokens rejects negative / non-finite amounts", async () => {
   for (const bad of [-5, NaN, 5_000_000]) {
-    await assert.rejects(() => grantSignupTokens("u1", bad), /charge cost/);
+    await assert.rejects(() => grantSignupTokens("u1", bad), /grant amount/);
   }
 });
 

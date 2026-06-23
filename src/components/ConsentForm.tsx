@@ -11,6 +11,7 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { submitConsent, type ConsentState } from "@/app/welcome/actions";
+import { CONSENT_FIELDS } from "@/lib/auth/consent";
 import { CONSENT_DISCLAIMER } from "@/lib/result";
 import { DisclaimerStamp } from "@/components/legal";
 
@@ -67,10 +68,10 @@ export function ConsentForm({
         </label>
         <input
           id="full_name"
-          name="full_name"
+          name={CONSENT_FIELDS.fullName}
           defaultValue={defaultName}
           required
-          className="w-full rounded-control border border-border-strong bg-surface px-3.5 py-2.5 font-sans text-[17px] text-foreground placeholder:text-muted focus-visible:border-accent-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+          className="w-full rounded-control border border-border-strong bg-surface px-3.5 py-2.5 font-sans text-[17px] text-foreground placeholder:text-muted focus-visible:border-accent-dark focus-ring"
         />
         {email && (
           <p className="microprint" style={{ color: "var(--muted)" }}>
@@ -86,17 +87,17 @@ export function ConsentForm({
           Consent &amp; agreements
         </legend>
         <Checkbox
-          name="terms"
+          name={CONSENT_FIELDS.terms}
           required
           label="I accept the Terms of Service."
         />
         <Checkbox
-          name="privacy"
+          name={CONSENT_FIELDS.privacy}
           required
           label="I have read and accept the Privacy Policy."
         />
         <Checkbox
-          name="marketing"
+          name={CONSENT_FIELDS.marketing}
           label="Send me occasional product updates (optional)."
         />
       </fieldset>
@@ -113,7 +114,7 @@ export function ConsentForm({
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-seal px-6 py-3.5 font-mono text-[14px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-seal px-6 py-3.5 font-mono text-[14px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[1px] focus-ring disabled:opacity-60"
       >
         {pending ? "Stamping…" : "Agree & open my case file"}
         <span aria-hidden>→</span>
@@ -138,7 +139,7 @@ function Checkbox({
         name={name}
         required={required}
         aria-required={required}
-        className="mt-1 h-4 w-4 shrink-0 rounded-[2px] border-border-strong text-accent-dark accent-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+        className="mt-1 h-4 w-4 shrink-0 rounded-[2px] border-border-strong text-accent-dark accent-[color:var(--accent-dark)] focus-ring"
       />
       <span className="leading-snug">
         {label}

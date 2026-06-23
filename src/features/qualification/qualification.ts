@@ -25,9 +25,6 @@ import { isLiveProgram } from "./jurisdictions";
 /** The eight O-1A criteria names, kept as a stable export (the default pack). */
 export const O1A_CRITERIA = criteriaNames("O-1A");
 
-/** A criterion name. Across packs these vary, so it is a plain string. */
-export type CriterionName = string;
-
 /** A criterion score. "None" means no supporting evidence was found — it must
  *  render neutral (never green) and never counts toward the threshold. */
 export type ScoreStatus = "Met" | "Strong" | "Partial" | "None";
@@ -37,7 +34,8 @@ const VALID_STATUSES: ReadonlySet<string> = new Set(["Met", "Strong", "Partial",
 export interface ScoredCriterion {
   /** Stable id derived from the criterion name (e.g. "awards"). */
   id: string;
-  name: CriterionName;
+  /** Across packs criterion names vary, so this is a plain string. */
+  name: string;
   status: ScoreStatus;
   /** What in the profile supports this criterion ("" when nothing did). */
   evidence: string;
@@ -240,7 +238,8 @@ export function parseQualifyResponse(
  */
 export function mockQualification(req: QualifyRequest): QualifyAssessment {
   const text = req.profile;
-  const criteria: ScoredCriterion[] = packFor(req.classification).criteria.map((pc) => {
+  const pack = packFor(req.classification);
+  const criteria: ScoredCriterion[] = pack.criteria.map((pc) => {
     const hit = pc.match.test(text);
     return {
       id: idFor(pc.name),
@@ -253,7 +252,6 @@ export function mockQualification(req: QualifyRequest): QualifyAssessment {
     };
   });
 
-  const pack = packFor(req.classification);
   const qualifying = criteria.filter((c) => c.status === "Met" || c.status === "Strong").length;
   const likelihood = mockLikelihood(qualifying, pack.threshold, criteria.length);
   const gaps = pack.criteria.filter((pc) => !pc.match.test(text)).map((pc) => pc.gap);

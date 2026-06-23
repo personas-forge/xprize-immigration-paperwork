@@ -44,8 +44,10 @@ export function claudeBin(env: Env = process.env): string {
   return env.CLAUDE_CLI_PATH ?? "claude";
 }
 
+const DEFAULT_CLAUDE_MODEL = "sonnet";
+
 /** Claude model alias/id for the CLI. Sanitised — it goes into argv. */
 export function claudeModel(env: Env = process.env): string {
-  const m = env.CLAUDE_CLI_MODEL ?? "sonnet";
-  return m.replace(/[^a-zA-Z0-9._-]/g, "") || "sonnet";
+  const m = env.CLAUDE_CLI_MODEL ?? DEFAULT_CLAUDE_MODEL;
+  return m.replace(/[^a-zA-Z0-9._-]/g, "") || DEFAULT_CLAUDE_MODEL;
 }

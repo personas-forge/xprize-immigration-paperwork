@@ -15,8 +15,8 @@ import { registerAttorneyNotify, resolveNotifyFn } from "./subscribers/attorney-
 import { registerProvenanceLedger, type ProvenanceChain } from "./provenance";
 
 // Process-lifetime singleton: there is no reset/teardown export and none is
-// needed — tests that want a clean bus construct `new EventBus()` directly (and
-// use EventBus.clear()); nothing exercises this singleton across test cases.
+// needed — tests that want a clean bus construct `new EventBus()` directly;
+// nothing resets this singleton across test cases.
 let bus: EventBus | null = null;
 let provenance: ProvenanceChain | null = null;
 

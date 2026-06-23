@@ -38,7 +38,6 @@ const evidenceEvent: EvidenceUploaded = {
   at: AT,
   caseId: "c1",
   documentId: "d1",
-  name: "f.pdf",
   criterion: "Awards",
   exhibit: "Exhibit 1",
   source: "mock",

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DISCLAIMER } from "@/features/guidance/guidance";
+import { DISCLAIMER } from "@/lib/result";
 import {
   executeAiOperation,
   type AiOperationDeps,

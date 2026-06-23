@@ -1,13 +1,13 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { Seal } from "@/components/brand";
 import { Rise } from "@/components/Motion";
 import { DisclaimerStamp } from "@/components/legal";
 import { type BestPathResult, type ProgramScore } from "../best-path";
 import { isModelSource } from "@/lib/llm/label";
-import { type QualifyPrefill } from "../prefill";
+import { SAMPLE_PROFILE, type QualifyPrefill } from "../prefill";
 
 // — Best-path finder (moonshot #7) ────────────────────────────────────────────
 // "Which visa should I even pursue?" One profile, scored against EVERY live
@@ -15,10 +15,6 @@ import { type QualifyPrefill } from "../prefill";
 // best-first with the strongest/fastest route recommended. Choosing a program
 // hands the profile to the full screening with nothing re-typed.
 
-const SAMPLE =
-  "Senior research engineer. 6 peer-reviewed papers (412 citations), best-paper " +
-  "award at a top ML conference, one granted US patent. Featured in TechCrunch. " +
-  "Founding engineer at a Series B startup; $320K salary plus equity.";
 
 type Status = "idle" | "loading" | "done" | "error";
 
@@ -35,8 +31,6 @@ export function BestPathFinder({
   const [result, setResult] = useState<BestPathResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const nameId = useId();
-  const profileId = useId();
   const busy = useRef(false);
 
   async function find(e: React.FormEvent) {
@@ -106,11 +100,10 @@ export function BestPathFinder({
             <label className="block">
               <span className="microprint">Your name (optional)</span>
               <input
-                id={nameId}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Dr. Anya Krishnan"
-                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-ring"
               />
             </label>
             <label className="block">
@@ -118,12 +111,11 @@ export function BestPathFinder({
                 Your background — awards, publications, press, patents, roles, salary
               </span>
               <textarea
-                id={profileId}
                 value={profile}
                 onChange={(e) => setProfile(e.target.value)}
                 rows={6}
                 placeholder="Paste your CV highlights or describe your achievements in plain language…"
-                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
               />
               <div className="mt-1 flex justify-end">
                 <span
@@ -140,8 +132,8 @@ export function BestPathFinder({
               </Button>
               <button
                 type="button"
-                onClick={() => setProfile(SAMPLE)}
-                className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                onClick={() => setProfile(SAMPLE_PROFILE)}
+                className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-ring"
               >
                 Use a sample
               </button>
@@ -271,7 +263,7 @@ function ProgramCard({
       <button
         type="button"
         onClick={onChoose}
-        className="mt-3 inline-flex items-center gap-1.5 self-start font-mono text-[12px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+        className="mt-3 inline-flex items-center gap-1.5 self-start font-mono text-[12px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground focus-ring"
       >
         Screen for {program.classification}
         <span aria-hidden>→</span>

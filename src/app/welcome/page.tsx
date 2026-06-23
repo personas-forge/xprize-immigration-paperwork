@@ -5,7 +5,7 @@
 import { redirect } from "next/navigation";
 import { getUser, profileFieldsFromUser } from "@/lib/auth/session";
 import { getLatestConsentVersion, getProfile } from "@/lib/auth/db";
-import { CONSENT_VERSION } from "@/lib/auth/consent";
+import { isFullyConsented } from "@/lib/auth/consent";
 import { safeNext } from "@/lib/auth/safe-next";
 import { ConsentForm } from "@/components/ConsentForm";
 import { PageFrame, ChapterMark } from "@/components/brand";
@@ -23,11 +23,13 @@ export default async function WelcomePage({
   const dest = safeNext((await searchParams).next);
 
   const profile = await getProfile(user.id);
-  // Skip to the app only when the user is onboarded AND has agreed to the
-  // CURRENT consent version — otherwise re-collect consent (terms changed).
+  // Skip to the app only when the user is onboarded AND has agreed to the CURRENT
+  // consent version (same isFullyConsented predicate the requireOnboardedUser
+  // gate uses) — otherwise re-collect consent (terms changed). Guard the version
+  // read on onboarded so a brand-new user doesn't pay an extra lookup.
   if (profile?.onboarded_at) {
     const consented = await getLatestConsentVersion(user.id);
-    if (consented === CONSENT_VERSION) redirect(dest);
+    if (isFullyConsented(profile, consented)) redirect(dest);
   }
 
   const { fullName: defaultName } = profileFieldsFromUser(user);

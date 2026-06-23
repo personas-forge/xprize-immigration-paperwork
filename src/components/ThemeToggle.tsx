@@ -50,7 +50,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={isInk ? "Switch to parchment theme" : "Switch to ink theme"}
       aria-pressed={isInk}
-      className="inline-grid h-8 w-8 place-items-center rounded-pill border border-border-strong bg-surface text-foreground transition-[background-color,border-color,color] hover:border-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+      className="inline-grid h-8 w-8 place-items-center rounded-pill border border-border-strong bg-surface text-foreground transition-[background-color,border-color,color] hover:border-foreground hover:bg-surface-muted focus-ring"
     >
       {/* Inline SVGs — no extra dep, scale with currentColor */}
       {isInk ? (

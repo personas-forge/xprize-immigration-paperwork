@@ -212,10 +212,9 @@ After upgrading from 0.1.x: `rm -rf node_modules && npm install` — see
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Marketing landing — hero, petition stepper demo, promises, process, pricing, closing seal |
-| `/pricing` | Schedule of fees — three petition tiers as perforated document bands |
+| `/` | Marketing landing (`PassportLanding`) — Arrival / Criteria / Process / Evidence / Pricing / Begin |
+| `/pricing` | Permanent redirect to `/billing` (back-compat for old links) |
 | `/faq` | Eight petition-styled FAQ entries (form compatibility, RFE, refunds, security) |
-| `/landing-claude` | Alternate masthead — narrow editorial column, printed-pamphlet treatment |
 | `/qualify` | Multi-visa qualification funnel — "Find my best path" comparison UI (O-1A / O-1B / EB-1A) followed by the single-visa screener; "What happens next" panel with a "Get started →" CTA once a positive result is returned. |
 | `/c/[token]` | Shareable "Letters Patent of Extraordinary Ability" — engraved certificate minted from a screening result encoded in the URL token (no DB); per-result Open Graph card at `/c/[token]/opengraph-image`. |
 | `/dashboard` | The case file — O-1A criteria audit with compliance-risk badges, DraftStudio with adjudicator redline + RFE Risk Radar, tasks, petition draft preview. Empty-state CTA links to `/qualify` when no cases exist. |
@@ -262,15 +261,13 @@ src/
 │   ├── layout.tsx           # Fraunces/Newsreader/Plex Mono, metadata, pre-paint theme script
 │   ├── globals.css          # design tokens, [data-theme="ink"], utilities
 │   ├── page.tsx             # marketing landing
-│   ├── pricing/page.tsx
+│   ├── pricing/page.tsx     # permanent redirect to /billing
 │   ├── faq/page.tsx
-│   ├── landing-claude/page.tsx
 │   └── dashboard/page.tsx
 ├── components/
 │   ├── brand/               # Guilloche, Seal, Stamp, ChapterMark, Wordmark, PageFrame
 │   ├── ui/                  # Badge, Button, Card, SectionHeader, StatCard, PanelErrorBoundary
 │   ├── Motion.tsx           # Rise / Stagger / HoverCard wrappers
-│   ├── PetitionStepper.tsx  # 5-stage rosette stepper with stamp-in animation
 │   ├── FaqEntry.tsx         # client-only <details> animator
 │   ├── DashboardTopBar.tsx
 │   └── ThemeToggle.tsx      # parchment ↔ ink toggle + themeInitScript

@@ -21,7 +21,7 @@ export const TIER_COST: Record<OpTier, number> = {
 };
 
 export interface OperationDef {
-  /** Human-readable name, for UI and logs (was only a code comment before). */
+  /** Human-readable name, for UI and logs. */
   label: string;
   /** Cost weight tier → TIER_COST. */
   tier: OpTier;

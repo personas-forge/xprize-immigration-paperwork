@@ -44,7 +44,6 @@ function deps(over: Partial<PetitionDeps> = {}): PetitionDeps {
     saveDraft: async () => 1,
     getLatestDraft: async () => null,
     saveRfeResponse: async () => 1,
-    getLatestRfeResponse: async () => null,
     // Models the real gate: fail-closed on a null/empty email (that is exactly
     // what makes `email: null` resolve owner-only).
     isConfiguredAttorney: (email) => Boolean(email),

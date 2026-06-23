@@ -112,7 +112,7 @@ export default async function LettersPatentPage({ params }: PageParams) {
               <div className="mt-9 flex flex-col items-center gap-3">
                 <Link
                   href="/qualify"
-                  className="inline-flex items-center gap-2 rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                  className="inline-flex items-center gap-2 rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-ring"
                 >
                   Run your own free screening
                   <span aria-hidden>→</span>

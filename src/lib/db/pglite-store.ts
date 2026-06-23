@@ -10,6 +10,7 @@ if (typeof window !== "undefined") {
 }
 
 import { pglitePath } from "./config";
+import { formatExhibit } from "@/lib/exhibits";
 import type {
   DraftSection,
   ReviewEvent,
@@ -237,6 +238,49 @@ function toDraftSections(v: unknown): DraftSection[] {
   });
 }
 
+const INSERT_CONSENT = `insert into consents
+     (user_id, consent_version, terms_accepted, privacy_accepted,
+      marketing_opt_in, ip, user_agent)
+   values ($1, $2, $3, $4, $5, $6, $7)`;
+
+/** Append one consent row via the given queryable (the pool `pg` or a `tx`). ONE
+ *  definition so the onboarding upsert and the standalone recordConsent run the
+ *  identical insert — a schema change lands in one place, not two. */
+async function appendConsentRow(
+  q: Queryable,
+  input: {
+    userId: string;
+    consentVersion: string;
+    terms: boolean;
+    privacy: boolean;
+    marketing: boolean;
+    ip: string | null | undefined;
+    userAgent: string | null | undefined;
+  },
+): Promise<void> {
+  await q.query(INSERT_CONSENT, [
+    input.userId,
+    input.consentVersion,
+    input.terms,
+    input.privacy,
+    input.marketing,
+    input.ip,
+    input.userAgent,
+  ]);
+}
+
+/** Project a token_ledger row into a LedgerEntry — shared by getLedgerForUser
+ *  (billing read-out) and exportUserData (GDPR), so the two can't drift. */
+function toLedgerEntry(row: Record<string, unknown>) {
+  return {
+    delta: num(row.delta),
+    reason: str(row.reason),
+    operation: row.operation == null ? null : str(row.operation),
+    balanceAfter: num(row.balance_after),
+    createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : null,
+  };
+}
+
 export async function getPgliteStore(): Promise<Store> {
   const pg = await open();
 
@@ -273,21 +317,7 @@ export async function getPgliteStore(): Promise<Store> {
              updated_at = now()`,
           [input.userId, input.email, input.fullName, input.avatarUrl],
         );
-        await tx.query(
-          `insert into consents
-             (user_id, consent_version, terms_accepted, privacy_accepted,
-              marketing_opt_in, ip, user_agent)
-           values ($1, $2, $3, $4, $5, $6, $7)`,
-          [
-            input.userId,
-            input.consentVersion,
-            input.terms,
-            input.privacy,
-            input.marketing,
-            input.ip,
-            input.userAgent,
-          ],
-        );
+        await appendConsentRow(tx, input);
       });
     },
 
@@ -320,21 +350,7 @@ export async function getPgliteStore(): Promise<Store> {
     },
 
     async recordConsent(input) {
-      await pg.query(
-        `insert into consents
-           (user_id, consent_version, terms_accepted, privacy_accepted,
-            marketing_opt_in, ip, user_agent)
-         values ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          input.userId,
-          input.consentVersion,
-          input.terms,
-          input.privacy,
-          input.marketing,
-          input.ip,
-          input.userAgent,
-        ],
-      );
+      await appendConsentRow(pg, input);
     },
 
     async getBalance(userId) {
@@ -351,13 +367,7 @@ export async function getPgliteStore(): Promise<Store> {
            from token_ledger where user_id = $1 order by id desc limit $2`,
         [userId, Math.max(0, Math.floor(limit))],
       );
-      return r.rows.map((row) => ({
-        delta: num(row.delta),
-        reason: str(row.reason),
-        operation: row.operation == null ? null : str(row.operation),
-        balanceAfter: num(row.balance_after),
-        createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : null,
-      }));
+      return r.rows.map(toLedgerEntry);
     },
 
     // DEBIT IDEMPOTENCY CONTRACT (load-bearing — do not "optimize" the lock away):
@@ -563,22 +573,6 @@ export async function getPgliteStore(): Promise<Store> {
       );
     },
 
-    async setCaseStatus(caseId, status, receiptNumber) {
-      if (receiptNumber !== undefined) {
-        await pg.query(
-          `update cases
-              set status = $2, receipt_number = $3, updated_at = now()
-            where id = $1`,
-          [caseId, status, receiptNumber],
-        );
-      } else {
-        await pg.query(
-          `update cases set status = $2, updated_at = now() where id = $1`,
-          [caseId, status],
-        );
-      }
-    },
-
     async transitionCase(input) {
       return pg.transaction(async (tx) => {
         // Compare-and-set: only flip status when it is currently one of the
@@ -763,7 +757,7 @@ export async function getPgliteStore(): Promise<Store> {
           `update cases set doc_seq = $2, updated_at = now() where id = $1`,
           [input.caseId, ord],
         );
-        const exhibit = `Ex. ${ord}`;
+        const exhibit = formatExhibit(ord);
         const status = input.status ?? "Received";
         const facts = [...input.facts].map((f) => String(f));
         const r = await tx.query(
@@ -889,13 +883,7 @@ export async function getPgliteStore(): Promise<Store> {
            from token_ledger where user_id = $1 order by id desc`,
         [userId],
       );
-      const tokenLedger = ledgerR.rows.map((r) => ({
-        delta: num(r.delta),
-        reason: str(r.reason),
-        operation: r.operation == null ? null : str(r.operation),
-        balanceAfter: num(r.balance_after),
-        createdAt: iso(r.created_at),
-      }));
+      const tokenLedger = ledgerR.rows.map(toLedgerEntry);
 
       const casesR = await pg.query(
         `select ${CASE_COLUMNS} from cases where user_id = $1 order by created_at`,

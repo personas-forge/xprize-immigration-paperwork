@@ -12,6 +12,7 @@ import {
 import { executeAiOperation } from "@/lib/ai/operation";
 import { evidence } from "@/lib/data/adapters/evidence";
 import { petitions } from "@/lib/data/adapters/petition";
+import { parseCaseId } from "@/lib/data/adapters/parse-gate";
 
 // Evidence categorization endpoint (migrated to the shared orchestrator, ADR-0004).
 //
@@ -63,7 +64,7 @@ export function POST(request: Request): Promise<NextResponse> {
       // coverage/gap analysis. Never trust the client's classification on a case.
       let classification =
         typeof record.classification === "string" ? record.classification : "O-1A";
-      const caseId = typeof record.caseId === "string" ? record.caseId : null;
+      const caseId = parseCaseId(record);
       // Whole-vault context (G2.1/PN-EVID-01): summarize what's already filed so
       // the categorizer places this doc consistently with its siblings. Best-effort
       // and gated owner-or-attorney via the adapter; a fault → no summary.

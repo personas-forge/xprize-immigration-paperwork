@@ -5,7 +5,6 @@ export {
   mockQualification,
   parseQualifyRequest,
   parseQualifyResponse,
-  type CriterionName,
   type QualifyAssessment,
   type QualifyRequest,
   type QualifyResult,

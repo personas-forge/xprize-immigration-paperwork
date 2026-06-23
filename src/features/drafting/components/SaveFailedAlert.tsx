@@ -1,8 +1,12 @@
 "use client";
 
-import { SAVE_FAILED_MESSAGE } from "@/features/drafting/saveRecovery";
+import {
+  SAVE_FAILED_MESSAGE,
+  copyButtonLabel,
+  type CopyState,
+} from "@/features/drafting/saveRecovery";
 
-export type CopyState = "idle" | "copied" | "failed";
+export type { CopyState };
 export type RetryState = "idle" | "saving" | "failed";
 
 // Recovery alert for a charged-but-unsaved draft. Presentational only — the
@@ -42,20 +46,19 @@ export function SaveFailedAlert({
         <button
           type="button"
           onClick={onCopy}
-          className="rounded-control border border-seal/50 px-3 py-1.5 font-mono text-[12px] uppercase tracking-document text-seal transition-colors hover:bg-seal-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+          className="rounded-control border border-seal/50 px-3 py-1.5 font-mono text-[12px] uppercase tracking-document text-seal transition-colors hover:bg-seal-soft focus-ring"
         >
-          {copyState === "copied"
-            ? "Copied ✓"
-            : copyState === "failed"
-              ? "Copy failed — select & copy manually"
-              : "Copy draft"}
+          {copyButtonLabel(copyState, {
+            idle: "Copy draft",
+            failed: "Copy failed — select & copy manually",
+          })}
         </button>
         {canRetry ? (
           <button
             type="button"
             onClick={onRetry}
             disabled={retryState === "saving"}
-            className="rounded-control bg-seal px-3 py-1.5 font-mono text-[12px] uppercase tracking-document text-background transition-colors hover:bg-[color:var(--accent-dark)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="rounded-control bg-seal px-3 py-1.5 font-mono text-[12px] uppercase tracking-document text-background transition-colors hover:bg-[color:var(--accent-dark)] disabled:opacity-50 focus-ring"
           >
             {retryState === "saving" ? "Saving…" : "Retry saving"}
           </button>

@@ -16,10 +16,10 @@
  * so the model can only argue from evidence the user actually provided.
  */
 
-import { DISCLAIMER } from "@/features/guidance/guidance";
+import { DISCLAIMER } from "@/lib/result";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
-import { str, criterionLine, MAX_PETITIONER, MAX_TEXT, MAX_CRITERIA } from "./criteria-text";
+import { str, criterionLine, MAX_PETITIONER, parseCriteriaArray } from "./criteria-text";
 
 export { DISCLAIMER };
 
@@ -122,16 +122,7 @@ export function parseDraftRequest(
   if (rawCriteria.length === 0) {
     return { ok: false, error: "At least one scored criterion is required." };
   }
-  const criteria: DraftCriterion[] = rawCriteria
-    .slice(0, MAX_CRITERIA)
-    .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
-    .map((c) => ({
-      name: str(c.name, 120),
-      status: str(c.status, 20),
-      evidence: str(c.evidence, MAX_TEXT),
-      rationale: str(c.rationale, MAX_TEXT),
-    }))
-    .filter((c) => c.name !== "");
+  const criteria: DraftCriterion[] = parseCriteriaArray(rawCriteria);
 
   if (criteria.length === 0) {
     return { ok: false, error: "Criteria must include at least one named item." };
@@ -471,6 +462,35 @@ export function overallCritiqueScore(critiques: readonly SectionCritique[]): num
   return Math.round(critiques.reduce((sum, c) => sum + c.score, 0) / critiques.length);
 }
 
+/** Score at/above which a section/draft reads as filing-ready (success tone). */
+export const STRONG_SCORE = 80;
+/** Score at/above which it is borderline (warning tone); below is danger. */
+export const BORDERLINE_SCORE = 60;
+
+/** Map a 0-100 section/draft score to a badge tone — the UI twin of the redline
+ *  banding (shares the strong/borderline thresholds). */
+export function scoreTone(score: number): "success" | "warning" | "danger" {
+  if (score >= STRONG_SCORE) return "success";
+  if (score >= BORDERLINE_SCORE) return "warning";
+  return "danger";
+}
+
+/** Reduce a critique list to a `heading → critique` map (last wins on a
+ *  duplicate heading — matches the client's keying). */
+export function critiquesByHeading(
+  critiques: readonly SectionCritique[],
+): Record<string, SectionCritique> {
+  const map: Record<string, SectionCritique> = {};
+  for (const c of critiques) map[c.heading] = c;
+  return map;
+}
+
+/** Coerce an untrusted version field to a number, or null. A persisted draft
+ *  carries a numeric version; anything else means "unsaved". */
+export function numericVersion(value: unknown): number | null {
+  return typeof value === "number" ? value : null;
+}
+
 /**
  * Strict parse: the model's critique ONLY when it returned usable JSON, matched
  * back to the draft's real section headings (so a renamed/hallucinated heading
@@ -555,16 +575,26 @@ export function exhibitNumber(label: string): number | null {
   return m ? Number(m[0]) : null;
 }
 
+/** Minimal criterion shape the exhibit binder reads/writes — a name to match a
+ *  vault document's criterion, plus the optional exhibits it attaches. Both the
+ *  draft and the RFE criterion satisfy it, so ONE binder serves both. */
+export interface ExhibitableCriterion {
+  name: string;
+  exhibits?: readonly DraftExhibit[];
+}
+
 /**
- * Attach each criterion's vault exhibits (grouped by criterion name) onto a
- * draft request, so the prompt can cite them and the UI can index/audit them.
- * Documents whose criterion matches no request criterion, or that lack a numeric
- * exhibit ordinal, are skipped. Exhibits are sorted by ordinal per criterion.
+ * Group vault documents by criterion name and attach them (sorted by ordinal)
+ * onto matching criteria. Documents that match no criterion, or lack a numeric
+ * exhibit ordinal, are skipped. Returns `null` when nothing attaches, so the
+ * caller can hand back the original request unchanged. This is the ONE place the
+ * citation-grouping rule lives — shared by the draft and RFE binders so they
+ * can't diverge (the bug a hand-rolled clone would invite).
  */
-export function attachExhibits(
-  req: DraftRequest,
+export function withAttachedExhibits<C extends ExhibitableCriterion>(
+  criteria: readonly C[],
   documents: readonly VaultDocLike[],
-): DraftRequest {
+): C[] | null {
   const byCriterion = new Map<string, DraftExhibit[]>();
   for (const d of documents) {
     const number = exhibitNumber(d.exhibit);
@@ -573,16 +603,50 @@ export function attachExhibits(
     list.push({ number, name: d.name, facts: d.facts });
     byCriterion.set(d.criterion, list);
   }
-  if (byCriterion.size === 0) return req;
-  return {
-    ...req,
-    criteria: req.criteria.map((c) => {
-      const ex = byCriterion.get(c.name);
-      return ex && ex.length
-        ? { ...c, exhibits: [...ex].sort((a, b) => a.number - b.number) }
-        : c;
-    }),
-  };
+  if (byCriterion.size === 0) return null;
+  return criteria.map((c) => {
+    const ex = byCriterion.get(c.name);
+    return ex && ex.length
+      ? { ...c, exhibits: [...ex].sort((a, b) => a.number - b.number) }
+      : c;
+  });
+}
+
+/**
+ * Attach each criterion's vault exhibits onto a draft request, so the prompt can
+ * cite them and the UI can index/audit them. Thin wrapper over the shared
+ * {@link withAttachedExhibits} binder.
+ */
+export function attachExhibits(
+  req: DraftRequest,
+  documents: readonly VaultDocLike[],
+): DraftRequest {
+  const criteria = withAttachedExhibits(req.criteria, documents);
+  return criteria ? { ...req, criteria } : req;
+}
+
+/**
+ * Replace the focused section's body in `base`, preserving every other section.
+ * Replaces ONLY THE FIRST heading match — section headings are free-form
+ * user/model text and can collide (two "Critical role" entries, or a model that
+ * emits "Introduction" twice). Matching every occurrence would overwrite a
+ * distinct argument section with an unrelated body, silently corrupting a paid
+ * draft the attorney may file. Lives here (the pure module) so the server
+ * persist path AND the client regenerate handler share ONE merge rule.
+ */
+export function mergeRegeneratedSection(
+  base: readonly DraftSection[],
+  focus: string,
+  body: string,
+): DraftSection[] {
+  let replaced = false;
+  return base.map((s) => {
+    if (!replaced && s.heading === focus) {
+      replaced = true;
+      return { heading: focus, body };
+    }
+    return s;
+  });
 }
 
 // — Citation integrity ───────────────────────────────────────────────────────

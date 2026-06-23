@@ -23,9 +23,13 @@
  */
 
 import { type Classification } from "./packs";
-import { livePrograms } from "./jurisdictions";
+import {
+  livePrograms,
+  US_ARIZONA_ABS_FACT,
+  US_FEDERAL_PRACTICE_FACT,
+} from "./jurisdictions";
 
-export type ValidationStatus = "verified" | "provisional" | "needs-review";
+export type ValidationStatus = "verified" | "needs-review";
 
 export interface SourceRef {
   title: string;
@@ -34,17 +38,17 @@ export interface SourceRef {
 }
 
 export interface ValidationRecord {
-  /** Program code or compliance-topic key this record validates. */
-  subject: string;
   status: ValidationStatus;
+  /** Human display name for this record. Program records derive their title from
+   *  `VISA_PACKS[...].label`; compliance records (which have no pack) set it here
+   *  so the label lives WITH the data instead of in a parallel page-side table. */
+  title?: string;
   /** Statute / regulation the program rests on. */
   legalBasis: string;
   /** Number of criteria required, when applicable (e.g. 3 of 8). */
   threshold?: string;
   /** ISO date (yyyy-mm-dd) the facts were last checked against the sources. */
   lastVerified: string;
-  /** "web-research (primary sources)" until counsel signs off. */
-  verifiedBy: string;
   /** True once counsel has signed off on THIS PROGRAM'S validated rule-set — a
    *  per-program operational-readiness status shown on /validation. NOT the
    *  per-case filing gate (that is the attorney-of-record review & e-sign
@@ -63,12 +67,10 @@ const TODAY = "2026-05-30"; // date of the last validation pass
 
 export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
   "O-1A": {
-    subject: "O-1A",
     status: "verified",
     legalBasis: "8 CFR 214.2(o)(3)(iii)",
     threshold: "3 of 8 criteria (or a qualifying one-time major award)",
     lastVerified: TODAY,
-    verifiedBy: "web-research (primary sources)",
     counselApproved: false,
     sources: [
       {
@@ -87,12 +89,10 @@ export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
       "Criterion labels are paraphrased; verbatim wording + counsel sign-off pending.",
   },
   "O-1B": {
-    subject: "O-1B",
     status: "verified",
     legalBasis: "8 CFR 214.2(o)(3)(iv)",
     threshold: "3 of 6 criteria (or a qualifying major award/nomination)",
     lastVerified: TODAY,
-    verifiedBy: "web-research (primary sources)",
     counselApproved: false,
     sources: [
       {
@@ -111,12 +111,10 @@ export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
       "from the regulation; verbatim wording + counsel sign-off pending.",
   },
   "EB-1A": {
-    subject: "EB-1A",
     status: "verified",
     legalBasis: "8 CFR 204.5(h)(3)",
     threshold: "3 of 10 criteria (or a qualifying one-time major award)",
     lastVerified: TODAY,
-    verifiedBy: "web-research (primary sources)",
     counselApproved: false,
     sources: [
       {
@@ -135,11 +133,9 @@ export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
       "and order; threshold 3 of 10 confirmed. Counsel sign-off pending.",
   },
   "UK-Global-Talent": {
-    subject: "UK-Global-Talent",
     status: "needs-review",
     legalBasis: "UK Immigration Rules Appendix Global Talent (endorsement-based)",
     lastVerified: TODAY,
-    verifiedBy: "web-research (primary sources)",
     counselApproved: false,
     sources: [
       {
@@ -161,11 +157,10 @@ export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
 
 export const COMPLIANCE_VALIDATIONS: Record<string, ValidationRecord> = {
   "us-federal-practice": {
-    subject: "us-federal-practice",
     status: "verified",
+    title: "Federal practice of immigration law",
     legalBasis: "8 CFR 1001.1(f); 8 CFR 1.2; 8 CFR 1292.1",
     lastVerified: TODAY,
-    verifiedBy: "web-research (primary sources)",
     counselApproved: false,
     sources: [
       {
@@ -180,17 +175,16 @@ export const COMPLIANCE_VALIDATIONS: Record<string, ValidationRecord> = {
       },
     ],
     notes:
-      "'Attorney' = eligible to practice and a member in good standing of the bar of " +
-      "the highest court of ANY one U.S. state/territory/DC, not under restriction. " +
-      "Federal immigration practice is not limited to the client's state → one attorney " +
-      "of record covers the nation.",
+      `${US_FEDERAL_PRACTICE_FACT} 'Attorney' = eligible to practice and a member ` +
+      "in good standing of the bar of the highest court of ANY one U.S. " +
+      "state/territory/DC, not under restriction. Federal immigration practice is " +
+      "not limited to the client's state → one attorney of record covers the nation.",
   },
   "us-arizona-abs": {
-    subject: "us-arizona-abs",
     status: "verified",
+    title: "Law-firm structure (Arizona ABS)",
     legalBasis: "Arizona Supreme Court Order R-20-0034 (eff. 2021-01-01); ER 5.4 eliminated",
     lastVerified: TODAY,
-    verifiedBy: "web-research (primary sources)",
     counselApproved: false,
     sources: [
       {
@@ -207,7 +201,7 @@ export const COMPLIANCE_VALIDATIONS: Record<string, ValidationRecord> = {
     notes:
       "Arizona is the first state to eliminate ER 5.4; an ABS may have non-lawyer " +
       "ownership/economic interest and must employ ≥1 active bar member in good standing. " +
-      "Validates the software-licensed-to-attorney-owned-firm structure.",
+      `${US_ARIZONA_ABS_FACT} Validates this software-licensed-to-attorney-owned-firm structure.`,
   },
 };
 
@@ -217,11 +211,14 @@ export function validationFor(program: string): ValidationRecord | undefined {
   return PROGRAM_VALIDATIONS[program as Classification];
 }
 
-export function allValidations(): ValidationRecord[] {
+/** Every validation record paired with its map key — the key IS the record's
+ *  identity/label (it used to be hand-copied into a `subject` field that could
+ *  drift from the key; the freshness report now prints the key directly). */
+export function allValidations(): Array<{ key: string; record: ValidationRecord }> {
   return [
-    ...Object.values(PROGRAM_VALIDATIONS),
-    ...Object.values(COMPLIANCE_VALIDATIONS),
-  ];
+    ...Object.entries(PROGRAM_VALIDATIONS),
+    ...Object.entries(COMPLIANCE_VALIDATIONS),
+  ].map(([key, record]) => ({ key, record }));
 }
 
 /** Whole days between two yyyy-mm-dd dates (b - a). */

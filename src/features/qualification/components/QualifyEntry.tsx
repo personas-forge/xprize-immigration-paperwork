@@ -31,7 +31,7 @@ export function QualifyEntry() {
         <button
           type="button"
           onClick={() => setMode("best-path")}
-          className="font-mono text-[13px] uppercase tracking-document text-muted-strong ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+          className="font-mono text-[13px] uppercase tracking-document text-muted-strong ink-link focus-ring"
         >
           ← Find my best path
         </button>
@@ -47,7 +47,7 @@ export function QualifyEntry() {
         <button
           type="button"
           onClick={() => setMode("known")}
-          className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+          className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-ring"
         >
           I already know my visa — screen directly →
         </button>

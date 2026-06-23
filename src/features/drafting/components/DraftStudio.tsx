@@ -12,6 +12,10 @@ import {
   attachExhibits,
   auditCitations,
   buildExhibitIndex,
+  critiquesByHeading,
+  mergeRegeneratedSection,
+  numericVersion,
+  scoreTone,
   undraftedSupportedCriteria,
   type DraftSection,
   type SectionCritique,
@@ -19,6 +23,7 @@ import {
 } from "@/features/drafting";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 import {
+  copyButtonLabel,
   copyDraftToClipboard,
   draftClipboardText,
   retrySaveDraft,
@@ -206,7 +211,7 @@ export function DraftStudio({
       setResolvedCaseId(data.caseId ?? caseId);
       // A fresh draft is persisted server-side with a version; reflect it (and
       // clear any stale "Saved ✓" from a prior draft). null version → unsaved.
-      const v = typeof data.version === "number" ? data.version : null;
+      const v = numericVersion(data.version);
       setVersion(v);
       setEditSaveState(v !== null ? "saved" : "idle");
       setStatus("done");
@@ -241,19 +246,10 @@ export function DraftStudio({
         setRegenerationError(heading);
         return;
       }
-      // Replace ONLY the first heading match — headings can collide, and
-      // overwriting every match would clobber a distinct section (mirrors the
-      // server-side mergeRegeneratedSection fix).
-      setSections((prev) => {
-        let replaced = false;
-        return prev.map((s) => {
-          if (!replaced && s.heading === heading) {
-            replaced = true;
-            return data.section;
-          }
-          return s;
-        });
-      });
+      // Merge via the SAME pure helper the server persists with, so the rendered
+      // sections and the saved version can't diverge (replaces only the first
+      // heading match — headings can collide).
+      setSections((prev) => mergeRegeneratedSection(prev, heading, data.section.body));
       setSource(data.source);
       setSaveFailed(Boolean(data.saveFailed));
       setAdjudication(data.adjudication ?? null);
@@ -263,7 +259,7 @@ export function DraftStudio({
       // saved a NEW version (v1 even when no draft was stored yet) — surface it
       // so the pill isn't a stale "Saved ✓" from before the regenerate and the
       // un-stored-draft case no longer silently stays version=null (#4/#5).
-      const v = typeof data.version === "number" ? data.version : null;
+      const v = numericVersion(data.version);
       setVersion(v);
       setEditSaveState(v !== null ? "saved" : "idle");
     } catch {
@@ -298,9 +294,7 @@ export function DraftStudio({
         setCritiqueStatus("error");
         return;
       }
-      const map: Record<string, SectionCritique> = {};
-      for (const c of data.critiques) map[c.heading] = c;
-      setCritiques(map);
+      setCritiques(critiquesByHeading(data.critiques));
       setCritiqueScore(data.overallScore);
       setCritiqueStatus("idle");
     } catch {
@@ -492,7 +486,7 @@ export function DraftStudio({
               </div>
               <Link
                 href="/billing"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px]"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-ring active:translate-y-[1px]"
               >
                 Buy more
                 <span aria-hidden>→</span>
@@ -510,7 +504,7 @@ export function DraftStudio({
                 the save-failed alert) — the product's core deliverable. */}
             <div className="flex flex-wrap items-center gap-2.5">
               <Button type="button" variant="secondary" size="sm" onClick={copyDraft}>
-                {copyState === "copied" ? "Copied ✓" : copyState === "failed" ? "Copy failed — retry" : "Copy letter"}
+                {copyButtonLabel(copyState, { idle: "Copy letter", failed: "Copy failed — retry" })}
               </Button>
               <Button type="button" variant="ghost" size="sm" onClick={downloadDraft}>
                 Download .txt
@@ -597,7 +591,7 @@ export function DraftStudio({
                     type="button"
                     onClick={() => regenerate(s.heading)}
                     disabled={regenerating !== null}
-                    className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                    className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground disabled:opacity-50 focus-ring"
                   >
                     <svg
                       width="11"
@@ -634,7 +628,7 @@ export function DraftStudio({
                   value={s.body}
                   onChange={(e) => editBody(s.heading, e.target.value)}
                   rows={Math.max(3, Math.ceil(s.body.length / 90))}
-                  className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-[1.7] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                  className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-[1.7] text-foreground-soft focus-ring"
                 />
                 {critiques[s.heading] && critiques[s.heading].score < WEAK_SECTION_SCORE ? (
                   <RedlineCard
@@ -718,13 +712,6 @@ export function DraftStudio({
       </CardBody>
     </Card>
   );
-}
-
-/** Map a 0-100 section/draft score to a badge tone. */
-function scoreTone(score: number): "success" | "warning" | "danger" {
-  if (score >= WEAK_SECTION_SCORE) return "success";
-  if (score >= 60) return "warning";
-  return "danger";
 }
 
 /**

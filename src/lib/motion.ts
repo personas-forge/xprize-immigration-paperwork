@@ -9,31 +9,13 @@ import type { Variants } from "framer-motion";
 /** Slow, paper-settling ease-out. The single curve every animation uses. */
 export const easeArrival: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-/**
- * Fade + 14px rise — the document-ink reveal. Matches the v2 CSS keyframe
- * `inkRise` exactly so motion-and-CSS reveals coexist without a visible mix.
- */
+/** Fade + 14px rise — the document-ink reveal. */
 export const fadeUp: Variants = {
   hidden: { opacity: 0, y: 14 },
   show: {
     opacity: 1,
     y: 0,
     transition: { duration: 0.7, ease: easeArrival },
-  },
-};
-
-/**
- * Parent variant that staggers its children's reveal by 90ms with a small
- * head-start delay. Pair with `fadeUp` (or any child variant) on direct
- * children inside <Stagger>.
- */
-export const staggerParent: Variants = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.09,
-      delayChildren: 0.05,
-    },
   },
 };
 

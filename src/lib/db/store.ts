@@ -308,12 +308,6 @@ export interface Store {
   getCasesInReview(): Promise<StoredCase[]>;
   /** The scored criteria for a case, in canonical order. */
   getCriteriaForCase(caseId: string): Promise<StoredCriterion[]>;
-  /** Advance a case's lifecycle status, optionally recording the receipt. */
-  setCaseStatus(
-    caseId: string,
-    status: string,
-    receiptNumber?: string,
-  ): Promise<void>;
   /**
    * Atomically advance a case's status AND append review events, but ONLY when
    * the current status is one of `fromStatuses` (compare-and-set). Returns true

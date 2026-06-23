@@ -7,7 +7,7 @@
 
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { DISCLAIMER } from "@/features/guidance/guidance";
+import { DISCLAIMER } from "@/lib/result";
 import type { GenerateOptions } from "@/lib/llm/client";
 import type { AdjudicationReport } from "@/lib/llm/adjudication-gates";
 import {
@@ -15,6 +15,7 @@ import {
   checkRateLimit,
   isRateLimitEnabled,
   rateLimitKey,
+  tooManyRequestsResponse,
 } from "@/lib/tokens/rate-limit";
 
 /**
@@ -77,9 +78,11 @@ export type ParseOutcome<TInput> =
   | { ok: true; value: TInput }
   | { ok: false; response: NextResponse };
 
-/** Context handed to `spec.parse` — the raw body plus a memoized user resolver. */
+/** Context handed to `spec.parse` — the raw body plus a memoized user resolver.
+ *  (Header/IP concerns — idempotency key, rate-limit key — are read from the
+ *  orchestrator's own request, never the spec, so the raw request isn't exposed
+ *  here; a spec that reads headers ad hoc would re-grow the removed boilerplate.) */
 export interface ParseContext {
-  request: Request;
   body: unknown;
   /** Resolve the signed-in user once (memoized across parse + persist). */
   resolveUser: () => Promise<AuthUser | null>;
@@ -275,7 +278,7 @@ export async function executeAiOperation<TInput, TOutput>(
   };
 
   // 2. Route-specific validation + auth gates. Returns its own error response.
-  const parsed = await spec.parse({ request, body, resolveUser });
+  const parsed = await spec.parse({ body, resolveUser });
   if (!parsed.ok) return parsed.response;
   const input = parsed.value;
 
@@ -292,12 +295,7 @@ export async function executeAiOperation<TInput, TOutput>(
       d.rateLimit.key(request, scope, keyUser),
       d.rateLimit.limits[bucket],
     );
-    if (!rl.ok) {
-      return NextResponse.json(
-        { error: "rate_limited", retryAfterSec: rl.retryAfterSec, disclaimer: DISCLAIMER },
-        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
-      );
-    }
+    if (!rl.ok) return tooManyRequestsResponse(rl, DISCLAIMER);
   }
 
   // 4. Debit upfront (charge-then-reclaim). A caller who can't pay never reaches
