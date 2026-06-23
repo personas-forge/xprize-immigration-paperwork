@@ -11,7 +11,7 @@
  */
 
 import { attorneyAllowlist } from "@/lib/auth/roles";
-import type { EventBus } from "../bus";
+import { type EventBus, DEFAULT_HANDLER_TIMEOUT_MS } from "../bus";
 import type { CaseStatusChanged } from "../types";
 
 export interface AttorneyNotification {
@@ -36,7 +36,11 @@ export const NOTIFY_ON: ReadonlySet<string> = new Set(
 const defaultNotify: NotifyFn = (n) =>
   console.info(`[attorney-notify] ${n.caseId} → ${n.status} (${n.reason})`);
 
-const WEBHOOK_TIMEOUT_MS = 5000;
+// Must stay UNDER the bus handler timeout so the fetch aborts before the bus
+// reports this subscriber as timed out (else a slow webhook double-reports
+// failure: "subscriber timed out" AND "NOT DELIVERED"). Derived, not a second
+// magic 5000, so the ordering invariant can't silently break.
+const WEBHOOK_TIMEOUT_MS = DEFAULT_HANDLER_TIMEOUT_MS - 500;
 
 /**
  * Resolve the ACTIVE delivery sink. When an operator sets

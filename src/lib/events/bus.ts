@@ -33,7 +33,7 @@ export interface EventBusOptions {
 
 /** Default per-handler timeout — generous enough for any in-process sink, short
  *  enough that a hung network sink can't wedge a user-facing mutation. */
-const DEFAULT_HANDLER_TIMEOUT_MS = 5_000;
+export const DEFAULT_HANDLER_TIMEOUT_MS = 5_000;
 
 export class EventBus {
   // Per-type handler sets + a wildcard set for cross-cutting subscribers
