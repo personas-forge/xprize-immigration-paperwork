@@ -20,8 +20,8 @@ import {
   type DraftExhibit,
   type VaultDocLike,
   exhibitBullets,
-  exhibitNumber,
   tryParseSections,
+  withAttachedExhibits,
   type DraftSection,
 } from "@/features/drafting";
 import { str, criterionLine, MAX_PETITIONER, MAX_TEXT, MAX_CRITERIA } from "@/features/drafting/criteria-text";
@@ -65,12 +65,6 @@ export interface RfeResult extends RfeResponse {
 
 const MAX_RFE = 12000;
 const MIN_RFE = 20;
-
-/** Statuses worth reinforcing in a response (an RFE often targets the weak ones,
- *  so Partial is included; only "None" — no evidence at all — is excluded). */
-function isAddressable(status: string): boolean {
-  return status === "Met" || status === "Strong" || status === "Partial";
-}
 
 /**
  * Validate and normalize an untrusted request body. The RFE notice text is
@@ -119,29 +113,17 @@ export function rfeHasExhibits(req: RfeRequest): boolean {
 
 /**
  * Attach each criterion's vault exhibits onto an RFE request so the response
- * cites real on-file documents (moonshot #21). Mirrors drafting's attachExhibits
- * but typed for RfeRequest; documents with no numeric ordinal are skipped.
+ * cites real on-file documents (moonshot #21). Thin wrapper over drafting's
+ * shared {@link withAttachedExhibits} binder — RfeCriterion satisfies the
+ * binder's criterion shape, so the grouping logic is single-sourced with the
+ * petition draft (no clone to keep in lockstep).
  */
 export function attachRfeExhibits(
   req: RfeRequest,
   documents: readonly VaultDocLike[],
 ): RfeRequest {
-  const byCriterion = new Map<string, DraftExhibit[]>();
-  for (const d of documents) {
-    const number = exhibitNumber(d.exhibit);
-    if (number === null) continue;
-    const list = byCriterion.get(d.criterion) ?? [];
-    list.push({ number, name: d.name, facts: d.facts });
-    byCriterion.set(d.criterion, list);
-  }
-  if (byCriterion.size === 0) return req;
-  return {
-    ...req,
-    criteria: req.criteria.map((c) => {
-      const ex = byCriterion.get(c.name);
-      return ex && ex.length ? { ...c, exhibits: [...ex].sort((a, b) => a.number - b.number) } : c;
-    }),
-  };
+  const criteria = withAttachedExhibits(req.criteria, documents);
+  return criteria ? { ...req, criteria } : req;
 }
 
 /** Per-section trim for the as-filed petition context (keeps the prompt bounded). */
@@ -251,7 +233,9 @@ export function parseRfeResponse(text: string, req: RfeRequest): RfeResponse {
  * and a closing. Same disclaimer as the model path.
  */
 export function mockRfe(req: RfeRequest): RfeResponse {
-  const addressable = req.criteria.filter((c) => isAddressable(c.status));
+  // "Relied-on" = the statuses an RFE argues (Met/Strong/Partial; "None" is not
+  // argued) — the same predicate the forecast uses, single-sourced as isRelied.
+  const addressable = req.criteria.filter((c) => isRelied(c.status));
   const opening: DraftSection = {
     heading: "Response to Request for Evidence",
     body:

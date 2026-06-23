@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { DISCLAIMER, mockDraft, type DraftRequest, type DraftSection } from "./index";
 import {
-  draftSpec,
+  DISCLAIMER,
   mergeRegeneratedSection,
-  pickMergeBase,
-  type DraftInput,
-} from "./draftOperation";
+  mockDraft,
+  type DraftRequest,
+  type DraftSection,
+} from "./index";
+import { draftSpec, pickMergeBase, type DraftInput } from "./draftOperation";
 
 // Unit coverage for the /api/draft operation spec's TWO-PATH DISPATCH — the new
 // risk in moving draft onto the orchestrator. The orchestrator itself (rate-limit

@@ -28,6 +28,7 @@ import {
   buildDraftResult,
   buildSectionPrompt,
   buildSectionResult,
+  mergeRegeneratedSection,
   mockDraft,
   mockSection,
   parseDraftRequest,
@@ -82,27 +83,6 @@ export function pickMergeBase(
   // regenerated — otherwise the merge-by-heading would silently drop the new one.
   if (!clientSections.some((s) => s.heading === focus)) return null;
   return clientSections.map((s) => ({ heading: s.heading, body: s.body }));
-}
-
-/** Replace the focused section's body in `base`, preserving every other section.
- *  Replaces ONLY THE FIRST heading match — section headings are free-form
- *  user/model text and can collide (two "Critical role" entries, or a model that
- *  emits "Introduction" twice). Matching every occurrence would overwrite a
- *  distinct argument section with an unrelated body, silently corrupting a paid
- *  draft the attorney may file. */
-export function mergeRegeneratedSection(
-  base: readonly DraftSection[],
-  focus: string,
-  body: string,
-): DraftSection[] {
-  let replaced = false;
-  return base.map((s) => {
-    if (!replaced && s.heading === focus) {
-      replaced = true;
-      return { heading: focus, body };
-    }
-    return s;
-  });
 }
 
 export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {

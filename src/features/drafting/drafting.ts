@@ -555,16 +555,26 @@ export function exhibitNumber(label: string): number | null {
   return m ? Number(m[0]) : null;
 }
 
+/** Minimal criterion shape the exhibit binder reads/writes — a name to match a
+ *  vault document's criterion, plus the optional exhibits it attaches. Both the
+ *  draft and the RFE criterion satisfy it, so ONE binder serves both. */
+export interface ExhibitableCriterion {
+  name: string;
+  exhibits?: readonly DraftExhibit[];
+}
+
 /**
- * Attach each criterion's vault exhibits (grouped by criterion name) onto a
- * draft request, so the prompt can cite them and the UI can index/audit them.
- * Documents whose criterion matches no request criterion, or that lack a numeric
- * exhibit ordinal, are skipped. Exhibits are sorted by ordinal per criterion.
+ * Group vault documents by criterion name and attach them (sorted by ordinal)
+ * onto matching criteria. Documents that match no criterion, or lack a numeric
+ * exhibit ordinal, are skipped. Returns `null` when nothing attaches, so the
+ * caller can hand back the original request unchanged. This is the ONE place the
+ * citation-grouping rule lives — shared by the draft and RFE binders so they
+ * can't diverge (the bug a hand-rolled clone would invite).
  */
-export function attachExhibits(
-  req: DraftRequest,
+export function withAttachedExhibits<C extends ExhibitableCriterion>(
+  criteria: readonly C[],
   documents: readonly VaultDocLike[],
-): DraftRequest {
+): C[] | null {
   const byCriterion = new Map<string, DraftExhibit[]>();
   for (const d of documents) {
     const number = exhibitNumber(d.exhibit);
@@ -573,16 +583,50 @@ export function attachExhibits(
     list.push({ number, name: d.name, facts: d.facts });
     byCriterion.set(d.criterion, list);
   }
-  if (byCriterion.size === 0) return req;
-  return {
-    ...req,
-    criteria: req.criteria.map((c) => {
-      const ex = byCriterion.get(c.name);
-      return ex && ex.length
-        ? { ...c, exhibits: [...ex].sort((a, b) => a.number - b.number) }
-        : c;
-    }),
-  };
+  if (byCriterion.size === 0) return null;
+  return criteria.map((c) => {
+    const ex = byCriterion.get(c.name);
+    return ex && ex.length
+      ? { ...c, exhibits: [...ex].sort((a, b) => a.number - b.number) }
+      : c;
+  });
+}
+
+/**
+ * Attach each criterion's vault exhibits onto a draft request, so the prompt can
+ * cite them and the UI can index/audit them. Thin wrapper over the shared
+ * {@link withAttachedExhibits} binder.
+ */
+export function attachExhibits(
+  req: DraftRequest,
+  documents: readonly VaultDocLike[],
+): DraftRequest {
+  const criteria = withAttachedExhibits(req.criteria, documents);
+  return criteria ? { ...req, criteria } : req;
+}
+
+/**
+ * Replace the focused section's body in `base`, preserving every other section.
+ * Replaces ONLY THE FIRST heading match — section headings are free-form
+ * user/model text and can collide (two "Critical role" entries, or a model that
+ * emits "Introduction" twice). Matching every occurrence would overwrite a
+ * distinct argument section with an unrelated body, silently corrupting a paid
+ * draft the attorney may file. Lives here (the pure module) so the server
+ * persist path AND the client regenerate handler share ONE merge rule.
+ */
+export function mergeRegeneratedSection(
+  base: readonly DraftSection[],
+  focus: string,
+  body: string,
+): DraftSection[] {
+  let replaced = false;
+  return base.map((s) => {
+    if (!replaced && s.heading === focus) {
+      replaced = true;
+      return { heading: focus, body };
+    }
+    return s;
+  });
 }
 
 // — Citation integrity ───────────────────────────────────────────────────────

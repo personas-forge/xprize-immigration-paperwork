@@ -12,6 +12,7 @@ import {
   attachExhibits,
   auditCitations,
   buildExhibitIndex,
+  mergeRegeneratedSection,
   undraftedSupportedCriteria,
   type DraftSection,
   type SectionCritique,
@@ -241,19 +242,10 @@ export function DraftStudio({
         setRegenerationError(heading);
         return;
       }
-      // Replace ONLY the first heading match — headings can collide, and
-      // overwriting every match would clobber a distinct section (mirrors the
-      // server-side mergeRegeneratedSection fix).
-      setSections((prev) => {
-        let replaced = false;
-        return prev.map((s) => {
-          if (!replaced && s.heading === heading) {
-            replaced = true;
-            return data.section;
-          }
-          return s;
-        });
-      });
+      // Merge via the SAME pure helper the server persists with, so the rendered
+      // sections and the saved version can't diverge (replaces only the first
+      // heading match — headings can collide).
+      setSections((prev) => mergeRegeneratedSection(prev, heading, data.section.body));
       setSource(data.source);
       setSaveFailed(Boolean(data.saveFailed));
       setAdjudication(data.adjudication ?? null);
