@@ -75,7 +75,7 @@
 
 ## Deferred (with reasons)
 
-- **brand#2 (High) — focus-ring across 34 files.** A `.focus-ring` utility + 34-file sweep. The inline form LACKS the `ring-offset` the Button standard has, so unifying is a **visual change** to 34 elements — and this project has **no visual tests**. Needs the utility authored + manual eyeballing / `npm run e2e`. Also reconcile the global `:focus-visible { outline: --accent }` (lower-contrast) with the `--accent-dark` ring contract. (case-file#1's CTA, which IS fixed, is the bounded version of this.)
+- **brand#2 (High) — DONE (later commit).** Added a shared `.focus-ring` utility mirroring the Button ring and swept all 79 inline copies across 34 files; reconciled the global `:focus-visible` fallback to `--accent-dark`. VISUAL change (swept elements gained the ring-offset; global outline darkened) — no visual tests, so eyeball keyboard focus or run `npm run e2e`. tsc 0 / tests 427 / next build PASS.
 - **data-adapter#2 (High) — `EvidenceAdapter.restoreDocument` unwired.** Wire-or-delete is a **product decision**: the soft-delete was deliberately designed recoverable (2026-06-21), so deleting the restore path removes intended capability while wiring it is a new feature (undo action + UI). Left intact; decide before closing.
 
 ## Medium/low tail — COMPLETED (continuation session, same branch)

@@ -508,10 +508,14 @@ FIXES-WAVES-1-5 at `docs/harness/code-refactor-2026-06-23/`.
   don't exist. Re-run `refresh_context` on those.
 
 ### Open follow-ups (from the 2026-06-23 code-refactor scan)
-- **brand#2 (High, DEFERRED — visual)**: focus-ring hand-copied across 34 files in
-  the bracket form (no offset). Needs a `.focus-ring` utility + a 34-file sweep +
-  manual eyeballing (NO visual tests). Also reconcile the global `:focus-visible`
-  outline (`--accent`, lower contrast) with the `--accent-dark` ring contract.
+- **brand#2 (High) — DONE.** Added a shared `.focus-ring` utility in globals.css
+  (box-shadow mirroring the Button's Tailwind ring: `0 0 0 2px --background, 0 0 0
+  4px --accent-dark`) and swept all 79 inline copies across 34 files; reconciled
+  the global `:focus-visible` fallback `--accent`→`--accent-dark`. VISUAL change
+  (elements gained the ring-offset) — NO visual tests; eyeball or `npm run e2e`.
+  The inline form was perfectly consistent (one variation, 79×), so the sweep was
+  one perl fixed-string replace. `.focus-ring` is plain CSS (opaque to
+  tailwind-merge), safe in `cn()` className strings.
 - **data-adapter#2 (High, DEFERRED — decision)**: `EvidenceAdapter.restoreDocument`
   is built+tested but unwired. Wire (undo action + UI) vs delete is a product call —
   the soft-delete was designed recoverable, so deletion removes intended capability.
