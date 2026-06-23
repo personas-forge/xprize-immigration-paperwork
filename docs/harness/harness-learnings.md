@@ -515,8 +515,16 @@ FIXES-WAVES-1-5 at `docs/harness/code-refactor-2026-06-23/`.
 - **data-adapter#2 (High, DEFERRED — decision)**: `EvidenceAdapter.restoreDocument`
   is built+tested but unwired. Wire (undo action + UI) vs delete is a product call —
   the soft-delete was designed recoverable, so deletion removes intended capability.
-- **65-item medium/low tail** not run: adapter `store_error` envelope (data-adapter#4),
-  `assertChargeCost`/`assertCreditAmount` unify (token#2), preview rate-limit guard
-  (rate-limit#2), `caseId` parse idiom + `as unknown as` build-cast helper
-  (ai-orchestrator#4/#5), `CASE_STATUSES`/`CLASSIFICATION_OPTIONS` enumeration
-  (attorney#4, case-file#5), stale doc comments. Full list in the per-context reports.
+- **65-item medium/low tail — COMPLETED** (continuation, same branch). ~60 closed
+  across ~17 commits (sub-waves T1–T8 direct + 5 parallel subagents over disjoint
+  file areas). Gates green: tsc 0, tests 428→427 (−1 = removed redundant
+  setCaseStatus emit test), lint, `next build` PASS. New seams: assertBoundedInt,
+  FREE_PASS_BALANCE, wrapStore, parseCriteriaArray, toRfeCriterion, parseCaseId,
+  isCaseOwner, CONSENT_FIELDS, toLedgerEntry, CASE_STATUSES/VISA_CLASSIFICATIONS +
+  CLASSIFICATION_OPTIONS/STATUS_OPTIONS, copyButtonLabel, withStore. Deleted:
+  setCaseStatus (unguarded setter, interface+drivers+proxy), Stagger/staggerParent,
+  HoverCard (→`.lift`), .double-rule, "provisional", isMeteringBypassed,
+  getLatestRfeResponse (adapter), ParseContext.request, dead useId, "na" verdict.
+  Intentionally LEFT (scan recommended keep): ai#3 requiresImages (OCR forward-design),
+  ai#5 build-cast (type-required), rate-limit#4 windowMs (test seam), eb#5 (would add code).
+  Verify-before-fix FP: evidence#1 parseCategorizeResponse is live (eval harness).

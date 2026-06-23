@@ -78,9 +78,33 @@
 - **brand#2 (High) — focus-ring across 34 files.** A `.focus-ring` utility + 34-file sweep. The inline form LACKS the `ring-offset` the Button standard has, so unifying is a **visual change** to 34 elements — and this project has **no visual tests**. Needs the utility authored + manual eyeballing / `npm run e2e`. Also reconcile the global `:focus-visible { outline: --accent }` (lower-contrast) with the `--accent-dark` ring contract. (case-file#1's CTA, which IS fixed, is the bounded version of this.)
 - **data-adapter#2 (High) — `EvidenceAdapter.restoreDocument` unwired.** Wire-or-delete is a **product decision**: the soft-delete was deliberately designed recoverable (2026-06-21), so deleting the restore path removes intended capability while wiring it is a new feature (undo action + UI). Left intact; decide before closing.
 
-## Remaining medium/low tail (65 findings)
+## Medium/low tail — COMPLETED (continuation session, same branch)
 
-Not gating. Per-report structure/cleanup. Higher-value clusters: the ~12-method adapter `try/catch→store_error` envelope (data-adapter#4), `assertChargeCost`/`assertCreditAmount` unify (token#2), the rate-limit preview-preamble guard (rate-limit#2), `caseId` parse idiom (ai-orchestrator#4), the `as unknown as Record` build-cast helper (ai-orchestrator#5), `CASE_STATUSES`/`CLASSIFICATION_OPTIONS` single-enumeration (attorney#4, case-file#5), and assorted stale doc comments. See the per-context reports for the full list.
+The 65-item medium/low tail was subsequently worked through (the 3 mediums folded
+into Waves 1–5 already counted). ~60 closed across ~17 more commits (sub-waves
+T1–T8 done directly, then 5 parallel subagents over disjoint file areas: LLM,
+Guidance, Qualify/Validation, Drafting/RFE/Petition, Review/Case-file/Marketing/Brand).
+Gates green throughout: tsc 0, tests 428→427 (−1 = the removed redundant
+`setCaseStatus` emit test), lint clean, `next build` PASS.
+
+New shared seams from the tail: `assertBoundedInt`/`FREE_PASS_BALANCE` (ledger),
+`wrapStore` (adapters), `tooManyRequestsResponse` was Wave 1; `parseCriteriaArray`
++ `toRfeCriterion` (criteria), `parseCaseId` + `isCaseOwner` (parse-gate/adapter),
+`CONSENT_FIELDS`, `toLedgerEntry` (per driver), `CASE_STATUSES`/`VISA_CLASSIFICATIONS`
++ `CLASSIFICATION_OPTIONS`/`STATUS_OPTIONS`, `copyButtonLabel`, `withStore`
+(petitions), `consentRow`/`appendConsentRow`. Dead code deleted: `setCaseStatus`
+(unguarded setter, Store interface + both drivers + event proxy), `Stagger`/
+`staggerParent`, `HoverCard` (consolidated on `.lift`), `.double-rule` CSS,
+`"provisional"` status, `isMeteringBypassed`, `PetitionAdapter.getLatestRfeResponse`,
+`ParseContext.request`, dead `useId` plumbing, the `"na"` eval verdict.
+
+**Intentionally LEFT (the scan itself recommended keep/leave):**
+- ai-orchestrator#3 (`requiresImages`) — forward-design for the planned OCR caller; deleting just means rebuilding it.
+- ai-orchestrator#5 (`build` cast) — the dangerous `as unknown` laundering was removed (uscis#4); the remaining single `as Record<string, unknown>` is required by the orchestrator's `build` return type.
+- rate-limit#4 (`windowMs`) — a legitimate test-injection seam; the scan explicitly says NOT to action it.
+- event-bus#5 (`at: now()` ×4) — folding into per-event builders would ADD code; subsumed by the event-bus#2 `caseStatusChanged` factory.
+
+A verify-before-fix FP from Wave 4 also stands: evidence#1 `parseCategorizeResponse` is live (the eval harness calls it).
 
 ## Verification
 
