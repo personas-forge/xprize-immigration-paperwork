@@ -1,8 +1,8 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
-import { easeArrival, fadeUp, staggerParent } from "@/lib/motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { easeArrival, fadeUp } from "@/lib/motion";
 
 // Thin, opinionated wrappers around framer-motion that (1) always honor
 // `prefers-reduced-motion` by returning a plain element, and (2) use
@@ -49,42 +49,6 @@ export function Rise({
       viewport={inView}
       variants={fadeUp}
       transition={{ duration: 0.7, ease: easeArrival, delay }}
-      {...(rest as React.ComponentProps<typeof motion.div>)}
-    >
-      {children}
-    </MotionTag>
-  );
-}
-
-/**
- * Parent that staggers its direct children's reveal. Each child should be a
- * <motion.*> element (or a <Rise>) with a `hidden`/`show` variants pair. Render
- * as a list tag (`as="ol"`) when the children are list items.
- */
-export function Stagger({
-  children,
-  className,
-  variants,
-  as = "div",
-  ...rest
-}: DivProps & { variants?: Variants; as?: AsTag }) {
-  const reduce = useReducedMotion();
-  if (reduce) {
-    const Tag = as;
-    return (
-      <Tag className={className} {...(rest as React.HTMLAttributes<HTMLElement>)}>
-        {children}
-      </Tag>
-    );
-  }
-  const MotionTag = motion[as] as typeof motion.div;
-  return (
-    <MotionTag
-      className={className}
-      initial="hidden"
-      whileInView="show"
-      viewport={inView}
-      variants={variants ?? staggerParent}
       {...(rest as React.ComponentProps<typeof motion.div>)}
     >
       {children}

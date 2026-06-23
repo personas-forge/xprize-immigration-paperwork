@@ -172,14 +172,6 @@ body {
   background-position: 50% 0;
 }
 
-/* ── Double-rule (the engraved frame around official documents) ───────── */
-.double-rule {
-  box-shadow:
-    inset 0 0 0 1px var(--border-strong),
-    inset 0 0 0 3px var(--background),
-    inset 0 0 0 4px var(--border);
-}
-
 /* ── Microprint label — the tiny security text on passports ────────────── */
 .microprint {
   font-family: var(--font-plex-mono), ui-monospace, monospace;

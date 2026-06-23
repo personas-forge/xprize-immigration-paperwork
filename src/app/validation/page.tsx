@@ -30,7 +30,6 @@ export const dynamic = "force-dynamic";
 
 const STATUS_TONE: Record<ValidationStatus, BadgeTone> = {
   verified: "success",
-  provisional: "warning",
   "needs-review": "warning",
 };
 
@@ -314,7 +313,7 @@ function Legend() {
         Status
       </span>
       <LegendItem tone="success" label="verified — matches primary sources" />
-      <LegendItem tone="warning" label="provisional / needs-review" />
+      <LegendItem tone="warning" label="needs-review" />
       <LegendItem tone="success" label="counsel signed — cleared to file" />
       <LegendItem tone="neutral" label="counsel pending" />
     </div>

@@ -20,21 +20,6 @@ export const fadeUp: Variants = {
 };
 
 /**
- * Parent variant that staggers its children's reveal by 90ms with a small
- * head-start delay. Pair with `fadeUp` (or any child variant) on direct
- * children inside <Stagger>.
- */
-export const staggerParent: Variants = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.09,
-      delayChildren: 0.05,
-    },
-  },
-};
-
-/**
  * Rubber-stamp press — scale + rotate + opacity. The slight overshoot at
  * the end mimics ink settling after the stamp lifts off the paper.
  */

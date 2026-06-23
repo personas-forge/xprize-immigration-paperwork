@@ -3,8 +3,7 @@ import { Guilloche } from "./Guilloche";
 
 /**
  * Page frame — places guilloché watermarks in the top-right and bottom-left
- * corners of the viewport, fixed and pointer-events-none, plus the engraved
- * double-rule border that frames every document in the system.
+ * corners of the viewport, fixed and pointer-events-none.
  *
  * Pure CSS / inline SVG (no canvas, no JS), all decorative layers behind
  * content with z-0. Children render in normal flow.

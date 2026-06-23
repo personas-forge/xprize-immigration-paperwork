@@ -25,7 +25,7 @@
 import { type Classification } from "./packs";
 import { livePrograms } from "./jurisdictions";
 
-export type ValidationStatus = "verified" | "provisional" | "needs-review";
+export type ValidationStatus = "verified" | "needs-review";
 
 export interface SourceRef {
   title: string;
