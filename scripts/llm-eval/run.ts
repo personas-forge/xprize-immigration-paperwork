@@ -66,7 +66,7 @@ interface RunRecord {
   error?: string;
 }
 
-const SYM: Record<string, string> = { pass: "✓", fail: "✗", warn: "⚠", na: "·" };
+const SYM: Record<string, string> = { pass: "✓", fail: "✗", warn: "⚠" };
 
 function classificationOf(s: Scenario): string {
   return String((s.input as Record<string, unknown>).classification ?? "O-1A");
@@ -89,6 +89,8 @@ async function execute(
         const result = buildGuidanceResponse("(no engine)", "mock");
         return { prompt, raw: "", result: result as never, outputText: "", source: "mock" };
       }
+      // Same fast tier as `opts`, but guidance returns PROSE — intentionally omit
+      // `json` (no structured parse here), so it doesn't share the `opts` literal.
       const raw = await llm.generate(prompt, { tier: "fast" });
       const result = buildGuidanceResponse(raw, llm.name);
       return { prompt, raw, result: result as never, outputText: result.guidance, source: llm.name };

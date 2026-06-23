@@ -19,9 +19,11 @@ export type Site =
  * pass  — the behavior held.
  * fail  — a hard, deterministic invariant was violated (compliance/structure).
  * warn  — a softer signal worth a human's eyes (possible fabrication, style).
- * na    — the gate does not apply to this scenario.
+ *
+ * A gate that does not apply to a scenario is represented by ABSENCE (the gate
+ * simply doesn't push a result), not by a distinct verdict.
  */
-export type Verdict = "pass" | "fail" | "warn" | "na";
+export type Verdict = "pass" | "fail" | "warn";
 
 export interface GateResult {
   id: string;

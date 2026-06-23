@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { LightTrack, type GuardResult } from "../lighttrack";
 import { withGuards, LLM_OUTPUT_GUARD } from "./guards";
-import type { Llm } from "./client";
+import type { Llm } from "./engines";
 
 // A minimal in-memory engine standing in for the gemini/claude clients. Records
 // the prompt/opts it was called with so we can assert transparent forwarding.

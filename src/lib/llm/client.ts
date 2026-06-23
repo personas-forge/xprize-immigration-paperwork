@@ -38,7 +38,8 @@ import {
 } from "./engines";
 
 // Re-exported so existing importers keep importing from `@/lib/llm/client`
-// unchanged (operation.ts: GenerateOptions; guards.ts / guards.test.ts: Llm).
+// unchanged (operation.ts: GenerateOptions). Intra-`llm/` consumers import the
+// types straight from `./engines` where they're defined.
 export type { GenerateOptions, Llm };
 
 /**
@@ -50,7 +51,9 @@ export function getLlm(opts: { requiresImages?: boolean } = {}): Llm | null {
   const engine = selectEngine(opts);
   // Output guards are composed transparently via the decorator (ADR-0008) — each
   // engine stays guard-free; `withGuards` applies the shared rule once, sharing
-  // the module `lt` so the score's `source` attribution stays per-engine.
+  // the module `lt`. NOTE: `lt`'s `source` is fixed at construction (`"gemini"`),
+  // so the guard score is attributed to `scored_by: "guard:gemini"` for BOTH
+  // engines — it is NOT per-engine.
   if (engine === "gemini") return withGuards(geminiClient(), LLM_OUTPUT_GUARD, lt);
   if (engine === "claude") return withGuards(claudeClient(), LLM_OUTPUT_GUARD, lt);
   return null;
