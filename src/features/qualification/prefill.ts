@@ -10,6 +10,14 @@
 
 export const QUALIFY_PREFILL_KEY = "instantVerdict:prefill";
 
+/** The canonical demo CV behind the "Use a sample" buttons on every screening
+ *  surface (QualifyPanel, InstantVerdict, BestPathFinder) — ONE copy so an edit
+ *  to the sample can't diverge between them. */
+export const SAMPLE_PROFILE =
+  "Senior research engineer. 6 peer-reviewed papers (412 citations), best-paper " +
+  "award at a top ML conference, one granted US patent. Featured in TechCrunch. " +
+  "Founding engineer at a Series B startup; $320K salary plus equity.";
+
 export interface QualifyPrefill {
   name: string;
   profile: string;

@@ -7,7 +7,7 @@ import { costOf } from "@/lib/tokens/registry";
 import { DISCLAIMER } from "@/lib/result";
 import { type QualifyResult } from "../qualification";
 import { VISA_PACKS, isClassification, type Classification } from "../packs";
-import { readQualifyPrefill } from "../prefill";
+import { SAMPLE_PROFILE, readQualifyPrefill } from "../prefill";
 import { jurisdictionFor, livePrograms } from "../jurisdictions";
 import { validationFor } from "../validation";
 
@@ -32,10 +32,6 @@ type QualifyApiResponse = QualifyResult & {
   adjudication?: AdjudicationReport;
 };
 
-const SAMPLE =
-  "Senior research engineer. 6 peer-reviewed papers (412 citations), best-paper " +
-  "award at a top ML conference, one granted US patent. Featured in TechCrunch. " +
-  "Founding engineer at a Series B startup; $320K salary plus equity.";
 
 export function QualifyPanel() {
   const [name, setName] = useState("");
@@ -213,7 +209,7 @@ export function QualifyPanel() {
               </Button>
               <button
                 type="button"
-                onClick={() => setProfile(SAMPLE)}
+                onClick={() => setProfile(SAMPLE_PROFILE)}
                 className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               >
                 Use a sample

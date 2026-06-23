@@ -7,7 +7,7 @@ import { Rise } from "@/components/Motion";
 import { DisclaimerStamp } from "@/components/legal";
 import { type BestPathResult, type ProgramScore } from "../best-path";
 import { isModelSource } from "@/lib/llm/label";
-import { type QualifyPrefill } from "../prefill";
+import { SAMPLE_PROFILE, type QualifyPrefill } from "../prefill";
 
 // — Best-path finder (moonshot #7) ────────────────────────────────────────────
 // "Which visa should I even pursue?" One profile, scored against EVERY live
@@ -15,10 +15,6 @@ import { type QualifyPrefill } from "../prefill";
 // best-first with the strongest/fastest route recommended. Choosing a program
 // hands the profile to the full screening with nothing re-typed.
 
-const SAMPLE =
-  "Senior research engineer. 6 peer-reviewed papers (412 citations), best-paper " +
-  "award at a top ML conference, one granted US patent. Featured in TechCrunch. " +
-  "Founding engineer at a Series B startup; $320K salary plus equity.";
 
 type Status = "idle" | "loading" | "done" | "error";
 
@@ -140,7 +136,7 @@ export function BestPathFinder({
               </Button>
               <button
                 type="button"
-                onClick={() => setProfile(SAMPLE)}
+                onClick={() => setProfile(SAMPLE_PROFILE)}
                 className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               >
                 Use a sample

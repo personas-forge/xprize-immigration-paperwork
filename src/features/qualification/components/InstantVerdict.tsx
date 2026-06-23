@@ -10,7 +10,7 @@ import { livePrograms } from "../jurisdictions";
 import { type QualifyResult } from "../qualification";
 import { CriteriaReport } from "./CriteriaReport";
 import { LettersPatentShare } from "./LettersPatentShare";
-import { writeQualifyPrefill } from "../prefill";
+import { SAMPLE_PROFILE, writeQualifyPrefill } from "../prefill";
 
 // — Instant Verdict (moonshot #16) ────────────────────────────────────────────
 // The landing hero IS the product: paste a CV / bio and an engraved "Certificate
@@ -23,10 +23,6 @@ import { writeQualifyPrefill } from "../prefill";
 
 const PROGRAMS = livePrograms();
 
-const SAMPLE =
-  "Senior research engineer. 6 peer-reviewed papers (412 citations), best-paper " +
-  "award at a top ML conference, one granted US patent. Featured in TechCrunch. " +
-  "Founding engineer at a Series B startup; $320K salary plus equity.";
 
 type Status = "idle" | "loading" | "done" | "error";
 
@@ -163,7 +159,7 @@ export function InstantVerdict({
               </Button>
               <button
                 type="button"
-                onClick={() => setProfile(SAMPLE)}
+                onClick={() => setProfile(SAMPLE_PROFILE)}
                 className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               >
                 Use a sample
