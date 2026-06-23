@@ -159,7 +159,7 @@ export function ReviewPanel({
                 name="feedback"
                 rows={3}
                 placeholder="Required changes for the applicant…"
-                className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
               />
               <SubmitButton variant="secondary" pendingLabel="Returning…">
                 Return with changes
@@ -177,7 +177,7 @@ export function ReviewPanel({
               <span className="microprint">USCIS decision</span>
               <select
                 name="decision"
-                className="mt-1.5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="mt-1.5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-ring"
               >
                 {USCIS_DECISIONS.map((d) => (
                   <option key={d} value={d}>
@@ -234,7 +234,7 @@ export function ReviewPanel({
               name="body"
               rows={2}
               placeholder="Add a note to the thread…"
-              className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+              className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
             />
             <SubmitButton variant="ghost" size="sm" pendingLabel="Adding…">
               Add note
@@ -292,7 +292,7 @@ function SignAndFileAction({ caseId }: { caseId: string }) {
             type="text"
             inputMode="text"
             placeholder="e.g. EAC2412345678 — leave blank to record a demo receipt"
-            className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-mono text-[15px] tracking-document text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-mono text-[15px] tracking-document text-foreground placeholder:text-muted focus-ring"
           />
           <span className="microprint mt-1 block" style={{ color: "var(--muted)" }}>
             Real USCIS filing isn&apos;t wired yet — enter the actual receipt if you

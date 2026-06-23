@@ -52,7 +52,7 @@ export function DeleteAccountForm() {
           type="text"
           autoComplete="off"
           placeholder="delete my account"
-          className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+          className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-ring"
         />
       </label>
       {state.error ? (
@@ -67,7 +67,7 @@ export function DeleteAccountForm() {
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex items-center justify-center gap-2 rounded-control bg-danger px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,opacity] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] disabled:opacity-60 disabled:pointer-events-none"
+          className="inline-flex items-center justify-center gap-2 rounded-control bg-danger px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,opacity] hover:opacity-90 focus-ring disabled:opacity-60 disabled:pointer-events-none"
         >
           {pending ? "Deleting…" : "Permanently delete"}
         </button>

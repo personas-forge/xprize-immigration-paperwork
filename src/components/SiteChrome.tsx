@@ -31,31 +31,31 @@ export function SiteHeader() {
         <nav className="flex flex-nowrap items-center gap-5 font-mono text-[13px] uppercase tracking-document text-muted-strong">
           <Link
             href="/dashboard"
-            className="ink-link whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="ink-link whitespace-nowrap focus-ring"
           >
             Live case file
           </Link>
           <Link
             href="/billing"
-            className="ink-link whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="ink-link whitespace-nowrap focus-ring"
           >
             Pricing
           </Link>
           <Link
             href="/dashboard/account"
-            className="ink-link whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="ink-link whitespace-nowrap focus-ring"
           >
             Account
           </Link>
           <Link
             href="/login"
-            className="ink-link whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="ink-link whitespace-nowrap focus-ring"
           >
             Sign in
           </Link>
           <Link
             href="/qualify"
-            className="whitespace-nowrap rounded-control border border-foreground bg-foreground px-4 py-2 text-background transition-[background-color] hover:bg-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="whitespace-nowrap rounded-control border border-foreground bg-foreground px-4 py-2 text-background transition-[background-color] hover:bg-foreground-soft focus-ring"
           >
             Free qualification
           </Link>

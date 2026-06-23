@@ -61,7 +61,7 @@ export function LettersPatentShare({
           href={linkedIn}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-2 rounded-control bg-accent px-4 py-2.5 font-mono text-[13px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px]"
+          className="inline-flex items-center justify-center gap-2 rounded-control bg-accent px-4 py-2.5 font-mono text-[13px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-ring active:translate-y-[1px]"
         >
           Share
           <span aria-hidden>→</span>

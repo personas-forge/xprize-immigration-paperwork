@@ -36,7 +36,7 @@ export function DashboardView({
             {canReviewQueue ? (
               <Link
                 href="/dashboard/review"
-                className="hidden items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[12.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] sm:inline-flex"
+                className="hidden items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[12.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted focus-ring sm:inline-flex"
               >
                 <span aria-hidden style={{ color: "var(--seal)" }}>
                   ✒

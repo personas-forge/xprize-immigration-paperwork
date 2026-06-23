@@ -207,7 +207,7 @@ export function EvidenceVault({
                 onChange={(e) => setName(e.target.value)}
                 maxLength={MAX_NAME}
                 placeholder="e.g. ICML 2024 Best Paper certificate"
-                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-ring"
               />
             </label>
             <label className="block">
@@ -227,7 +227,7 @@ export function EvidenceVault({
                 rows={3}
                 maxLength={MAX_CONTENT}
                 placeholder="Paste the document text or describe what it shows…"
-                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
               />
             </label>
           </div>
@@ -332,7 +332,7 @@ export function EvidenceVault({
                               id={`refile-${d.id}`}
                               value={d.criterion}
                               onChange={(e) => onRefile(d.id, e.target.value)}
-                              className="rounded-control border border-border-strong bg-surface px-2 py-1 font-mono text-[12px] uppercase tracking-document text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                              className="rounded-control border border-border-strong bg-surface px-2 py-1 font-mono text-[12px] uppercase tracking-document text-foreground focus-ring"
                             >
                               {BUCKETS.map((b) => (
                                 <option key={b} value={b}>
@@ -344,7 +344,7 @@ export function EvidenceVault({
                               type="button"
                               onClick={() => onRemove(d.id)}
                               aria-label={`Remove ${d.name}`}
-                              className="rounded-control border border-border-strong px-2 py-1 font-mono text-[13px] text-muted-strong hover:border-seal hover:text-seal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                              className="rounded-control border border-border-strong px-2 py-1 font-mono text-[13px] text-muted-strong hover:border-seal hover:text-seal focus-ring"
                             >
                               ×
                             </button>

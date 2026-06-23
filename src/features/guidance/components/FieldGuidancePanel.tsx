@@ -145,7 +145,7 @@ export function FieldGuidancePanel() {
                   id={formSelectId}
                   value={formId}
                   onChange={(e) => onFormChange(e.target.value)}
-                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-ring"
                 >
                   {forms.map((f) => (
                     <option key={f.id} value={f.number}>
@@ -161,7 +161,7 @@ export function FieldGuidancePanel() {
                   id={fieldSelectId}
                   value={fieldLabel}
                   onChange={(e) => setFieldLabel(e.target.value)}
-                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                  className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-ring"
                 >
                   {(activeForm?.commonFields ?? []).map((field) => (
                     <option key={field} value={field}>
@@ -187,7 +187,7 @@ export function FieldGuidancePanel() {
                 rows={3}
                 maxLength={MAX_FIELD}
                 placeholder="e.g. I'm an O-1A researcher with 6 papers and a granted patent…"
-                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
               />
             </label>
 
@@ -257,7 +257,7 @@ export function FieldGuidancePanel() {
               </div>
               <Link
                 href="/billing"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] active:translate-y-[1px]"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-5 py-2.5 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-ring active:translate-y-[1px]"
               >
                 Buy more
                 <span aria-hidden>→</span>

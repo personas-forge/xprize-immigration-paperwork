@@ -44,7 +44,7 @@ export function AdjudicationBadge({ report }: { report: AdjudicationReport }) {
             type="button"
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
-            className="font-mono text-[12px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="font-mono text-[12px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-ring"
           >
             {open ? "Hide" : "Show"} {flagged.length} reason{flagged.length === 1 ? "" : "s"}
           </button>

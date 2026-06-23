@@ -272,13 +272,13 @@ function Arrival() {
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 href="/qualify"
-                className="inline-flex items-center gap-2 rounded-control bg-foreground px-7 py-4 font-mono text-[14px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="inline-flex items-center gap-2 rounded-control bg-foreground px-7 py-4 font-mono text-[14px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-ring"
               >
                 Take the free qualification <span aria-hidden>→</span>
               </Link>
               <Link
                 href="/dashboard"
-                className="rounded-control border border-border-strong px-7 py-4 font-mono text-[14px] uppercase tracking-document text-foreground transition-colors hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                className="rounded-control border border-border-strong px-7 py-4 font-mono text-[14px] uppercase tracking-document text-foreground transition-colors hover:border-foreground focus-ring"
               >
                 See the case file
               </Link>
@@ -539,7 +539,7 @@ function Allowance() {
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <Link
             href="/billing"
-            className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-ring"
           >
             See the token ledger →
           </Link>
@@ -633,13 +633,13 @@ function Depart() {
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/qualify"
-              className="rounded-control bg-seal px-8 py-4 font-mono text-[14px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+              className="rounded-control bg-seal px-8 py-4 font-mono text-[14px] uppercase tracking-document text-background shadow-seal transition-transform hover:-translate-y-[2px] focus-ring"
             >
               Begin qualification
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-control border border-border-strong px-8 py-4 font-mono text-[14px] uppercase tracking-document text-foreground transition-colors hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+              className="rounded-control border border-border-strong px-8 py-4 font-mono text-[14px] uppercase tracking-document text-foreground transition-colors hover:border-foreground focus-ring"
             >
               See the case file
             </Link>

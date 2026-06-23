@@ -127,7 +127,7 @@ export function CaseList() {
             onChange={(e) => setQuery({ search: e.target.value })}
             placeholder="Search petitioner, file №, attorney…"
             aria-label="Search cases"
-            className="md:col-span-5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="md:col-span-5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-ring"
           />
           <select
             value={query.classification}
@@ -135,7 +135,7 @@ export function CaseList() {
               setQuery({ classification: e.target.value as VisaClassification | "all" })
             }
             aria-label="Filter by classification"
-            className="md:col-span-2 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="md:col-span-2 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-ring"
           >
             {CLASSIFICATION_OPTIONS.map((c) => (
               <option key={c} value={c}>
@@ -147,7 +147,7 @@ export function CaseList() {
             value={query.status}
             onChange={(e) => setQuery({ status: e.target.value as CaseStatus | "all" })}
             aria-label="Filter by status"
-            className="md:col-span-3 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="md:col-span-3 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-ring"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
@@ -159,7 +159,7 @@ export function CaseList() {
             value={query.sortKey}
             onChange={(e) => setQuery({ sortKey: e.target.value as CaseSortKey })}
             aria-label="Sort by"
-            className="md:col-span-2 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+            className="md:col-span-2 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-ring"
           >
             {SORTS.map((s) => (
               <option key={s.key} value={s.key}>
@@ -248,7 +248,7 @@ export function CaseList() {
                       <Link
                         href={`/dashboard/cases/${c.id}`}
                         aria-label={`Open case ${c.fileNumber} — ${c.petitioner}`}
-                        className="hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)] rounded-[2px]"
+                        className="hover:underline focus-visible:underline focus-ring rounded-[2px]"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {c.fileNumber}

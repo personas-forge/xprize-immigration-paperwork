@@ -24,7 +24,7 @@ export function BalancePill({ balance }: { balance: number | null }) {
     <Link
       href="/billing"
       aria-label={`Token balance: ${label}. Buy more tokens.`}
-      className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[12.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+      className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[12.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted focus-ring"
     >
       <span aria-hidden style={{ color: "var(--accent-dark)" }}>
         ◈

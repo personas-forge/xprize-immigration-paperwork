@@ -67,7 +67,7 @@ export function ReviewQueueView({
             <ChapterMark numeral="V" label="Attorney review queue" />
             <Link
               href="/dashboard"
-              className="font-mono text-[13px] uppercase tracking-document text-muted-strong ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+              className="font-mono text-[13px] uppercase tracking-document text-muted-strong ink-link focus-ring"
             >
               ← Dashboard
             </Link>
@@ -152,7 +152,7 @@ export function ReviewQueueView({
                           {isAttorney ? (
                             <Link
                               href={`/dashboard/cases/${c.id}`}
-                              className={`${rowClass} transition-[background-color] duration-200 hover:bg-accent-soft/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]`}
+                              className={`${rowClass} transition-[background-color] duration-200 hover:bg-accent-soft/35 focus-ring`}
                             >
                               {inner}
                             </Link>

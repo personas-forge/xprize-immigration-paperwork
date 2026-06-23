@@ -166,7 +166,7 @@ function YourCasesCard({ cases }: { cases: readonly SavedCaseSummary[] }) {
           <li key={c.id} className="border-t border-dotted border-rule first:border-t-0">
             <Link
               href={`/dashboard/cases/${c.id}`}
-              className="flex items-center justify-between gap-4 px-5 py-3.5 transition-[background-color] duration-200 hover:bg-accent-soft/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+              className="flex items-center justify-between gap-4 px-5 py-3.5 transition-[background-color] duration-200 hover:bg-accent-soft/35 focus-ring"
             >
               <div className="flex items-baseline gap-3">
                 <span className="doc-number text-[13px] text-muted">{c.fileNumber}</span>

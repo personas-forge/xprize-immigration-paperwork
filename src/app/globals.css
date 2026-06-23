@@ -222,9 +222,24 @@ body {
   color: var(--accent-foreground);
 }
 :focus-visible {
-  outline: 2px solid var(--accent);
+  /* Rings on --accent-dark (4.2:1 light / 5.6:1 dark), NOT the 2.63:1 gold-leaf
+     --accent — one ring contract with the Button standard + the .focus-ring class
+     below (was --accent, which contradicted them; WCAG 1.4.11 non-text minimum). */
+  outline: 2px solid var(--accent-dark);
   outline-offset: 3px;
   border-radius: 1px;
+}
+
+/* The canonical keyboard focus indicator — the SAME ring the Button primitive
+   renders (2px --accent-dark ring + 2px themed-background offset, WCAG 2.4.7 /
+   1.4.11). Put `focus-ring` on any interactive element that ISN'T a <Button>
+   instead of hand-rolling the ring; it supersedes the global outline above. One
+   definition replaces 34 hand-copied inline copies (which had dropped the offset). */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--accent-dark);
 }
 
 /* ── Animations — only opacity & transform, all gated on reduced-motion */

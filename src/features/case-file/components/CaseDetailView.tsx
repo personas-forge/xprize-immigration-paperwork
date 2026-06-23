@@ -100,7 +100,7 @@ export function CaseDetailView({
             <ChapterMark numeral="I" label="Petition case file" />
             <Link
               href="/dashboard"
-              className="font-mono text-[13px] uppercase tracking-document text-muted-strong ink-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+              className="font-mono text-[13px] uppercase tracking-document text-muted-strong ink-link focus-ring"
             >
               ← All cases
             </Link>

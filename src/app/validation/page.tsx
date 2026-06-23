@@ -273,7 +273,7 @@ function ValidationCard({
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ink-link font-sans text-[15.5px] text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
+                  className="ink-link font-sans text-[15.5px] text-foreground-soft focus-ring"
                 >
                   {s.title}
                 </a>
