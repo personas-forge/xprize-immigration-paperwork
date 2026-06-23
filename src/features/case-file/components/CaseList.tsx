@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { getCases } from "@/lib/data";
 import {
+  CLASSIFICATION_OPTIONS,
+  STATUS_OPTIONS,
   type CaseStatus,
   type PetitionCase,
   type VisaClassification,
@@ -22,20 +24,6 @@ import { usePersistentQuery } from "../usePersistentQuery";
 
 type LoadState = "loading" | "ready" | "error";
 
-const CLASSIFICATIONS: readonly (VisaClassification | "all")[] = [
-  "all",
-  "O-1A",
-  "O-1B",
-  "EB-1A",
-];
-const STATUSES: readonly (CaseStatus | "all")[] = [
-  "all",
-  "Intake",
-  "Drafting",
-  "Attorney Review",
-  "Filed",
-  "Approved",
-];
 const SORTS: readonly { key: CaseSortKey; label: string }[] = [
   { key: "targetDate", label: "Target file date" },
   { key: "fileNumber", label: "File number" },
@@ -149,7 +137,7 @@ export function CaseList() {
             aria-label="Filter by classification"
             className="md:col-span-2 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >
-            {CLASSIFICATIONS.map((c) => (
+            {CLASSIFICATION_OPTIONS.map((c) => (
               <option key={c} value={c}>
                 {c === "all" ? "All visas" : c}
               </option>
@@ -161,7 +149,7 @@ export function CaseList() {
             aria-label="Filter by status"
             className="md:col-span-3 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
           >
-            {STATUSES.map((s) => (
+            {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
                 {s === "all" ? "All statuses" : s}
               </option>

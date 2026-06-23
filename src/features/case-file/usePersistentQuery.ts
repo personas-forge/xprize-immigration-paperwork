@@ -7,7 +7,7 @@ import {
   type SortDirection,
   DEFAULT_CASE_QUERY,
 } from "./case-list";
-import { type CaseStatus, type VisaClassification } from "./types";
+import { CLASSIFICATION_OPTIONS, STATUS_OPTIONS } from "./types";
 
 // Persist the case-list query (search + filters + sort) to localStorage via
 // useSyncExternalStore — the same FOUC-free, lint-clean pattern the theme
@@ -26,31 +26,16 @@ const SORT_KEYS: readonly CaseSortKey[] = [
   "status",
 ];
 const SORT_DIRS: readonly SortDirection[] = ["asc", "desc"];
-const CLASSIFICATIONS: readonly (VisaClassification | "all")[] = [
-  "all",
-  "O-1A",
-  "O-1B",
-  "EB-1A",
-];
-const STATUSES: readonly (CaseStatus | "all")[] = [
-  "all",
-  "Intake",
-  "Drafting",
-  "Attorney Review",
-  "Filed",
-  "Approved",
-];
-
 /** Coerce unknown (possibly stale/tampered) storage into a valid CaseQuery. */
 function sanitize(raw: unknown): CaseQuery {
   if (typeof raw !== "object" || raw === null) return DEFAULT_CASE_QUERY;
   const r = raw as Record<string, unknown>;
   return {
     search: typeof r.search === "string" ? r.search : DEFAULT_CASE_QUERY.search,
-    classification: CLASSIFICATIONS.includes(r.classification as never)
+    classification: CLASSIFICATION_OPTIONS.includes(r.classification as never)
       ? (r.classification as CaseQuery["classification"])
       : DEFAULT_CASE_QUERY.classification,
-    status: STATUSES.includes(r.status as never)
+    status: STATUS_OPTIONS.includes(r.status as never)
       ? (r.status as CaseQuery["status"])
       : DEFAULT_CASE_QUERY.status,
     sortKey: SORT_KEYS.includes(r.sortKey as never)

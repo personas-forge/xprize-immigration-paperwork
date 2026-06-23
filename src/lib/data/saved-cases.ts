@@ -12,7 +12,7 @@
  */
 import { getUser } from "@/lib/auth/session";
 import { petitions } from "@/lib/data/adapters/petition";
-import { type PetitionCase, type VisaClassification } from "@/features/case-file/types";
+import { CASE_STATUSES, type PetitionCase, type VisaClassification } from "@/features/case-file/types";
 
 const CLASSIFICATIONS: readonly VisaClassification[] = ["O-1A", "O-1B", "EB-1A"];
 
@@ -36,9 +36,7 @@ export async function getCases(): Promise<readonly PetitionCase[]> {
       classification: asClassification(c.classification),
       // Persisted cases don't carry a target-file date / attorney yet; the UI
       // tolerates blanks (sort/filter treat them as unset).
-      status: (["Intake", "Drafting", "Attorney Review", "Filed", "Approved"] as const).includes(
-        c.status as never,
-      )
+      status: (CASE_STATUSES as readonly string[]).includes(c.status as string)
         ? (c.status as PetitionCase["status"])
         : "Intake",
       approvalLikelihood: c.approvalLikelihood,

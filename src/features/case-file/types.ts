@@ -24,15 +24,27 @@ export interface CaseFact {
  * literal union so the UI filter and the status helpers stay in lockstep with
  * the data layer.
  */
-export type CaseStatus =
-  | "Intake"
-  | "Drafting"
-  | "Attorney Review"
-  | "Filed"
-  | "Approved";
+export const CASE_STATUSES = [
+  "Intake",
+  "Drafting",
+  "Attorney Review",
+  "Filed",
+  "Approved",
+] as const;
+export type CaseStatus = (typeof CASE_STATUSES)[number];
 
 /** USCIS classification a petition is filed under. */
-export type VisaClassification = "O-1A" | "O-1B" | "EB-1A";
+export const VISA_CLASSIFICATIONS = ["O-1A", "O-1B", "EB-1A"] as const;
+export type VisaClassification = (typeof VISA_CLASSIFICATIONS)[number];
+
+/** Filter-dropdown options ("all" + the values) — shared by the CaseList UI and
+ *  the usePersistentQuery storage sanitizer so the rendered options and the
+ *  validation allow-list can't drift. */
+export const CLASSIFICATION_OPTIONS: readonly (VisaClassification | "all")[] = [
+  "all",
+  ...VISA_CLASSIFICATIONS,
+];
+export const STATUS_OPTIONS: readonly (CaseStatus | "all")[] = ["all", ...CASE_STATUSES];
 
 /**
  * A petition case as surfaced by the data layer. This is the richer shape the
