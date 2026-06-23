@@ -11,6 +11,7 @@ import {
   attorneySignAndFile,
   submitForReview,
 } from "../actions";
+import { USCIS_DECISIONS } from "../decisions";
 
 // — Review & filing panel ─────────────────────────────────────────────────────
 // The attorney-review thread plus the role-appropriate workflow actions, driven
@@ -25,6 +26,10 @@ export interface ReviewEventView {
   kind: string;
   body: string;
   when: string;
+  /** Authoritative demo-vs-genuine flag for a `filed` event, taken from the
+   *  stored `metadata.demo` boolean — threaded through instead of re-detected
+   *  from the body prose (which an edit/i18n change could silently flip). */
+  demo: boolean;
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -72,11 +77,10 @@ export function ReviewPanel({
   const inReview = status === "Attorney Review";
   const filed = status === "Filed";
   const approved = status === "Approved";
-  // A receipt recorded WITHOUT a real USCIS filing integration is a demo receipt
-  // (the filed event says so) — flag it so it can't be mistaken for genuine.
-  const receiptIsDemo = events.some(
-    (ev) => ev.kind === "filed" && /DEMO/i.test(ev.body),
-  );
+  // A receipt recorded WITHOUT a real USCIS filing integration is a demo receipt.
+  // Read the authoritative `demo` flag the filed event persisted — never re-derive
+  // it from the body prose, which an i18n/reword could flip to "genuine".
+  const receiptIsDemo = events.some((ev) => ev.kind === "filed" && ev.demo);
 
   return (
     <Card>
@@ -175,9 +179,11 @@ export function ReviewPanel({
                 name="decision"
                 className="mt-1.5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
               >
-                <option value="Approved">Approved</option>
-                <option value="RFE issued">RFE issued</option>
-                <option value="Denied">Denied</option>
+                {USCIS_DECISIONS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
               </select>
             </label>
             <SubmitButton variant="secondary" pendingLabel="Recording…">

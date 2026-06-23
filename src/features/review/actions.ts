@@ -24,6 +24,7 @@ import { getUser } from "@/lib/auth/session";
 import { isConfiguredAttorney } from "@/lib/auth/roles";
 import { petitions } from "@/lib/data/adapters/petition";
 import { addReviewEvent, transitionCase } from "@/lib/data/reviews";
+import { USCIS_DECISIONS } from "./decisions";
 
 /** Result every review action returns so the form (via useActionState) can show
  *  a visible error instead of silently doing nothing — on a legal filing flow a
@@ -260,10 +261,11 @@ export async function attorneyRecordDecision(
   const user = await requireAttorney();
   if (!user) return fail("Attorney-of-record access is required.");
   const decision = String(formData.get("decision") ?? "Approved");
-  // Server-side allowlist: the ReviewPanel <select> only offers these three, but
-  // a crafted POST could otherwise write an arbitrary string into the append-only
-  // review log (and only "Approved" is terminal). Reject anything else.
-  if (!["Approved", "RFE issued", "Denied"].includes(decision)) {
+  // Server-side allowlist: the ReviewPanel <select> only offers these, but a
+  // crafted POST could otherwise write an arbitrary string into the append-only
+  // review log (and only "Approved" is terminal). Reject anything else. Same
+  // USCIS_DECISIONS source the <select> renders from, so the two can't drift.
+  if (!(USCIS_DECISIONS as readonly string[]).includes(decision)) {
     return fail("Unrecognized decision.");
   }
   // Only a Filed case can receive a decision. "Approved" is terminal; any other

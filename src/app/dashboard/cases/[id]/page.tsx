@@ -94,6 +94,7 @@ export default async function CaseDetailPage({
         kind: ev.kind,
         body: ev.body,
         when: formatWhen(ev.createdAt),
+        demo: ev.metadata?.demo === true,
       }))}
       rfeInitialSections={rfe?.sections ?? null}
       rfeInitialText={rfe?.rfeText ?? ""}
