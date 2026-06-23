@@ -155,10 +155,23 @@ export function buildQualifyPrompt(req: QualifyRequest): string {
     '- "Partial" — some support, currently thin.',
     '- "None"    — no supporting evidence in what was described.',
     "",
+    // Evidence-capture fidelity (Tiger L2 2026-06-23). The `evidence` field is
+    // reused VERBATIM by a later drafting step that never sees this profile, so a
+    // specific compressed away here is lost to the petition (the live run watched
+    // an EB-1A flagship project + an O-1B press feature vanish at exactly this
+    // seam). Instruct the model to PRESERVE the concrete specifics rather than
+    // summarize — Rule 2 (invent nothing) still binds.
+    'For each criterion, the "evidence" you record is REUSED VERBATIM by a later',
+    "drafting step that does NOT see this description. So capture the SPECIFIC,",
+    "load-bearing facts the applicant gave for THAT criterion — named entities,",
+    "numbers, dates, venues, titles, awards, and metrics — not a short summary. A",
+    "concrete fact you leave out here cannot appear in the petition. Invent nothing",
+    '(Rule 2 still binds); keep "rationale" to one sentence.',
+    "",
     "Return STRICT JSON ONLY (no prose, no markdown), shaped exactly:",
     "{",
     '  "criteria": [',
-    '    { "name": "<criterion name>", "status": "Met", "evidence": "<short quote/paraphrase>", "rationale": "<one sentence>" }',
+    '    { "name": "<criterion name>", "status": "Met", "evidence": "<the SPECIFIC facts for THIS criterion — names, numbers, dates, venues, awards, metrics>", "rationale": "<one sentence>" }',
     "    // ...one per criterion, in order",
     "  ],",
     '  "likelihood": <integer 0-100>,',

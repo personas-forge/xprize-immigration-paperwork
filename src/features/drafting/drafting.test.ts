@@ -391,6 +391,27 @@ test("undraftedSupportedCriteria: surfaces supported-but-undrafted criteria only
   assert.equal(undraftedSupportedCriteria([{ status: "None", evidence: "" }]).length, 0);
 });
 
+test("buildDraftPrompt: rescues Partial-criterion facts into the totality, no own section (Tiger L2)", () => {
+  const req = {
+    petitioner: "Ingrid Larsson",
+    classification: "EB-1A",
+    criteria: [
+      { name: "Awards", status: "Met", evidence: "Mies van der Rohe Award", rationale: "Top prize." },
+      // The flagship fact is filed under a Partial criterion — it must still reach the totality.
+      { name: "Original contribution", status: "Partial", evidence: "Helsinki Library, 1.2M visitors/year", rationale: "Built work." },
+      { name: "Press", status: "None", evidence: "", rationale: "None." },
+    ],
+  };
+  const p = buildDraftPrompt(req);
+  assert.ok(/supporting, not independently strong/i.test(p), "names the sub-threshold set");
+  assert.ok(p.includes("Original contribution"), "lists the Partial criterion by name");
+  assert.ok(/totality argument/i.test(p), "routes its facts into the totality");
+  assert.ok(/invent nothing/i.test(p), "keeps the no-fabrication discipline");
+  // Backward-compatible: no Partial-with-evidence criterion → no totality rule.
+  // (`valid`'s only Partial criterion has blank evidence, so the rule is absent.)
+  assert.ok(!/supporting, not independently strong/i.test(buildDraftPrompt(valid)));
+});
+
 test("draftFraming / buildDraftPrompt: field-norm framing always; arts + EB-1A get their standard, O-1A doesn't (LLM-3)", () => {
   const oa = draftFraming("O-1A").join("\n");
   assert.ok(/behind-the-scenes/i.test(oa), "lead-role field norm present");
