@@ -59,3 +59,47 @@ export function criterionLine(c: CriterionLineInput): string {
     (c.rationale ? ` — ${c.rationale}` : "")
   );
 }
+
+/**
+ * Market-bar framing — appended to BOTH the petition-draft and the RFE-response
+ * prompts (single-sourced HERE so the two paid endpoints can't drift). It raises
+ * the output to specialist-attorney work product along the dimensions a Tiger
+ * drill (2026-06-23) measured as the value lever: argue the FINAL-MERITS ("very
+ * top of the field") standard explicitly, frame every metric against FIELD NORMS
+ * for a non-expert adjudicator (not bare adjectives), and argue accomplished,
+ * independently-corroborated impact. On a k=4 ablation it lifted the draft
+ * +$948/petition and the RFE +$2,415/response (both non-overlapping vs baseline)
+ * with ZERO fabrication — the no-fabrication discipline (draft/RFE Rule 1) still
+ * binds, and is restated here. `kind` selects the single op-specific bullet:
+ * comparable-evidence for a fresh letter, point-by-point-name-the-evidence for an
+ * RFE rebuttal.
+ */
+export function marketBarFraming(kind: "letter" | "rfe"): string[] {
+  const opener =
+    kind === "rfe"
+      ? "BAR — argue at the standard of a specialist immigration attorney's RFE rebuttal:"
+      : "BAR — argue at the standard of a specialist immigration attorney's work product:";
+  const opSpecific =
+    kind === "rfe"
+      ? [
+          "- Address the SPECIFIC deficiency the notice raises POINT BY POINT, and NAME the exact",
+          '  on-record evidence that rebuts each point — never assert "the record establishes" without',
+          "  naming what does.",
+        ]
+      : [
+          "- Where a regulatory criterion does not readily fit the beneficiary's field, make a",
+          "  disciplined COMPARABLE-EVIDENCE argument: name the criterion, why it does not apply, and",
+          "  the mirroring evidence that satisfies its intent.",
+        ];
+  return [
+    opener,
+    "- Argue the FINAL-MERITS standard explicitly: not only that the qualifying criteria are met,",
+    "  but a separate narrative that the beneficiary is within the small percentage at the very top",
+    "  of the field (the totality) — not a checklist of met criteria.",
+    "- Frame every metric against FIELD NORMS for a non-expert adjudicator — how it compares to",
+    "  others at the top of the field — rather than bare adjectives ('renowned', 'leading').",
+    ...opSpecific,
+    "- Argue ACCOMPLISHED, independently-corroborated impact recognized across the field — never",
+    "  promise or potential. Invent nothing (the no-fabrication rule still binds).",
+  ];
+}

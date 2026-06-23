@@ -24,7 +24,7 @@ import {
   withAttachedExhibits,
   type DraftSection,
 } from "@/features/drafting";
-import { str, criterionLine, MAX_PETITIONER, parseCriteriaArray } from "@/features/drafting/criteria-text";
+import { str, criterionLine, marketBarFraming, MAX_PETITIONER, parseCriteriaArray } from "@/features/drafting/criteria-text";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
 
@@ -258,6 +258,8 @@ export function buildRfePrompt(req: RfeRequest): string {
           "   the listed numbers — NEVER cite or invent an exhibit number not listed.",
         ]
       : []),
+    "",
+    ...marketBarFraming("rfe"),
     "",
     `Beneficiary: ${req.petitioner}`,
     `Classification: ${req.classification}`,
