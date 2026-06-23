@@ -16,6 +16,7 @@ import {
   SESSION_EXPIRES_MS,
   isFirebaseConfigured,
 } from "@/lib/firebase/config";
+import { revokeAndClearSession } from "@/lib/auth/session-cookie";
 
 export const runtime = "nodejs";
 
@@ -57,18 +58,9 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 export async function DELETE(): Promise<Response> {
-  const jar = await cookies();
   // Revoke server-side so a copied/stolen session cookie can't outlive sign-out
-  // (getUser verifies with checkRevoked=true). Best-effort: still clear locally.
-  const cookie = jar.get(SESSION_COOKIE)?.value;
-  if (cookie) {
-    try {
-      const decoded = await adminAuth().verifySessionCookie(cookie);
-      await adminAuth().revokeRefreshTokens(decoded.uid);
-    } catch (err) {
-      console.error("[auth/session] could not revoke session tokens", err);
-    }
-  }
-  jar.delete(SESSION_COOKIE);
+  // (getUser verifies with checkRevoked=true), then clear locally — the same
+  // sequence POST /auth/signout uses, via the one shared helper.
+  await revokeAndClearSession();
   return Response.json({ ok: true });
 }
