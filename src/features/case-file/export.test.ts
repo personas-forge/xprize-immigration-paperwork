@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { casesToCsv, checklistToCsv, csvCell } from "./export";
-import { type CaseDocument, type PetitionCase } from "./types";
+import { casesToCsv, csvCell } from "./export";
+import { type PetitionCase } from "./types";
 
 test("csvCell: leaves plain values untouched", () => {
   assert.equal(csvCell("Anya Krishnan"), "Anya Krishnan");
@@ -46,13 +46,4 @@ test("casesToCsv: empty list still emits the header", () => {
     casesToCsv([]),
     "File number,Petitioner,Classification,Status,Approval likelihood,Target file date,Attorney",
   );
-});
-
-test("checklistToCsv: serializes evidence-vault documents", () => {
-  const docs: CaseDocument[] = [
-    { id: "d1", name: "Passport scan", exhibit: "Ex. 10", status: "Needs review", owner: "Anya" },
-  ];
-  const lines = checklistToCsv(docs).split("\r\n");
-  assert.equal(lines[0], "Exhibit,Document,Status,Owner");
-  assert.equal(lines[1], "Ex. 10,Passport scan,Needs review,Anya");
 });

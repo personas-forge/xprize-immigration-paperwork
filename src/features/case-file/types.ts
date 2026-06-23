@@ -20,9 +20,9 @@ export interface CaseFact {
 }
 
 /**
- * Lifecycle of a petition file, mirroring the five PetitionStepper stages.
- * Kept as a string-literal union so the UI filter and the status helpers
- * stay in lockstep with the data layer.
+ * Lifecycle of a petition file (the five process stages). Kept as a string-
+ * literal union so the UI filter and the status helpers stay in lockstep with
+ * the data layer.
  */
 export type CaseStatus =
   | "Intake"
@@ -80,13 +80,3 @@ export interface SavedCaseSummary {
   submittedAt: string | null;
 }
 
-export type DocumentStatus = "Received" | "Pending" | "Needs review";
-
-/** A document/exhibit in the evidence vault. */
-export interface CaseDocument {
-  id: string;
-  name: string;
-  exhibit: string;
-  status: DocumentStatus;
-  owner: string;
-}
