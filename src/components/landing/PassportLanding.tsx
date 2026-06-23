@@ -9,8 +9,10 @@ import {
   CriteriaRadar,
   ApprovalGauge,
   ProcessTimeline,
+  CostCompareBars,
 } from "@/components/landing/charts";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { InstantVerdict } from "@/features/qualification/components/InstantVerdict";
 import { BUNDLES, FREE_SIGNUP_GRANT, bundlePriceLabel } from "@/lib/tokens/economy";
 import { FIRM_FEE } from "@/lib/site";
 import { easeArrival } from "@/lib/motion";
@@ -175,15 +177,22 @@ function Section({
   id,
   children,
   className = "",
+  align = "center",
 }: {
   id: string;
   children: React.ReactNode;
   className?: string;
+  // "start" lets a section grow downward from the top (e.g. Arrival, whose
+  // screener expands when a verdict is revealed) instead of centring — which
+  // would push the top out of view under the fixed nav.
+  align?: "center" | "start";
 }) {
   return (
     <section
       id={id}
-      className={`relative flex min-h-screen w-full flex-col justify-center px-6 py-24 lg:snap-start lg:snap-always lg:pl-32 lg:pr-12 ${className}`}
+      className={`relative flex min-h-screen w-full flex-col px-6 py-24 lg:snap-start lg:snap-always lg:pl-32 lg:pr-12 ${
+        align === "start" ? "justify-start" : "justify-center"
+      } ${className}`}
     >
       <div className="mx-auto w-full max-w-6xl">{children}</div>
     </section>
@@ -228,22 +237,22 @@ function Reveal({
 
 function Arrival() {
   return (
-    <Section id="arrival">
+    <Section id="arrival" align="start">
       <FlightPath />
-      <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
-        <div className="lg:col-span-7">
+      <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
+        <div className="lg:col-span-6">
           <Reveal>
             <Eyebrow>File №&nbsp;O1-241 · Form I-129 · O-1A / O-1B / EB-1A</Eyebrow>
           </Reveal>
           <Reveal delay={0.08}>
-            <h1 className="display mt-7 text-[clamp(2.9rem,7.2vw,5.6rem)] text-foreground">
+            <h1 className="display mt-6 text-[clamp(2.5rem,4.8vw,4rem)] text-foreground">
               Extraordinary ability,
               <br />
               <em>on the record.</em>
             </h1>
           </Reveal>
           <Reveal delay={0.16}>
-            <p className="mt-7 max-w-xl font-sans text-[19px] leading-relaxed text-foreground-soft">
+            <p className="mt-6 max-w-xl font-sans text-[18px] leading-relaxed text-foreground-soft">
               The petition packet immigration firms {FIRM_FEE.verb}{" "}
               {FIRM_FEE.range} to assemble — drafted by AI from your real record,
               then handed to <em className="text-accent-dark">your</em> attorney
@@ -252,7 +261,7 @@ function Arrival() {
             </p>
           </Reveal>
           <Reveal delay={0.24}>
-            <div className="mt-10 flex flex-wrap items-center gap-4">
+            <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 href="/qualify"
                 className="inline-flex items-center gap-2 rounded-control bg-foreground px-7 py-4 font-mono text-[14px] uppercase tracking-document text-background transition-transform hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
@@ -275,9 +284,12 @@ function Arrival() {
           </Reveal>
         </div>
 
-        {/* Passport spread */}
-        <div className="lg:col-span-5">
-          <PassportSpread />
+        {/* Live screener — paste a record, watch the certificate assemble.
+            This IS the product (the static passport mock made real). */}
+        <div className="lg:col-span-6">
+          <Reveal delay={0.2}>
+            <InstantVerdict initialClassification="O-1A" />
+          </Reveal>
         </div>
       </div>
     </Section>
@@ -308,72 +320,6 @@ function FlightPath() {
       <circle cx="40" cy="196" r="4" fill="currentColor" />
       <circle cx="560" cy="44" r="5" fill="currentColor" />
     </svg>
-  );
-}
-
-function PassportSpread() {
-  const reduce = useReducedMotion();
-  return (
-    <div className="relative mx-auto grid max-w-md grid-cols-2 overflow-hidden rounded-card border border-border-strong bg-surface shadow-leaf">
-      {/* gutter */}
-      <div aria-hidden className="perforation-y absolute inset-y-0 left-1/2 w-px" />
-
-      {/* left page — bearer data */}
-      <div className="guilloche relative p-5">
-        <div className="microprint" style={{ color: "var(--accent-dark)" }}>
-          Bearer
-        </div>
-        <div className="mt-3 aspect-[3/4] w-20 rounded-control border border-border-strong bg-surface-muted" />
-        <dl className="mt-4 space-y-2">
-          {[
-            ["Name", "A. Krishnan"],
-            ["Field", "Sciences"],
-            ["Class", "O-1A"],
-          ].map(([k, v]) => (
-            <div key={k} className="border-b border-dotted border-rule pb-1">
-              <dt className="microprint" style={{ color: "var(--muted)" }}>
-                {k}
-              </dt>
-              <dd className="font-sans text-[15px] italic">{v}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-
-      {/* right page — form + approval stamp */}
-      <div className="relative p-5">
-        <div className="microprint" style={{ color: "var(--accent-dark)" }}>
-          USCIS · I-129
-        </div>
-        <div className="display mt-3 text-2xl">
-          Petition for a <em>nonimmigrant</em> worker
-        </div>
-        <div className="mt-4 space-y-1.5">
-          {[
-            ["Case", "O1-241"],
-            ["Status", "Filing-ready"],
-            ["Attorney", "J. Park, Esq."],
-          ].map(([k, v]) => (
-            <div
-              key={k}
-              className="flex items-baseline justify-between border-b border-dotted border-rule pb-1"
-            >
-              <span className="microprint">{k}</span>
-              <span className="doc-number text-[12px]">{v}</span>
-            </div>
-          ))}
-        </div>
-        <motion.div
-          className="absolute bottom-5 right-4"
-          initial={reduce ? false : { opacity: 0, scale: 1.3, rotate: -12 }}
-          whileInView={reduce ? undefined : { opacity: 1, scale: 1, rotate: -8 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.9, duration: 0.6, ease: [0.34, 1.3, 0.64, 1] }}
-        >
-          <Stamp label="Approved" meta="92% likelihood" tone="seal" rotate={0} />
-        </motion.div>
-      </div>
-    </div>
   );
 }
 
@@ -484,37 +430,43 @@ function Checkpoints() {
 
 function Evidence() {
   return (
-    <Section id="evidence">
+    <Section id="evidence" align="start">
       <Reveal>
         <Eyebrow>§ III — Your record, measured</Eyebrow>
-        <h2 className="display mt-5 max-w-3xl text-[clamp(2.1rem,5vw,3.6rem)]">
+        <h2 className="display mt-4 max-w-3xl text-[clamp(2rem,4.4vw,3.2rem)]">
           What a <em>strong</em> case looks like.
         </h2>
-        <p className="mt-4 max-w-2xl font-sans text-[18px] leading-relaxed text-foreground-soft">
-          Illustrative figures — not a prediction of your outcome. They show how
-          the engine reasons about coverage, likelihood, and the road to a
+        <p className="mt-3 max-w-2xl font-sans text-[17px] leading-relaxed text-foreground-soft">
+          Illustrative figures — not a prediction or a quote. They show how the
+          engine reasons about coverage, cost, likelihood, and the road to a
           decision.
         </p>
       </Reveal>
 
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <Reveal className="lg:col-span-7">
+      <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Reveal>
           <Panel title="Criteria coverage" caption="Gold = a strong record · dashed bordeaux = the evidentiary bar">
-            <CriteriaRadar height={300} />
+            <CriteriaRadar height={250} />
           </Panel>
         </Reveal>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:col-span-5">
-          <Reveal>
-            <Panel title="Likelihood" caption="Illustrative — your attorney makes the call">
-              <ApprovalGauge value={92} height={210} />
-            </Panel>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <Panel title="Path to a decision" caption="Premium ≈ 15 business days">
-              <ProcessTimeline height={210} />
-            </Panel>
-          </Reveal>
-        </div>
+        <Reveal delay={0.06}>
+          <Panel
+            title="A firm's fee, vs a Pro bundle"
+            caption={`${FIRM_FEE.range} ${FIRM_FEE.verb} · vs $48 for 8,000 tokens`}
+          >
+            <CostCompareBars height={200} />
+          </Panel>
+        </Reveal>
+        <Reveal delay={0.12}>
+          <Panel title="Filing-ready likelihood" caption="Illustrative — your attorney makes the call">
+            <ApprovalGauge value={92} height={200} />
+          </Panel>
+        </Reveal>
+        <Reveal delay={0.18}>
+          <Panel title="Path to a decision" caption="Premium ≈ 15 business days">
+            <ProcessTimeline height={200} />
+          </Panel>
+        </Reveal>
       </div>
     </Section>
   );
