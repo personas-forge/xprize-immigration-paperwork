@@ -37,11 +37,25 @@ import type {
   TransitionCaseInput,
 } from "../db/store";
 import type { EventBus } from "./bus";
+import type { CaseStatusChanged } from "./types";
 
 /** Injectable clock — defaults to wall-clock ISO time; tests pin it. */
 export type Clock = () => string;
 
 const wallClock: Clock = () => new Date().toISOString();
+
+/** Build a CaseStatusChanged event — ONE source for the shape so the guarded
+ *  (transitionCase) and unguarded (setCaseStatus) branches can't drift if the
+ *  event gains a field. */
+function caseStatusChanged(
+  at: string,
+  caseId: string,
+  status: string,
+  receiptNumber: string | undefined,
+  guarded: boolean,
+): CaseStatusChanged {
+  return { type: "CaseStatusChanged", at, caseId, status, receiptNumber, guarded };
+}
 
 export function withEvents(
   store: Store,
@@ -58,14 +72,9 @@ export function withEvents(
             receiptNumber?: string,
           ): Promise<void> => {
             await target.setCaseStatus(caseId, status, receiptNumber);
-            await bus.publish({
-              type: "CaseStatusChanged",
-              at: now(),
-              caseId,
-              status,
-              receiptNumber,
-              guarded: false,
-            });
+            await bus.publish(
+              caseStatusChanged(now(), caseId, status, receiptNumber, false),
+            );
           };
 
         case "transitionCase":
@@ -74,14 +83,9 @@ export function withEvents(
             // Only a transition that actually moved the case is a domain event;
             // a failed compare-and-set is a no-op and must stay silent.
             if (applied) {
-              await bus.publish({
-                type: "CaseStatusChanged",
-                at: now(),
-                caseId: input.caseId,
-                status: input.toStatus,
-                receiptNumber: input.receiptNumber,
-                guarded: true,
-              });
+              await bus.publish(
+                caseStatusChanged(now(), input.caseId, input.toStatus, input.receiptNumber, true),
+              );
             }
             return applied;
           };
