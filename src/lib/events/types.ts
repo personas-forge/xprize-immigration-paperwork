@@ -11,7 +11,7 @@
  * `caseId` so subscribers can correlate without re-reading the store.
  */
 
-/** A case advanced its lifecycle status (setCaseStatus / transitionCase). */
+/** A case advanced its lifecycle status (via transitionCase). */
 export interface CaseStatusChanged {
   type: "CaseStatusChanged";
   at: string;

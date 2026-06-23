@@ -49,27 +49,6 @@ function busCapturing(): { bus: EventBus; events: DomainEvent[] } {
   return { bus, events };
 }
 
-test("setCaseStatus emits CaseStatusChanged after the write", async () => {
-  const { store } = spyStore({
-    setCaseStatus: async () => undefined,
-  });
-  const { bus, events } = busCapturing();
-  const wrapped = withEvents(store, bus, () => FIXED);
-
-  await wrapped.setCaseStatus("case-1", "Filed", "EAC123");
-
-  assert.deepEqual(events, [
-    {
-      type: "CaseStatusChanged",
-      at: FIXED,
-      caseId: "case-1",
-      status: "Filed",
-      receiptNumber: "EAC123",
-      guarded: false,
-    },
-  ]);
-});
-
 test("transitionCase emits ONLY when the transition applied", async () => {
   const { bus, events } = busCapturing();
 
@@ -194,13 +173,20 @@ test("a failed mutation does NOT emit (write rejects, no event)", async () => {
   const { bus, events } = busCapturing();
   const wrapped = withEvents(
     spyStore({
-      setCaseStatus: async () => {
+      transitionCase: async () => {
         throw new Error("db down");
       },
     }).store,
     bus,
   );
 
-  await assert.rejects(() => wrapped.setCaseStatus("c", "Filed"));
+  await assert.rejects(() =>
+    wrapped.transitionCase({
+      caseId: "c",
+      fromStatuses: ["Filed"],
+      toStatus: "Approved",
+      events: [],
+    }),
+  );
   assert.deepEqual(events, []);
 });

@@ -573,22 +573,6 @@ export async function getPgliteStore(): Promise<Store> {
       );
     },
 
-    async setCaseStatus(caseId, status, receiptNumber) {
-      if (receiptNumber !== undefined) {
-        await pg.query(
-          `update cases
-              set status = $2, receipt_number = $3, updated_at = now()
-            where id = $1`,
-          [caseId, status, receiptNumber],
-        );
-      } else {
-        await pg.query(
-          `update cases set status = $2, updated_at = now() where id = $1`,
-          [caseId, status],
-        );
-      }
-    },
-
     async transitionCase(input) {
       return pg.transaction(async (tx) => {
         // Compare-and-set: only flip status when it is currently one of the

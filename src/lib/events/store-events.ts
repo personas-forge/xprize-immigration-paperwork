@@ -8,7 +8,7 @@
  * interface and every call site are untouched — the decorator is applied once,
  * centrally, in `getStore()`.
  *
- *   setCaseStatus / transitionCase → CaseStatusChanged
+ *   transitionCase                 → CaseStatusChanged
  *   saveDraft                      → DraftGenerated
  *   addCaseDocument                → EvidenceUploaded
  *
@@ -44,9 +44,8 @@ export type Clock = () => string;
 
 const wallClock: Clock = () => new Date().toISOString();
 
-/** Build a CaseStatusChanged event — ONE source for the shape so the guarded
- *  (transitionCase) and unguarded (setCaseStatus) branches can't drift if the
- *  event gains a field. */
+/** Build a CaseStatusChanged event — one factory for the shape (the `guarded`
+ *  arg stays a parameter for any future second publisher). */
 function caseStatusChanged(
   at: string,
   caseId: string,
@@ -65,18 +64,6 @@ export function withEvents(
   return new Proxy(store, {
     get(target, prop, receiver) {
       switch (prop) {
-        case "setCaseStatus":
-          return async (
-            caseId: string,
-            status: string,
-            receiptNumber?: string,
-          ): Promise<void> => {
-            await target.setCaseStatus(caseId, status, receiptNumber);
-            await bus.publish(
-              caseStatusChanged(now(), caseId, status, receiptNumber, false),
-            );
-          };
-
         case "transitionCase":
           return async (input: TransitionCaseInput): Promise<boolean> => {
             const applied = await target.transitionCase(input);

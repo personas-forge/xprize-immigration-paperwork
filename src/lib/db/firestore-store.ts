@@ -451,18 +451,6 @@ export const firestoreStore: Store = {
       }));
   },
 
-  async setCaseStatus(caseId, status, receiptNumber): Promise<void> {
-    const update: Record<string, unknown> = {
-      status,
-      updated_at: FieldValue.serverTimestamp(),
-    };
-    if (receiptNumber !== undefined) update.receipt_number = receiptNumber;
-    await adminDb()
-      .collection(col("cases"))
-      .doc(caseId)
-      .set(update, { merge: true });
-  },
-
   async transitionCase(input): Promise<boolean> {
     const fs = adminDb();
     const caseRef = fs.collection(col("cases")).doc(input.caseId);
