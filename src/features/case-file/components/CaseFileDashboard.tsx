@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Badge, Button, Card, CardBody, CardHeader, PanelErrorBoundary, Skeleton } from "@/components/ui";
+import { Badge, Button, buttonClasses, Card, CardBody, CardHeader, PanelErrorBoundary, Skeleton } from "@/components/ui";
 import { Stamp, ChapterMark, Seal } from "@/components/brand";
 import { FieldGuidancePanel } from "@/features/guidance";
 import { type SavedCaseSummary } from "../types";
@@ -143,10 +143,7 @@ function EmptyCasesCallout() {
         <p className="font-sans text-[17px] text-muted-strong max-w-sm">
           Your case file will appear here — begin by qualifying your profile
         </p>
-        <Link
-          href="/qualify"
-          className="inline-flex items-center justify-center gap-2 rounded-control font-mono uppercase tracking-document transition-[background-color,border-color,color,transform] duration-300 ease-out focus-visible:outline-none active:translate-y-[1px] bg-foreground text-background border border-foreground hover:bg-foreground-soft px-5 py-2.5 text-[15px]"
-        >
+        <Link href="/qualify" className={buttonClasses("primary", "md")}>
           Qualify your profile
         </Link>
       </CardBody>
