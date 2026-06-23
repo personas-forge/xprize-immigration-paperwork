@@ -78,9 +78,11 @@ export type ParseOutcome<TInput> =
   | { ok: true; value: TInput }
   | { ok: false; response: NextResponse };
 
-/** Context handed to `spec.parse` — the raw body plus a memoized user resolver. */
+/** Context handed to `spec.parse` — the raw body plus a memoized user resolver.
+ *  (Header/IP concerns — idempotency key, rate-limit key — are read from the
+ *  orchestrator's own request, never the spec, so the raw request isn't exposed
+ *  here; a spec that reads headers ad hoc would re-grow the removed boilerplate.) */
 export interface ParseContext {
-  request: Request;
   body: unknown;
   /** Resolve the signed-in user once (memoized across parse + persist). */
   resolveUser: () => Promise<AuthUser | null>;
@@ -276,7 +278,7 @@ export async function executeAiOperation<TInput, TOutput>(
   };
 
   // 2. Route-specific validation + auth gates. Returns its own error response.
-  const parsed = await spec.parse({ request, body, resolveUser });
+  const parsed = await spec.parse({ body, resolveUser });
   if (!parsed.ok) return parsed.response;
   const input = parsed.value;
 
