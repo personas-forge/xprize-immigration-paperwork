@@ -43,6 +43,7 @@ import {
 import { petitions } from "@/lib/data/adapters/petition";
 import { evidence } from "@/lib/data/adapters/evidence";
 import { type CaseAccess } from "@/lib/data/adapters/access";
+import { resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
 import { runAdjudication } from "@/lib/llm/adjudication-gates";
 import { toErrorResponse } from "@/lib/data/adapters/http";
 import { type AiOperationSpec } from "@/lib/ai/operation";
@@ -113,35 +114,17 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
     // access never degrades to the inline payload) and load its criteria, all
     // before any charge.
     if (caseId) {
-      const user = await resolveUser();
-      if (!user) {
-        return {
-          ok: false,
-          response: NextResponse.json(
-            { error: "Sign in to draft from a saved case." },
-            { status: 401 },
-          ),
-        };
-      }
-      const access: CaseAccess = { userId: user.id, email: null };
-      const gate = await petitions.resolveCase(access, caseId);
-      if (!gate.ok) {
-        if (gate.error.kind === "forbidden" || gate.error.kind === "not_found") {
-          return {
-            ok: false,
-            response: NextResponse.json(
-              { error: "You don't have access to this case." },
-              { status: 403 },
-            ),
-          };
-        }
-        return { ok: false, response: toErrorResponse(gate.error) };
-      }
+      const r = await resolveCaseForParse(resolveUser, caseId, {
+        unauthenticatedError: "Sign in to draft from a saved case.",
+        ownerOnly: true,
+      });
+      if (!r.ok) return r;
+      const { access } = r;
       const criteria = await petitions.getCriteria(access, caseId);
       if (!criteria.ok) return { ok: false, response: toErrorResponse(criteria.error) };
       const parsed = parseDraftRequest({
-        petitioner: gate.value.petitioner,
-        classification: gate.value.classification,
+        petitioner: r.case.petitioner,
+        classification: r.case.classification,
         criteria: criteria.value,
       });
       if (!parsed.ok) {

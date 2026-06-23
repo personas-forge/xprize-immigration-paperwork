@@ -20,7 +20,7 @@ import {
 } from "./index";
 import { str, MAX_PETITIONER, MAX_TEXT, MAX_CRITERIA } from "@/features/drafting/criteria-text";
 import { petitions } from "@/lib/data/adapters/petition";
-import { type CaseAccess } from "@/lib/data/adapters/access";
+import { resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
 import { type AiOperationSpec } from "@/lib/ai/operation";
 
 export interface ForecastInput {
@@ -72,37 +72,13 @@ export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {
 
     // DB path: owner-only gate + authoritative criteria from the case.
     if (caseId) {
-      const user = await resolveUser();
-      if (!user) {
-        return {
-          ok: false,
-          response: NextResponse.json(
-            { error: "Sign in to forecast a saved case." },
-            { status: 401 },
-          ),
-        };
-      }
-      // Mirror the responder's access (api/rfe/route.ts): pass the caller's email
-      // so a configured attorney-of-record can forecast a case they can already
-      // draft. Hardcoding `email: null` made forecast owner-only and diverged from
-      // the responder — an attorney got 403 on the risk radar but 200 on the draft.
-      const access: CaseAccess = { userId: user.id, email: user.email ?? null };
-      const gate = await petitions.resolveCase(access, caseId);
-      if (!gate.ok) {
-        if (gate.error.kind === "forbidden" || gate.error.kind === "not_found") {
-          return {
-            ok: false,
-            response: NextResponse.json(
-              { error: "You don't have access to this case." },
-              { status: 403 },
-            ),
-          };
-        }
-        return {
-          ok: false,
-          response: NextResponse.json({ error: "Forecast unavailable." }, { status: 503 }),
-        };
-      }
+      // Pass the caller's email (NOT owner-only) so a configured attorney of
+      // record can forecast a case they can already draft — matching the responder.
+      const r = await resolveCaseForParse(resolveUser, caseId, {
+        unauthenticatedError: "Sign in to forecast a saved case.",
+      });
+      if (!r.ok) return r;
+      const { access } = r;
       const criteria = await petitions.getCriteria(access, caseId);
       if (!criteria.ok) {
         return {
@@ -112,7 +88,7 @@ export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {
       }
       const req: RfeRequest = {
         petitioner,
-        classification: gate.value.classification,
+        classification: r.case.classification,
         criteria: criteria.value.map((c) => ({
           name: c.name,
           status: c.status,

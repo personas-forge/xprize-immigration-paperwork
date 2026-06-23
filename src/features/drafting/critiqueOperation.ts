@@ -26,8 +26,7 @@ import {
   type SectionCritique,
 } from "./index";
 import { str, MAX_PETITIONER } from "./criteria-text";
-import { petitions } from "@/lib/data/adapters/petition";
-import { type CaseAccess } from "@/lib/data/adapters/access";
+import { resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
 import { type AiOperationSpec } from "@/lib/ai/operation";
 
 const MAX_SECTIONS = 24;
@@ -77,34 +76,12 @@ export const critiqueSpec: AiOperationSpec<CritiqueInput, SectionCritique[]> = {
     // stored classification is authoritative; the sections graded are the
     // client's (the work product in front of the user).
     if (caseId) {
-      const user = await resolveUser();
-      if (!user) {
-        return {
-          ok: false,
-          response: NextResponse.json(
-            { error: "Sign in to critique a saved draft." },
-            { status: 401 },
-          ),
-        };
-      }
-      const access: CaseAccess = { userId: user.id, email: null };
-      const gate = await petitions.resolveCase(access, caseId);
-      if (!gate.ok) {
-        if (gate.error.kind === "forbidden" || gate.error.kind === "not_found") {
-          return {
-            ok: false,
-            response: NextResponse.json(
-              { error: "You don't have access to this case." },
-              { status: 403 },
-            ),
-          };
-        }
-        return {
-          ok: false,
-          response: NextResponse.json({ error: "Critique unavailable." }, { status: 503 }),
-        };
-      }
-      classification = gate.value.classification;
+      const r = await resolveCaseForParse(resolveUser, caseId, {
+        unauthenticatedError: "Sign in to critique a saved draft.",
+        ownerOnly: true,
+      });
+      if (!r.ok) return r;
+      classification = r.case.classification;
       return {
         ok: true,
         value: { req: { petitioner, classification, criteria: [] }, sections, caseId },
