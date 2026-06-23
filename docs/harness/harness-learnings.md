@@ -516,9 +516,10 @@ FIXES-WAVES-1-5 at `docs/harness/code-refactor-2026-06-23/`.
   The inline form was perfectly consistent (one variation, 79×), so the sweep was
   one perl fixed-string replace. `.focus-ring` is plain CSS (opaque to
   tailwind-merge), safe in `cn()` className strings.
-- **data-adapter#2 (High, DEFERRED — decision)**: `EvidenceAdapter.restoreDocument`
-  is built+tested but unwired. Wire (undo action + UI) vs delete is a product call —
-  the soft-delete was designed recoverable, so deletion removes intended capability.
+- **data-adapter#2 (High) — DONE (wired, not deleted)**: added a `restoreDocument`
+  server action + an Undo affordance in EvidenceVault (restores a removed document
+  with its original exhibit ordinal). Completed the soft-delete recovery design the
+  backend already supported, rather than deleting a deliberate capability.
 - **65-item medium/low tail — COMPLETED** (continuation, same branch). ~60 closed
   across ~17 commits (sub-waves T1–T8 direct + 5 parallel subagents over disjoint
   file areas). Gates green: tsc 0, tests 428→427 (−1 = removed redundant

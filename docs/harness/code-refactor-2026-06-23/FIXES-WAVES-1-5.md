@@ -76,7 +76,9 @@
 ## Deferred (with reasons)
 
 - **brand#2 (High) — DONE (later commit).** Added a shared `.focus-ring` utility mirroring the Button ring and swept all 79 inline copies across 34 files; reconciled the global `:focus-visible` fallback to `--accent-dark`. VISUAL change (swept elements gained the ring-offset; global outline darkened) — no visual tests, so eyeball keyboard focus or run `npm run e2e`. tsc 0 / tests 427 / next build PASS.
-- **data-adapter#2 (High) — `EvidenceAdapter.restoreDocument` unwired.** Wire-or-delete is a **product decision**: the soft-delete was deliberately designed recoverable (2026-06-21), so deleting the restore path removes intended capability while wiring it is a new feature (undo action + UI). Left intact; decide before closing.
+- **data-adapter#2 (High) — DONE (WIRED).** Decision: wire, not delete. Added a `restoreDocument` server action + an "Undo" affordance in EvidenceVault that restores a just-removed document (keeps its original exhibit ordinal) — completing the soft-delete recovery design the backend already supported. tsc 0 / tests 427 / next build PASS.
+
+**All deferred items are now closed.** Remaining = only the ~4 lows the scan recommended keeping (above) + the 1 verified FP.
 
 ## Medium/low tail — COMPLETED (continuation session, same branch)
 
