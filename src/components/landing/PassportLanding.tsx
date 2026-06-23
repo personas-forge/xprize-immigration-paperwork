@@ -529,7 +529,7 @@ function Allowance() {
               price={bundlePriceLabel(b)}
               tokens={b.tokens}
               discount={b.discountLabel}
-              highlight={b.key === "pro"}
+              highlight={b.featured ?? false}
             />
           </Reveal>
         ))}

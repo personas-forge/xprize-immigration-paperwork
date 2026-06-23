@@ -82,7 +82,7 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {bundles.map((b) => {
-          const isBest = b.key === "pro";
+          const isBest = b.featured ?? false;
           return (
             <HoverCard
               key={b.key}
