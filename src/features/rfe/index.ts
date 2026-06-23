@@ -8,6 +8,7 @@ export {
   buildRfeForecastResult,
   hasReliedCriteria,
   isRelied,
+  MIN_RFE,
   mockRfe,
   mockRfeForecast,
   parseRfeRequest,

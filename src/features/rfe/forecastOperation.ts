@@ -18,7 +18,7 @@ import {
   type RfeCriterion,
   type RfeRequest,
 } from "./index";
-import { str, MAX_PETITIONER, MAX_TEXT, MAX_CRITERIA } from "@/features/drafting/criteria-text";
+import { str, MAX_PETITIONER, parseCriteriaArray } from "@/features/drafting/criteria-text";
 import { petitions } from "@/lib/data/adapters/petition";
 import { resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
 import { type AiOperationSpec } from "@/lib/ai/operation";
@@ -42,19 +42,9 @@ function noReliedToForecast() {
   };
 }
 
-/** Validate an untrusted `criteria` array into RfeCriterion[]. */
+/** Validate an untrusted `criteria` array into RfeCriterion[] (shared normalizer). */
 function parseCriteria(value: unknown): RfeCriterion[] {
-  const raw = Array.isArray(value) ? value : [];
-  return raw
-    .slice(0, MAX_CRITERIA)
-    .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
-    .map((c) => ({
-      name: str(c.name, 120),
-      status: str(c.status, 20),
-      evidence: str(c.evidence, MAX_TEXT),
-      rationale: str(c.rationale, MAX_TEXT),
-    }))
-    .filter((c) => c.name !== "");
+  return parseCriteriaArray(value);
 }
 
 export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {

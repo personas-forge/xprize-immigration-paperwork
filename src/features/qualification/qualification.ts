@@ -240,7 +240,8 @@ export function parseQualifyResponse(
  */
 export function mockQualification(req: QualifyRequest): QualifyAssessment {
   const text = req.profile;
-  const criteria: ScoredCriterion[] = packFor(req.classification).criteria.map((pc) => {
+  const pack = packFor(req.classification);
+  const criteria: ScoredCriterion[] = pack.criteria.map((pc) => {
     const hit = pc.match.test(text);
     return {
       id: idFor(pc.name),
@@ -253,7 +254,6 @@ export function mockQualification(req: QualifyRequest): QualifyAssessment {
     };
   });
 
-  const pack = packFor(req.classification);
   const qualifying = criteria.filter((c) => c.status === "Met" || c.status === "Strong").length;
   const likelihood = mockLikelihood(qualifying, pack.threshold, criteria.length);
   const gaps = pack.criteria.filter((pc) => !pc.match.test(text)).map((pc) => pc.gap);

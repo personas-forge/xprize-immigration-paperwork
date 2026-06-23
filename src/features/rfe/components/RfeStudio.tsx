@@ -14,7 +14,7 @@ import {
   type VaultDocLike,
 } from "@/features/drafting";
 import { ExhibitIndex } from "@/features/drafting/components/ExhibitIndex";
-import { isRelied } from "@/features/rfe";
+import { isRelied, MIN_RFE } from "@/features/rfe";
 import { costOf } from "@/lib/tokens/registry";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 
@@ -126,7 +126,7 @@ export function RfeStudio({
       setStatus("error");
       return;
     }
-    if (rfeText.trim().length < 20) {
+    if (rfeText.trim().length < MIN_RFE) {
       setError("Paste the text of the RFE you received (a sentence or two is enough).");
       setStatus("error");
       return;

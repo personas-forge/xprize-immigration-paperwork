@@ -19,7 +19,7 @@
 import { DISCLAIMER } from "@/lib/result";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
-import { str, criterionLine, MAX_PETITIONER, MAX_TEXT, MAX_CRITERIA } from "./criteria-text";
+import { str, criterionLine, MAX_PETITIONER, parseCriteriaArray } from "./criteria-text";
 
 export { DISCLAIMER };
 
@@ -122,16 +122,7 @@ export function parseDraftRequest(
   if (rawCriteria.length === 0) {
     return { ok: false, error: "At least one scored criterion is required." };
   }
-  const criteria: DraftCriterion[] = rawCriteria
-    .slice(0, MAX_CRITERIA)
-    .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
-    .map((c) => ({
-      name: str(c.name, 120),
-      status: str(c.status, 20),
-      evidence: str(c.evidence, MAX_TEXT),
-      rationale: str(c.rationale, MAX_TEXT),
-    }))
-    .filter((c) => c.name !== "");
+  const criteria: DraftCriterion[] = parseCriteriaArray(rawCriteria);
 
   if (criteria.length === 0) {
     return { ok: false, error: "Criteria must include at least one named item." };

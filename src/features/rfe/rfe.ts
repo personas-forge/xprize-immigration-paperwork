@@ -24,7 +24,7 @@ import {
   withAttachedExhibits,
   type DraftSection,
 } from "@/features/drafting";
-import { str, criterionLine, MAX_PETITIONER, MAX_TEXT, MAX_CRITERIA } from "@/features/drafting/criteria-text";
+import { str, criterionLine, MAX_PETITIONER, parseCriteriaArray } from "@/features/drafting/criteria-text";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
 
@@ -64,7 +64,7 @@ export interface RfeResult extends RfeResponse {
 }
 
 const MAX_RFE = 12000;
-const MIN_RFE = 20;
+export const MIN_RFE = 20;
 
 /**
  * Validate and normalize an untrusted request body. The RFE notice text is
@@ -86,17 +86,7 @@ export function parseRfeRequest(
   const petitioner = str(record.petitioner, MAX_PETITIONER) || "the beneficiary";
   const classification = str(record.classification, 40) || "O-1A";
 
-  const rawCriteria = Array.isArray(record.criteria) ? record.criteria : [];
-  const criteria: RfeCriterion[] = rawCriteria
-    .slice(0, MAX_CRITERIA)
-    .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
-    .map((c) => ({
-      name: str(c.name, 120),
-      status: str(c.status, 20),
-      evidence: str(c.evidence, MAX_TEXT),
-      rationale: str(c.rationale, MAX_TEXT),
-    }))
-    .filter((c) => c.name !== "");
+  const criteria: RfeCriterion[] = parseCriteriaArray(record.criteria);
 
   return { ok: true, value: { petitioner, classification, criteria, rfeText } };
 }
