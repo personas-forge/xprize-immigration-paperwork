@@ -16,7 +16,7 @@
  * so the model can only argue from evidence the user actually provided.
  */
 
-import { DISCLAIMER } from "@/features/guidance/guidance";
+import { DISCLAIMER } from "@/lib/result";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
 import { str, criterionLine, MAX_PETITIONER, MAX_TEXT, MAX_CRITERIA } from "./criteria-text";

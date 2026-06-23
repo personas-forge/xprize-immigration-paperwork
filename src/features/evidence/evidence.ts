@@ -18,7 +18,7 @@
  * shared `DISCLAIMER`.
  */
 
-import { DISCLAIMER } from "@/features/guidance/guidance";
+import { DISCLAIMER } from "@/lib/result";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
 import { O1A_CRITERIA, criteriaNames, packFor } from "@/features/qualification";

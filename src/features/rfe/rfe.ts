@@ -15,7 +15,7 @@
  * inventing evidence (citation discipline). Every result carries `DISCLAIMER`.
  */
 
-import { DISCLAIMER } from "@/features/guidance/guidance";
+import { DISCLAIMER } from "@/lib/result";
 import {
   type DraftExhibit,
   type VaultDocLike,

@@ -7,7 +7,7 @@
 
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { DISCLAIMER } from "@/features/guidance/guidance";
+import { DISCLAIMER } from "@/lib/result";
 import type { GenerateOptions } from "@/lib/llm/client";
 import type { AdjudicationReport } from "@/lib/llm/adjudication-gates";
 import {

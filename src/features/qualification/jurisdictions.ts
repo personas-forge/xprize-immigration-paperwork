@@ -19,7 +19,7 @@
  * UPL/representation specifics for each market need confirmation by counsel.
  */
 
-import { DISCLAIMER } from "@/features/guidance/guidance";
+import { DISCLAIMER } from "@/lib/result";
 import { type Classification } from "./packs";
 
 export type JurisdictionCode = "US" | "UK";
