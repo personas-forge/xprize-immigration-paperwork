@@ -72,7 +72,7 @@ export function POST(request: Request): Promise<NextResponse> {
       buildGuidanceResponse(
         guidance,
         source as Parameters<typeof buildGuidanceResponse>[1],
-      ) as unknown as Record<string, unknown>,
+      ) as Record<string, unknown>,
     // Live UPL screen: guidance is the most "tell me what to do"-prone route, and
     // `runAdjudication` ships a dedicated `case "guidance"` (disclaimer + legal-
     // advice tripwire). Wire it so outcome/advice language is flagged on the

@@ -11,13 +11,13 @@
  * of the data contract, not a UI afterthought.
  */
 
+import { wrapResult, DISCLAIMER, type Result } from "@/lib/result";
+
 export interface GuidanceRequest {
   formId: string;
   fieldLabel: string;
   situation: string;
 }
-
-import { wrapResult, DISCLAIMER, type Result } from "@/lib/result";
 
 /**
  * The guidance API envelope. Shares Result<T>'s disclaimer/source envelope — the
@@ -145,6 +145,6 @@ export function buildGuidanceResponse(
   guidance: string,
   source: GuidanceResponse["source"],
 ): GuidanceResponse {
-  const wrapped = wrapResult(guidance.trim(), source);
-  return { guidance: wrapped.data, disclaimer: wrapped.disclaimer, source: wrapped.source };
+  const { data, ...rest } = wrapResult(guidance.trim(), source);
+  return { ...rest, guidance: data };
 }

@@ -175,8 +175,7 @@ export function FieldGuidancePanel() {
             <label className="block">
               <span className="microprint flex items-baseline justify-between gap-2">
                 <span>Describe your situation</span>
-                {/* Visible counter; the cap itself is enforced by maxLength (which
-                    AT already announces), so the counter is decorative. */}
+                {/* decorative — cap enforced by maxLength below */}
                 <span aria-hidden style={{ color: "var(--muted)" }}>
                   {situation.length} / {MAX_FIELD}
                 </span>
