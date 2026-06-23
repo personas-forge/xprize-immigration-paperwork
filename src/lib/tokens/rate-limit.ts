@@ -16,6 +16,7 @@
  * the node test runner; it is only ever imported from server route handlers.
  */
 
+import { NextResponse } from "next/server";
 import { OPERATION_REGISTRY } from "./registry";
 
 export interface RateLimitResult {
@@ -24,6 +25,24 @@ export interface RateLimitResult {
   remaining: number;
   /** Seconds until the current window resets (for the Retry-After header). */
   retryAfterSec: number;
+}
+
+/**
+ * The canonical 429 for a denied {@link RateLimitResult} — the `rate_limited`
+ * error key, the `retryAfterSec` field, the `Retry-After` header, and the
+ * caller-supplied disclaimer. ONE definition so the orchestrator and the
+ * non-orchestrated routes (the two anonymous previews, draft/save) can't drift on
+ * the wire contract (the disclaimer was once dropped on one path). The disclaimer
+ * is passed in so the limiter needn't import a feature constant.
+ */
+export function tooManyRequestsResponse(
+  rl: RateLimitResult,
+  disclaimer: string,
+): NextResponse {
+  return NextResponse.json(
+    { error: "rate_limited", retryAfterSec: rl.retryAfterSec, disclaimer },
+    { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+  );
 }
 
 interface Bucket {

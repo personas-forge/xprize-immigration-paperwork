@@ -10,6 +10,7 @@ import {
   checkRateLimit,
   isRateLimitEnabled,
   rateLimitKey,
+  tooManyRequestsResponse,
 } from "@/lib/tokens/rate-limit";
 
 // Persistence-only rescue endpoint for a draft that was charged + generated
@@ -71,12 +72,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       rateLimitKey(request, "draft-save", user?.id),
       RATE_LIMITS.draft,
     );
-    if (!rl.ok) {
-      return NextResponse.json(
-        { error: "rate_limited", retryAfterSec: rl.retryAfterSec, disclaimer: DISCLAIMER },
-        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
-      );
-    }
+    if (!rl.ok) return tooManyRequestsResponse(rl, DISCLAIMER);
   }
 
   // Owner-only access context (email deliberately null — matches the

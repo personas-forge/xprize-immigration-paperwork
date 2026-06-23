@@ -15,6 +15,7 @@ import {
   checkRateLimit,
   isRateLimitEnabled,
   rateLimitKey,
+  tooManyRequestsResponse,
 } from "@/lib/tokens/rate-limit";
 
 /**
@@ -292,12 +293,7 @@ export async function executeAiOperation<TInput, TOutput>(
       d.rateLimit.key(request, scope, keyUser),
       d.rateLimit.limits[bucket],
     );
-    if (!rl.ok) {
-      return NextResponse.json(
-        { error: "rate_limited", retryAfterSec: rl.retryAfterSec, disclaimer: DISCLAIMER },
-        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
-      );
-    }
+    if (!rl.ok) return tooManyRequestsResponse(rl, DISCLAIMER);
   }
 
   // 4. Debit upfront (charge-then-reclaim). A caller who can't pay never reaches
