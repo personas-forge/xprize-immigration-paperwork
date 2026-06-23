@@ -84,7 +84,7 @@ test("daysBetween computes whole days between two yyyy-mm-dd dates", () => {
 });
 
 test("no validation record is dated in an impossible format", () => {
-  for (const r of allValidations()) assert.match(r.lastVerified, DATE_RE);
+  for (const { record } of allValidations()) assert.match(record.lastVerified, DATE_RE);
 });
 
 test("freshnessOf classifies fresh / due-soon / stale and reports the due date", () => {

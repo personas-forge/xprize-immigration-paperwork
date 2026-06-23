@@ -34,8 +34,6 @@ export interface SourceRef {
 }
 
 export interface ValidationRecord {
-  /** Program code or compliance-topic key this record validates. */
-  subject: string;
   status: ValidationStatus;
   /** Statute / regulation the program rests on. */
   legalBasis: string;
@@ -63,7 +61,6 @@ const TODAY = "2026-05-30"; // date of the last validation pass
 
 export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
   "O-1A": {
-    subject: "O-1A",
     status: "verified",
     legalBasis: "8 CFR 214.2(o)(3)(iii)",
     threshold: "3 of 8 criteria (or a qualifying one-time major award)",
@@ -87,7 +84,6 @@ export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
       "Criterion labels are paraphrased; verbatim wording + counsel sign-off pending.",
   },
   "O-1B": {
-    subject: "O-1B",
     status: "verified",
     legalBasis: "8 CFR 214.2(o)(3)(iv)",
     threshold: "3 of 6 criteria (or a qualifying major award/nomination)",
@@ -111,7 +107,6 @@ export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
       "from the regulation; verbatim wording + counsel sign-off pending.",
   },
   "EB-1A": {
-    subject: "EB-1A",
     status: "verified",
     legalBasis: "8 CFR 204.5(h)(3)",
     threshold: "3 of 10 criteria (or a qualifying one-time major award)",
@@ -135,7 +130,6 @@ export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
       "and order; threshold 3 of 10 confirmed. Counsel sign-off pending.",
   },
   "UK-Global-Talent": {
-    subject: "UK-Global-Talent",
     status: "needs-review",
     legalBasis: "UK Immigration Rules Appendix Global Talent (endorsement-based)",
     lastVerified: TODAY,
@@ -161,7 +155,6 @@ export const PROGRAM_VALIDATIONS: Record<Classification, ValidationRecord> = {
 
 export const COMPLIANCE_VALIDATIONS: Record<string, ValidationRecord> = {
   "us-federal-practice": {
-    subject: "us-federal-practice",
     status: "verified",
     legalBasis: "8 CFR 1001.1(f); 8 CFR 1.2; 8 CFR 1292.1",
     lastVerified: TODAY,
@@ -186,7 +179,6 @@ export const COMPLIANCE_VALIDATIONS: Record<string, ValidationRecord> = {
       "of record covers the nation.",
   },
   "us-arizona-abs": {
-    subject: "us-arizona-abs",
     status: "verified",
     legalBasis: "Arizona Supreme Court Order R-20-0034 (eff. 2021-01-01); ER 5.4 eliminated",
     lastVerified: TODAY,
@@ -217,11 +209,14 @@ export function validationFor(program: string): ValidationRecord | undefined {
   return PROGRAM_VALIDATIONS[program as Classification];
 }
 
-export function allValidations(): ValidationRecord[] {
+/** Every validation record paired with its map key — the key IS the record's
+ *  identity/label (it used to be hand-copied into a `subject` field that could
+ *  drift from the key; the freshness report now prints the key directly). */
+export function allValidations(): Array<{ key: string; record: ValidationRecord }> {
   return [
-    ...Object.values(PROGRAM_VALIDATIONS),
-    ...Object.values(COMPLIANCE_VALIDATIONS),
-  ];
+    ...Object.entries(PROGRAM_VALIDATIONS),
+    ...Object.entries(COMPLIANCE_VALIDATIONS),
+  ].map(([key, record]) => ({ key, record }));
 }
 
 /** Whole days between two yyyy-mm-dd dates (b - a). */

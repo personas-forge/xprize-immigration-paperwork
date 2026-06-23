@@ -20,7 +20,7 @@ import {
 const today = todayIso();
 
 const rows = allValidations()
-  .map((record) => ({ record, freshness: freshnessOf(record, today) }))
+  .map(({ key, record }) => ({ key, record, freshness: freshnessOf(record, today) }))
   .sort((a, b) => a.freshness.daysLeft - b.freshness.daysLeft);
 
 const stale = rows.filter((r) => r.freshness.level === "stale");
@@ -35,9 +35,9 @@ if (stale.length === 0 && dueSoon.length === 0) {
 } else {
   if (stale.length > 0) {
     lines.push(`## ⛔ Stale — re-verify now (${stale.length})`, "");
-    for (const { record, freshness } of stale) {
+    for (const { key, record, freshness } of stale) {
       lines.push(
-        `- **${record.subject}** — last reviewed ${record.lastVerified}, ` +
+        `- **${key}** — last reviewed ${record.lastVerified}, ` +
           `overdue by ${-freshness.daysLeft} day(s) · ${record.legalBasis}`,
       );
     }
@@ -45,9 +45,9 @@ if (stale.length === 0 && dueSoon.length === 0) {
   }
   if (dueSoon.length > 0) {
     lines.push(`## ⚠️ Due soon (${dueSoon.length})`, "");
-    for (const { record, freshness } of dueSoon) {
+    for (const { key, record, freshness } of dueSoon) {
       lines.push(
-        `- **${record.subject}** — due by ${freshness.dueBy} ` +
+        `- **${key}** — due by ${freshness.dueBy} ` +
           `(${freshness.daysLeft} day(s) left) · ${record.legalBasis}`,
       );
     }
