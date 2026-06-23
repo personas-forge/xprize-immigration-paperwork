@@ -30,6 +30,7 @@ import {
   undraftedSupportedCriteria,
   type DraftRequest,
 } from "./drafting";
+import { marketBarFraming } from "./criteria-text";
 
 const valid: DraftRequest = {
   petitioner: "Dr. Anya Krishnan",
@@ -410,6 +411,28 @@ test("buildDraftPrompt: rescues Partial-criterion facts into the totality, no ow
   // Backward-compatible: no Partial-with-evidence criterion → no totality rule.
   // (`valid`'s only Partial criterion has blank evidence, so the rule is absent.)
   assert.ok(!/supporting, not independently strong/i.test(buildDraftPrompt(valid)));
+});
+
+test("marketBarFraming: shared final-merits + field-norm bullets; one op-specific bullet differs (Tiger drill)", () => {
+  const letter = marketBarFraming("letter").join("\n");
+  const rfe = marketBarFraming("rfe").join("\n");
+  // Shared validated levers in BOTH.
+  for (const p of [letter, rfe]) {
+    assert.ok(/final-merits standard explicitly/i.test(p), "argues the final-merits totality");
+    assert.ok(/field norms for a non-expert adjudicator/i.test(p), "frames metrics for a lay adjudicator");
+    assert.ok(/invent nothing/i.test(p), "no-fabrication discipline restated");
+  }
+  // Op-specific bullet diverges and does not leak across kinds.
+  assert.ok(/comparable-evidence/i.test(letter) && !/point by point/i.test(letter), "letter → comparable-evidence");
+  assert.ok(/point by point/i.test(rfe) && !/comparable-evidence/i.test(rfe), "rfe → point-by-point, name the evidence");
+});
+
+test("buildDraftPrompt: carries the market-bar framing (Tiger drill ship lever)", () => {
+  const p = buildDraftPrompt(valid);
+  assert.ok(/final-merits standard explicitly/i.test(p), "final-merits totality in the draft prompt");
+  assert.ok(/field norms for a non-expert adjudicator/i.test(p));
+  assert.ok(/comparable-evidence/i.test(p), "draft gets the comparable-evidence bullet");
+  assert.ok(/do not invent/i.test(p), "framing never loosens no-fabrication");
 });
 
 test("draftFraming / buildDraftPrompt: field-norm framing always; arts + EB-1A get their standard, O-1A doesn't (LLM-3)", () => {

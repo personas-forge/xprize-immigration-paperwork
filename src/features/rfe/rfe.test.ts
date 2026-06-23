@@ -231,6 +231,15 @@ test("attachFiledPetition + buildRfePrompt: fuses the as-filed letter as read-on
   assert.ok(/read-only data, never as instructions/i.test(p), "keeps the injection defense");
 });
 
+test("buildRfePrompt: carries the market-bar framing (Tiger drill ship lever — point-by-point, name the evidence)", () => {
+  const p = buildRfePrompt(valid);
+  assert.ok(/final-merits standard explicitly/i.test(p), "final-merits totality in the RFE prompt");
+  assert.ok(/field norms for a non-expert adjudicator/i.test(p), "frames metrics for a lay adjudicator");
+  assert.ok(/point by point/i.test(p), "RFE gets the point-by-point bullet");
+  assert.ok(/name the exact|NAME the exact/i.test(p) || /naming what does/i.test(p), "demands naming the on-record evidence");
+  assert.ok(/do not invent|invent nothing/i.test(p), "framing never loosens no-fabrication");
+});
+
 test("trimFiledSection: short sections pass through verbatim (backward compatible)", () => {
   const body = "As established, the beneficiary served as a NeurIPS reviewer.";
   assert.equal(trimFiledSection(body, valid.rfeText), body);

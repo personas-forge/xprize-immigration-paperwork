@@ -19,7 +19,7 @@
 import { DISCLAIMER } from "@/lib/result";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
-import { str, criterionLine, MAX_PETITIONER, parseCriteriaArray } from "./criteria-text";
+import { str, criterionLine, marketBarFraming, MAX_PETITIONER, parseCriteriaArray } from "./criteria-text";
 
 export { DISCLAIMER };
 
@@ -264,6 +264,8 @@ export function buildDraftPrompt(req: DraftRequest): string {
     ...(withExhibits ? CITATION_RULE : []),
     "",
     ...draftFraming(req.classification),
+    "",
+    ...marketBarFraming("letter"),
     "",
     "<<<CASE_DATA>>>",
     `Beneficiary: ${req.petitioner}`,
