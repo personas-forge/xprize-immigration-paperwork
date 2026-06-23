@@ -3,6 +3,7 @@ import { validateEvent } from "@polar-sh/sdk/webhooks";
 import { credit } from "@/lib/tokens/ledger";
 import { bundleByKey, bundleByProductId } from "@/lib/tokens/economy";
 import { polarEventToRevenue } from "./relay-revenue";
+import { finiteCents, productId, resolveUserId } from "./polar-fields";
 import { trackRevenue } from "@/lib/cost-telemetry";
 
 type PolarOrder = {
@@ -21,26 +22,6 @@ type PolarOrder = {
   refunded_amount?: number;
   amount?: number;
 };
-
-/** A finite, non-negative number, else undefined (for untrusted payload fields). */
-function finiteCents(v: unknown): number | undefined {
-  return typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : undefined;
-}
-
-/** Resolve our user id. Per-order `metadata.userId` is set at checkout but may
- *  NOT propagate to subscription-cycle (renewal) orders, so fall back to the
- *  customer external id, which we set (`externalCustomerId`) at checkout and
- *  which Polar attaches to every order including renewals. */
-function resolveUserId(order: PolarOrder): string | undefined {
-  return (
-    order.metadata?.userId ||
-    order.externalCustomerId ||
-    order.external_customer_id ||
-    order.customer?.externalId ||
-    order.customer?.external_id ||
-    undefined
-  );
-}
 
 /** Resolve the credited bundle. The product id is the SIGNED, paid fact and is
  *  authoritative; `metadata.bundle` is only a fallback when the product id is
@@ -86,9 +67,9 @@ export async function POST(request: NextRequest) {
   // renewal (checkout metadata → subscription → order).
   if (event.type === "order.paid") {
     const order = event.data as PolarOrder;
-    const userId = resolveUserId(order);
-    const productId = order.productId ?? order.product_id;
-    const b = resolveBundle(order, productId);
+    const userId = resolveUserId(event.data);
+    const product = productId(event.data);
+    const b = resolveBundle(order, product);
 
     if (userId && b) {
       await credit(userId, b.tokens, "purchase", order.id, { bundle: b.key });
@@ -100,7 +81,7 @@ export async function POST(request: NextRequest) {
       console.error(
         `[polar webhook] order.paid not credited: order=${order.id} ` +
           `userId=${userId ?? "<missing>"} bundle=${b?.key ?? "<unresolved>"} ` +
-          `productId=${productId ?? "<none>"}`,
+          `productId=${product ?? "<none>"}`,
       );
       return new Response("order.paid could not be credited", { status: 500 });
     }
@@ -109,13 +90,13 @@ export async function POST(request: NextRequest) {
   // Refund/chargeback reversal (optional clawback). Confirm event name.
   if (event.type === "refund.created" || event.type === "order.refunded") {
     const order = event.data as PolarOrder;
-    const userId = resolveUserId(order);
+    const userId = resolveUserId(event.data);
     // Mirror the paid path's resolution (product id authoritative, metadata
     // bundle only as fallback) so a refund payload that lost metadata.bundle
     // still claws back instead of silently no-op'ing while the original purchase
     // WAS credited.
-    const productId = order.productId ?? order.product_id;
-    const b = resolveBundle(order, productId);
+    const product = productId(event.data);
+    const b = resolveBundle(order, product);
     // Dedupe on the ORIGINAL order id, not the per-attempt refund id. A
     // refund.created payload's root `id` is the refund id (distinct for each
     // refund attempt), so keying the ref on it would let two refunds against the
@@ -136,7 +117,9 @@ export async function POST(request: NextRequest) {
       // partial refund on the same order is deduped (not clawed back) — accepted
       // as the conservative choice over any risk of double-clawback; revisit with
       // per-refund keying if multi-partial-refund-per-order becomes common.
-      const refundedCents = finiteCents(order.refunded_amount) ?? finiteCents(order.amount);
+      const refundedCents =
+        finiteCents(order.refunded_amount, { nonNegative: true }) ??
+        finiteCents(order.amount, { nonNegative: true });
       let clawback = b.tokens;
       if (refundedCents && refundedCents > 0 && b.priceCents > 0) {
         clawback = Math.min(b.tokens, Math.round((b.tokens * refundedCents) / b.priceCents));
