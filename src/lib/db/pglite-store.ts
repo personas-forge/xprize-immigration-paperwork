@@ -238,6 +238,37 @@ function toDraftSections(v: unknown): DraftSection[] {
   });
 }
 
+const INSERT_CONSENT = `insert into consents
+     (user_id, consent_version, terms_accepted, privacy_accepted,
+      marketing_opt_in, ip, user_agent)
+   values ($1, $2, $3, $4, $5, $6, $7)`;
+
+/** Append one consent row via the given queryable (the pool `pg` or a `tx`). ONE
+ *  definition so the onboarding upsert and the standalone recordConsent run the
+ *  identical insert — a schema change lands in one place, not two. */
+async function appendConsentRow(
+  q: Queryable,
+  input: {
+    userId: string;
+    consentVersion: string;
+    terms: boolean;
+    privacy: boolean;
+    marketing: boolean;
+    ip: string | null | undefined;
+    userAgent: string | null | undefined;
+  },
+): Promise<void> {
+  await q.query(INSERT_CONSENT, [
+    input.userId,
+    input.consentVersion,
+    input.terms,
+    input.privacy,
+    input.marketing,
+    input.ip,
+    input.userAgent,
+  ]);
+}
+
 export async function getPgliteStore(): Promise<Store> {
   const pg = await open();
 
@@ -274,21 +305,7 @@ export async function getPgliteStore(): Promise<Store> {
              updated_at = now()`,
           [input.userId, input.email, input.fullName, input.avatarUrl],
         );
-        await tx.query(
-          `insert into consents
-             (user_id, consent_version, terms_accepted, privacy_accepted,
-              marketing_opt_in, ip, user_agent)
-           values ($1, $2, $3, $4, $5, $6, $7)`,
-          [
-            input.userId,
-            input.consentVersion,
-            input.terms,
-            input.privacy,
-            input.marketing,
-            input.ip,
-            input.userAgent,
-          ],
-        );
+        await appendConsentRow(tx, input);
       });
     },
 
@@ -321,21 +338,7 @@ export async function getPgliteStore(): Promise<Store> {
     },
 
     async recordConsent(input) {
-      await pg.query(
-        `insert into consents
-           (user_id, consent_version, terms_accepted, privacy_accepted,
-            marketing_opt_in, ip, user_agent)
-         values ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          input.userId,
-          input.consentVersion,
-          input.terms,
-          input.privacy,
-          input.marketing,
-          input.ip,
-          input.userAgent,
-        ],
-      );
+      await appendConsentRow(pg, input);
     },
 
     async getBalance(userId) {

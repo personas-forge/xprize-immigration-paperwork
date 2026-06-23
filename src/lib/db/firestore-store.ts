@@ -45,6 +45,30 @@ import type {
 
 const col = (entity: string) => `${COLLECTION_PREFIX}_${entity}`;
 
+/** The append-only consent row body — ONE shape written by both the onboarding
+ *  upsert (inside its transaction) and the standalone recordConsent, so a schema
+ *  change to the consent record can't leave the two paths writing different rows. */
+function consentRow(input: {
+  userId: string;
+  consentVersion: string;
+  terms: boolean;
+  privacy: boolean;
+  marketing: boolean;
+  ip: string | null | undefined;
+  userAgent: string | null | undefined;
+}) {
+  return {
+    user_id: input.userId,
+    consent_version: input.consentVersion,
+    terms_accepted: input.terms,
+    privacy_accepted: input.privacy,
+    marketing_opt_in: input.marketing,
+    ip: input.ip,
+    user_agent: input.userAgent,
+    created_at: FieldValue.serverTimestamp(),
+  };
+}
+
 function tsToIso(v: unknown): string | null {
   return v instanceof Timestamp ? v.toDate().toISOString() : null;
 }
@@ -146,16 +170,7 @@ export const firestoreStore: Store = {
         { merge: true },
       );
       // consents are append-only → auto-id doc.
-      t.set(fs.collection(col("consents")).doc(), {
-        user_id: input.userId,
-        consent_version: input.consentVersion,
-        terms_accepted: input.terms,
-        privacy_accepted: input.privacy,
-        marketing_opt_in: input.marketing,
-        ip: input.ip,
-        user_agent: input.userAgent,
-        created_at: FieldValue.serverTimestamp(),
-      });
+      t.set(fs.collection(col("consents")).doc(), consentRow(input));
     });
   },
 
@@ -211,18 +226,9 @@ export const firestoreStore: Store = {
   },
 
   async recordConsent(input) {
-    // Append-only auto-id doc — same shape as upsertProfileWithConsent's consent
-    // write, but WITHOUT the profile mutation.
-    await adminDb().collection(col("consents")).doc().set({
-      user_id: input.userId,
-      consent_version: input.consentVersion,
-      terms_accepted: input.terms,
-      privacy_accepted: input.privacy,
-      marketing_opt_in: input.marketing,
-      ip: input.ip,
-      user_agent: input.userAgent,
-      created_at: FieldValue.serverTimestamp(),
-    });
+    // Append-only auto-id doc — the same consentRow shape as the onboarding
+    // upsert, but WITHOUT the profile mutation.
+    await adminDb().collection(col("consents")).doc().set(consentRow(input));
   },
 
   async getBalance(userId) {
