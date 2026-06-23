@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { Seal, Guilloche } from "@/components/brand";
@@ -39,9 +39,6 @@ export function InstantVerdict({
   const [result, setResult] = useState<QualifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const nameId = useId();
-  const classId = useId();
-  const profileId = useId();
   const busy = useRef(false);
 
   async function reveal(e: React.FormEvent) {
@@ -103,7 +100,6 @@ export function InstantVerdict({
               <label className="block">
                 <span className="microprint">Your name (optional)</span>
                 <input
-                  id={nameId}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Dr. Anya Krishnan"
@@ -113,7 +109,6 @@ export function InstantVerdict({
               <label className="block">
                 <span className="microprint">Visa type</span>
                 <select
-                  id={classId}
                   value={classification}
                   onChange={(e) => setClassification(e.target.value as Classification)}
                   className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
@@ -132,7 +127,6 @@ export function InstantVerdict({
                 Your background — awards, publications, press, patents, roles, salary
               </span>
               <textarea
-                id={profileId}
                 value={profile}
                 onChange={(e) => setProfile(e.target.value)}
                 rows={6}

@@ -47,6 +47,20 @@ const UK_DISCLAIMER =
   "OISC-regulated adviser before submission. The criteria and representation " +
   "rules shown here are provisional and not yet in service.";
 
+/**
+ * The two load-bearing US legal facts the product rests on, stated ONCE here so
+ * the case-header `representationNote` (below) and the `/validation` compliance
+ * records (`validation.ts`, which imports these) can never assert subtly
+ * different things about the same regulation. Each surface adds its own
+ * citations; only the claim sentence is shared.
+ */
+export const US_FEDERAL_PRACTICE_FACT =
+  "U.S. immigration is federal: an attorney licensed and in good standing in " +
+  "any one U.S. state may act as attorney of record nationwide.";
+export const US_ARIZONA_ABS_FACT =
+  "The platform is software licensed to an attorney-owned firm under an " +
+  "Arizona ABS (Alternative Business Structure).";
+
 export const JURISDICTIONS: Record<JurisdictionCode, Jurisdiction> = {
   US: {
     code: "US",
@@ -55,10 +69,8 @@ export const JURISDICTIONS: Record<JurisdictionCode, Jurisdiction> = {
     status: "live",
     representationRole: "attorney of record",
     representationNote:
-      "U.S. immigration is federal: an attorney licensed and in good standing in " +
-      "any one U.S. state may act as attorney of record nationwide (8 CFR §1.2; " +
-      "USCIS Form G-28). The platform is software licensed to an attorney-owned " +
-      "firm under an Arizona ABS (Alternative Business Structure).",
+      `${US_FEDERAL_PRACTICE_FACT} (8 CFR §1.2; USCIS Form G-28). ` +
+      US_ARIZONA_ABS_FACT,
     disclaimer: DISCLAIMER,
     programs: ["O-1A", "O-1B", "EB-1A"],
   },

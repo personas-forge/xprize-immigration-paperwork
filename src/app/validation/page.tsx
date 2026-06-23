@@ -40,11 +40,6 @@ const SOURCE_KIND_LABEL: Record<SourceRef["kind"], string> = {
   secondary: "Secondary",
 };
 
-const COMPLIANCE_TITLE: Record<string, string> = {
-  "us-federal-practice": "Federal practice of immigration law",
-  "us-arizona-abs": "Law-firm structure (Arizona ABS)",
-};
-
 export default function ValidationPage() {
   const now = todayIso();
   // Live programs whose validation record is overdue. By contract (see
@@ -108,7 +103,7 @@ export default function ValidationPage() {
             {Object.keys(COMPLIANCE_VALIDATIONS).map((key) => (
               <ValidationCard
                 key={key}
-                title={COMPLIANCE_TITLE[key] ?? key}
+                title={COMPLIANCE_VALIDATIONS[key].title ?? key}
                 record={COMPLIANCE_VALIDATIONS[key]}
                 now={now}
               />

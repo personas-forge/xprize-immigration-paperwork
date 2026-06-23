@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { costOf } from "@/lib/tokens/registry";
@@ -61,9 +61,6 @@ export function QualifyPanel() {
     }
   }, []);
 
-  const nameId = useId();
-  const classId = useId();
-  const profileId = useId();
   // Synchronous in-flight guard: the disabled button doesn't stop an Enter-key
   // repeat or requestSubmit() from firing two concurrent /api/qualify calls
   // (each charges tokens and creates a separate case) before the re-render.
@@ -124,7 +121,6 @@ export function QualifyPanel() {
               <label className="block">
                 <span className="microprint">Your name (optional)</span>
                 <input
-                  id={nameId}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Dr. Anya Krishnan"
@@ -135,7 +131,6 @@ export function QualifyPanel() {
               <label className="block">
                 <span className="microprint">Visa type</span>
                 <select
-                  id={classId}
                   value={classification}
                   onChange={(e) => setClassification(e.target.value as Classification)}
                   className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-dark)]"
@@ -170,7 +165,6 @@ export function QualifyPanel() {
                 Your background — awards, publications, press, patents, roles, salary
               </span>
               <textarea
-                id={profileId}
                 value={profile}
                 onChange={(e) => setProfile(e.target.value)}
                 rows={7}

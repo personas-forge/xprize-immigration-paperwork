@@ -25,9 +25,6 @@ import { isLiveProgram } from "./jurisdictions";
 /** The eight O-1A criteria names, kept as a stable export (the default pack). */
 export const O1A_CRITERIA = criteriaNames("O-1A");
 
-/** A criterion name. Across packs these vary, so it is a plain string. */
-export type CriterionName = string;
-
 /** A criterion score. "None" means no supporting evidence was found — it must
  *  render neutral (never green) and never counts toward the threshold. */
 export type ScoreStatus = "Met" | "Strong" | "Partial" | "None";
@@ -37,7 +34,8 @@ const VALID_STATUSES: ReadonlySet<string> = new Set(["Met", "Strong", "Partial",
 export interface ScoredCriterion {
   /** Stable id derived from the criterion name (e.g. "awards"). */
   id: string;
-  name: CriterionName;
+  /** Across packs criterion names vary, so this is a plain string. */
+  name: string;
   status: ScoreStatus;
   /** What in the profile supports this criterion ("" when nothing did). */
   evidence: string;

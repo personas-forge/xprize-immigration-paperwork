@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { Seal } from "@/components/brand";
 import { Rise } from "@/components/Motion";
@@ -31,8 +31,6 @@ export function BestPathFinder({
   const [result, setResult] = useState<BestPathResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const nameId = useId();
-  const profileId = useId();
   const busy = useRef(false);
 
   async function find(e: React.FormEvent) {
@@ -102,7 +100,6 @@ export function BestPathFinder({
             <label className="block">
               <span className="microprint">Your name (optional)</span>
               <input
-                id={nameId}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Dr. Anya Krishnan"
@@ -114,7 +111,6 @@ export function BestPathFinder({
                 Your background — awards, publications, press, patents, roles, salary
               </span>
               <textarea
-                id={profileId}
                 value={profile}
                 onChange={(e) => setProfile(e.target.value)}
                 rows={6}
