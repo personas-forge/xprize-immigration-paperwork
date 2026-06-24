@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { claudeModel, geminiModelFor, resolveEngine } from "./config";
+import { claudeModel, geminiModelFor, isLongTierOnFastFallback, resolveEngine } from "./config";
 import { isTransientGeminiError } from "./engines";
 import { asModelSource, isModelSource, sourceLabel } from "./label";
 
@@ -50,6 +50,17 @@ test("geminiModelFor: fast default, long honours GEMINI_DRAFT_MODEL", () => {
   assert.equal(geminiModelFor("long", {}), "gemini-3-flash-preview");
   assert.equal(geminiModelFor("fast", { GEMINI_MODEL: "x" }), "x");
   assert.equal(geminiModelFor("long", { GEMINI_MODEL: "x", GEMINI_DRAFT_MODEL: "pro" }), "pro");
+});
+
+test("isLongTierOnFastFallback: true only when long tier + GEMINI_DRAFT_MODEL unset (Tiger #2)", () => {
+  // The premium long op silently on the fast model → flag it.
+  assert.equal(isLongTierOnFastFallback("long", {}), true);
+  assert.equal(isLongTierOnFastFallback("long", { GEMINI_MODEL: "x" }), true, "GEMINI_MODEL doesn't count");
+  // A configured long model → not a fallback.
+  assert.equal(isLongTierOnFastFallback("long", { GEMINI_DRAFT_MODEL: "pro" }), false);
+  // The fast tier is never a 'fallback' — it's meant to be fast.
+  assert.equal(isLongTierOnFastFallback("fast", {}), false);
+  assert.equal(isLongTierOnFastFallback("fast", { GEMINI_DRAFT_MODEL: "pro" }), false);
 });
 
 test("claudeModel: defaults to sonnet and sanitises argv input", () => {

@@ -23,6 +23,7 @@ import {
   claudeBin,
   claudeModel,
   geminiModelFor,
+  isLongTierOnFastFallback,
   resolveEngine,
   type LlmEngine,
   type LlmTier,
@@ -129,6 +130,22 @@ export function isTransientGeminiError(err: unknown): boolean {
   );
 }
 
+// One-time observability warning (Tiger #2): when the premium long-context tier
+// silently falls back to the fast model (GEMINI_DRAFT_MODEL unset), the petition
+// draft / RFE run on the same model as the 1-token ops. Fired ONCE per process
+// from the real generation path so the degradation is visible in prod logs until
+// the env is set — without spamming a per-request warning on a hot path.
+let warnedLongTierFallback = false;
+function warnLongTierFallbackOnce(tier: LlmTier): void {
+  if (warnedLongTierFallback || !isLongTierOnFastFallback(tier)) return;
+  warnedLongTierFallback = true;
+  console.warn(
+    "[llm] GEMINI_DRAFT_MODEL is unset — the long-context tier (petition draft / RFE) is running on the " +
+      "fast model. A Tiger Lens-3 benchmark measured a real quality gap (~moderate vs light attorney " +
+      "rework). Set GEMINI_DRAFT_MODEL to a Pro-class long-context model for the premium ops.",
+  );
+}
+
 /** Call Gemini for a prompt, bounded by a per-tier deadline and retried on
  *  transient failures. The caller decides whether to track / guard the result —
  *  this only does the model call. */
@@ -139,6 +156,7 @@ export async function callGemini(
   const genAI = geminiSdk();
   const tier = options.tier ?? "fast";
   const model = geminiModelFor(tier);
+  warnLongTierFallbackOnce(tier);
   const m = genAI.getGenerativeModel({
     model,
     generationConfig: {

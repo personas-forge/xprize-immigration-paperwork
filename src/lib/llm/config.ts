@@ -39,6 +39,19 @@ export function geminiModelFor(tier: LlmTier, env: Env = process.env): string {
   return tier === "long" ? env.GEMINI_DRAFT_MODEL ?? fast : fast;
 }
 
+/**
+ * True when a `long`-tier call SILENTLY falls back to the fast model because
+ * `GEMINI_DRAFT_MODEL` is unset — i.e. the premium long-context ops (petition
+ * draft / RFE response) are running on the same fast model as the 1-token ops.
+ * A Tiger Lens-3 benchmark (2026-06-24) measured this as a real quality/value gap
+ * (~moderate vs light attorney rework on the draft, ~+$1,400/petition), so the
+ * fallback is worth surfacing rather than leaving silent. Pure — the caller (the
+ * real generation path) decides whether to warn.
+ */
+export function isLongTierOnFastFallback(tier: LlmTier, env: Env = process.env): boolean {
+  return tier === "long" && !env.GEMINI_DRAFT_MODEL;
+}
+
 /** Path to the Claude Code CLI binary (defaults to `claude` on PATH). */
 export function claudeBin(env: Env = process.env): string {
   return env.CLAUDE_CLI_PATH ?? "claude";
