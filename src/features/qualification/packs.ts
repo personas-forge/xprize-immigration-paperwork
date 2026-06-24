@@ -61,12 +61,20 @@ const JUDGING: PackCriterion = {
 };
 const ORIGINAL: PackCriterion = {
   name: "Original contribution",
-  // Beyond patents/research-novelty, recognize founder/engineer originality signals
-  // (open-source, a shipped product, wide adoption) so the keyless preview doesn't
-  // under-score a product/GitHub founder. The authenticated model is the real read.
-  match: /\b(patent|invention|invented|novel|original|breakthrough|pioneered|open[- ]?source|github|shipped|launched|product|framework|library|widely[- ]?used|adopted|downloads?|stars?)\b/i,
-  evidence: "Mentions a patent, shipped product, open-source project, or original contribution.",
-  gap: "Describe patents, shipped products, or original contributions and their impact.",
+  // Recognize genuine founder/engineer originality (an AUTHORED product / open-source
+  // project / framework) WITHOUT firing on bare industry mentions. The earlier wide
+  // form keyed off lone "github" / "shipped" / "product" / "stars", so any profile
+  // that merely touched tech scored a false "Original contribution: Met" on the
+  // keyless PUBLIC preview (Tiger #3, confirmed by the 2026-06-24 qualify drill — the
+  // model path doesn't over-read; only this deterministic heuristic did). Now two
+  // branches: standalone originality terms (patent, invention, novel…), OR an
+  // authorship verb/role (created/built/founded/creator/maintainer…) paired in the
+  // SAME clause with a work term (open-source, framework, library, product…). The
+  // authenticated MODEL remains the real read; this only tightens the keyless mock.
+  match:
+    /\b(?:patent(?:ed|s)?|invention|invented|novel|original|breakthrough|pioneered|groundbreaking)\b|\b(?:created|built|founded|co-?founded|authored|designed|developed|engineered|architected|inventor|creator|author|founder|maintainer)\b[^.!?;\n]*\b(?:open[- ]?source|framework|library|product|platform|protocol|standard|algorithm|system|tool|app|api|sdk)\b/i,
+  evidence: "Mentions a patent, an authored/founded product or open-source project, or an original contribution.",
+  gap: "Describe patents, or products and open-source projects you created, and their impact.",
 };
 const SCHOLARLY: PackCriterion = {
   name: "Scholarly articles",

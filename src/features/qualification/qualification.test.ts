@@ -204,6 +204,24 @@ test("mockQualification: a product/GitHub founder keys Original contribution (ke
   );
 });
 
+test("mockQualification: bare tech-industry keywords do NOT key Original contribution (Tiger #3)", () => {
+  // Superficial profile: lone "shipped" / "open source" / "GitHub" with no authorship
+  // or originality signal — must NOT inflate a false "Original contribution: Met" on the
+  // keyless public preview (the over-read the 2026-06-24 qualify drill traced to the mock).
+  const superficial = mockQualification({
+    name: "x",
+    classification: "O-1A",
+    profile:
+      "Software engineer at a startup. I've shipped products and features, contribute to open source on GitHub, and have a bunch of repos.",
+  });
+  const original = superficial.criteria.find((c) => c.name === "Original contribution");
+  assert.equal(
+    original?.status,
+    "None",
+    "lone shipped/github/open-source mentions (no authorship/originality) must NOT key Original contribution",
+  );
+});
+
 // — Multi-product (classification packs) ─────────────────────────────────────
 
 test("parseQualifyRequest: defaults classification to O-1A; accepts known, rejects unknown", () => {
