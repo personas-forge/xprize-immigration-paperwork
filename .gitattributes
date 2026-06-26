@@ -1,0 +1,4 @@
+# Husky git hooks are executed by sh — keep them LF so Windows checkouts
+# (core.autocrlf=true) do not hand sh CRLF line endings it cannot run.
+.husky/pre-commit text eol=lf
+.husky/pre-push text eol=lf

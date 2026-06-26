@@ -1,0 +1,4 @@
+# Local gate before code leaves the machine: typecheck + unit tests.
+# These are the cheap CI jobs — catching them here avoids a slow CI round-trip
+# and saves Actions minutes. Bypass for genuine WIP only: git push --no-verify
+npm run typecheck && npm test

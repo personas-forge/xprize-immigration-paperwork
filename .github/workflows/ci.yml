@@ -7,8 +7,18 @@ name: CI
 
 on:
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "context-map.json"
+      - "docs/**"
   push:
     branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "context-map.json"
+      - "docs/**"
+  schedule:
+    - cron: "0 6 * * *" # nightly full E2E against main
 
 permissions:
   contents: read
@@ -35,6 +45,10 @@ jobs:
 
   e2e:
     name: E2E (Playwright · mock engine)
+    # Most expensive job (chromium + system deps install every run). Run it on
+    # PRs and nightly — NOT on every direct push to main. A typical small AI
+    # commit doesn't regress the funnel; the nightly cron is the main-branch net.
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

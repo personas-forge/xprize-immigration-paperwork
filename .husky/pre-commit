@@ -1,0 +1,2 @@
+# Auto-fix lint on staged files before they're committed (shifted off CI).
+npx lint-staged
