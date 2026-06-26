@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { PageFrame, ChapterMark } from "@/components/brand";
 import { Badge, Card, CardBody, CardHeader, type BadgeTone } from "@/components/ui";
 import { Rise } from "@/components/Motion";
@@ -26,7 +27,6 @@ export const metadata: Metadata = {
 };
 
 // Request-time so the freshness read-out reflects today, not the build date.
-export const dynamic = "force-dynamic";
 
 const STATUS_TONE: Record<ValidationStatus, BadgeTone> = {
   verified: "success",
@@ -40,7 +40,12 @@ const SOURCE_KIND_LABEL: Record<SourceRef["kind"], string> = {
   secondary: "Secondary",
 };
 
-export default function ValidationPage() {
+// Instant Navigations (Next 16.3): the freshness read-out uses today's date
+// (todayIso) — an unstable, request-time value with no static shell. Block.
+export const instant = false;
+
+export default async function ValidationPage() {
+  await connection();
   const now = todayIso();
   // Live programs whose validation record is overdue. By contract (see
   // `stalePrograms`) runtime does NOT withdraw them — CI is the hard pre-deploy

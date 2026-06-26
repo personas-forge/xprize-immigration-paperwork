@@ -29,8 +29,6 @@ import { parseCaseId } from "@/lib/data/adapters/parse-gate";
 // no document, never a hard error (matching the pre-orchestrator behavior).
 
 // Node runtime — the Google SDK and `pg` are not Edge-safe.
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 /** Validated input: the categorize request, the case context for persistence, and
  *  a read-only summary of what's already in the vault (G2.1 — consistency). */

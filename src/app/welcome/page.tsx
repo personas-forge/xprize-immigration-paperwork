@@ -2,6 +2,7 @@
 // app. Otherwise render the consent/registration form, framed in the Atelier of
 // Arrival identity (parchment ground, engraved chapter mark, guilloché corner).
 
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { getUser, profileFieldsFromUser } from "@/lib/auth/session";
 import { getLatestConsentVersion, getProfile } from "@/lib/auth/db";
@@ -11,11 +12,16 @@ import { ConsentForm } from "@/components/ConsentForm";
 import { PageFrame, ChapterMark } from "@/components/brand";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
+// Instant Navigations (Next 16.3): first-auth gate — reads the signed-in user
+// (cookies) and redirects, so there is no prefetchable static shell. Block.
+export const instant = false;
+
 export default async function WelcomePage({
   searchParams,
 }: {
   searchParams: Promise<{ next?: string }>;
 }) {
+  await connection();
   const user = await getUser();
   if (!user) redirect("/login");
 

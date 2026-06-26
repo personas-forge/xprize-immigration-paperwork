@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { PageFrame, ChapterMark, Seal } from "@/components/brand";
 import { Rise } from "@/components/Motion";
 import { SiteHeader, SiteFooter } from "@/components/SiteChrome";
@@ -30,8 +31,6 @@ const PER_OP_COSTS: OperationKey[] = [
 ];
 
 // Node runtime — getBalance() uses `pg`.
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 // — Billing — prepaid token ledger + bundles ─────────────────────────────────
 // Replaces the old subscription pricing. A balance "ledger entry" up top, the
@@ -63,11 +62,16 @@ function activityLabel(e: LedgerEntry): string {
   }
 }
 
+// Instant Navigations (Next 16.3): server-bound — reads the signed-in user's
+// balance/ledger (cookies), so there is no prefetchable static shell. Block.
+export const instant = false;
+
 export default async function BillingPage({
   searchParams,
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
+  await connection();
   const purchaseSuccess = (await searchParams).status === "success";
   const user = isFirebaseConfigured() || isDevAuth() ? await getUser() : null;
   // "∞" when the token economy isn't enforced (the guard free-passes). Use the

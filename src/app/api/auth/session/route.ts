@@ -18,7 +18,6 @@ import {
 } from "@/lib/firebase/config";
 import { revokeAndClearSession } from "@/lib/auth/session-cookie";
 
-export const runtime = "nodejs";
 
 export async function POST(request: Request): Promise<Response> {
   if (!isFirebaseConfigured()) {

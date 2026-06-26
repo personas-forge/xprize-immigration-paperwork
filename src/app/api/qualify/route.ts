@@ -30,8 +30,6 @@ import { runAdjudication } from "@/lib/llm/adjudication-gates";
 // /api/evidence/categorize.
 
 // Node runtime — the Google SDK and `pg` are not Edge-safe.
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export function POST(request: Request): Promise<NextResponse> {
   return executeAiOperation<QualifyRequest, QualifyAssessment>(request, {

@@ -11,8 +11,6 @@ import { critiqueSpec } from "@/features/drafting/critiqueOperation";
 // executeAiOperation. It never persists — the studio's "Apply" saves an accepted
 // rewrite through /api/draft/save.
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export function POST(request: Request): Promise<NextResponse> {
   return executeAiOperation(request, critiqueSpec);

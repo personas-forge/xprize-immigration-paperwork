@@ -29,8 +29,6 @@ import { DISCLAIMER } from "@/lib/result";
 // hero use) is applied before any work. Keyed by IP (not user) on its own
 // `qualify_preview` scope so it can't exhaust the authenticated qualify bucket.
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<NextResponse> {
   if (isRateLimitEnabled()) {

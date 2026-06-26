@@ -36,8 +36,6 @@ import { toErrorResponse } from "@/lib/data/adapters/http";
 // resolveCase seam (ADR-0010).
 
 // Node runtime — the Google SDK and `pg` are not Edge-safe.
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 /** Validated input: the RFE request plus the case it persists to (null = demo). */
 interface RfeInput {

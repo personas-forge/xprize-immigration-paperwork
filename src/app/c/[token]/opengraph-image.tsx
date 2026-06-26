@@ -9,7 +9,6 @@ import {
 // Patent unfurls as a unique, engraved certificate on LinkedIn/X. Decoded from
 // the URL token; falls back to a generic card if the token is malformed.
 
-export const runtime = "nodejs";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

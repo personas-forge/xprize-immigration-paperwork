@@ -7,7 +7,6 @@ import { isStoreConfigured } from "@/lib/db/config";
 import { type SavedCaseSummary } from "@/features/case-file/types";
 
 // Node runtime — getBalance() / requireOnboardedUser() read the Store.
-export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   // Decouple the case-list load from the metering bypass (a user's real cases

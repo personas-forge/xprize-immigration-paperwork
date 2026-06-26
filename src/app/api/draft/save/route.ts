@@ -27,8 +27,6 @@ import {
 // to persist, so `anonymous` is a 400, not a fallthrough.
 
 // Node runtime — the storage drivers are not Edge-safe.
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<NextResponse> {
   // authorizeRoute reads caseId from a clone, so it MUST run before this

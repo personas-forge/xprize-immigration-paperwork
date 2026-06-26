@@ -19,8 +19,6 @@ import { DISCLAIMER } from "@/lib/result";
 // (`recommendBestPath` → `scoreAllPrograms` over `mockQualification`): no charge,
 // no model, no persistence. Generous per-IP cap on its own scope guards a flood.
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<NextResponse> {
   if (isRateLimitEnabled()) {

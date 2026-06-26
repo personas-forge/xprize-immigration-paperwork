@@ -34,8 +34,6 @@ const GUIDANCE_MAX_SENTENCES = 6;
 // engine name and kept the charge (billing a mock as a model answer).
 
 // Node runtime — the Google SDK is not Edge-safe.
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export function POST(request: Request): Promise<NextResponse> {
   return executeAiOperation<GuidanceRequest, string>(request, {

@@ -18,8 +18,6 @@ import { draftSpec } from "@/features/drafting/draftOperation";
 // declarative, unit-tested `draftSpec` (see features/drafting/draftOperation.ts).
 
 // Node runtime — the Google SDK and `pg` are not Edge-safe.
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export function POST(request: Request): Promise<NextResponse> {
   return executeAiOperation(request, draftSpec);
