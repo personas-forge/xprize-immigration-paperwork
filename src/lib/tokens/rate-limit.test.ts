@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { checkRateLimit, rateLimitKey, isRateLimitEnabled } from "./rate-limit";
+import {
+  checkRateLimit,
+  rateLimitKey,
+  isRateLimitEnabled,
+  enforceRateLimit,
+} from "./rate-limit";
 
 test("checkRateLimit: allows up to the limit in a window, then blocks with Retry-After", () => {
   const store = new Map();
@@ -64,4 +69,35 @@ test("checkRateLimit: hard-caps the bucket map under an in-window key burst", ()
 test("isRateLimitEnabled: on by default, off only when RATE_LIMIT_DISABLED=1", () => {
   assert.equal(isRateLimitEnabled({}), true);
   assert.equal(isRateLimitEnabled({ RATE_LIMIT_DISABLED: "1" }), false);
+});
+
+test("enforceRateLimit: null under the cap, then a 429 carrying the disclaimer", async () => {
+  // Unique scope so this exercises a fresh bucket in the module-global store.
+  const req = new Request("http://x", { headers: { "x-forwarded-for": "7.7.7.7" } });
+  const scope = "test_enforce_facade";
+  assert.equal(enforceRateLimit(req, scope, 2, "DISC"), null, "1st call proceeds");
+  assert.equal(enforceRateLimit(req, scope, 2, "DISC"), null, "2nd call proceeds");
+
+  const blocked = enforceRateLimit(req, scope, 2, "DISC");
+  assert.ok(blocked, "3rd call blocked");
+  assert.equal(blocked!.status, 429);
+  assert.equal(blocked!.headers.get("Retry-After") !== null, true);
+  const body = (await blocked!.json()) as { error: string; disclaimer: string };
+  assert.equal(body.error, "rate_limited");
+  assert.equal(body.disclaimer, "DISC", "the caller-supplied disclaimer is on the 429");
+});
+
+test("enforceRateLimit: short-circuits to null when RATE_LIMIT_DISABLED=1", () => {
+  const prev = process.env.RATE_LIMIT_DISABLED;
+  process.env.RATE_LIMIT_DISABLED = "1";
+  try {
+    const req = new Request("http://x", { headers: { "x-forwarded-for": "7.7.7.8" } });
+    // Even past the cap, a disabled limiter never blocks.
+    for (let i = 0; i < 5; i++) {
+      assert.equal(enforceRateLimit(req, "test_disabled_scope", 1, "DISC"), null);
+    }
+  } finally {
+    if (prev === undefined) delete process.env.RATE_LIMIT_DISABLED;
+    else process.env.RATE_LIMIT_DISABLED = prev;
+  }
 });

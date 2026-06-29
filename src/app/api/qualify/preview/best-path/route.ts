@@ -1,13 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseQualifyRequest } from "@/features/qualification";
 import { recommendBestPath } from "@/features/qualification/best-path";
-import {
-  PREVIEW_RATE_LIMIT,
-  checkRateLimit,
-  isRateLimitEnabled,
-  rateLimitKey,
-  tooManyRequestsResponse,
-} from "@/lib/tokens/rate-limit";
+import { PREVIEW_RATE_LIMIT, enforceRateLimit } from "@/lib/tokens/rate-limit";
 import { DISCLAIMER } from "@/lib/result";
 
 // Anonymous best-path recommender (moonshot #7).
@@ -21,13 +15,13 @@ import { DISCLAIMER } from "@/lib/result";
 
 
 export async function POST(request: Request): Promise<NextResponse> {
-  if (isRateLimitEnabled()) {
-    const rl = checkRateLimit(
-      rateLimitKey(request, "best_path_preview"),
-      PREVIEW_RATE_LIMIT,
-    );
-    if (!rl.ok) return tooManyRequestsResponse(rl, DISCLAIMER);
-  }
+  const limited = enforceRateLimit(
+    request,
+    "best_path_preview",
+    PREVIEW_RATE_LIMIT,
+    DISCLAIMER,
+  );
+  if (limited) return limited;
 
   let body: unknown;
   try {

@@ -5,13 +5,7 @@ import { authorizeRoute } from "@/lib/auth/authorizeRoute";
 import { petitions } from "@/lib/data/adapters/petition";
 import { type CaseAccess } from "@/lib/data/adapters/access";
 import { toErrorResponse } from "@/lib/data/adapters/http";
-import {
-  RATE_LIMITS,
-  checkRateLimit,
-  isRateLimitEnabled,
-  rateLimitKey,
-  tooManyRequestsResponse,
-} from "@/lib/tokens/rate-limit";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/tokens/rate-limit";
 
 // Persistence-only rescue endpoint for a draft that was charged + generated
 // but whose version save failed (/api/draft responded `saveFailed: true`).
@@ -65,13 +59,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   // Same keying strategy as /api/draft but its own bucket name, so rescue
   // retries can't be starved by (or starve) paid generate calls. Reuses the
   // draft limit config — saving is strictly cheaper than generating.
-  if (isRateLimitEnabled()) {
-    const rl = checkRateLimit(
-      rateLimitKey(request, "draft-save", user?.id),
-      RATE_LIMITS.draft,
-    );
-    if (!rl.ok) return tooManyRequestsResponse(rl, DISCLAIMER);
-  }
+  const limited = enforceRateLimit(
+    request,
+    "draft-save",
+    RATE_LIMITS.draft,
+    DISCLAIMER,
+    user?.id,
+  );
+  if (limited) return limited;
 
   // Owner-only access context (email deliberately null — matches the
   // owner-only decision authorizeRoute already made, as in /api/draft).
