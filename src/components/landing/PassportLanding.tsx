@@ -13,7 +13,7 @@ import {
 } from "@/components/landing/charts";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { InstantVerdict } from "@/features/qualification/components/InstantVerdict";
-import { BUNDLES, FREE_SIGNUP_GRANT, bundlePriceLabel } from "@/lib/tokens/economy";
+import { BUNDLES, FREE_SIGNUP_GRANT, bundlePriceLabel, featuredBundle } from "@/lib/tokens/economy";
 import { FIRM_FEE } from "@/lib/site";
 import { easeArrival } from "@/lib/motion";
 
@@ -33,13 +33,14 @@ const SECTIONS = [
   { id: "depart", n: "05", label: "Begin" },
 ] as const;
 
-// The Pro bundle's price/tokens for the cost-comparison caption — derived from
-// the BUNDLES catalog (same source the pricing cards render) so the headline
-// comparison can't quote a stale price the grid has moved past.
-// `pro` is a permanent catalog entry (economy.ts, featured), so the lookup
-// always resolves — no stale-price fallback literal needed.
-const PRO_BUNDLE = BUNDLES.find((b) => b.key === "pro")!;
-const PRO_PRICE_CAPTION = `${bundlePriceLabel(PRO_BUNDLE)} for ${PRO_BUNDLE.tokens.toLocaleString("en-US")} tokens`;
+// The featured bundle's price/tokens for the cost-comparison caption — resolved
+// from the single `featured` flag (economy.ts) via featuredBundle(), the SAME
+// source the pricing grid stamps "Best value", so the headline comparison always
+// highlights the same bundle and never quotes a stale price the grid moved past.
+// `featured` is a permanent catalog property, so the lookup always resolves — no
+// stale-price fallback literal needed.
+const FEATURED_BUNDLE = featuredBundle()!;
+const FEATURED_PRICE_CAPTION = `${bundlePriceLabel(FEATURED_BUNDLE)} for ${FEATURED_BUNDLE.tokens.toLocaleString("en-US")} tokens`;
 
 export function PassportLanding() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -460,7 +461,7 @@ function Evidence() {
         <Reveal delay={0.06}>
           <Panel
             title="A firm's fee, vs a Pro bundle"
-            caption={`${FIRM_FEE.range} ${FIRM_FEE.verb} · vs ${PRO_PRICE_CAPTION}`}
+            caption={`${FIRM_FEE.range} ${FIRM_FEE.verb} · vs ${FEATURED_PRICE_CAPTION}`}
           >
             <CostCompareBars height={200} />
           </Panel>

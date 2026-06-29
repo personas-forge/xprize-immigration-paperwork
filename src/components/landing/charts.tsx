@@ -21,7 +21,7 @@ import { CHART_FONT, type Palette } from "./palette";
 import { useThemePalette } from "./useThemePalette";
 import { ClientOnly } from "./ClientOnly";
 import { FIRM_FEE } from "@/lib/site";
-import { BUNDLES, bundlePriceLabel } from "@/lib/tokens/economy";
+import { bundlePriceLabel, featuredBundle } from "@/lib/tokens/economy";
 
 // ── Themed Recharts set for the landing ─────────────────────────────────────
 // Every chart is dressed to read as a piece of the engraved-document system:
@@ -107,11 +107,12 @@ export function CriteriaRadar({ height = 340 }: { height?: number }) {
 }
 
 /* ── 2 · Cost comparison ─────────────────────────────────────────────────── */
-// Firm packet vs a Pro bundle. The point is the gulf — yours is a sliver. Both
-// bars derive from the single sources (FIRM_FEE, the Pro BUNDLE) so the chart
-// can't quote a stale firm fee or bundle price the rest of the page has moved on
-// from.
-const PRO_BUNDLE = BUNDLES.find((b) => b.key === "pro");
+// Firm packet vs the featured bundle. The point is the gulf — yours is a sliver.
+// Both bars derive from the single sources (FIRM_FEE, featuredBundle()) so the
+// chart can't quote a stale firm fee or bundle price the rest of the page has
+// moved on from, and it highlights the SAME bundle the pricing grid stamps "Best
+// value" (featured is a permanent catalog property, so the lookup resolves).
+const FEATURED_BUNDLE = featuredBundle()!;
 const COST_DATA = [
   {
     name: "Law-firm packet",
@@ -119,11 +120,9 @@ const COST_DATA = [
     label: `${FIRM_FEE.range} ${FIRM_FEE.verb}d`,
   },
   {
-    name: "Your draft · Pro bundle",
-    value: PRO_BUNDLE ? Math.round(PRO_BUNDLE.priceCents / 100) : 48,
-    label: PRO_BUNDLE
-      ? `${bundlePriceLabel(PRO_BUNDLE)} · ${PRO_BUNDLE.tokens.toLocaleString("en-US")} tokens`
-      : "$48 · 8,000 tokens",
+    name: `Your draft · ${FEATURED_BUNDLE.label} bundle`,
+    value: Math.round(FEATURED_BUNDLE.priceCents / 100),
+    label: `${bundlePriceLabel(FEATURED_BUNDLE)} · ${FEATURED_BUNDLE.tokens.toLocaleString("en-US")} tokens`,
   },
 ];
 
