@@ -15,8 +15,9 @@ function isProtected(pathname: string): boolean {
 
 /**
  * Firebase-only auth gate (Edge runtime). The Admin SDK is Node-only and can't
- * run here, so this is a cheap *presence* check of the `__session` cookie; the
- * real `verifySessionCookie` + profile/onboarding check happens later in the
+ * run here, so this is a cheap *presence* check of the session cookie
+ * (`SESSION_COOKIE` — `__Host-session` in prod, `__session` in dev); the real
+ * `verifySessionCookie` + profile/onboarding check happens later in the
  * protected layout (Node runtime) via requireOnboardedUser().
  *
  * Graceful no-op when Firebase isn't configured (keyless builds / dev) and in

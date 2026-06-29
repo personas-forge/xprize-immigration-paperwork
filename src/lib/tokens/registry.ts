@@ -47,8 +47,8 @@ export type OperationKey = keyof typeof OPERATION_REGISTRY;
 
 /**
  * Token cost of an operation. Unknown operations default to the light tier so a
- * mistyped/new key is never free and never throws (matches the prior behavior of
- * economy.ts `costOf`).
+ * mistyped/new key is never free and never throws (preserves the original
+ * costOf fallback behavior).
  */
 export function costOf(op: string): number {
   const def = (OPERATION_REGISTRY as Record<string, OperationDef>)[op];

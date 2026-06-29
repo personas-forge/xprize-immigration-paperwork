@@ -22,16 +22,17 @@ import {
 /**
  * Generic orchestrator for the token-charged AI routes (ADR-0004).
  *
- * The five AI endpoints (`draft`, `rfe`, `qualify`, `guidance`,
- * `evidence/categorize`) all hand-implement the SAME pipeline:
+ * Each AI endpoint PREVIOUSLY hand-implemented the SAME pipeline:
  *
  *   parse JSON → spec.parse → rate-limit → charge → call model → guard →
  *   persist → respond
  *
  * with identical 400/401/402/429 + DISCLAIMER boilerplate and the same
  * charge-then-reclaim-and-fall-back-to-mock recovery (~500 lines duplicated).
- * This module owns that pipeline once, so a route becomes a declarative
- * {@link AiOperationSpec}. The orchestrator — not the route — owns the
+ * This module now owns that pipeline once, so a route becomes a declarative
+ * {@link AiOperationSpec}. It currently backs 8 specs (`qualify`, `draft`,
+ * `rfe`, `guidance`, `evidence/categorize`, `rfe/forecast`, `draft/critique`,
+ * `qualify/best-path`). The orchestrator — not the route — owns the
  * cross-cutting invariants:
  *
  *  1. DISCLAIMER is present on every error body it emits (402 + 429), matching
