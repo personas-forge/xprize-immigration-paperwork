@@ -62,8 +62,14 @@ export interface AuthUser {
   email?: string | null;
 }
 
-/** Mirror of `ChargeResult` from `@/lib/tokens/guard`, decoupled for testing. */
-export type ChargeOutcome =
+/** Structural mirror of `ChargeResult` from `@/lib/tokens/guard`, kept local
+ *  (not imported) so the orchestrator's static graph stays free of the
+ *  `server-only` guard module and the unit suite can inject a fake. Named to
+ *  MATCH what it mirrors — `ChargeResult` — so it no longer collides with the
+ *  store's unrelated `ChargeOutcome` (`{ ok; balance }`, re-exported via
+ *  `ledger.ts`); `chargeForOperation` (which returns guard's `ChargeResult`) is
+ *  assigned straight onto this in `defaultDeps`, so the two must stay congruent. */
+export type ChargeResult =
   | { ok: true; cost: number; balance: number; reclaim: () => Promise<unknown> }
   | { ok: false; reason: "unauthenticated" }
   | { ok: false; reason: "insufficient"; cost: number; balance: number };
@@ -177,7 +183,7 @@ export interface AiOperationSpec<TInput, TOutput> {
 
 /** Injectable infra — defaults wired lazily so the static graph stays test-safe. */
 export interface AiOperationDeps {
-  charge: (operation: string, requestId: string) => Promise<ChargeOutcome>;
+  charge: (operation: string, requestId: string) => Promise<ChargeResult>;
   getLlm: (opts?: { requiresImages?: boolean }) => OperationLlm | null;
   resolveUser: () => Promise<AuthUser | null>;
   rateLimit: {
