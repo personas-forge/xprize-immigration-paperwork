@@ -38,7 +38,10 @@ Document AI / OCR work in the evidence vault.
 
 ## Adding an engine
 
-1. Implement an `Llm` in `client.ts` (a `name` + `generate`).
+1. Add the raw call body + `selectEngine` case in `engines.ts` — the single home
+   for engine mechanics (`callGemini` / `runClaudeCli` / `selectEngine`), shared
+   with the eval/e2e harness — then a thin `Llm` factory (`name` + `generate`) in
+   `client.ts` that layers telemetry + guards over it.
 2. Extend `resolveEngine()` / `LlmEngine` in `config.ts`.
 3. Add its name to `ModelSource` in `label.ts` and `sourceLabel()`.
 
