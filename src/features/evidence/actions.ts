@@ -26,7 +26,7 @@
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth/session";
 import { evidence } from "@/lib/data/adapters/evidence";
-import { type CaseAccess } from "@/lib/data/adapters/access";
+import { caseAccessFor } from "@/lib/data/adapters/access";
 
 export async function removeDocument(
   caseId: string,
@@ -37,7 +37,7 @@ export async function removeDocument(
   // Full owner-or-attorney access context — these vault mutations DO honor the
   // configured-attorney-of-record fallback (unlike /api/draft, which is
   // owner-only), so the real email is passed for resolveCase to evaluate.
-  const access: CaseAccess = { userId: user.id, email: user.email ?? null };
+  const access = caseAccessFor(user);
   const result = await evidence.removeDocument(access, caseId, documentId);
   if (!result.ok) return;
   revalidatePath(`/dashboard/cases/${caseId}`);
@@ -52,7 +52,7 @@ export async function restoreDocument(
 ): Promise<void> {
   const user = await getUser();
   if (!user) return;
-  const access: CaseAccess = { userId: user.id, email: user.email ?? null };
+  const access = caseAccessFor(user);
   const result = await evidence.restoreDocument(access, caseId, documentId);
   if (!result.ok) return;
   revalidatePath(`/dashboard/cases/${caseId}`);
@@ -65,7 +65,7 @@ export async function refileDocument(
 ): Promise<void> {
   const user = await getUser();
   if (!user) return;
-  const access: CaseAccess = { userId: user.id, email: user.email ?? null };
+  const access = caseAccessFor(user);
   const result = await evidence.refileDocument(
     access,
     caseId,

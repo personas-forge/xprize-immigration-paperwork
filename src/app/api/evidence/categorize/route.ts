@@ -12,6 +12,7 @@ import {
 import { executeAiOperation } from "@/lib/ai/operation";
 import { evidence } from "@/lib/data/adapters/evidence";
 import { petitions } from "@/lib/data/adapters/petition";
+import { caseAccessFor } from "@/lib/data/adapters/access";
 import { parseCaseId } from "@/lib/data/adapters/parse-gate";
 
 // Evidence categorization endpoint (migrated to the shared orchestrator, ADR-0004).
@@ -70,7 +71,7 @@ export function POST(request: Request): Promise<NextResponse> {
       if (caseId) {
         const user = await resolveUser();
         if (user) {
-          const access = { userId: user.id, email: user.email ?? null };
+          const access = caseAccessFor(user);
           // Server-authoritative classification from the gated case (owner-or-
           // attorney via resolveCase). On forbidden/not-found we keep the body
           // fallback; persistence will then fail-closed (saveFailed) anyway.
@@ -105,7 +106,7 @@ export function POST(request: Request): Promise<NextResponse> {
       // the legitimate keyless/no-case path, NOT a failure.
       if (!user || !input.caseId) return { document: null };
       const saved = await evidence.addDocument(
-        { userId: user.id, email: user.email ?? null },
+        caseAccessFor(user),
         {
           caseId: input.caseId,
           name: input.req.name,

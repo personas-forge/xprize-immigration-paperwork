@@ -15,7 +15,7 @@ import { executeAiOperation } from "@/lib/ai/operation";
 import { runAdjudication } from "@/lib/llm/adjudication-gates";
 import { petitions } from "@/lib/data/adapters/petition";
 import { evidence } from "@/lib/data/adapters/evidence";
-import { type CaseAccess } from "@/lib/data/adapters/access";
+import { caseAccessFor } from "@/lib/data/adapters/access";
 import { parseCaseId, resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
 import { toErrorResponse } from "@/lib/data/adapters/http";
 
@@ -123,7 +123,7 @@ export function POST(request: Request): Promise<NextResponse> {
       if (!input.caseId || !user) {
         return { caseId: input.caseId, version: null, saveFailed: false };
       }
-      const access: CaseAccess = { userId: user.id, email: user.email ?? null };
+      const access = caseAccessFor(user);
       const saved = await petitions.saveRfeResponse(
         access,
         input.caseId,

@@ -49,6 +49,20 @@ export interface CaseAccess {
   email: string | null;
 }
 
+/**
+ * Build the owner-or-attorney {@link CaseAccess} for an authenticated user — the
+ * `email ?? null` normalization every gated call site re-derives by hand. Single-
+ * sourced so this security-relevant context shape can't drift (one site dropping
+ * the `?? null`, or passing the wrong field, is one cross-tenant decision wrong).
+ *
+ * This forwards the user's email so a configured attorney of record can be
+ * matched. OWNER-ONLY paths (e.g. /api/draft, /api/draft/critique) deliberately
+ * pass `email: null` to suppress that fallback and must NOT use this helper.
+ */
+export function caseAccessFor(user: { id: string; email?: string | null }): CaseAccess {
+  return { userId: user.id, email: user.email ?? null };
+}
+
 /** The four impure operations {@link resolveCase} needs, injected for testability. */
 export interface CaseGateDeps {
   getCaseForUser(userId: string, caseId: string): Promise<StoredCase | null>;
