@@ -195,6 +195,9 @@ async function open(): Promise<Pglite> {
 
 const num = (v: unknown): number => Number(v ?? 0);
 const str = (v: unknown): string => (v == null ? "" : String(v));
+/** Null-safe timestamp → ISO-8601 string (or null). Shared by every row
+ *  projection so the timestamp-coercion policy lives in one place. */
+const iso = (v: unknown): string | null => (v ? new Date(v as string).toISOString() : null);
 
 const CASE_COLUMNS =
   "id, file_number, petitioner, classification, status, approval_likelihood, receipt_number, created_at, updated_at";
@@ -220,12 +223,8 @@ function toStoredCase(row: CaseRow): StoredCase {
     status: row.status,
     approvalLikelihood: Number(row.approval_likelihood ?? 0),
     receiptNumber: row.receipt_number ?? null,
-    createdAt: row.created_at
-      ? new Date(row.created_at).toISOString()
-      : null,
-    updatedAt: row.updated_at
-      ? new Date(row.updated_at).toISOString()
-      : null,
+    createdAt: iso(row.created_at),
+    updatedAt: iso(row.updated_at),
   };
 }
 
@@ -276,7 +275,7 @@ function toLedgerEntry(row: Record<string, unknown>) {
     reason: str(row.reason),
     operation: row.operation == null ? null : str(row.operation),
     balanceAfter: num(row.balance_after),
-    createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : null,
+    createdAt: iso(row.created_at),
   };
 }
 
@@ -297,9 +296,7 @@ export async function getPgliteStore(): Promise<Store> {
         email: (row.email as string | null) ?? null,
         full_name: (row.full_name as string | null) ?? null,
         avatar_url: (row.avatar_url as string | null) ?? null,
-        onboarded_at: row.onboarded_at
-          ? new Date(row.onboarded_at as string).toISOString()
-          : null,
+        onboarded_at: iso(row.onboarded_at),
       };
     },
 
@@ -344,7 +341,7 @@ export async function getPgliteStore(): Promise<Store> {
         marketingOptIn: Boolean(row.marketing_opt_in),
         ip: row.ip == null ? null : str(row.ip),
         userAgent: row.user_agent == null ? null : str(row.user_agent),
-        createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : null,
+        createdAt: iso(row.created_at),
       }));
     },
 
@@ -730,9 +727,7 @@ export async function getPgliteStore(): Promise<Store> {
           kind: row.kind as ReviewKind,
           body: str(row.body),
           metadata: (row.metadata as Record<string, unknown>) ?? {},
-          createdAt: row.created_at
-            ? new Date(row.created_at as string).toISOString()
-            : "",
+          createdAt: iso(row.created_at) ?? "",
         }),
       );
     },
@@ -838,8 +833,6 @@ export async function getPgliteStore(): Promise<Store> {
     },
 
     async exportUserData(userId) {
-      const iso = (v: unknown) => (v ? new Date(v as string).toISOString() : null);
-
       const profileR = await pg.query(
         `select id, email, full_name, avatar_url, onboarded_at from profiles where id = $1`,
         [userId],
