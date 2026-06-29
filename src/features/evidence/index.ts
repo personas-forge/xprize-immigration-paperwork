@@ -13,9 +13,7 @@ export {
   tryParseCategorizeResponse,
   summarizeVault,
   summarizeVaultBuckets,
-  type Bucket,
   type CategorizeAssessment,
   type CategorizeRequest,
-  type CategorizeResult,
   type VaultSummary,
 } from "./evidence";
