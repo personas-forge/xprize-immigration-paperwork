@@ -3,10 +3,9 @@
  * All functions take explicit `nowMs` so they are deterministic in tests.
  * No wall-clock dependency, no DB, no store — safe to import anywhere.
  */
+import { type BadgeTone } from "@/components/ui"; // type-only — erased at compile time
 
 export type AgeBucket = "fresh" | "warning" | "overdue";
-
-export type BadgeTone = "success" | "warning" | "danger";
 
 export const BUCKET_TONE: Record<AgeBucket, BadgeTone> = {
   fresh: "success",

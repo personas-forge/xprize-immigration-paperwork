@@ -46,7 +46,7 @@ export function ReviewQueueView({
     };
   }, []);
 
-  const sorted = sortOldestFirst(cases as SavedCaseSummary[]);
+  const sorted = sortOldestFirst(cases);
 
   return (
     <ThemeScope theme={dark ? ink : parchment}>
