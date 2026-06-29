@@ -17,6 +17,7 @@
  */
 
 import { DISCLAIMER } from "@/lib/result";
+import { asObjectBody, JSON_OBJECT_BODY_ERROR } from "@/lib/validation";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
 import { type Classification, packFor, criteriaNames } from "./packs";
@@ -86,10 +87,10 @@ function idFor(name: string): string {
 export function parseQualifyRequest(
   body: unknown,
 ): { ok: true; value: QualifyRequest } | { ok: false; error: string } {
-  if (typeof body !== "object" || body === null) {
-    return { ok: false, error: "Request body must be a JSON object." };
+  const record = asObjectBody(body);
+  if (!record) {
+    return { ok: false, error: JSON_OBJECT_BODY_ERROR };
   }
-  const record = body as Record<string, unknown>;
   const profile = record.profile;
   const rawName = record.name;
 

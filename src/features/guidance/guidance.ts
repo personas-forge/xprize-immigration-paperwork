@@ -12,6 +12,7 @@
  */
 
 import { wrapResult, DISCLAIMER, type Result } from "@/lib/result";
+import { asObjectBody, JSON_OBJECT_BODY_ERROR } from "@/lib/validation";
 
 export interface GuidanceRequest {
   formId: string;
@@ -58,10 +59,10 @@ function sanitizeField(value: string): string {
 export function parseGuidanceRequest(
   body: unknown,
 ): { ok: true; value: GuidanceRequest } | { ok: false; error: string } {
-  if (typeof body !== "object" || body === null) {
-    return { ok: false, error: "Request body must be a JSON object." };
+  const record = asObjectBody(body);
+  if (!record) {
+    return { ok: false, error: JSON_OBJECT_BODY_ERROR };
   }
-  const record = body as Record<string, unknown>;
   const formId = record.formId;
   const fieldLabel = record.fieldLabel;
   const situation = record.situation;

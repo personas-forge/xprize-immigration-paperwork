@@ -17,6 +17,7 @@
  */
 
 import { DISCLAIMER } from "@/lib/result";
+import { asObjectBody, JSON_OBJECT_BODY_ERROR } from "@/lib/validation";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
 import { str, criterionLine, marketBarFraming, MAX_PETITIONER, parseCriteriaArray } from "./criteria-text";
@@ -110,10 +111,10 @@ export function undraftedSupportedCriteria<
 export function parseDraftRequest(
   body: unknown,
 ): { ok: true; value: DraftRequest } | { ok: false; error: string } {
-  if (typeof body !== "object" || body === null) {
-    return { ok: false, error: "Request body must be a JSON object." };
+  const record = asObjectBody(body);
+  if (!record) {
+    return { ok: false, error: JSON_OBJECT_BODY_ERROR };
   }
-  const record = body as Record<string, unknown>;
 
   const petitioner = str(record.petitioner, MAX_PETITIONER) || "the beneficiary";
   const classification = str(record.classification, 40) || "O-1A";

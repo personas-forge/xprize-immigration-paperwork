@@ -19,6 +19,7 @@
  */
 
 import { DISCLAIMER } from "@/lib/result";
+import { asObjectBody, JSON_OBJECT_BODY_ERROR } from "@/lib/validation";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
 import { O1A_CRITERIA, criteriaNames, packFor } from "@/features/qualification";
@@ -58,10 +59,10 @@ const MAX_FACT_LEN = 240;
 export function parseCategorizeRequest(
   body: unknown,
 ): { ok: true; value: CategorizeRequest } | { ok: false; error: string } {
-  if (typeof body !== "object" || body === null) {
-    return { ok: false, error: "Request body must be a JSON object." };
+  const record = asObjectBody(body);
+  if (!record) {
+    return { ok: false, error: JSON_OBJECT_BODY_ERROR };
   }
-  const record = body as Record<string, unknown>;
   const name =
     typeof record.name === "string" && record.name.trim() !== ""
       ? record.name.trim().slice(0, MAX_NAME)

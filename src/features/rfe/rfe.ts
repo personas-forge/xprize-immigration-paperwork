@@ -25,6 +25,7 @@ import {
   type DraftSection,
 } from "@/features/drafting";
 import { str, criterionLine, marketBarFraming, MAX_PETITIONER, parseCriteriaArray } from "@/features/drafting/criteria-text";
+import { asObjectBody, JSON_OBJECT_BODY_ERROR } from "@/lib/validation";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
 
@@ -90,10 +91,10 @@ export const MIN_RFE = 20;
 export function parseRfeRequest(
   body: unknown,
 ): { ok: true; value: RfeRequest } | { ok: false; error: string } {
-  if (typeof body !== "object" || body === null) {
-    return { ok: false, error: "Request body must be a JSON object." };
+  const record = asObjectBody(body);
+  if (!record) {
+    return { ok: false, error: JSON_OBJECT_BODY_ERROR };
   }
-  const record = body as Record<string, unknown>;
 
   const rfeText = str(record.rfeText, MAX_RFE);
   if (rfeText.length < MIN_RFE) {
