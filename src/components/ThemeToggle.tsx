@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
+import { createLocalStorageStore } from "@/lib/createLocalStorageStore";
 
 // — Header theme toggle ─────────────────────────────────────────────────────
 // Swaps `data-theme="ink"` on <html>, persists to localStorage, and
@@ -11,21 +12,31 @@ import { useCallback, useSyncExternalStore } from "react";
 const STORAGE_KEY = "atelier-theme";
 type ThemeMode = "parchment" | "ink";
 
+// Shares the factory's subscribe / server-snapshot / persist + notify core, but
+// the live theme is the `data-theme` attribute on <html> (the pre-paint script
+// stamps it before first paint), so the client snapshot reads the DOM via
+// `readMode` rather than localStorage. Single-tab (no cross-tab `storage`
+// listener) and notify-on-failed-write: the toggle has already mutated the DOM,
+// so the dispatched event must fire to re-render us even if persistence throws.
+const store = createLocalStorageStore<ThemeMode>({
+  key: STORAGE_KEY,
+  eventName: "atelier-theme",
+  defaultValue: "parchment",
+  parse: (raw) => (raw === "ink" ? "ink" : "parchment"),
+  serialize: (mode) => mode,
+  crossTab: false,
+  notifyOnFailedWrite: true,
+});
+
 function readMode(): ThemeMode {
   if (typeof document === "undefined") return "parchment";
   return document.documentElement.dataset.theme === "ink" ? "ink" : "parchment";
 }
 
-function subscribe(callback: () => void) {
-  if (typeof window === "undefined") return () => {};
-  window.addEventListener("atelier-theme", callback);
-  return () => window.removeEventListener("atelier-theme", callback);
-}
-
 export function ThemeToggle() {
   // Default to "parchment" during SSR; the pre-paint script and the post-
   // mount subscription correct it on the client without a layout shift.
-  const mode = useSyncExternalStore(subscribe, readMode, () => "parchment");
+  const mode = useSyncExternalStore(store.subscribe, readMode, store.getServerSnapshot);
   const isInk = mode === "ink";
 
   const toggle = useCallback(() => {
@@ -35,13 +46,8 @@ export function ThemeToggle() {
     // ink — so hasAttribute("data-theme") reflects the real state.
     if (next === "ink") document.documentElement.dataset.theme = "ink";
     else delete document.documentElement.dataset.theme;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      // localStorage can throw in private modes; the toggle still works for
-      // the session — we just lose persistence, which is acceptable.
-    }
-    window.dispatchEvent(new Event("atelier-theme"));
+    // Persist (best-effort) + dispatch "atelier-theme" so the store re-reads.
+    store.write(next);
   }, [isInk]);
 
   return (

@@ -8,11 +8,12 @@ import {
   DEFAULT_CASE_QUERY,
 } from "./case-list";
 import { CLASSIFICATION_OPTIONS, STATUS_OPTIONS } from "./types";
+import { createLocalStorageStore } from "@/lib/createLocalStorageStore";
 
-// Persist the case-list query (search + filters + sort) to localStorage via
-// useSyncExternalStore — the same FOUC-free, lint-clean pattern the theme
-// toggle uses. The server snapshot is the default query (no hydration
-// mismatch); the client snapshot reads localStorage. Writes are best-effort
+// Persist the case-list query (search + filters + sort) to localStorage,
+// exposed through useSyncExternalStore via the shared createLocalStorageStore
+// factory. The server snapshot is the default query (no hydration mismatch);
+// the client snapshot reads + sanitizes localStorage. Writes are best-effort
 // (private modes can throw) and notify subscribers so every consumer stays in
 // sync within the tab.
 
@@ -47,13 +48,7 @@ function sanitize(raw: unknown): CaseQuery {
   };
 }
 
-// Cache the parsed query so getSnapshot returns a stable reference between
-// writes — useSyncExternalStore requires snapshot identity to be stable.
-let cache: { raw: string | null; value: CaseQuery } = {
-  raw: null,
-  value: DEFAULT_CASE_QUERY,
-};
-
+/** Parse the stored raw string into a sanitized CaseQuery (default on miss). */
 function parse(raw: string | null): CaseQuery {
   if (!raw) return DEFAULT_CASE_QUERY;
   try {
@@ -63,47 +58,13 @@ function parse(raw: string | null): CaseQuery {
   }
 }
 
-function readRaw(): string | null {
-  try {
-    return window.localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function getSnapshot(): CaseQuery {
-  const raw = readRaw();
-  if (raw !== cache.raw) {
-    cache = { raw, value: parse(raw) };
-  }
-  return cache.value;
-}
-
-function getServerSnapshot(): CaseQuery {
-  return DEFAULT_CASE_QUERY;
-}
-
-function subscribe(callback: () => void): () => void {
-  if (typeof window === "undefined") return () => {};
-  window.addEventListener(EVENT, callback);
-  window.addEventListener("storage", callback);
-  return () => {
-    window.removeEventListener(EVENT, callback);
-    window.removeEventListener("storage", callback);
-  };
-}
-
-function write(next: CaseQuery): void {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    // Persistence failed (private mode / quota). Don't notify subscribers:
-    // getSnapshot re-reads localStorage, so a change event here would just make
-    // them re-render the OLD value. The session continues without persistence.
-    return;
-  }
-  window.dispatchEvent(new Event(EVENT));
-}
+const store = createLocalStorageStore<CaseQuery>({
+  key: STORAGE_KEY,
+  eventName: EVENT,
+  defaultValue: DEFAULT_CASE_QUERY,
+  parse,
+  serialize: (query) => JSON.stringify(query),
+});
 
 export function usePersistentQuery(): {
   query: CaseQuery;
@@ -111,17 +72,17 @@ export function usePersistentQuery(): {
   reset: () => void;
 } {
   const query = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
+    store.subscribe,
+    store.getSnapshot,
+    store.getServerSnapshot,
   );
 
   const setQuery = useCallback(
-    (patch: Partial<CaseQuery>) => write({ ...query, ...patch }),
+    (patch: Partial<CaseQuery>) => store.write({ ...query, ...patch }),
     [query],
   );
 
-  const reset = useCallback(() => write(DEFAULT_CASE_QUERY), []);
+  const reset = useCallback(() => store.write(DEFAULT_CASE_QUERY), []);
 
   return { query, setQuery, reset };
 }
