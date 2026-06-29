@@ -61,7 +61,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   // draft limit config — saving is strictly cheaper than generating.
   const limited = enforceRateLimit(
     request,
-    "draft-save",
+    "draft_save",
     RATE_LIMITS.draft,
     DISCLAIMER,
     user?.id,
