@@ -3,10 +3,8 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getUser, profileFieldsFromUser } from "@/lib/auth/session";
-import { upsertProfileWithConsent } from "@/lib/auth/db";
-import { CONSENT_FIELDS, CONSENT_VERSION } from "@/lib/auth/consent";
-import { grantSignupTokens } from "@/lib/tokens/ledger";
-import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
+import { CONSENT_FIELDS } from "@/lib/auth/consent";
+import { completeOnboarding } from "@/lib/auth/onboarding";
 import { clientIp } from "@/lib/tokens/rate-limit";
 import { safeNext } from "@/lib/auth/safe-next";
 
@@ -44,50 +42,48 @@ export async function submitConsent(
   // comes from the form's `full_name` field (resolved above), not provider metadata.
   const { avatarUrl } = profileFieldsFromUser(user);
 
-  // Persist consent FIRST — it is the essential, legally-meaningful write, and
-  // ONLY its failure should block onboarding (it leaves the user not-onboarded →
-  // a safe retry; the idempotent grant below no-ops on retry). The thrown
-  // NEXT_REDIRECT at the end is intentionally OUTSIDE this try so it propagates.
-  try {
-    await upsertProfileWithConsent({
+  // Persist consent FIRST (the essential, legally-meaningful write), THEN grant
+  // the one-time free tokens BEST-EFFORT, gated on a VERIFIED identity — the
+  // signup grant is the most directly farmable money path, so an unverified,
+  // one-click account must not mint spendable AI credit (Google sign-in is always
+  // verified; the dev user is trusted). The shared recipe pins CONSENT_VERSION +
+  // FREE_SIGNUP_GRANT + the persist-before-grant order so dev and prod can't drift;
+  // we keep the error/gating POLICY here. The thrown NEXT_REDIRECT below is
+  // intentionally OUTSIDE the failure handling so it propagates.
+  const result = await completeOnboarding(
+    {
       userId: user.id,
       email: user.email ?? null,
       fullName,
       avatarUrl,
-      consentVersion: CONSENT_VERSION,
       terms,
       privacy,
       marketing,
       ip,
       userAgent: h.get("user-agent"),
-    });
-  } catch (err) {
-    // Don't swallow — record enough to triage a consent-write outage (DB down vs
-    // rules misconfig vs validation) without logging PII.
-    console.error("[welcome] consent persist failed", { userId: user.id, err });
+    },
+    { persistConsent: true, grantTokens: Boolean(user.emailVerified) },
+  );
+  if (!result.ok && result.step === "consent") {
+    // Only a consent failure blocks onboarding (leaves the user not-onboarded →
+    // a safe retry). Don't swallow — record enough to triage a consent-write
+    // outage (DB down vs rules misconfig vs validation) without logging PII.
+    console.error("[welcome] consent persist failed", { userId: user.id, err: result.cause });
     return {
       error: "We couldn't save your consent. Please try again in a moment.",
     };
   }
-
-  // Grant the one-time free tokens BEST-EFFORT, gated on a VERIFIED identity. The
-  // signup grant is the most directly farmable money path — an unverified,
-  // one-click account must not mint spendable AI credit — so require a verified
-  // email (Google sign-in is always verified; the dev user is trusted). Per-user
-  // idempotency stays the second layer. The grant is non-essential + idempotent,
-  // so a token-store hiccup must NOT block onboarding or be misreported as a
-  // consent failure; we log it (for operator/top-up re-grant) and the user still
-  // enters the workspace. (Disposable-domain rejection is a possible follow-up.)
-  if (user.emailVerified) {
-    try {
-      await grantSignupTokens(user.id, FREE_SIGNUP_GRANT);
-    } catch (err) {
-      console.error("[welcome] signup token grant failed (non-blocking)", {
-        userId: user.id,
-        err,
-      });
-    }
-  } else {
+  if (!result.ok && result.step === "grant") {
+    // Non-essential + idempotent: a token-store hiccup must NOT block onboarding
+    // or be misreported as a consent failure. Log it (for operator/top-up
+    // re-grant) and let the user into the workspace.
+    console.error("[welcome] signup token grant failed (non-blocking)", {
+      userId: user.id,
+      err: result.cause,
+    });
+  } else if (!user.emailVerified) {
+    // Grant deferred until the email is verified. (Disposable-domain rejection is
+    // a possible follow-up.)
     console.warn("[welcome] signup grant deferred — email not verified", {
       userId: user.id,
     });
