@@ -14,6 +14,7 @@ import { ReviewPanel, type ReviewEventView } from "@/features/review/components/
 import { RfeStudio } from "@/features/rfe/components/RfeStudio";
 import { EvidenceVault, type DocumentView } from "@/features/evidence/components/EvidenceVault";
 import { RoadmapStepper } from "./RoadmapStepper";
+import { Fact } from "./Fact";
 import { type ModelSource } from "@/lib/llm/label";
 import { jurisdictionFor, packFor } from "@/features/qualification";
 import { summarizeCriteria } from "@/features/case-file/criteria";
@@ -228,15 +229,6 @@ export function CaseDetailView({
         </div>
       </div>
     </ThemeScope>
-  );
-}
-
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-surface px-4 py-4">
-      <div className="microprint">{label}</div>
-      <div className="mt-2 doc-number text-[16px] text-foreground">{value}</div>
-    </div>
   );
 }
 
