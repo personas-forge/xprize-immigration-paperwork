@@ -20,6 +20,7 @@ import {
   type DraftExhibit,
   type VaultDocLike,
   criteriaLines,
+  exhibitCitationSentence,
   tryParseSections,
   withAttachedExhibits,
   type DraftSection,
@@ -344,9 +345,7 @@ export function mockRfe(req: RfeRequest): RfeResponse {
       `of record will review and finalize this response before it is submitted to USCIS.`,
   };
   const body: DraftSection[] = addressable.map((c) => {
-    const cite = c.exhibits && c.exhibits.length
-      ? `This is documented by ${c.exhibits.map((ex) => `(Exhibit ${ex.number})`).join(", ")}. `
-      : "";
+    const cite = exhibitCitationSentence(c);
     return {
       heading: `Re: ${c.name}`,
       body:

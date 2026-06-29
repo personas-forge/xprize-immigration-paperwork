@@ -161,6 +161,18 @@ export function exhibitBullets(c: { exhibits?: readonly DraftExhibit[] }): strin
   });
 }
 
+/** The deterministic "This is documented by (Exhibit N), …. " sentence both the
+ *  draft and the RFE mock fallbacks emit for a criterion's on-file exhibits (empty
+ *  string when none). Single-sourced so the keyless/template citation trail stays
+ *  in lockstep with the live `(Exhibit N)` token the audit parses (CITATION_TOKEN). */
+export function exhibitCitationSentence(c: { exhibits?: readonly DraftExhibit[] }): string {
+  const exhibits = c.exhibits ?? [];
+  if (exhibits.length === 0) return "";
+  return `This is documented by ${exhibits
+    .map((ex) => `(Exhibit ${ex.number})`)
+    .join(", ")}. `;
+}
+
 /** A criterion as the shared prompt renderer needs it: the scored fields
  *  {@link criterionLine} formats, plus the optional exhibits {@link exhibitBullets}
  *  renders. Both {@link DraftCriterion} and the RFE criterion satisfy it. */
@@ -810,12 +822,7 @@ function criterionBody(req: DraftRequest, c: DraftCriterion): string {
   const ra = c.rationale ? `${c.rationale} ` : "";
   // Cite the criterion's on-file exhibits so the keyless/template build still
   // produces a resolvable (Exhibit N) trail and a populated exhibit index.
-  const exhibits = c.exhibits ?? [];
-  const cite = exhibits.length
-    ? `This is documented by ${exhibits
-        .map((ex) => `(Exhibit ${ex.number})`)
-        .join(", ")}. `
-    : "";
+  const cite = exhibitCitationSentence(c);
   return (
     `${req.petitioner} satisfies the "${c.name}" criterion. ${ev}${ra}${cite}` +
     `This evidence should be corroborated and finalized by the attorney of record ` +

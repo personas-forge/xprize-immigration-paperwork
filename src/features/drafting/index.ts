@@ -19,6 +19,7 @@ export {
   scoreTone,
   tryParseCritique,
   exhibitBullets,
+  exhibitCitationSentence,
   exhibitNumber,
   extractCitedExhibits,
   hasExhibits,
