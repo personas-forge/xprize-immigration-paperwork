@@ -58,6 +58,12 @@ test("isLongTierOnFastFallback: true only when long tier + GEMINI_DRAFT_MODEL un
   assert.equal(isLongTierOnFastFallback("long", { GEMINI_MODEL: "x" }), true, "GEMINI_MODEL doesn't count");
   // A configured long model → not a fallback.
   assert.equal(isLongTierOnFastFallback("long", { GEMINI_DRAFT_MODEL: "pro" }), false);
+  // Derived from geminiModelFor: a draft model explicitly equal to the fast model
+  // IS a fallback (long resolves to the same model the fast tier would).
+  assert.equal(
+    isLongTierOnFastFallback("long", { GEMINI_MODEL: "x", GEMINI_DRAFT_MODEL: "x" }),
+    true,
+  );
   // The fast tier is never a 'fallback' — it's meant to be fast.
   assert.equal(isLongTierOnFastFallback("fast", {}), false);
   assert.equal(isLongTierOnFastFallback("fast", { GEMINI_DRAFT_MODEL: "pro" }), false);
