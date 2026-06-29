@@ -318,7 +318,7 @@ async function main(): Promise<void> {
   }
 
   // A null engine runs every scenario on the deterministic template — that tests
-  // the harness wiring, never the model. Fail fast (like smoke.ts) so a forgotten
+  // the harness wiring, never the model. Fail fast so a forgotten
   // LLM_ENGINE / GEMINI_API_KEY can't be reported as a pass.
   if (!getLlm()) {
     console.error(

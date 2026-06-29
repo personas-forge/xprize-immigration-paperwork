@@ -47,7 +47,7 @@ Outputs land in `scripts/llm-eval/out/` (git-ignored): `report.md` (human) and
 - `scenarios.ts` — the 30 scenarios + per-scenario expectations.
 - `gates.ts` — the quality gates (FAIL = hard invariant, WARN = review signal).
 - `engine.ts` — a `server-only`-free mirror of `client.ts` (so it runs under tsx).
-- `run.ts` — the harness; `types.ts` — shared types; `smoke.ts` — wiring check.
+- `run.ts` — the harness; `types.ts` — shared types.
 
 ## Gate tiers
 
