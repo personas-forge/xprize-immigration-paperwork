@@ -34,6 +34,9 @@ export type ValidationStatus = "verified" | "needs-review";
 export interface SourceRef {
   title: string;
   url: string;
+  // `secondary` is a reserved taxonomy slot — the lowest source tier in the
+  // hierarchy (see docs/validation-framework.md "Source hierarchy"). No current
+  // record uses it; kept deliberately so a future secondary source has a home.
   kind: "primary-law" | "agency-guidance" | "court-order" | "secondary";
 }
 

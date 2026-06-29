@@ -26,8 +26,6 @@ export const metadata: Metadata = {
     "How each visa program and compliance claim is validated against primary legal sources — status, citations, and review dates. Not legal advice.",
 };
 
-// Request-time so the freshness read-out reflects today, not the build date.
-
 const STATUS_TONE: Record<ValidationStatus, BadgeTone> = {
   verified: "success",
   "needs-review": "warning",
