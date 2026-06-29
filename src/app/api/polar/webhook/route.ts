@@ -2,19 +2,16 @@ import { type NextRequest } from "next/server";
 import { validateEvent } from "@polar-sh/sdk/webhooks";
 import { credit } from "@/lib/tokens/ledger";
 import { bundleByKey, bundleByProductId } from "@/lib/tokens/economy";
-import { polarEventToRevenue } from "./relay-revenue";
+import { polarEventToRevenue, type WebhookEvent } from "./relay-revenue";
 import { finiteCents, pickStr, productId, resolveUserId } from "./polar-fields";
 import { trackRevenue } from "@/lib/cost-telemetry";
 
+// Only the fields read DIRECTLY off the order cast. The buyer / product id /
+// original-order-id (incl. their camel/snake duality) are resolved through the
+// shared `./polar-fields` readers off `event.data`, so they deliberately don't
+// live on this local type.
 type PolarOrder = {
   id: string;
-  productId?: string;
-  product_id?: string;
-  order_id?: string;
-  orderId?: string;
-  externalCustomerId?: string;
-  external_customer_id?: string;
-  customer?: { externalId?: string; external_id?: string } | null;
   metadata?: Record<string, string>;
   /** Refunded amount in minor units (cents). `order.refunded` carries
    *  `refunded_amount`; `refund.created` carries `amount`. Used to claw back
@@ -49,7 +46,7 @@ export async function POST(request: NextRequest) {
   const body = await request.text();
   const headers = Object.fromEntries(request.headers.entries());
 
-  let event: { type: string; data: Record<string, unknown> };
+  let event: WebhookEvent;
   try {
     // Verify the SDK's webhook-validation signature/shape for your version.
     event = validateEvent(body, headers, secret) as unknown as typeof event;
