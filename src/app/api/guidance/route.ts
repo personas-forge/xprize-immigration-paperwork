@@ -86,10 +86,8 @@ export function POST(request: Request): Promise<NextResponse> {
     // text — replace it with the advice-free deterministic template, which is
     // UPL-safe by construction. The orchestrator reclaims the charge first, so
     // labelling the substitute `source: "mock"` keeps the "mock is never billed"
-    // invariant. The AdjudicationBadge still renders the block reason.
-    onBlocked: (req) => ({
-      ...buildGuidanceResponse(mockGuidance(req), "mock"),
-      blocked: true,
-    }),
+    // invariant. The block is conveyed by the attached `adjudication` report
+    // (AdjudicationBadge renders it) — no separate `blocked` flag is consumed.
+    onBlocked: (req) => buildGuidanceResponse(mockGuidance(req), "mock"),
   });
 }
