@@ -3,7 +3,7 @@ import { validateEvent } from "@polar-sh/sdk/webhooks";
 import { credit } from "@/lib/tokens/ledger";
 import { bundleByKey, bundleByProductId } from "@/lib/tokens/economy";
 import { polarEventToRevenue } from "./relay-revenue";
-import { finiteCents, productId, resolveUserId } from "./polar-fields";
+import { finiteCents, pickStr, productId, resolveUserId } from "./polar-fields";
 import { trackRevenue } from "@/lib/cost-telemetry";
 
 type PolarOrder = {
@@ -102,8 +102,15 @@ export async function POST(request: NextRequest) {
     // refund attempt), so keying the ref on it would let two refunds against the
     // same order both clawback (double-debit). order.refunded carries the order
     // id at its root; refund.created carries it as order_id.
+    // Route the refund's original-order id through the shared, type-guarded
+    // reader instead of a raw `??` (the dedupe key that prevents double-clawback
+    // is the worst place to skip the guard). Identical to `order_id ?? orderId`
+    // for well-formed payloads (a non-empty string wins); a non-string slips past
+    // the raw `??` but is correctly rejected here.
     const originalOrderId =
-      event.type === "order.refunded" ? order.id : order.order_id ?? order.orderId;
+      event.type === "order.refunded"
+        ? order.id
+        : pickStr(event.data, "order_id", "orderId");
     if (userId && b && originalOrderId) {
       // Claw back PROPORTIONALLY to the refunded amount, not the whole bundle:
       // Polar supports PARTIAL refunds, so a $5 goodwill refund on the $150 Scale
