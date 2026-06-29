@@ -29,7 +29,7 @@ import {
   resolveCase,
   storeConfigured,
 } from "./access";
-import { type AdapterResult, err, ok, wrapStore } from "./result";
+import { type AdapterResult, err, ok, wrapStore, wrapVersion } from "./result";
 
 /** Everything the adapter calls, injected so the unit suite can supply fakes. */
 export interface PetitionDeps extends CaseGateDeps {
@@ -190,12 +190,7 @@ export class PetitionAdapter {
     const gate = await this.resolveCase(access, caseId);
     if (!gate.ok) return gate;
     const deps = await this.deps();
-    try {
-      const version = await deps.saveDraft(caseId, sections, source);
-      return version === null ? err("unconfigured") : ok(version);
-    } catch (cause) {
-      return err("store_error", cause);
-    }
+    return wrapVersion(() => deps.saveDraft(caseId, sections, source));
   }
 
   /** The latest draft for a case (`null` = none yet — still a success). Gated. */
@@ -220,17 +215,9 @@ export class PetitionAdapter {
     const gate = await this.resolveCase(access, caseId);
     if (!gate.ok) return gate;
     const deps = await this.deps();
-    try {
-      const version = await deps.saveRfeResponse(
-        caseId,
-        rfeText,
-        sections,
-        source,
-      );
-      return version === null ? err("unconfigured") : ok(version);
-    } catch (cause) {
-      return err("store_error", cause);
-    }
+    return wrapVersion(() =>
+      deps.saveRfeResponse(caseId, rfeText, sections, source),
+    );
   }
 
 }
