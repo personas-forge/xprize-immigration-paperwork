@@ -122,7 +122,7 @@ export default function FaqPage() {
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/#start"
+              href="/qualify"
               className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background hover:bg-foreground-soft focus-ring"
             >
               Take the qualification

@@ -75,7 +75,7 @@ export function SiteFooter() {
           © Immigration Concierge · XPrize hackathon · 90-day MVP
         </div>
         <div className="microprint flex flex-wrap items-center gap-4">
-          <Link className="ink-link" href="/#how">
+          <Link className="ink-link" href="/#checkpoints">
             How it works
           </Link>
           <Link className="ink-link" href="/billing">
