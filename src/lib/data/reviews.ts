@@ -31,15 +31,20 @@ export interface ReviewEvent {
   createdAt: string;
 }
 
-/** Append one event to a case's review thread. No-op when no store. */
-export async function addReviewEvent(input: {
-  caseId: string;
+/** The author-supplied fields for one review-thread event. The stored
+ *  {@link ReviewEvent} additionally carries the generated `id` + `createdAt`. */
+export interface ReviewEventInput {
   authorId: string | null;
   authorRole: "applicant" | "attorney";
   kind: ReviewKind;
   body?: string;
   metadata?: Record<string, unknown>;
-}): Promise<void> {
+}
+
+/** Append one event to a case's review thread. No-op when no store. */
+export async function addReviewEvent(
+  input: ReviewEventInput & { caseId: string },
+): Promise<void> {
   const store = await getStore();
   if (!store) return;
   await store.addReviewEvent(input);
@@ -67,13 +72,7 @@ export async function transitionCase(input: {
   fromStatuses: readonly string[];
   toStatus: string;
   receiptNumber?: string;
-  events: readonly {
-    authorId: string | null;
-    authorRole: "applicant" | "attorney";
-    kind: ReviewKind;
-    body?: string;
-    metadata?: Record<string, unknown>;
-  }[];
+  events: readonly ReviewEventInput[];
 }): Promise<boolean> {
   const store = await getStore();
   if (!store) return false;
