@@ -533,3 +533,84 @@ FIXES-WAVES-1-5 at `docs/harness/code-refactor-2026-06-23/`.
   Intentionally LEFT (scan recommended keep): ai#3 requiresImages (OCR forward-design),
   ai#5 build-cast (type-required), rate-limit#4 windowMs (test seam), eb#5 (would add code).
   Verify-before-fix FP: evidence#1 parseCategorizeResponse is live (eval harness).
+
+## Code-refactor RE-scan (2026-06-29, branch `vibeman/code-refactor-2026-06-29`)
+
+95 findings / 20 contexts (**0C / 7H / 45M / 43L**) — the residual-debt tail 6 days
+after the 2026-06-23 pass + the Next 16.3.0-preview.5 upgrade + Tiger fixes #115–#119.
+All 7 themed waves (A–G) run; **39 findings closed across 52 commits**, gates green
+throughout: tsc 0 · tests **437→465** (+28, zero weakened) · lint 0-errors · `next build` PASS.
+The 7 Highs collapsed to 5 distinct issues (two were flagged from both sides). INDEX +
+20 reports + FIXES-WAVE-A..G + FOLLOWUPS at `docs/harness/code-refactor-2026-06-29/`.
+
+### Structural facts (new shared seams this run)
+- **2026-06-29** — `src/lib/validation.ts` (`asObjectBody` + `JSON_OBJECT_BODY_ERROR`,
+  and `str`) is now THE body-parse primitive for all 5 AI route parsers (was hand-rolled
+  ×5). `caseAccessFor()` in `adapters/access.ts` builds the `CaseAccess` literal (was
+  rebuilt ×6). `operation.ts` exports `ModelSource` (typed `source`/`OperationLlm.name`,
+  dropped 8 `as unknown as Record` widening casts).
+- **2026-06-29** — `src/lib/createLocalStorageStore.ts` (`createLocalStorageStore<T>` →
+  `{subscribe,getSnapshot,getServerSnapshot,read,write}`) is the one SSR-safe
+  useSyncExternalStore+localStorage factory; ThemeToggle, usePersistentQuery,
+  bannerDismiss all sit on it. `useThemePalette` is a DOM-read cousin (no localStorage) —
+  deliberately NOT folded in.
+- **2026-06-29** — `src/features/case-file/caseStatusTone.ts` (`caseStatusTone(status)`)
+  is the single case-status→Badge-tone map (canonical = ReviewPanel's mapping). Resolved
+  a 3-way "Filed" drift (gold/green/grey → green). **VISUAL change, no visual tests:**
+  CaseList Intake amber→grey, Attorney-Review grey→gold, Filed gold→green; Dashboard list
+  Filed/Approved→green. Eyeball or `npm run e2e`.
+- **2026-06-29** — Shared compliance prompt scaffolding lives in `criteria-text.ts`
+  (`SHARED_FILING_RULES` = STRICT-RULES 2/3/4, `STRICT_JSON_PREAMBLE`); buildDraft/
+  buildSection/buildRfe prompts splice them (prompt text proven byte-identical by the
+  existing prompt-builder content tests). `drafting.ts` split 857→661: `critique.ts`
+  + `citation-audit.ts` siblings (pure move, re-exports).
+- **2026-06-29** — More seams: `enforceRateLimit()` (rate-limit.ts façade for the 3
+  NON-orchestrated routes); `featuredBundle()` (economy.ts, retires the `b.key==="pro"`
+  magic string); `assertServerOnly` (the ×8 `typeof window` guard); pglite module-scope
+  `iso()`; `wrapStore` family completed with `wrapFound`/`wrapVersion` (collapsed 5
+  hand-rolled envelope tails); shared `Fact` masthead cell; `completeOnboarding()`
+  (welcome + ensureDevSeeded can't drift); `ReviewEventInput` named once; LLM
+  `withTelemetry` now wraps the SUCCESS path too; `ModelSource` (llm) derived from
+  `LlmEngine`. The webhook double-clawback dedupe key now goes through `pickStr` (rejects
+  malformed `order_id`; byte-identical for valid payloads). `labelOf` is now total
+  (`?.label ?? op`) — a stray ledger string can't crash `/billing`.
+
+### Anti-patterns / lessons
+- **2026-06-29 LESSON (Tailwind v4 cascade layers)** — DO NOT replace an UNLAYERED
+  `.microprint` (or similar plain-CSS class) override with a layered `text-*` Tailwind
+  utility: in Tailwind v4 the unlayered rule WINS, so the swap silently regresses the
+  color to muted. This invalidates the brand#5 "use a token class" recommendation in the
+  scan report. Only the pure no-op override (CardSubtitle) was safe to drop. Three fix
+  options for theming these are in FOLLOWUPS.md.
+- **2026-06-29** — `as unknown as Record<string,unknown>` build-hook casts: the `source`
+  half is removable via a `ModelSource` type, but the `as Record` half is type-required
+  until `build` is made generic (deferred). Same pattern noted by the scanner.
+- **2026-06-29 (reinforced)** — Two Highs were the SAME issue seen from both contexts
+  (localStorage store: brand + case-file; prompt dup: petition + rfe). When tallying a
+  multi-context scan, de-dup the Highs before sizing the work — 7 Highs were 5 issues.
+
+### Context-map drift (refresh — superset of the 2026-06-23 list, still not refreshed)
+- **2026-06-29** — confirmed again + more: `qualification/questionnaire.ts(.test)` gone;
+  legal components in `src/components/legal/`; `events/subscribers/analytics.ts` gone
+  (real extra file is `events/provenance.ts`); rate-limit is `src/lib/tokens/rate-limit.ts`;
+  brand `SectionHeader`/`StatCard`/`lib/format.ts` don't exist; **marketing
+  `landing-claude/page.tsx` and `components/PetitionStepper.tsx` are DELETED** (real
+  homepage `components/landing/PassportLanding.tsx`; shared chrome `SiteChrome.tsx`).
+  → `refresh_context`: O-1A Eligibility, Form Guidance, Domain Event Bus, Rate Limiting,
+  Brand & Design System, Marketing Site (UI not yet done via MCP — see INDEX.md note).
+
+### Open follow-ups (from the 2026-06-29 re-scan — full list in FOLLOWUPS.md)
+- **PRODUCT DECISION — provenance ledger (domain-event-bus #1, High):** the hash-chained
+  audit trail is write-only (`getProvenanceChain`/`verifyChain`/`.records()` have no prod
+  caller). Either ship a `GET /api/audit` consumer (a feature) or stop registering it.
+  Left untouched.
+- **PROMPT-TEXT DECISION:** the `(Exhibit N)` citation rule has 3 *different* wordings
+  across draft/section/rfe; unifying them changes emitted prompt text on paid endpoints
+  (with test updates) — a compliance call, not a refactor.
+- **Deferred (behavior/contract-sensitive, with reasons in FOLLOWUPS):** evidence double
+  case-resolve (needs new adapter method); petition vs evidence null-write 500-vs-503
+  divergence; orchestrator adjudicate/persist-envelope unification; evidence `str()`
+  content/classification coercion (changes over-length/defaulting); `WithAdjudication<T>`
+  (only 2/5 sites are clean intersections); microprint theming (Tailwind-layer trap above).
+- **Test-only symbols (not deletable here):** `registerAuditLog`/`AuditSink`/`defaultSink`,
+  evidence `DISCLAIMER`/`O1A_CRITERIA` re-exports.
