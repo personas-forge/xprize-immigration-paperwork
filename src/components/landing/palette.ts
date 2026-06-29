@@ -21,7 +21,6 @@ export const PALETTE = {
   accentSoft: "#f4e6c2",
   seal: "#7d2a2e",
   sealSoft: "#ecd3cf",
-  indigo: "#3a4d6b",
   success: "#4e6b3c",
   warning: "#a06410",
 } as const;
@@ -49,7 +48,6 @@ export const INK_PALETTE: Palette = {
   accentSoft: "rgba(212,165,84,0.14)",
   seal: "#c75b60",
   sealSoft: "rgba(199,91,96,0.14)",
-  indigo: "#8b9fc1",
   success: "#9fc080",
   warning: "#d99947",
 };

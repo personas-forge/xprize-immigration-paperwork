@@ -31,10 +31,6 @@ export default {
           DEFAULT: "var(--seal)",
           soft: "var(--seal-soft)",
         },
-        indigo: {
-          DEFAULT: "var(--indigo)",
-          soft: "var(--indigo-soft)",
-        },
         success: "var(--success)",
         "success-soft": "var(--success-soft)",
         warning: "var(--warning)",
