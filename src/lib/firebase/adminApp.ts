@@ -2,9 +2,8 @@
 // Auth handle (@/lib/firebase/admin) and the Firestore handle
 // (@/lib/firestore/admin) so the initializeApp call + credential resolution live
 // in exactly one place. Never import on the client.
-if (typeof window !== "undefined") {
-  throw new Error("@/lib/firebase/adminApp must not be imported on the client.");
-}
+import { assertServerOnly } from "@/lib/serverOnlyGuard";
+assertServerOnly("@/lib/firebase/adminApp");
 
 import { applicationDefault, getApps, initializeApp } from "firebase-admin/app";
 

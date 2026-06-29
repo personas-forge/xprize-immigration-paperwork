@@ -19,9 +19,8 @@
 //   rfe_responses       the case doc bumped inside runTransaction.
 //   case_documents    — flat collection (case_id), monotonic exhibit ord.
 //   case_reviews      — flat, append-only collection (case_id), auto-id.
-if (typeof window !== "undefined") {
-  throw new Error("@/lib/db/firestore-store must not be imported on the client.");
-}
+import { assertServerOnly } from "@/lib/serverOnlyGuard";
+assertServerOnly("@/lib/db/firestore-store");
 
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firestore/admin";

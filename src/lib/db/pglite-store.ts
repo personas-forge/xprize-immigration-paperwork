@@ -5,9 +5,8 @@
 // store's semantics exactly (atomic debit via FOR UPDATE, idempotent
 // credit/grant via the same ledger checks, version select-max-then-insert).
 // Ids are TEXT (Firebase UIDs / gen_random_uuid()).
-if (typeof window !== "undefined") {
-  throw new Error("@/lib/db/pglite-store must not be imported on the client.");
-}
+import { assertServerOnly } from "@/lib/serverOnlyGuard";
+assertServerOnly("@/lib/db/pglite-store");
 
 import { pglitePath } from "./config";
 import { formatExhibit } from "@/lib/exhibits";

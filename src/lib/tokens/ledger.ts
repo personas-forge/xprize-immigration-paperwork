@@ -2,9 +2,8 @@
 // @/lib/db/store). Stable import surface for the token economy: guard.ts,
 // balance.ts, the Polar webhook, welcome/actions.ts, and the dev grant route
 // all import from here regardless of the backing driver.
-if (typeof window !== "undefined") {
-  throw new Error("@/lib/tokens/ledger must not be imported on the client.");
-}
+import { assertServerOnly } from "@/lib/serverOnlyGuard";
+assertServerOnly("@/lib/tokens/ledger");
 
 import { getStore, type ChargeOutcome, type CreditReason, type LedgerEntry } from "@/lib/db/store";
 import { isStoreConfigured } from "@/lib/db/config";

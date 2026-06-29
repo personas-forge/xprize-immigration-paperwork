@@ -1,8 +1,7 @@
-// Server-only module. The `server-only` npm package isn't a dependency of this
-// app, so we enforce the same contract with a runtime guard.
-if (typeof window !== "undefined") {
-  throw new Error("@/lib/auth/session must not be imported on the client.");
-}
+// Server-only module — see `assertServerOnly` for why this app uses a runtime
+// guard instead of `import "server-only"`.
+import { assertServerOnly } from "@/lib/serverOnlyGuard";
+assertServerOnly("@/lib/auth/session");
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
