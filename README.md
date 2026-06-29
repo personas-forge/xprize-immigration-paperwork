@@ -22,8 +22,8 @@ file are real; AI, billing, and filing integrations are mocked.
 
 - **Petition stepper demo** on the landing page — five stages (Intake →
   Drafting → Attorney Review → Filed → Approved), each a circular guilloché
-  rosette. The active stage receives a gold-leaf rubber stamp that animates in
-  via Motion's `stampIn` variant; reduced-motion is respected.
+  rosette. The active stage receives a gold-leaf rubber stamp that animates in;
+  reduced-motion is respected.
 - **Engraved-document marketing site** — hero with a watermarked I-129
   certificate vignette, three-promise strip, four-step process band, schedule
   of fees, closing seal.
@@ -134,7 +134,7 @@ file are real; AI, billing, and filing integrations are mocked.
 - **Styling:** Tailwind CSS 4 (`@tailwindcss/postcss` pipeline) · semantic CSS
   variables in `src/app/globals.css`
 - **Motion:** Framer Motion 12 with a single shared easing curve (`easeArrival`)
-  and reusable `fadeUp`, `staggerParent`, `stampIn` variants
+  and a reusable `fadeUp` variant
 - **AI (planned wiring):** `@google/generative-ai` 0.24 — Gemini 1.5 Pro for
   long-context petition drafting and Document AI for evidence parsing
 - **Tooling:** ESLint 10 flat config · `tsc --noEmit` strict typecheck · `tsx`
@@ -277,7 +277,7 @@ src/
 └── lib/
     ├── cn.ts                # classname joiner
     ├── format.ts            # number/date formatters
-    ├── motion.ts            # easeArrival, fadeUp, staggerParent, stampIn
+    ├── motion.ts            # easeArrival, fadeUp
     └── data/adapters/       # PetitionAdapter / EvidenceAdapter — route↔Store seam (ADR-0010)
 docs/
 ├── BACKLOG.md               # 12-week hackathon build plan
