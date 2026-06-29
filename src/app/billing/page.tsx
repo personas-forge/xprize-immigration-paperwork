@@ -44,7 +44,10 @@ const PER_OP_COSTS: OperationKey[] = [
 function activityLabel(e: LedgerEntry): string {
   switch (e.reason) {
     case "debit":
-      return e.operation ? labelOf(e.operation as OperationKey) : "AI operation";
+      // labelOf is total (returns the raw string for an unknown/renamed op), so a
+      // stale ledger operation string can't crash this server render — no unsound
+      // `as OperationKey` cast needed.
+      return e.operation ? labelOf(e.operation) : "AI operation";
     case "purchase":
       return "Token purchase";
     case "reclaim":

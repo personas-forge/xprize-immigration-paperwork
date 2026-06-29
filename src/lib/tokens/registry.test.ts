@@ -66,6 +66,21 @@ test("costOf: unknown operations default to the light tier (never free/throw)", 
   assert.equal(costOf(""), TIER_COST.light);
 });
 
+// — labelOf ──────────────────────────────────────────────────────────────────
+
+test("labelOf: known ops resolve to their registry label", () => {
+  assert.equal(labelOf("draft"), OPERATION_REGISTRY.draft.label);
+  assert.equal(labelOf("categorize"), OPERATION_REGISTRY.categorize.label);
+});
+
+test("labelOf: unknown op returns the raw string instead of throwing (no billing-page crash)", () => {
+  // A renamed/removed op string in a HISTORICAL ledger row must not crash the
+  // billing render. Mirror costOf's defense: total, never throws.
+  assert.doesNotThrow(() => labelOf("qualify_v2"));
+  assert.equal(labelOf("qualify_v2"), "qualify_v2");
+  assert.equal(labelOf(""), "");
+});
+
 // — Derivation invariant: rate-limit.ts must mirror the registry ──────────────
 
 test("rate-limit.ts RATE_LIMITS keeps the five route buckets, sourced from the registry", () => {
