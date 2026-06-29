@@ -27,6 +27,7 @@ import {
 } from "@/features/drafting";
 import {
   str,
+  type CriterionLineInput,
   marketBarFraming,
   MAX_PETITIONER,
   parseCriteriaArray,
@@ -52,15 +53,11 @@ export interface RfeCriterion {
   exhibits?: readonly DraftExhibit[];
 }
 
-/** Project any criterion that carries the four scored fields onto a bare
- *  {@link RfeCriterion} (drops exhibits/extra fields). Single-sourced so the
- *  studio's exhibit-index memo, its POST body, and the forecast op can't drift. */
-export function toRfeCriterion(c: {
-  name: string;
-  status: string;
-  evidence: string;
-  rationale: string;
-}): RfeCriterion {
+/** Project any criterion that carries the four scored fields ({@link
+ *  CriterionLineInput}) onto a bare {@link RfeCriterion} (drops exhibits/extra
+ *  fields). Single-sourced so the studio's exhibit-index memo, its POST body, and
+ *  the forecast op can't drift. */
+export function toRfeCriterion(c: CriterionLineInput): RfeCriterion {
   return {
     name: c.name,
     status: c.status,

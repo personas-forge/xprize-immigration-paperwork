@@ -16,7 +16,6 @@ import {
   toRfeCriterion,
   tryParseRfeForecast,
   type RfeChallenge,
-  type RfeCriterion,
   type RfeRequest,
 } from "./index";
 import { str, MAX_PETITIONER, parseCriteriaArray } from "@/features/drafting/criteria-text";
@@ -41,11 +40,6 @@ function noReliedToForecast() {
       { status: 400 },
     ),
   };
-}
-
-/** Validate an untrusted `criteria` array into RfeCriterion[] (shared normalizer). */
-function parseCriteria(value: unknown): RfeCriterion[] {
-  return parseCriteriaArray(value);
 }
 
 export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {
@@ -85,7 +79,7 @@ export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {
     }
 
     // Inline path.
-    const criteria = parseCriteria(record.criteria);
+    const criteria = parseCriteriaArray(record.criteria);
     if (criteria.length === 0) {
       return {
         ok: false,
