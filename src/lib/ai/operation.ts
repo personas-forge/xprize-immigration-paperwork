@@ -8,6 +8,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { DISCLAIMER } from "@/lib/result";
+import type { ModelSource } from "@/lib/llm/label";
 import type { GenerateOptions } from "@/lib/llm/client";
 import type { AdjudicationReport } from "@/lib/llm/adjudication-gates";
 import {
@@ -67,9 +68,12 @@ export type ChargeOutcome =
   | { ok: false; reason: "unauthenticated" }
   | { ok: false; reason: "insufficient"; cost: number; balance: number };
 
-/** The single LLM surface the orchestrator calls. */
+/** The single LLM surface the orchestrator calls. `name` is the engine label that
+ *  becomes the response `source` on a successful generation — a {@link ModelSource}
+ *  (never `"mock"`, which the orchestrator sets itself), so the typed source flows
+ *  through the pipeline without a per-route cast. */
 export interface OperationLlm {
-  readonly name: string;
+  readonly name: ModelSource;
   generate(prompt: string, opts?: GenerateOptions): Promise<string>;
 }
 
@@ -128,8 +132,10 @@ export interface AiOperationSpec<TInput, TOutput> {
   guard: (raw: string, input: TInput) => TOutput | null;
   /** Deterministic fallback used when no engine is configured or output is unusable. */
   mock: (input: TInput) => TOutput;
-  /** Shape the JSON response body from the domain value + its source label. */
-  build: (output: TOutput, source: string, input: TInput) => Record<string, unknown>;
+  /** Shape the JSON response body from the domain value + its source label. The
+   *  `source` is the {@link ModelSource} the orchestrator resolved ("mock" | engine
+   *  name) — typed so `buildXResult(value, source)` needs no widening cast. */
+  build: (output: TOutput, source: ModelSource, input: TInput) => Record<string, unknown>;
   /**
    * Live adjudication-risk gate (moonshot #1). Score the just-built response
    * against adjudicator-shaped invariants; the report is attached to the body as
@@ -138,7 +144,7 @@ export interface AiOperationSpec<TInput, TOutput> {
   adjudicate?: (
     output: TOutput,
     input: TInput,
-    source: string,
+    source: ModelSource,
     body: Record<string, unknown>,
   ) => AdjudicationReport | null;
   /**
@@ -163,7 +169,7 @@ export interface AiOperationSpec<TInput, TOutput> {
     output: TOutput,
     input: TInput,
     user: AuthUser | null,
-    source: string,
+    source: ModelSource,
   ) => Promise<Record<string, unknown>>;
   /** Fields merged into the body when `persist` throws (e.g. `{ saveFailed: true }`). */
   onPersistError?: (input: TInput) => Record<string, unknown>;
@@ -338,7 +344,7 @@ export async function executeAiOperation<TInput, TOutput>(
   //    a mock is never billed as model output.
   const llm = d.getLlm({ requiresImages: spec.requiresImages });
   let output: TOutput;
-  let source: string;
+  let source: ModelSource;
   // Reclaim at most once. `reclaim()` wraps the refund in try/catch so a ledger
   // hiccup can't (a) double-refund or (b) escalate a serviceable mock fallback
   // into a 500 — the charge stays debited but the user still gets their mock.

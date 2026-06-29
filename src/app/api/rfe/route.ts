@@ -95,10 +95,7 @@ export function POST(request: Request): Promise<NextResponse> {
     guard: (raw) => tryParseRfeResponse(raw),
     mock: (input) => mockRfe(input.req),
     build: (response, source) =>
-      buildRfeResult(
-        response,
-        source as Parameters<typeof buildRfeResult>[1],
-      ) as unknown as Record<string, unknown>,
+      buildRfeResult(response, source) as unknown as Record<string, unknown>,
     // Live adjudication PARITY with /api/draft (moonshot #1): an RFE response is
     // equally signable, attorney-of-record work product, so it gets the same
     // runtime fabricated-specifics / leaked-case-law / wrong-classification scan.

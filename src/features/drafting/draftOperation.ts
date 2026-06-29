@@ -191,14 +191,8 @@ export const draftSpec: AiOperationSpec<DraftInput, DraftOutput> = {
 
   build: (output, source) =>
     output.kind === "section"
-      ? (buildSectionResult(
-          output.section,
-          source as Parameters<typeof buildSectionResult>[1],
-        ) as unknown as Record<string, unknown>)
-      : (buildDraftResult(
-          output.draft,
-          source as Parameters<typeof buildDraftResult>[1],
-        ) as unknown as Record<string, unknown>),
+      ? (buildSectionResult(output.section, source) as unknown as Record<string, unknown>)
+      : (buildDraftResult(output.draft, source) as unknown as Record<string, unknown>),
 
   // Live adjudication: score the drafted letter against the same invariants the
   // eval asserts (no fabricated specifics, no leaked visa code, case-law flagged).

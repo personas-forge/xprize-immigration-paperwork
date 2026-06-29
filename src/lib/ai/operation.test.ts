@@ -41,11 +41,11 @@ function chargeSpy(outcome: ChargeOutcome) {
   return { charge, calls };
 }
 
-function llmReturning(text: string, name = "gemini"): OperationLlm {
+function llmReturning(text: string, name: OperationLlm["name"] = "gemini"): OperationLlm {
   return { name, generate: async () => text };
 }
 
-function llmThrowing(name = "gemini"): OperationLlm {
+function llmThrowing(name: OperationLlm["name"] = "gemini"): OperationLlm {
   return {
     name,
     generate: async () => {

@@ -100,8 +100,5 @@ export const critiqueSpec: AiOperationSpec<CritiqueInput, SectionCritique[]> = {
   guard: (raw, input) => tryParseCritique(raw, input.sections),
   mock: (input) => mockCritique(input.sections),
   build: (critiques, source) =>
-    buildCritiqueResult(
-      critiques,
-      source as Parameters<typeof buildCritiqueResult>[1],
-    ) as unknown as Record<string, unknown>,
+    buildCritiqueResult(critiques, source) as unknown as Record<string, unknown>,
 };

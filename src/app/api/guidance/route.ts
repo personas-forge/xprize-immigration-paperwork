@@ -63,14 +63,10 @@ export function POST(request: Request): Promise<NextResponse> {
       return text.length > 0 ? clampSentences(text, GUIDANCE_MAX_SENTENCES) : null;
     },
     mock: (req) => mockGuidance(req),
-    // The orchestrator widens `source` to string; buildGuidanceResponse takes
-    // the ModelSource union (engine name | "mock"), which is exactly what the
-    // orchestrator produces.
+    // `source` is the ModelSource the orchestrator resolved (engine name |
+    // "mock") — exactly buildGuidanceResponse's source param, so no cast there.
     build: (guidance, source) =>
-      buildGuidanceResponse(
-        guidance,
-        source as Parameters<typeof buildGuidanceResponse>[1],
-      ) as Record<string, unknown>,
+      buildGuidanceResponse(guidance, source) as Record<string, unknown>,
     // Live UPL screen: guidance is the most "tell me what to do"-prone route, and
     // `runAdjudication` ships a dedicated `case "guidance"` (disclaimer + legal-
     // advice tripwire). Wire it so outcome/advice language is flagged on the

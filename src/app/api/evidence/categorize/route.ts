@@ -93,10 +93,7 @@ export function POST(request: Request): Promise<NextResponse> {
     guard: (raw, input) => tryParseCategorizeResponse(raw, input.classification),
     mock: (input) => mockCategorize(input.req, input.classification),
     build: (assessment, source) =>
-      buildCategorizeResult(
-        assessment,
-        source as Parameters<typeof buildCategorizeResult>[1],
-      ) as unknown as Record<string, unknown>,
+      buildCategorizeResult(assessment, source) as unknown as Record<string, unknown>,
     // Persist to the case vault through the EvidenceAdapter (ADR-0010), which
     // gates owner-or-configured-attorney via resolveCase. Best-effort: any
     // adapter error (forbidden / store fault) yields no document, never an error.

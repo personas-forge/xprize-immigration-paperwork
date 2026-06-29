@@ -57,14 +57,11 @@ export function POST(request: Request): Promise<NextResponse> {
     // by the orchestrator → reclaim + deterministic mock labelled source:"mock".
     guard: (raw, req) => parseQualifyResponse(raw, req),
     mock: (req) => mockQualification(req),
+    // `source` is the ModelSource the orchestrator resolved (engine name |
+    // "mock") — exactly buildQualifyResult's source param, so no cast there; the
+    // `as unknown as Record` only bridges the typed result to the untyped body.
     build: (assessment, source) =>
-      // The orchestrator widens `source` to string; buildQualifyResult takes the
-      // ModelSource union (engine name | "mock"), which is exactly what the
-      // orchestrator produces.
-      buildQualifyResult(
-        assessment,
-        source as Parameters<typeof buildQualifyResult>[1],
-      ) as unknown as Record<string, unknown>,
+      buildQualifyResult(assessment, source) as unknown as Record<string, unknown>,
     // Live adjudication: canonical criteria, valid statuses, likelihood range,
     // and the UPL tripwire over the screening's own evidence/rationale/gaps text.
     adjudicate: (assessment, req, source, body) =>

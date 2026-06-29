@@ -112,8 +112,5 @@ export const forecastSpec: AiOperationSpec<ForecastInput, RfeChallenge[]> = {
   guard: (raw, input) => tryParseRfeForecast(raw, input.req),
   mock: (input) => mockRfeForecast(input.req),
   build: (challenges, source) =>
-    buildRfeForecastResult(
-      challenges,
-      source as Parameters<typeof buildRfeForecastResult>[1],
-    ) as unknown as Record<string, unknown>,
+    buildRfeForecastResult(challenges, source) as unknown as Record<string, unknown>,
 };
