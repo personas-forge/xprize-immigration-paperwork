@@ -10,6 +10,7 @@ export {
   buildExhibitIndex,
   buildSectionPrompt,
   buildSectionResult,
+  criteriaLines,
   critiquesByHeading,
   mergeRegeneratedSection,
   mockCritique,

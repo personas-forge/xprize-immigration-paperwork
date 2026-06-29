@@ -5,8 +5,12 @@
  * citation-discipline rendering from drifting apart.
  *
  * The request *shapes* legitimately differ (RFE adds `rfeText`, different
- * required-field rules), so each feature keeps its own `parse*Request` and
- * `criteriaLines` wrapper — only these leaf helpers are shared.
+ * required-field rules), so each feature keeps its own `parse*Request`. The
+ * per-criterion rendering IS shared, though: the `criterionLine` format and the
+ * `SHARED_FILING_RULES`/`STRICT_JSON_PREAMBLE` compliance scaffolding live here,
+ * and the `criteriaLines` flat-map that wraps `criterionLine` + exhibit bullets
+ * is shared from `drafting.ts` (where the exhibit renderer lives). Both features
+ * call them so the two paid endpoints' citation discipline can't drift.
  *
  * `str` is the generic untrusted-string coercion; it now lives in the shared
  * `@/lib/validation` (it serves the evidence parser too) and is re-exported here
@@ -61,6 +65,44 @@ export function criterionLine(c: CriterionLineInput): string {
     `- ${c.name} [${c.status}]: ${c.evidence || "(no specific evidence provided)"}` +
     (c.rationale ? ` — ${c.rationale}` : "")
   );
+}
+
+/**
+ * The compliance/filing rules shared VERBATIM by the petition-draft STRICT-RULES
+ * block and the RFE-response one (rules 2/3/4): draft-not-legal-advice, formal
+ * USCIS tone, and the no-case-law instruction. This is a legal/compliance
+ * contract that MUST stay in lockstep across both paid LLM endpoints — a
+ * hardening edit (e.g. tightening the case-law rule for a regulatory change) made
+ * once must reach BOTH prompts. Each builder keeps its own feature-specific rule 1
+ * + data-marker rule 5 around these. The byte-for-byte text is pinned by the
+ * `buildDraftPrompt`/`buildRfePrompt` content tests.
+ */
+export const SHARED_FILING_RULES: readonly string[] = [
+  "2. This is a DRAFT for attorney review — never legal advice, never final.",
+  "3. Formal, professional tone suitable for a USCIS filing.",
+  "4. Do NOT cite case law or court decisions (no named cases or reporter",
+  "   citations). Citing the governing statute or regulation is fine; the",
+  "   attorney of record will add any case-law authorities.",
+];
+
+/** The strict-JSON envelope preamble shared verbatim by the draft, critique, RFE,
+ *  and forecast prompt builders (the `{ … }` shape line differs per builder and
+ *  stays inline). Single-sourced so the "no markdown, no prose" contract can't
+ *  drift across the metered LLM endpoints. */
+export const STRICT_JSON_PREAMBLE =
+  "Return STRICT JSON ONLY (no markdown, no prose), shaped exactly:";
+
+/**
+ * True when any criterion carries vault exhibits — the predicate that GATES the
+ * citation rule in every prompt (draft, single-section, RFE), so the inline/demo
+ * path with no vault keeps its exhibit-free prompt. Single-sourced here so a
+ * change to the gate (e.g. an empty-array guard) can't drift one prompt into
+ * silently dropping the "never invent an exhibit" rule while still listing them.
+ */
+export function criteriaHaveExhibits(
+  criteria: readonly { exhibits?: readonly unknown[] }[],
+): boolean {
+  return criteria.some((c) => c.exhibits && c.exhibits.length > 0);
 }
 
 /**
