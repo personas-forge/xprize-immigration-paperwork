@@ -19,7 +19,7 @@
  */
 
 import { DISCLAIMER } from "@/lib/result";
-import { asObjectBody, JSON_OBJECT_BODY_ERROR } from "@/lib/validation";
+import { asObjectBody, JSON_OBJECT_BODY_ERROR, str } from "@/lib/validation";
 import { type ModelSource } from "@/lib/llm/label";
 import { extractJson } from "@/lib/llm/json";
 import { O1A_CRITERIA, criteriaNames, packFor } from "@/features/qualification";
@@ -63,10 +63,9 @@ export function parseCategorizeRequest(
   if (!record) {
     return { ok: false, error: JSON_OBJECT_BODY_ERROR };
   }
-  const name =
-    typeof record.name === "string" && record.name.trim() !== ""
-      ? record.name.trim().slice(0, MAX_NAME)
-      : "";
+  // `str` is the shared trim→slice coercion: a non-string or all-whitespace name
+  // yields "" (identical to the prior inline branch), which the next line rejects.
+  const name = str(record.name, MAX_NAME);
   if (name === "") return { ok: false, error: "Give the document a name." };
 
   const content = typeof record.content === "string" ? record.content.trim() : "";
