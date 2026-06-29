@@ -36,10 +36,10 @@ const SECTIONS = [
 // The Pro bundle's price/tokens for the cost-comparison caption — derived from
 // the BUNDLES catalog (same source the pricing cards render) so the headline
 // comparison can't quote a stale price the grid has moved past.
-const PRO_BUNDLE = BUNDLES.find((b) => b.key === "pro");
-const PRO_PRICE_CAPTION = PRO_BUNDLE
-  ? `${bundlePriceLabel(PRO_BUNDLE)} for ${PRO_BUNDLE.tokens.toLocaleString("en-US")} tokens`
-  : "$48 for 8,000 tokens";
+// `pro` is a permanent catalog entry (economy.ts, featured), so the lookup
+// always resolves — no stale-price fallback literal needed.
+const PRO_BUNDLE = BUNDLES.find((b) => b.key === "pro")!;
+const PRO_PRICE_CAPTION = `${bundlePriceLabel(PRO_BUNDLE)} for ${PRO_BUNDLE.tokens.toLocaleString("en-US")} tokens`;
 
 export function PassportLanding() {
   const rootRef = useRef<HTMLDivElement>(null);
