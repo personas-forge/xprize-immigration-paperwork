@@ -5,6 +5,7 @@ import { Badge, Button, buttonClasses, Card, CardBody, CardHeader, PanelErrorBou
 import { Stamp, ChapterMark, Seal } from "@/components/brand";
 import { FieldGuidancePanel } from "@/features/guidance";
 import { type SavedCaseSummary } from "../types";
+import { caseStatusTone } from "../caseStatusTone";
 import { useCaseFileData } from "../useCaseFileData";
 import { CaseList } from "./CaseList";
 import { CriteriaTable } from "./CriteriaTable";
@@ -176,7 +177,7 @@ function YourCasesCard({ cases }: { cases: readonly SavedCaseSummary[] }) {
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <Badge tone="neutral">{c.status}</Badge>
+                <Badge tone={caseStatusTone(c.status)}>{c.status}</Badge>
                 <span className="doc-number text-[14px] text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                   {c.approvalLikelihood}%
                 </span>
