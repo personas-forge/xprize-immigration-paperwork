@@ -19,9 +19,8 @@
 //   rfe_responses       the case doc bumped inside runTransaction.
 //   case_documents    — flat collection (case_id), monotonic exhibit ord.
 //   case_reviews      — flat, append-only collection (case_id), auto-id.
-if (typeof window !== "undefined") {
-  throw new Error("@/lib/db/firestore-store must not be imported on the client.");
-}
+import { assertServerOnly } from "@/lib/serverOnlyGuard";
+assertServerOnly("@/lib/db/firestore-store");
 
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firestore/admin";
@@ -347,10 +346,10 @@ export const firestoreStore: Store = {
       const seen = await t.get(ledgerRef);
       if (seen.exists) return; // already granted
       const cur = accSnap.exists ? safeBalance(accSnap.get("balance"), userId) : 0;
-      // Floor at 0: a refund clawback (negative amount) on an already-spent
-      // balance must not drive the account NEGATIVE (locking the user out behind
-      // an invisible debt). Positive credits/grants are unaffected.
-      const next = Math.max(0, cur + amount);
+      // The signup grant is invariantly positive (FREE_SIGNUP_GRANT), so no
+      // negative-balance floor is needed here — matches the PGlite twin's plain
+      // add. (The clawback floor lives in `credit`, which can take a negative.)
+      const next = cur + amount;
       t.set(
         accRef,
         { user_id: userId, balance: next, updated_at: FieldValue.serverTimestamp() },

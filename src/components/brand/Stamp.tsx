@@ -22,14 +22,13 @@ export function Stamp({
 }: {
   label: string;
   meta?: string;
-  tone?: "seal" | "indigo" | "accent";
+  tone?: "seal" | "accent";
   rotate?: number;
   className?: string;
   decorative?: boolean;
 }) {
   const toneClass = {
     seal: "text-seal border-seal",
-    indigo: "text-indigo border-indigo",
     accent: "text-accent-dark border-accent-dark",
   }[tone];
 

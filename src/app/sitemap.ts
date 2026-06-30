@@ -7,7 +7,6 @@ import { PROFESSIONS } from "@/features/qualification/professions";
 // (classification × profession) SEO matrix, so Google and AI answer engines can
 // index every long-tail landing page.
 
-export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const url = (path: string) => `${SITE_URL}${path}`;

@@ -7,6 +7,7 @@ import {
   bundleByKey,
   bundleByProductId,
   bundlePriceLabel,
+  featuredBundle,
   formatCentsPerToken,
   formatUsdCents,
 } from "./economy";
@@ -79,6 +80,18 @@ test("currency formatting: one convention, whole-dollar bundles drop the .00", (
   // The sub-cent rate uses the same fixed-2-decimal convention as the price.
   assert.equal(formatCentsPerToken(1.0), "1.00¢");
   assert.equal(formatCentsPerToken(0.6), "0.60¢");
+});
+
+test("featuredBundle: resolves exactly one merchandised bundle (the single highlight source)", () => {
+  // Exactly one bundle is flagged `featured` so every "highlighted bundle"
+  // consumer (grid stamp, landing caption, cost chart) agrees on one bundle.
+  const flagged = BUNDLES.filter((b) => b.featured);
+  assert.equal(flagged.length, 1, "exactly one featured bundle");
+  const featured = featuredBundle();
+  assert.ok(featured, "featuredBundle resolves");
+  assert.equal(featured, flagged[0]);
+  // Today that highlight is Pro — the magic-string the `featured` flag retired.
+  assert.equal(featured?.key, "pro");
 });
 
 test("bundleByProductId: matches only when a product id is set", () => {

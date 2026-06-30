@@ -3,8 +3,10 @@ import "server-only";
 import { AsyncLocalStorage } from "node:async_hooks";
 
 // Cost/profit telemetry → the external **LightTrack** observability service (margin = revenue − LLM
-// cost). NOTE: distinct from `lib/lighttrack.ts`, which is our own first-party *funnel* analytics —
-// unrelated name collision; this module is the LLM-cost + Polar-revenue feed to the LightTrack API.
+// cost). NOTE: `lib/lighttrack.ts` is the VENDORED LightTrack client (the SAME service — events +
+// scores + guard). This module is a deliberate FORK of its `/v1/events` path, made ONLY to add the
+// AsyncLocalStorage billing attribution (metadata.customer_id) that can't be edited into the vendored
+// file; it is the LLM-cost + Polar-revenue feed to that same LightTrack API.
 //
 // Best-effort by design: every call swallows its own errors and is time-boxed, so telemetry can never
 // break or noticeably slow a request (same contract as recordAiFailure / the Polar client). Disabled

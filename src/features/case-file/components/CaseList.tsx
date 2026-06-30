@@ -13,6 +13,7 @@ import {
   type VisaClassification,
 } from "../types";
 import { type CaseSortKey, queryCases } from "../case-list";
+import { caseStatusTone } from "../caseStatusTone";
 import { casesToCsv } from "../export";
 import { usePersistentQuery } from "../usePersistentQuery";
 
@@ -30,13 +31,6 @@ const SORTS: readonly { key: CaseSortKey; label: string }[] = [
   { key: "likelihood", label: "Approval likelihood" },
   { key: "status", label: "Status" },
 ];
-
-function statusTone(status: CaseStatus) {
-  if (status === "Approved") return "success" as const;
-  if (status === "Filed") return "accent" as const;
-  if (status === "Intake") return "warning" as const;
-  return "neutral" as const;
-}
 
 export function CaseList() {
   const [cases, setCases] = useState<readonly PetitionCase[] | null>(null);
@@ -261,7 +255,7 @@ export function CaseList() {
                       <Badge tone="neutral">{c.classification}</Badge>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge tone={statusTone(c.status)}>{c.status}</Badge>
+                      <Badge tone={caseStatusTone(c.status)}>{c.status}</Badge>
                     </td>
                     <td className="px-4 py-3 text-right doc-number text-[14px] text-foreground">
                       {c.approvalLikelihood}%

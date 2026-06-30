@@ -2,9 +2,8 @@
 // @/lib/db/store). Kept as a stable import surface: session.ts and
 // welcome/actions.ts import `getProfile` / `upsertProfileWithConsent` / `Profile`
 // from here and don't care which driver backs them.
-if (typeof window !== "undefined") {
-  throw new Error("@/lib/auth/db must not be imported on the client.");
-}
+import { assertServerOnly } from "@/lib/serverOnlyGuard";
+assertServerOnly("@/lib/auth/db");
 
 import {
   getStore,

@@ -22,7 +22,7 @@ import {
   resolveCase,
   storeConfigured,
 } from "./access";
-import { type AdapterResult, err, ok, wrapStore } from "./result";
+import { type AdapterResult, err, ok, wrapFound, wrapStore } from "./result";
 
 /** Everything the adapter calls, injected so the unit suite can supply fakes. */
 export interface EvidenceDeps extends CaseGateDeps {
@@ -131,14 +131,9 @@ export class EvidenceAdapter {
     const deps = await this.deps();
     const gate = await this.gate(deps, access, caseId);
     if (!gate.ok) return gate;
-    try {
-      // false = no LIVE row matched (wrong case / already-removed id) → report
-      // not_found instead of a false success on a mutation that changed nothing.
-      const removed = await deps.removeCaseDocument(caseId, documentId, access.userId);
-      return removed ? ok(undefined) : err("not_found");
-    } catch (cause) {
-      return err("store_error", cause);
-    }
+    // false = no LIVE row matched (wrong case / already-removed id) → report
+    // not_found instead of a false success on a mutation that changed nothing.
+    return wrapFound(() => deps.removeCaseDocument(caseId, documentId, access.userId));
   }
 
   /** Restore a soft-deleted document (keeps its original exhibit ordinal). Gated.
@@ -151,12 +146,7 @@ export class EvidenceAdapter {
     const deps = await this.deps();
     const gate = await this.gate(deps, access, caseId);
     if (!gate.ok) return gate;
-    try {
-      const restored = await deps.restoreCaseDocument(caseId, documentId);
-      return restored ? ok(undefined) : err("not_found");
-    } catch (cause) {
-      return err("store_error", cause);
-    }
+    return wrapFound(() => deps.restoreCaseDocument(caseId, documentId));
   }
 
   /** Re-file a document under a different criterion bucket. Gated. */
@@ -169,12 +159,7 @@ export class EvidenceAdapter {
     const deps = await this.deps();
     const gate = await this.gate(deps, access, caseId);
     if (!gate.ok) return gate;
-    try {
-      const refiled = await deps.refileCaseDocument(caseId, documentId, criterion);
-      return refiled ? ok(undefined) : err("not_found");
-    } catch (cause) {
-      return err("store_error", cause);
-    }
+    return wrapFound(() => deps.refileCaseDocument(caseId, documentId, criterion));
   }
 }
 

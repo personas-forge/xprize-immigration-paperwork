@@ -1,20 +1,17 @@
-// Server-only module. The `server-only` npm package isn't a dependency of this
-// app, so we enforce the same contract with a runtime guard.
-if (typeof window !== "undefined") {
-  throw new Error("@/lib/auth/session must not be imported on the client.");
-}
+// Server-only module — see `assertServerOnly` for why this app uses a runtime
+// guard instead of `import "server-only"`.
+import { assertServerOnly } from "@/lib/serverOnlyGuard";
+assertServerOnly("@/lib/auth/session");
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { CONSENT_VERSION, isFullyConsented } from "@/lib/auth/consent";
+import { isFullyConsented } from "@/lib/auth/consent";
 import { SESSION_COOKIE } from "@/lib/firebase/config";
 import { adminAuth } from "@/lib/firebase/admin";
-import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
-import { grantSignupTokens } from "@/lib/tokens/ledger";
+import { completeOnboarding } from "./onboarding";
 import {
   getLatestConsentVersion,
   getProfile,
-  upsertProfileWithConsent,
   type Profile,
 } from "./db";
 import { DEV_USER, isDevAuth, type AppUser } from "./devAuth";
@@ -28,24 +25,27 @@ async function ensureDevSeeded(): Promise<void> {
   if (devSeeded || !isDevAuth()) return;
   devSeeded = true;
   try {
+    // Skip the consent write when a profile already exists so a process restart
+    // doesn't append a duplicate consent row; always (re-)ensure the idempotent
+    // grant. Shares the persist+grant recipe with the prod welcome flow.
     const existing = await getProfile(DEV_USER.id);
-    if (!existing) {
-      await upsertProfileWithConsent({
+    const result = await completeOnboarding(
+      {
         userId: DEV_USER.id,
         email: DEV_USER.email,
         fullName: DEV_USER.user_metadata?.full_name ?? "Developer",
         avatarUrl: null,
-        consentVersion: CONSENT_VERSION,
         terms: true,
         privacy: true,
         marketing: false,
         ip: null,
         userAgent: "dev-auth",
-      });
-    }
-    await grantSignupTokens(DEV_USER.id, FREE_SIGNUP_GRANT);
+      },
+      { persistConsent: !existing, grantTokens: true },
+    );
+    if (!result.ok) devSeeded = false; // let a later call retry
   } catch {
-    devSeeded = false; // let a later call retry
+    devSeeded = false; // a read threw — let a later call retry
   }
 }
 

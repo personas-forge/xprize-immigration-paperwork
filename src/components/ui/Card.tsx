@@ -67,11 +67,9 @@ export function CardSubtitle({
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
-      className={cn("microprint", className)}
-      style={{ color: "var(--muted)" }}
-      {...props}
-    />
+    // `.microprint` already sets `color: var(--muted)`, so no inline color is
+    // needed (the previous `style` here was a pure no-op).
+    <div className={cn("microprint", className)} {...props} />
   );
 }
 

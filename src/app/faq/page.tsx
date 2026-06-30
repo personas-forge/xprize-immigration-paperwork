@@ -20,6 +20,13 @@ export const metadata: Metadata = {
 // line — a self-serve, token-metered AI DRAFTING TOOL whose output is work
 // product the user's OWN attorney of record reviews and signs. We are not a law
 // firm, do not supply counsel, and never give legal advice.
+//
+// PRICING NUMBERS: the figures quoted below (150 free tokens; qualify 3 / draft
+// 12 / single-section|RFE 5 / categorize 1; bundle from $5) are hand-copied from
+// the source of truth — FREE_SIGNUP_GRANT + the bundle catalog in
+// `@/lib/tokens/economy`, and TIER_COST / OPERATION_REGISTRY in
+// `@/lib/tokens/registry`. Keep them in sync if those change (the landing page
+// derives the same values; this page intentionally keeps the prose literal).
 
 const QA: { q: string; a: string }[] = [
   {
@@ -122,7 +129,7 @@ export default function FaqPage() {
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/#start"
+              href="/qualify"
               className="rounded-control bg-foreground px-7 py-3.5 font-mono text-[14px] uppercase tracking-document text-background hover:bg-foreground-soft focus-ring"
             >
               Take the qualification

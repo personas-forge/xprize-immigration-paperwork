@@ -83,6 +83,15 @@ export function bundleByProductId(productId: string): Bundle | undefined {
   return BUNDLES.find((b) => b.polarProductId && b.polarProductId === productId);
 }
 
+/** The merchandised "Best value" bundle — the one flagged {@link Bundle.featured}.
+ *  SINGLE accessor so every "highlighted bundle" consumer (the billing grid, the
+ *  landing price caption, the cost-comparison chart) resolves the SAME bundle from
+ *  one source of truth, instead of re-finding Pro by a `b.key === "pro"` magic
+ *  string that the `featured` flag was added to retire. */
+export function featuredBundle(): Bundle | undefined {
+  return BUNDLES.find((b) => b.featured);
+}
+
 // Enterprise = contact only (no self-serve): premium model tier, custom limits,
 // SSO, invoicing. Set the contact target per deployment.
 export const ENTERPRISE_CONTACT =

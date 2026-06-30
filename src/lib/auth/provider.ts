@@ -4,9 +4,8 @@
  * client and edge (no `firebase-admin`, no `pg`).
  *
  * This app is Firebase-only: it returns "firebase" when Firebase is configured,
- * otherwise null. `NEXT_PUBLIC_AUTH_PROVIDER` can force "firebase" explicitly.
- * Dev-auth is handled separately (it short-circuits in `getUser()` before this
- * runs).
+ * otherwise null. Dev-auth is handled separately (it short-circuits in
+ * `getUser()` before this runs).
  */
 
 import { isFirebaseConfigured } from "@/lib/firebase/config";
@@ -14,8 +13,5 @@ import { isFirebaseConfigured } from "@/lib/firebase/config";
 export type AuthProvider = "firebase";
 
 export function authProvider(): AuthProvider | null {
-  const explicit = process.env.NEXT_PUBLIC_AUTH_PROVIDER;
-  if (explicit === "firebase") return isFirebaseConfigured() ? "firebase" : null;
-  if (isFirebaseConfigured()) return "firebase";
-  return null;
+  return isFirebaseConfigured() ? "firebase" : null;
 }

@@ -5,7 +5,7 @@ import {
   executeAiOperation,
   type AiOperationDeps,
   type AiOperationSpec,
-  type ChargeOutcome,
+  type ChargeResult,
   type OperationLlm,
 } from "./operation";
 
@@ -28,9 +28,9 @@ function jsonRequest(body: unknown): Request {
 }
 
 /** A spy charge that records reclaim() calls and returns a configurable outcome. */
-function chargeSpy(outcome: ChargeOutcome) {
+function chargeSpy(outcome: ChargeResult) {
   const calls = { reclaimed: 0, charged: 0, lastOp: "" };
-  const charge = async (op: string): Promise<ChargeOutcome> => {
+  const charge = async (op: string): Promise<ChargeResult> => {
     calls.charged += 1;
     calls.lastOp = op;
     if (outcome.ok) {
@@ -41,11 +41,11 @@ function chargeSpy(outcome: ChargeOutcome) {
   return { charge, calls };
 }
 
-function llmReturning(text: string, name = "gemini"): OperationLlm {
+function llmReturning(text: string, name: OperationLlm["name"] = "gemini"): OperationLlm {
   return { name, generate: async () => text };
 }
 
-function llmThrowing(name = "gemini"): OperationLlm {
+function llmThrowing(name: OperationLlm["name"] = "gemini"): OperationLlm {
   return {
     name,
     generate: async () => {
@@ -295,7 +295,7 @@ test("onBlocked is NOT triggered when adjudication clears (attorneyReady:true)",
 // ---------------------------------------------------------------------------
 test("Idempotency-Key → stable ledger ref across retries; absent → fresh id", async () => {
   const seen: string[] = [];
-  const charge = async (_op: string, requestId: string): Promise<ChargeOutcome> => {
+  const charge = async (_op: string, requestId: string): Promise<ChargeResult> => {
     seen.push(requestId);
     return { ok: true, cost: 1, balance: 9, reclaim: async () => {} };
   };

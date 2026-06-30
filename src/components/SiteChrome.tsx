@@ -4,9 +4,11 @@ import { Wordmark } from "@/components/brand";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 // — Shared marketing chrome ───────────────────────────────────────────────────
-// ONE header + footer for every marketing page (home, qualify, billing, faq,
-// validation, visa). Each page used to keep its own local copy and they had
-// drifted apart — different nav items, some with the logo and some without,
+// ONE header + footer for the marketing pages that opt in (qualify, billing,
+// faq, validation, visa). The homepage (`page.tsx` → PassportLanding) is the
+// exception: it intentionally ships its OWN passport nav + footer and does NOT
+// render this chrome. Each opted-in page used to keep its own local copy and they
+// had drifted apart — different nav items, some with the logo and some without,
 // different footer taglines and link sets. These are the single source so the
 // site nav stays consistent; the page-specific stuff stays on the page.
 //
@@ -75,7 +77,7 @@ export function SiteFooter() {
           © Immigration Concierge · XPrize hackathon · 90-day MVP
         </div>
         <div className="microprint flex flex-wrap items-center gap-4">
-          <Link className="ink-link" href="/#how">
+          <Link className="ink-link" href="/#checkpoints">
             How it works
           </Link>
           <Link className="ink-link" href="/billing">

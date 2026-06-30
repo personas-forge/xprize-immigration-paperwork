@@ -115,8 +115,9 @@ export function jurisdictionFor(programCode: string): Jurisdiction {
   return JURISDICTIONS.US;
 }
 
-/** Jurisdictions currently in service. */
-export function liveJurisdictions(): Jurisdiction[] {
+/** Jurisdictions currently in service. Module-private — the only caller is
+ *  `livePrograms` below; not part of the `@/features/qualification` barrel. */
+function liveJurisdictions(): Jurisdiction[] {
   return ALL.filter((j) => j.status === "live");
 }
 

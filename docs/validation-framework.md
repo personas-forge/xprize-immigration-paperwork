@@ -12,12 +12,12 @@ Each program and each load-bearing compliance claim has a `ValidationRecord`
 
 | field | meaning |
 |---|---|
-| `status` | `verified` (confirmed vs primary sources) · `provisional` · `needs-review` |
+| `status` | `verified` (confirmed vs primary sources) · `needs-review` |
+| `title` | optional display name (compliance records set it; program records derive it from the pack) |
 | `legalBasis` | the statute/regulation it rests on |
 | `threshold` | criteria count, when applicable (e.g. "3 of 8") |
 | `sources` | titles + URLs, tagged `primary-law` / `agency-guidance` / `court-order` / `secondary` |
 | `lastVerified` | yyyy-mm-dd of the last check |
-| `verifiedBy` | who/what verified it |
 | `counselApproved` | counsel sign-off on **this program's rule-set** (a per-program readiness status) — NOT the per-case filing gate |
 
 ### Two layers of correctness

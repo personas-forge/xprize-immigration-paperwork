@@ -61,11 +61,3 @@ export async function chargeForOperation(
     reclaim: () => reclaim(user.id, cost, `reclaim:${user.id}:${requestId}`, { operation }),
   };
 }
-
-/** Standard 402 body for the paywall UI to consume. */
-export function insufficientResponse(cost: number, balance: number): Response {
-  return Response.json(
-    { error: "insufficient_tokens", cost, balance },
-    { status: 402 },
-  );
-}

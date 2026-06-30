@@ -232,3 +232,26 @@ export function isRateLimitEnabled(
 ): boolean {
   return env.RATE_LIMIT_DISABLED !== "1";
 }
+
+/**
+ * Route-facing one-call guard for the NON-orchestrated routes (the two anonymous
+ * previews + draft/save). Runs the enable → key → check → 429 sequence the
+ * orchestrator owns inline (`operation.ts`) so each route stops re-assembling the
+ * identical block by hand: returns the 429 `NextResponse` to short-circuit with,
+ * or `null` to proceed. `disclaimer` stays a PARAM (the limiter needn't import a
+ * feature constant — see the module note above), and `userId` is optional so the
+ * keyless previews key by IP exactly as before. Behavior is identical to the
+ * hand-rolled blocks: same enable check, same {@link rateLimitKey} strategy, same
+ * {@link tooManyRequestsResponse} shape.
+ */
+export function enforceRateLimit(
+  request: Request,
+  scope: string,
+  limit: number,
+  disclaimer: string,
+  userId?: string | null,
+): NextResponse | null {
+  if (!isRateLimitEnabled()) return null;
+  const rl = checkRateLimit(rateLimitKey(request, scope, userId), limit);
+  return rl.ok ? null : tooManyRequestsResponse(rl, disclaimer);
+}

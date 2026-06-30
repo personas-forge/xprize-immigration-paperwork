@@ -2,7 +2,7 @@
 // (src/lib/llm/config.ts, unit-pinned) rather than re-stating its precedence
 // here — otherwise a change to the engine-selection rule produces zero compile
 // error in this file and the specs quietly assert a stale `source`. The `@/`
-// alias resolves under Playwright via tsconfig paths (as smoke.ts relies on).
+// alias resolves under Playwright via tsconfig paths.
 import { resolveEngine } from "@/lib/llm/config";
 
 export type ExpectedSource = "mock" | "gemini" | "claude";

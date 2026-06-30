@@ -34,8 +34,6 @@ const GUIDANCE_MAX_SENTENCES = 6;
 // engine name and kept the charge (billing a mock as a model answer).
 
 // Node runtime — the Google SDK is not Edge-safe.
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export function POST(request: Request): Promise<NextResponse> {
   return executeAiOperation<GuidanceRequest, string>(request, {
@@ -65,14 +63,10 @@ export function POST(request: Request): Promise<NextResponse> {
       return text.length > 0 ? clampSentences(text, GUIDANCE_MAX_SENTENCES) : null;
     },
     mock: (req) => mockGuidance(req),
-    // The orchestrator widens `source` to string; buildGuidanceResponse takes
-    // the ModelSource union (engine name | "mock"), which is exactly what the
-    // orchestrator produces.
+    // `source` is the ModelSource the orchestrator resolved (engine name |
+    // "mock") — exactly buildGuidanceResponse's source param, so no cast there.
     build: (guidance, source) =>
-      buildGuidanceResponse(
-        guidance,
-        source as Parameters<typeof buildGuidanceResponse>[1],
-      ) as Record<string, unknown>,
+      buildGuidanceResponse(guidance, source) as Record<string, unknown>,
     // Live UPL screen: guidance is the most "tell me what to do"-prone route, and
     // `runAdjudication` ships a dedicated `case "guidance"` (disclaimer + legal-
     // advice tripwire). Wire it so outcome/advice language is flagged on the
@@ -92,10 +86,8 @@ export function POST(request: Request): Promise<NextResponse> {
     // text — replace it with the advice-free deterministic template, which is
     // UPL-safe by construction. The orchestrator reclaims the charge first, so
     // labelling the substitute `source: "mock"` keeps the "mock is never billed"
-    // invariant. The AdjudicationBadge still renders the block reason.
-    onBlocked: (req) => ({
-      ...buildGuidanceResponse(mockGuidance(req), "mock"),
-      blocked: true,
-    }),
+    // invariant. The block is conveyed by the attached `adjudication` report
+    // (AdjudicationBadge renders it) — no separate `blocked` flag is consumed.
+    onBlocked: (req) => buildGuidanceResponse(mockGuidance(req), "mock"),
   });
 }

@@ -12,6 +12,7 @@ import {
 import { executeAiOperation } from "@/lib/ai/operation";
 import { evidence } from "@/lib/data/adapters/evidence";
 import { petitions } from "@/lib/data/adapters/petition";
+import { caseAccessFor } from "@/lib/data/adapters/access";
 import { parseCaseId } from "@/lib/data/adapters/parse-gate";
 
 // Evidence categorization endpoint (migrated to the shared orchestrator, ADR-0004).
@@ -29,8 +30,6 @@ import { parseCaseId } from "@/lib/data/adapters/parse-gate";
 // no document, never a hard error (matching the pre-orchestrator behavior).
 
 // Node runtime — the Google SDK and `pg` are not Edge-safe.
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 /** Validated input: the categorize request, the case context for persistence, and
  *  a read-only summary of what's already in the vault (G2.1 — consistency). */
@@ -72,7 +71,7 @@ export function POST(request: Request): Promise<NextResponse> {
       if (caseId) {
         const user = await resolveUser();
         if (user) {
-          const access = { userId: user.id, email: user.email ?? null };
+          const access = caseAccessFor(user);
           // Server-authoritative classification from the gated case (owner-or-
           // attorney via resolveCase). On forbidden/not-found we keep the body
           // fallback; persistence will then fail-closed (saveFailed) anyway.
@@ -94,10 +93,7 @@ export function POST(request: Request): Promise<NextResponse> {
     guard: (raw, input) => tryParseCategorizeResponse(raw, input.classification),
     mock: (input) => mockCategorize(input.req, input.classification),
     build: (assessment, source) =>
-      buildCategorizeResult(
-        assessment,
-        source as Parameters<typeof buildCategorizeResult>[1],
-      ) as unknown as Record<string, unknown>,
+      buildCategorizeResult(assessment, source) as unknown as Record<string, unknown>,
     // Persist to the case vault through the EvidenceAdapter (ADR-0010), which
     // gates owner-or-configured-attorney via resolveCase. Best-effort: any
     // adapter error (forbidden / store fault) yields no document, never an error.
@@ -107,7 +103,7 @@ export function POST(request: Request): Promise<NextResponse> {
       // the legitimate keyless/no-case path, NOT a failure.
       if (!user || !input.caseId) return { document: null };
       const saved = await evidence.addDocument(
-        { userId: user.id, email: user.email ?? null },
+        caseAccessFor(user),
         {
           caseId: input.caseId,
           name: input.req.name,

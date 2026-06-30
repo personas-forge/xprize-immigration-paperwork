@@ -11,7 +11,6 @@ import { ReviewQueueView } from "@/features/review/components/ReviewQueueView";
 // applicant's case. Sign/file stay isConfiguredAttorney — ops is read-only and
 // the rows don't deep-link. DB + auth required.
 
-export const dynamic = "force-dynamic";
 
 export default async function ReviewQueuePage() {
   const { user } = await requireOnboardedUser();

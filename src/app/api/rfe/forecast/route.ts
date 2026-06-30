@@ -9,8 +9,6 @@ import { forecastSpec } from "@/features/rfe/forecastOperation";
 // (when a caseId is supplied) by the declarative forecastSpec; the whole money
 // path is owned by executeAiOperation. It never persists.
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export function POST(request: Request): Promise<NextResponse> {
   return executeAiOperation(request, forecastSpec);

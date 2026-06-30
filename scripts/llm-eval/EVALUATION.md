@@ -159,7 +159,7 @@ product defects — fixed so the gate stays trustworthy:
 | --- | --- | --- | --- |
 | F1 | prompt | Parameterize classification in the 3 letter prompts | ✅ done |
 | F2a | prompt | Anti-conflation clause in the qualify prompt | ✅ done |
-| F2b | function | Zero temperature for the `qualify` op (wrapper) | ✅ done (Gemini-only; see note) |
+| F2b | function | Zero temperature for the `qualify` op (wrapper) | ✅ done (eval sends `temperature: 0` on qualify; Gemini-only — see note) |
 | F2c | process | `--repeat N` harness flag to measure score stability | ✅ done |
 | F3 | prompt | Forbid case-law citation in drafts/RFE (regulations OK) | ✅ done |
 | — | UI | `CriteriaReport` shows evidence **and** rationale | ✅ done |
@@ -187,12 +187,12 @@ Changes applied and re-checked against the live model:
   scoring *Scholarly articles* conservatively (5 conference papers → Partial) —
   a WARN in the safe direction, not a hallucination.
 - **F2b (temperature).** `GenerateOptions.temperature` added to the wrapper;
-  the qualify route now passes `temperature: 0`. **Note:** this only affects the
-  production Gemini engine — the Claude CLI path has no temperature control, so
-  the Claude-based eval can't exercise it. The wrapper change lives in
-  `src/lib/llm/client.ts`, which is part of an in-flight migration; it is applied
-  in the working tree but kept out of the eval commit to avoid entangling that
-  work.
+  the qualify route now passes `temperature: 0`. The eval mirrors production: the
+  `qualify` branch in `run.ts` (see `run.ts:103-107`) sends `temperature: 0` on
+  the same op the docs flag as the top stability risk, so `--repeat` measures the
+  production config rather than a higher-variance default. **Note:** this only
+  affects the production Gemini engine — the Claude CLI path has no temperature
+  control, so the Claude-based eval can't exercise it.
 - **F2c (stability).** `npm run eval:llm -- --ids Q10 --repeat 5` runs the
   filtered set N times (ids tagged `Q10#1…`) to measure variance.
 - **UI.** `CriteriaReport` now renders the model's per-criterion `rationale`

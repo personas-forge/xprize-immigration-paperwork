@@ -31,8 +31,6 @@
 
   --seal: #7d2a2e;              /* bordeaux notary seal */
   --seal-soft: #ecd3cf;
-  --indigo: #3a4d6b;            /* official stamp blue */
-  --indigo-soft: #d8dde6;
 
   --success: #4e6b3c;           /* moss approval */
   --success-soft: #e6ead4;
@@ -74,8 +72,6 @@
 
   --seal: #c75b60;
   --seal-soft: rgba(199, 91, 96, 0.14);
-  --indigo: #8b9fc1;
-  --indigo-soft: rgba(139, 159, 193, 0.14);
 
   --success: #9fc080;
   --success-soft: rgba(159, 192, 128, 0.14);

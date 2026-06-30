@@ -15,7 +15,7 @@ import { executeAiOperation } from "@/lib/ai/operation";
 import { runAdjudication } from "@/lib/llm/adjudication-gates";
 import { petitions } from "@/lib/data/adapters/petition";
 import { evidence } from "@/lib/data/adapters/evidence";
-import { type CaseAccess } from "@/lib/data/adapters/access";
+import { caseAccessFor } from "@/lib/data/adapters/access";
 import { parseCaseId, resolveCaseForParse } from "@/lib/data/adapters/parse-gate";
 import { toErrorResponse } from "@/lib/data/adapters/http";
 
@@ -36,8 +36,6 @@ import { toErrorResponse } from "@/lib/data/adapters/http";
 // resolveCase seam (ADR-0010).
 
 // Node runtime — the Google SDK and `pg` are not Edge-safe.
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 /** Validated input: the RFE request plus the case it persists to (null = demo). */
 interface RfeInput {
@@ -97,10 +95,7 @@ export function POST(request: Request): Promise<NextResponse> {
     guard: (raw) => tryParseRfeResponse(raw),
     mock: (input) => mockRfe(input.req),
     build: (response, source) =>
-      buildRfeResult(
-        response,
-        source as Parameters<typeof buildRfeResult>[1],
-      ) as unknown as Record<string, unknown>,
+      buildRfeResult(response, source) as unknown as Record<string, unknown>,
     // Live adjudication PARITY with /api/draft (moonshot #1): an RFE response is
     // equally signable, attorney-of-record work product, so it gets the same
     // runtime fabricated-specifics / leaked-case-law / wrong-classification scan.
@@ -125,7 +120,7 @@ export function POST(request: Request): Promise<NextResponse> {
       if (!input.caseId || !user) {
         return { caseId: input.caseId, version: null, saveFailed: false };
       }
-      const access: CaseAccess = { userId: user.id, email: user.email ?? null };
+      const access = caseAccessFor(user);
       const saved = await petitions.saveRfeResponse(
         access,
         input.caseId,

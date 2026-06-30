@@ -20,8 +20,6 @@ import { executeAiOperation } from "@/lib/ai/operation";
 // reclaims the charge and returns the deterministic keyword ranking labelled
 // `source: "mock"` — a mock is never billed as model output.
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export function POST(request: Request): Promise<NextResponse> {
   return executeAiOperation<BestPathRequest, BestPathResult>(request, {

@@ -13,6 +13,7 @@ import {
   type DraftSection,
   type VaultDocLike,
 } from "@/features/drafting";
+import { type CriterionLineInput } from "@/features/drafting/criteria-text";
 import { ExhibitIndex } from "@/features/drafting/components/ExhibitIndex";
 import { isRelied, MIN_RFE, toRfeCriterion } from "@/features/rfe";
 import { costOf } from "@/lib/tokens/registry";
@@ -24,12 +25,9 @@ import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 // not-legal-advice disclaimer renders on every output (attorney work product,
 // never final). Generation costs tokens; a 402 shows the paywall CTA.
 
-interface RfeStudioCriterion {
-  name: string;
-  status: string;
-  evidence: string;
-  rationale: string;
-}
+/** The four scored fields the studio renders + maps through `toRfeCriterion` —
+ *  the shared {@link CriterionLineInput} shape (single-sourced, was a third copy). */
+type RfeStudioCriterion = CriterionLineInput;
 
 type Status = "idle" | "loading" | "done" | "error" | "paywall";
 

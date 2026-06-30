@@ -4,13 +4,7 @@ import {
   mockQualification,
   parseQualifyRequest,
 } from "@/features/qualification";
-import {
-  PREVIEW_RATE_LIMIT,
-  checkRateLimit,
-  isRateLimitEnabled,
-  rateLimitKey,
-  tooManyRequestsResponse,
-} from "@/lib/tokens/rate-limit";
+import { PREVIEW_RATE_LIMIT, enforceRateLimit } from "@/lib/tokens/rate-limit";
 import { DISCLAIMER } from "@/lib/result";
 
 // Anonymous Instant-Verdict preview (moonshot #16).
@@ -29,17 +23,15 @@ import { DISCLAIMER } from "@/lib/result";
 // hero use) is applied before any work. Keyed by IP (not user) on its own
 // `qualify_preview` scope so it can't exhaust the authenticated qualify bucket.
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<NextResponse> {
-  if (isRateLimitEnabled()) {
-    const rl = checkRateLimit(
-      rateLimitKey(request, "qualify_preview"),
-      PREVIEW_RATE_LIMIT,
-    );
-    if (!rl.ok) return tooManyRequestsResponse(rl, DISCLAIMER);
-  }
+  const limited = enforceRateLimit(
+    request,
+    "qualify_preview",
+    PREVIEW_RATE_LIMIT,
+    DISCLAIMER,
+  );
+  if (limited) return limited;
 
   let body: unknown;
   try {

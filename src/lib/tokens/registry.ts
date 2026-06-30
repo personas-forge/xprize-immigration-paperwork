@@ -47,8 +47,8 @@ export type OperationKey = keyof typeof OPERATION_REGISTRY;
 
 /**
  * Token cost of an operation. Unknown operations default to the light tier so a
- * mistyped/new key is never free and never throws (matches the prior behavior of
- * economy.ts `costOf`).
+ * mistyped/new key is never free and never throws (preserves the original
+ * costOf fallback behavior).
  */
 export function costOf(op: string): number {
   const def = (OPERATION_REGISTRY as Record<string, OperationDef>)[op];
@@ -61,7 +61,13 @@ export function costOf(op: string): number {
   return TIER_COST[def?.tier ?? "light"];
 }
 
-/** Human-readable label for a known operation. */
-export function labelOf(op: OperationKey): string {
-  return OPERATION_REGISTRY[op].label;
+/**
+ * Human-readable label for an operation. TOTAL like {@link costOf}: an unknown op
+ * (e.g. a renamed/removed key sitting in a HISTORICAL ledger row — reached via the
+ * `e.operation as OperationKey` read at billing/page.tsx) returns the raw string
+ * rather than throwing, so a stray ledger string can't crash the billing-page
+ * render. No behavior change for known ops — they resolve to their registry label.
+ */
+export function labelOf(op: string): string {
+  return (OPERATION_REGISTRY as Record<string, OperationDef>)[op]?.label ?? op;
 }

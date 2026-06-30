@@ -49,7 +49,11 @@ export function geminiModelFor(tier: LlmTier, env: Env = process.env): string {
  * real generation path) decides whether to warn.
  */
 export function isLongTierOnFastFallback(tier: LlmTier, env: Env = process.env): boolean {
-  return tier === "long" && !env.GEMINI_DRAFT_MODEL;
+  // Derived from geminiModelFor (which PERFORMS the fallback) so the warning is
+  // provably tied to the real model resolution and the rule lives in one place:
+  // a long-tier call is "on the fast fallback" exactly when it resolves to the
+  // same model the fast tier would.
+  return tier === "long" && geminiModelFor("long", env) === geminiModelFor("fast", env);
 }
 
 /** Path to the Claude Code CLI binary (defaults to `claude` on PATH). */

@@ -12,12 +12,10 @@
  */
 import { getUser } from "@/lib/auth/session";
 import { petitions } from "@/lib/data/adapters/petition";
-import { CASE_STATUSES, type PetitionCase, type VisaClassification } from "@/features/case-file/types";
-
-const CLASSIFICATIONS: readonly VisaClassification[] = ["O-1A", "O-1B", "EB-1A"];
+import { CASE_STATUSES, VISA_CLASSIFICATIONS, type PetitionCase, type VisaClassification } from "@/features/case-file/types";
 
 function asClassification(value: string): VisaClassification {
-  return (CLASSIFICATIONS as readonly string[]).includes(value)
+  return (VISA_CLASSIFICATIONS as readonly string[]).includes(value)
     ? (value as VisaClassification)
     : "O-1A";
 }

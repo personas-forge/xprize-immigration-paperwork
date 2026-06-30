@@ -53,6 +53,34 @@ export async function wrapStore<T>(fn: () => Promise<T>): Promise<AdapterResult<
   }
 }
 
+/** {@link wrapStore} variant for a Store mutation that resolves to a boolean
+ *  "did a LIVE row match?" — `false` becomes `not_found` (the mutation changed
+ *  nothing, so it must not report a false success), a throw becomes `store_error`.
+ *  Use as `return wrapFound(() => deps.removeCaseDocument(...))`. */
+export async function wrapFound(
+  fn: () => Promise<boolean>,
+): Promise<AdapterResult<void>> {
+  try {
+    return (await fn()) ? ok(undefined) : err("not_found");
+  } catch (cause) {
+    return err("store_error", cause);
+  }
+}
+
+/** {@link wrapStore} variant for a versioned write that resolves to
+ *  `number | null` — `null` (no backend configured) becomes `unconfigured`, a
+ *  throw becomes `store_error`. Use as `return wrapVersion(() => deps.saveDraft(...))`. */
+export async function wrapVersion(
+  fn: () => Promise<number | null>,
+): Promise<AdapterResult<number>> {
+  try {
+    const version = await fn();
+    return version === null ? err("unconfigured") : ok(version);
+  } catch (cause) {
+    return err("store_error", cause);
+  }
+}
+
 /** Construct a failure result. `cause` is only attached for `store_error`. */
 export function err<T = never>(
   kind: AdapterErrorKind,

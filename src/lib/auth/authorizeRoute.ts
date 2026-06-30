@@ -1,13 +1,10 @@
-// Server-only route-authorization seam (ADR-0006). We deliberately do NOT
-// `import "server-only"` here (that package isn't installed and is unresolvable
-// under the `tsx --test` runner) — the same convention as `@/lib/auth/session`
-// and `@/lib/ai/operation`. The real server-only infra (auth session, the
-// petitions data layer) is reached via lazy dynamic import in `defaultDeps`, so
-// this module stays unit-testable while never pulling server-only code into a
-// client bundle.
-if (typeof window !== "undefined") {
-  throw new Error("@/lib/auth/authorizeRoute must not be imported on the client.");
-}
+// Server-only route-authorization seam (ADR-0006). The real server-only infra
+// (auth session, the petitions data layer) is reached via lazy dynamic import in
+// `defaultDeps`, so this module stays unit-testable while never pulling
+// server-only code into a client bundle. See `assertServerOnly` for why we use a
+// runtime guard instead of `import "server-only"`.
+import { assertServerOnly } from "@/lib/serverOnlyGuard";
+assertServerOnly("@/lib/auth/authorizeRoute");
 
 import { isConfiguredAttorney } from "@/lib/auth/roles";
 import type { AppUser } from "@/lib/auth/devAuth";

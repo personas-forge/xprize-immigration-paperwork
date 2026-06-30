@@ -12,6 +12,7 @@ import {
   submitForReview,
 } from "../actions";
 import { USCIS_DECISIONS } from "../decisions";
+import { caseStatusTone } from "@/features/case-file/caseStatusTone";
 
 // — Review & filing panel ─────────────────────────────────────────────────────
 // The attorney-review thread plus the role-appropriate workflow actions, driven
@@ -50,12 +51,6 @@ const KIND_TONE: Record<string, BadgeTone> = {
   note: "neutral",
 };
 
-function statusTone(status: string): BadgeTone {
-  if (status === "Approved" || status === "Filed") return "success";
-  if (status === "Attorney Review") return "accent";
-  return "neutral";
-}
-
 export function ReviewPanel({
   caseId,
   status,
@@ -88,7 +83,7 @@ export function ReviewPanel({
         <div className="microprint" style={{ color: "var(--accent-dark)" }}>
           § IV — Attorney review &amp; filing
         </div>
-        <Badge tone={statusTone(status)}>{status}</Badge>
+        <Badge tone={caseStatusTone(status)}>{status}</Badge>
       </CardHeader>
       <CardBody className="space-y-5">
         {receiptNumber ? (

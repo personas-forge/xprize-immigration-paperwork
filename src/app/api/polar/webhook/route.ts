@@ -2,19 +2,16 @@ import { type NextRequest } from "next/server";
 import { validateEvent } from "@polar-sh/sdk/webhooks";
 import { credit } from "@/lib/tokens/ledger";
 import { bundleByKey, bundleByProductId } from "@/lib/tokens/economy";
-import { polarEventToRevenue } from "./relay-revenue";
-import { finiteCents, productId, resolveUserId } from "./polar-fields";
+import { polarEventToRevenue, type WebhookEvent } from "./relay-revenue";
+import { finiteCents, pickStr, productId, resolveUserId } from "./polar-fields";
 import { trackRevenue } from "@/lib/cost-telemetry";
 
+// Only the fields read DIRECTLY off the order cast. The buyer / product id /
+// original-order-id (incl. their camel/snake duality) are resolved through the
+// shared `./polar-fields` readers off `event.data`, so they deliberately don't
+// live on this local type.
 type PolarOrder = {
   id: string;
-  productId?: string;
-  product_id?: string;
-  order_id?: string;
-  orderId?: string;
-  externalCustomerId?: string;
-  external_customer_id?: string;
-  customer?: { externalId?: string; external_id?: string } | null;
   metadata?: Record<string, string>;
   /** Refunded amount in minor units (cents). `order.refunded` carries
    *  `refunded_amount`; `refund.created` carries `amount`. Used to claw back
@@ -49,7 +46,7 @@ export async function POST(request: NextRequest) {
   const body = await request.text();
   const headers = Object.fromEntries(request.headers.entries());
 
-  let event: { type: string; data: Record<string, unknown> };
+  let event: WebhookEvent;
   try {
     // Verify the SDK's webhook-validation signature/shape for your version.
     event = validateEvent(body, headers, secret) as unknown as typeof event;
@@ -102,8 +99,15 @@ export async function POST(request: NextRequest) {
     // refund attempt), so keying the ref on it would let two refunds against the
     // same order both clawback (double-debit). order.refunded carries the order
     // id at its root; refund.created carries it as order_id.
+    // Route the refund's original-order id through the shared, type-guarded
+    // reader instead of a raw `??` (the dedupe key that prevents double-clawback
+    // is the worst place to skip the guard). Identical to `order_id ?? orderId`
+    // for well-formed payloads (a non-empty string wins); a non-string slips past
+    // the raw `??` but is correctly rejected here.
     const originalOrderId =
-      event.type === "order.refunded" ? order.id : order.order_id ?? order.orderId;
+      event.type === "order.refunded"
+        ? order.id
+        : pickStr(event.data, "order_id", "orderId");
     if (userId && b && originalOrderId) {
       // Claw back PROPORTIONALLY to the refunded amount, not the whole bundle:
       // Polar supports PARTIAL refunds, so a $5 goodwill refund on the $150 Scale

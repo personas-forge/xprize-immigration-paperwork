@@ -18,7 +18,6 @@ import { CaseDetailView } from "@/features/case-file/components/CaseDetailView";
 // file it. DB + auth required — these cases don't exist in the keyless build.
 
 // Node runtime — requireOnboardedUser() / getBalance() / the data layer use `pg`.
-export const dynamic = "force-dynamic";
 
 function formatWhen(value: unknown): string {
   const d = new Date(value as string | number | Date);

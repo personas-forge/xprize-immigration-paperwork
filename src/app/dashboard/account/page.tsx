@@ -14,7 +14,6 @@ export const metadata: Metadata = {
   description: "Manage your account: download a copy of your data or delete your account.",
 };
 
-export const dynamic = "force-dynamic";
 
 export default async function AccountPage() {
   const { user, profile } = await requireOnboardedUser();

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageFrame, Wordmark, Seal, Guilloche, Stamp } from "@/components/brand";
@@ -20,7 +21,6 @@ import { DISCLAIMER } from "@/lib/result";
 // A per-result Open Graph image lives in ./opengraph-image so the link unfurls
 // as a stunning card on LinkedIn/X.
 
-export const dynamic = "force-dynamic";
 
 interface PageParams {
   params: Promise<{ token: string }>;
@@ -42,7 +42,12 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   };
 }
 
+// Instant Navigations (Next 16.3): per-token certificate decoded from the URL
+// param — a dynamic [token] route with no static shell. Block.
+export const instant = false;
+
 export default async function LettersPatentPage({ params }: PageParams) {
+  await connection();
   const { token } = await params;
   const snap = decodeSnapshot(token);
   if (!snap) notFound();
