@@ -22,17 +22,17 @@ Numbering is append-only and stable — never renumber (user decisions reference
 | 16 | ☑ | 8-Ops | S | /api/health endpoint: store driver, LLM engine, Polar config status (booleans, no secrets). |
 | 17 | ☑ | 7-UX | S | Root not-found.tsx + error.tsx + global-error.tsx, PageFrame-branded (3 live notFound() paths incl. public /c/[token] share links). |
 | 18 | ☑ | 8-Ops | S | Env docs sync: document OPS_EMAILS, ATTORNEY_NOTIFY_WEBHOOK_URL/TOKEN, RATE_LIMIT_DISABLED, TRUSTED_PROXY_HOPS, DB_DRIVER, FIRESTORE_PROJECT_ID, PGLITE_PATH; add NEXT_PUBLIC_SITE_URL to .env.example; remove dead DATABASE_URL/NEXT_PUBLIC_APP_URL/Stripe/DocuSign/Vapi rows or mark aspirational. |
-| 19 | ☐ | 7-UX | M | SiteHeader responsive: nav overflows at 375px (no breakpoints/menu) — wraps entire marketing+billing funnel. |
-| 20 | ☐ | 7-UX | S | Login error → danger token + role="alert"; LocalThemeToggle missing focus-ring; logo alt text "Immigration Concierge". |
+| 19 | ☑ | 7-UX | M | SiteHeader responsive: nav overflows at 375px (no breakpoints/menu) — wraps entire marketing+billing funnel. |
+| 20 | ☑ | 7-UX | S | Login error → danger token + role="alert"; LocalThemeToggle missing focus-ring; logo alt text "Immigration Concierge". |
 | 21 | ☐ | 2-Func | M | Dashboard home mock content (Dr. Anya Krishnan masthead, criteria, tasks from fixtures): label clearly as sample OR replace with real-case data; also dedupe "Your cases" vs CaseList double render. (CP decision) |
 | 22 | ☑ | 5-Billing | S | Derive hardcoded UI token costs from costOf() (DraftStudio.tsx:449 "Uses 12 tokens", EvidenceVault.tsx:279); make costOf throw on unknown op instead of defaulting to 1. |
-| 23 | ☐ | 6-Sec | S | HMAC-sign /c/[token] snapshots — currently anyone can forge a named certificate with OG unfurl. |
+| 23 | ☐ | 6-Sec | M | HMAC-sign /c/[token] snapshots (forgeable named certificate w/ OG unfurl). RESIZED S→M: the token is encoded CLIENT-side (LettersPatentShare), so signing needs a server mint endpoint (free, rate-limited) + client + verify-on-page changes. CP1 decision: worth it now vs accept for v1. |
 | 24 | ☐ | 8-Ops | M | Error visibility: root client boundary reports to a server endpoint; structured server error logging; wire the un-wired audit sink seam. |
-| 25 | ☐ | 6-Sec | S | categorize rate-limit keyed byUser (currently IP-only, evadable); document TRUSTED_PROXY_HOPS. |
-| 26 | ☐ | 2-Func | S | robots.ts; cross-link /visa/* programmatic-SEO pages from footer or /qualify (currently sitemap-only orphans). |
+| 25 | ☑ | 6-Sec | S | categorize rate-limit keyed byUser (currently IP-only, evadable); document TRUSTED_PROXY_HOPS. |
+| 26 | ☑ | 2-Func | S | robots.ts; cross-link /visa/* programmatic-SEO pages from footer or /qualify (currently sitemap-only orphans). |
 | 27 | ☐ | 3-Tests | M | Tests for getUser session resolution (cookie/verify/dev-seed paths) + attorney sign/file transition actions (CAS, receipt validation). |
 | 28 | ☐ | 7-UX | M | Screenshot sweep key pages at 375px + 1440px, review vs UX checklist, burn down ship-blockers (dimension-7 evidence). |
 | 29 | ☑ | 8-Ops | S | Repo hygiene: fix `.claude/CLAUDE.md` stale `test:e2e` → `e2e`; untrack committed run artifacts (check_runs*.json, playwright-report/, test-results/, scripts/llm-eval/out/). |
 | 30 | ☐ | 6-Sec | L | Shared rate-limit store (Redis/Firestore) for multi-instance prod — in-memory caps multiply per instance. Defer unless target is multi-instance. |
-| 31 | ☐ | 4-UAT | S | Prod-build smoke: `next build`+`start`, hit / + one API route + /api/health (pre-flight requirement; auth journeys stay on the dev-server harness). |
-| 32 | ☐ | 4-UAT | M | Hostile/edge persona journeys (ship-blocking per CP0 UAT depth): logged-out probing of protected APIs/pages, oversized/invalid inputs, back-button mid-flow — expect graceful handling, never a charge. |
+| 31 | ☑ | 4-UAT | S | Prod-build smoke: `next build`+`start`, hit / + one API route + /api/health (pre-flight requirement; auth journeys stay on the dev-server harness). |
+| 32 | ☑ | 4-UAT | M | Hostile/edge persona journeys (ship-blocking per CP0 UAT depth): logged-out probing of protected APIs/pages, oversized/invalid inputs, back-button mid-flow — expect graceful handling, never a charge. |
