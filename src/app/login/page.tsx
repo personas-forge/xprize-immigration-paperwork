@@ -106,7 +106,13 @@ export default function LoginPage() {
                   {busy ? "Signing in…" : "Continue with Google"}
                 </button>
                 {error ? (
-                  <p className="microprint mt-2" style={{ color: "var(--accent-dark)" }}>
+                  // role=alert + the danger token (not the gold accent): a failed
+                  // sign-in must read as a problem and be announced, matching
+                  // every other error surface (BundleGrid, QualifyPanel).
+                  <p
+                    role="alert"
+                    className="mt-2 rounded-control border border-seal/40 bg-seal-soft/50 px-3.5 py-2.5 font-sans text-[15px] text-seal"
+                  >
                     {error}
                   </p>
                 ) : null}

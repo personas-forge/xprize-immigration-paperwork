@@ -27,7 +27,7 @@ export function DashboardTopBar({
         <div className="flex items-center gap-3">
           <Image
             src="/brand/logo.png"
-            alt="immigration-paperwork"
+            alt="Immigration Concierge"
             width={28}
             height={28}
             className="h-7 w-7 rounded-full"

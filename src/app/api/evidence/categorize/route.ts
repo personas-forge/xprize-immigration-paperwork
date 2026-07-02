@@ -45,7 +45,9 @@ export function POST(request: Request): Promise<NextResponse> {
     operation: "categorize",
     // Keyed by client IP (this route stays auth-decoupled for the keyless build),
     // so a flood can't run up model cost or drain a balance unchecked.
-    rateLimit: { bucket: "categorize", scope: "categorize" },
+    // byUser: a signed-in user rotating IPs must not evade the cap (the
+    // unauthenticated keyless path buckets into the shared :u:anon key).
+    rateLimit: { bucket: "categorize", scope: "categorize", byUser: true },
     unauthenticatedError: "Sign in to add evidence.",
     parse: async ({ body, resolveUser }) => {
       const parsed = parseCategorizeRequest(body);

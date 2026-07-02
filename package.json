@@ -15,6 +15,7 @@
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "uat": "playwright test -c playwright.uat.config.ts",
+    "smoke:prod": "node scripts/prod-smoke.mjs",
     "e2e:install": "playwright install chromium",
     "prepare": "husky || true"
   },
