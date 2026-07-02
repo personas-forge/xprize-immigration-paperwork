@@ -184,31 +184,35 @@ export default async function BillingPage({
           <BundleGrid bundles={BUNDLES} />
         </Rise>
 
-        {/* Enterprise — contact only */}
-        <Rise className="mt-12">
-          <div className="relative flex flex-col gap-5 rounded-card border-2 border-double border-seal/40 bg-seal-soft/30 px-7 py-7 shadow-seal sm:flex-row sm:items-center sm:justify-between">
-            <div className="max-w-xl">
-              <div className="microprint" style={{ color: "var(--seal)" }}>
-                Enterprise · by arrangement
+        {/* Enterprise — contact only. Rendered ONLY when a real contact target
+            is configured: the band's whole value is the CTA, and shipping it
+            with a placeholder mailto was a dead-end on the payment page. */}
+        {ENTERPRISE_CONTACT && (
+          <Rise className="mt-12">
+            <div className="relative flex flex-col gap-5 rounded-card border-2 border-double border-seal/40 bg-seal-soft/30 px-7 py-7 shadow-seal sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-xl">
+                <div className="microprint" style={{ color: "var(--seal)" }}>
+                  Enterprise · by arrangement
+                </div>
+                <h2 className="display mt-2 text-2xl text-foreground">
+                  High-volume firms &amp; partners
+                </h2>
+                <p className="mt-2 font-sans text-[16px] leading-relaxed text-muted-strong">
+                  Premium model tier, custom token limits, SSO, and invoiced
+                  billing for law firms and institutional partners. We tailor the
+                  ledger and terms to your caseload.
+                </p>
               </div>
-              <h2 className="display mt-2 text-2xl text-foreground">
-                High-volume firms &amp; partners
-              </h2>
-              <p className="mt-2 font-sans text-[16px] leading-relaxed text-muted-strong">
-                Premium model tier, custom token limits, SSO, and invoiced
-                billing for law firms and institutional partners. We tailor the
-                ledger and terms to your caseload.
-              </p>
+              <a
+                href={ENTERPRISE_CONTACT}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-6 py-3 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-ring active:translate-y-[1px]"
+              >
+                Contact sales
+                <span aria-hidden>→</span>
+              </a>
             </div>
-            <a
-              href={ENTERPRISE_CONTACT}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control bg-seal px-6 py-3 font-mono text-[14px] uppercase tracking-document text-background transition-[background-color,transform] hover:bg-[color:var(--accent-dark)] focus-ring active:translate-y-[1px]"
-            >
-              Contact sales
-              <span aria-hidden>→</span>
-            </a>
-          </div>
-        </Rise>
+          </Rise>
+        )}
 
         {/* Footnotes */}
         <Rise className="mt-14">

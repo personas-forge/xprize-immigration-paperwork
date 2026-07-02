@@ -321,18 +321,27 @@ public/
 
 ## Environment variables
 
-Copy `.env.example` → `.env.local`. None are required to render the UI; all
-integration code is currently stubbed.
+Copy `.env.example` → `.env.local`. None are required to render the UI — the
+keyless build serves deterministic template output with no store and no
+paywall. `.env.example` is the authoritative, commented reference; the table
+below is the map.
 
 | Group | Vars |
 | --- | --- |
-| Gemini / Vertex AI | `GEMINI_API_KEY`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_APPLICATION_CREDENTIALS`, `GEMINI_MODEL` |
-| Document AI | `DOCAI_PROCESSOR_ID`, `DOCAI_LOCATION` |
-| Voice intake | `VAPI_API_KEY`, `RETELL_API_KEY` |
-| Billing (Polar token economy) | `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_SERVER`, `POLAR_PRODUCT_{STARTER,BUILDER,PRO,SCALE,MONTHLY}`, `TOKENS_BYPASS` (dev-only paywall bypass) |
-| E-sign | `DOCUSIGN_INTEGRATION_KEY`, `DOCUSIGN_USER_ID` |
-| App | `DATABASE_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_ATTORNEY_FIRM_NAME`, `NEXT_PUBLIC_ATTORNEY_BAR_STATE` |
-| Deploy (optional) | `NEXT_PUBLIC_SITE_URL`, `VERCEL_URL` (used to resolve `metadataBase` for OG cards) |
+| LLM engine | `LLM_ENGINE`, `CLAUDE_CLI_PATH`, `CLAUDE_CLI_MODEL` |
+| Gemini / Vertex AI | `GEMINI_API_KEY`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_APPLICATION_CREDENTIALS`, `GEMINI_MODEL`, `GEMINI_DRAFT_MODEL` |
+| Persistence (Store) | `DB_DRIVER` (`firestore` \| `pglite` \| auto), `PGLITE_PATH`, `FIRESTORE_PROJECT_ID` |
+| Billing (Polar token economy) | `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_SERVER`, `POLAR_PRODUCT_{STARTER,BUILDER,PRO,SCALE,MONTHLY}`, `NEXT_PUBLIC_ENTERPRISE_CONTACT` (empty hides the Enterprise band), `TOKENS_BYPASS` (dev-only; hard-gated out of production) |
+| Rate limiting | `RATE_LIMIT_DISABLED` (tests only), `TRUSTED_PROXY_HOPS` |
+| Auth (Firebase) | `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_CONSENT_VERSION`, `NEXT_PUBLIC_DEV_AUTH` (local only) |
+| Attorney workflow | `ATTORNEY_EMAILS`, `OPS_EMAILS`, `ATTORNEY_NOTIFY_WEBHOOK_URL`, `ATTORNEY_NOTIFY_WEBHOOK_TOKEN` |
+| Telemetry (optional) | `LIGHTTRACK_URL`, `LIGHTTRACK_KEY`, `LIGHTTRACK_PROJECT` |
+| Deploy | `NEXT_PUBLIC_SITE_URL`, `VERCEL_URL` (absolute-URL base for sitemap/OG) |
+| Planned, NOT wired | `DOCAI_*`, `VAPI_API_KEY`, `RETELL_API_KEY`, `DOCUSIGN_*` |
+
+Removed/dead (do not set): `DATABASE_URL`, `NEXT_PUBLIC_APP_URL` (use
+`NEXT_PUBLIC_SITE_URL`), `STRIPE_*`, `NEXT_PUBLIC_ATTORNEY_FIRM_NAME`,
+`NEXT_PUBLIC_ATTORNEY_BAR_STATE`.
 
 ## Testing
 

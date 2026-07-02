@@ -71,11 +71,6 @@ export function CaseFileDashboard({
               <p className="microprint mt-2" style={{ color: "var(--muted)" }}>
                 Illustrative example — your real cases appear under “Your cases.”
               </p>
-
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <Button variant="primary">Open petition letter</Button>
-                <Button variant="secondary">Voice intake transcript</Button>
-              </div>
             </div>
 
             <div className="col-span-12 grid grid-cols-3 gap-px overflow-hidden rounded-card border border-border bg-border lg:col-span-6">
