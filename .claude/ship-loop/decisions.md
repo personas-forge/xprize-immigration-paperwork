@@ -22,3 +22,4 @@
 - Milestone 5 = ship-blockers: items 5, 21, 15, 24 (minimal error visibility).
 - All auto-decisions to date presented at CP1 and not objected to.
 - 2026-07-02 (CP2 asked, user AFK — auto-decided on the recommended options, pending ratification): item 23 cert signing ACCEPTED for v1 (SHIP_REPORT limitation); UAT dev-server basis ACCEPTED with note; live Vercel deploy + Polar sandbox purchase → SHIP_REPORT runbook; NEXT = Ship Gate.
+- 2026-07-02 (final CP, user AFK) — Pushed branch + opened PR #121 per workspace memory ("push/PR promptly; main resets unpushed work"); ratification of CP2 decisions + next-loop choice left to the user.
