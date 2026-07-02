@@ -25,6 +25,7 @@ import { isConfiguredAttorney } from "@/lib/auth/roles";
 import { petitions } from "@/lib/data/adapters/petition";
 import { addReviewEvent, transitionCase } from "@/lib/data/reviews";
 import { USCIS_DECISIONS } from "./decisions";
+import { isUscisReceipt, newReceiptNumber } from "./receipt";
 
 /** Result every review action returns so the form (via useActionState) can show
  *  a visible error instead of silently doing nothing — on a legal filing flow a
@@ -40,19 +41,6 @@ function revalidateCase(caseId: string): void {
   revalidatePath(`/dashboard/cases/${caseId}`);
   revalidatePath("/dashboard/review");
   revalidatePath("/dashboard");
-}
-
-/** A DEMO receipt number (real filing isn't wired). Marked `demo:true` in the
- *  filed event so the UI can flag it as not a genuine USCIS receipt. */
-function newReceiptNumber(): string {
-  return `EAC${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`;
-}
-
-/** USCIS receipt format: a 3-letter service-center prefix + 10 digits
- *  (EAC/WAC/LIN/SRC/IOE/MSC/YSC/NBC). Used to validate an attorney-entered real
- *  receipt so a typo isn't recorded as authoritative. */
-function isUscisReceipt(value: string): boolean {
-  return /^(EAC|WAC|LIN|SRC|IOE|MSC|YSC|NBC)\d{10}$/i.test(value.trim());
 }
 
 /** Read a free-text form field from untrusted FormData: coerce to string, trim,
