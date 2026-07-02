@@ -171,11 +171,18 @@ interface Pglite extends Queryable {
   waitReady: Promise<unknown>;
 }
 
-let pgPromise: Promise<Pglite> | null = null;
+// One PGlite per PROCESS, pinned on globalThis — NOT a module-level variable.
+// In dev, Turbopack compiles each server entry (a page, a route handler) into
+// its own module graph with its own copy of this module; a module-local cache
+// would open one PGlite PER GRAPH on the same datadir. PGlite is a full
+// in-memory Postgres that only persists to the dir — two instances never see
+// each other's writes (an API-route debit is invisible to the dashboard's
+// balance read) and can corrupt the dir on concurrent flush.
+const globalPg = globalThis as { __immigrationPglitePromise?: Promise<Pglite> };
 
 async function open(): Promise<Pglite> {
-  if (!pgPromise) {
-    pgPromise = (async () => {
+  if (!globalPg.__immigrationPglitePromise) {
+    globalPg.__immigrationPglitePromise = (async () => {
       const { PGlite } = await import("@electric-sql/pglite");
       // CORE_DDL runs `create extension pgcrypto` (for gen_random_uuid()), which
       // PGlite only makes available when the contrib extension is loaded at
@@ -190,7 +197,7 @@ async function open(): Promise<Pglite> {
       return pg;
     })();
   }
-  return pgPromise;
+  return globalPg.__immigrationPglitePromise;
 }
 
 const num = (v: unknown): number => Number(v ?? 0);
