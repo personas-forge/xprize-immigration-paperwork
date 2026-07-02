@@ -5,14 +5,14 @@ Numbering is append-only and stable — never renumber (user decisions reference
 | # | S | Dim | Size | Item |
 |---|---|-----|------|------|
 | 1 | ☐ | 5-Billing | S | Client sends `Idempotency-Key` on every charged-op fetch (DraftStudio, RfeStudio, QualifyPanel, EvidenceVault, FieldGuidancePanel, RfeRiskRadar, critique) so the built server de-dupe engages; test pins it. Kills double-charge on retry/second-tab. |
-| 2 | ☐ | 5-Billing | S | Reclaim tokens when a metered op serves the unconfigured-LLM mock (operation.ts step 5, getLlm()==null) — restore "a mock is never billed" invariant; unit test. |
-| 3 | ☐ | 5-Billing | S | `/api/checkout` 503s when Store unconfigured; webhook 500s when a paid order credits 0 tokens — closes money-taken-no-tokens hole. |
-| 4 | ☐ | 6-Sec | S | Hard-gate TOKENS_BYPASS to NODE_ENV!=="production"; add auth check on metered AI routes independent of metering free-pass. |
+| 2 | ☑ | 5-Billing | S | Reclaim tokens when a metered op serves the unconfigured-LLM mock (operation.ts step 5, getLlm()==null) — restore "a mock is never billed" invariant; unit test. |
+| 3 | ☑ | 5-Billing | S | `/api/checkout` 503s when Store unconfigured; webhook 500s when a paid order credits 0 tokens — closes money-taken-no-tokens hole. |
+| 4 | ☑ | 6-Sec | S | Hard-gate TOKENS_BYPASS to NODE_ENV!=="production"; add auth check on metered AI routes independent of metering free-pass. |
 | 5 | ☐ | 2-Func | M | Filing honesty: attorneySignAndFile records DEMO receipt ("not actually filed") while landing/FAQ advertise real attorney filing w/ premium processing. Product decision: label in-product as pilot/demo OR change marketing copy. (CP decision) |
 | 6 | ☐ | 2-Func | S | Dead dashboard masthead buttons "Open petition letter" + "Voice intake transcript" (CaseFileDashboard.tsx:76-77) — wire or remove; voice intake exists nowhere. |
 | 7 | ☐ | 2-Func | S | Enterprise CTA defaults to mailto:sales@example.com (economy.ts:98) — set real contact or hide the band until configured. |
 | 8 | ☐ | 5-Billing | M | Save-failure parity: RFE + categorize keep the charge but lose the artifact on persist-fail (drafts have free rescue) — add rescue route or auto-reclaim on saveFailed. |
-| 9 | ☐ | 3-Tests | M | Unit tests for chargeForOperation guard matrix: bypass / no-store / no-auth-provider / unauth 401 / insufficient / charge+reclaim. |
+| 9 | ☑ | 3-Tests | M | Unit tests for chargeForOperation guard matrix: bypass / no-store / no-auth-provider / unauth 401 / insufficient / charge+reclaim. |
 | 10 | ☐ | 3-Tests | L | Ledger tests against the real PGlite store: debit idempotency by ref, insufficient-balance refusal, credit idempotency by (reason,ref), signup-grant-once, clawback floor-at-0, balance_after correctness. |
 | 11 | ☐ | 3-Tests | M | Polar webhook route tests: bad signature 403, order.paid credits bundle, replay idempotent, refund proportional clawback, unresolvable paid order → 500 (retry). |
 | 12 | ☑ | 4-UAT | L | UAT harness (npm run uat): PGlite + dev-auth + metering ON + deterministic fake claude CLI; journey signup-grant→qualify→draft w/ exact debits + failure-reclaim (A2.1-3). Dev server, not prod build (dev-auth is prod-hard-gated — deviation logged); found+fixed 2 dev-mode app bugs (stale cacheComponents auth pages; per-graph PGlite duplication). |
@@ -25,7 +25,7 @@ Numbering is append-only and stable — never renumber (user decisions reference
 | 19 | ☐ | 7-UX | M | SiteHeader responsive: nav overflows at 375px (no breakpoints/menu) — wraps entire marketing+billing funnel. |
 | 20 | ☐ | 7-UX | S | Login error → danger token + role="alert"; LocalThemeToggle missing focus-ring; logo alt text "Immigration Concierge". |
 | 21 | ☐ | 2-Func | M | Dashboard home mock content (Dr. Anya Krishnan masthead, criteria, tasks from fixtures): label clearly as sample OR replace with real-case data; also dedupe "Your cases" vs CaseList double render. (CP decision) |
-| 22 | ☐ | 5-Billing | S | Derive hardcoded UI token costs from costOf() (DraftStudio.tsx:449 "Uses 12 tokens", EvidenceVault.tsx:279); make costOf throw on unknown op instead of defaulting to 1. |
+| 22 | ☑ | 5-Billing | S | Derive hardcoded UI token costs from costOf() (DraftStudio.tsx:449 "Uses 12 tokens", EvidenceVault.tsx:279); make costOf throw on unknown op instead of defaulting to 1. |
 | 23 | ☐ | 6-Sec | S | HMAC-sign /c/[token] snapshots — currently anyone can forge a named certificate with OG unfurl. |
 | 24 | ☐ | 8-Ops | M | Error visibility: root client boundary reports to a server endpoint; structured server error logging; wire the un-wired audit sink seam. |
 | 25 | ☐ | 6-Sec | S | categorize rate-limit keyed byUser (currently IP-only, evadable); document TRUSTED_PROXY_HOPS. |
