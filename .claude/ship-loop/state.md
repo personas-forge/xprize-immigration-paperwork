@@ -2,11 +2,11 @@
 
 ## Context refresher  <!-- keep ≤15 lines, updated after EVERY item -->
 - App: immigration-concierge — O-1A qualification→drafting funnel w/ token billing (Polar) + attorney review. Stack: Next.js 16 App Router + Store(Firestore/PGlite) + Firebase auth; profile `stack-xprice.md` applied.
-- Ship bar: PENDING CP0. Cadence: PENDING CP0. UAT depth: PENDING CP0.
+- Ship bar: public launch w/ real payments. Cadence: MARATHON (CP only when blocked or every 4th milestone). UAT depth: all journeys + edge cases.
 - Scorecard: 1.Build 🟢 2.Func 🔴 3.Tests 🟡 4.UAT 🔴 5.Billing 🔴 6.Sec 🟡 7.UX 🟡 8.Ops 🔴
 - Branch: ship-loop/readiness-2026-07-02 (main is release-automation-managed; never work on main).
-- Milestone: none yet — boot checkpoint (CP0) in progress.
-- NEXT ACTION: await CP0 answers (ship bar / cadence / first focus / UAT depth), then define Milestone 1 here and start Phase 2.
+- Milestone 1 "UAT harness": item 12 ☐ (harness + signup→qualify→draft debit journey), 13 ☐ (paywall+purchase), 14 ☐ (vault/RFE/tracking/account journeys), then Verification Gate.
+- NEXT ACTION: item 12 — read playwright.config.ts + e2e/ + llm config/engines + devAuth/db config; design UAT server mode (PGlite, dev-auth, metering ON, deterministic fake LLM engine); implement.
 
 ## Scorecard
 | # | Dimension | Score | Evidence (cmd → result, date) | Top gaps |
@@ -37,8 +37,9 @@ Free: /api/qualify/preview*, /api/draft/save (rescue). Grants: signup 150 (verif
 Bypass flags: TOKENS_BYPASS=1 (metering off), RATE_LIMIT_DISABLED=1, NEXT_PUBLIC_DEV_AUTH=1 (non-prod hard-gated), /api/dev/grant-tokens (non-prod+no-Firestore+bypass only).
 
 ## Current milestone
-None — CP0 (boot checkpoint) in progress.
-Gate results (boot baseline, 2026-07-02): typecheck ✓ / lint ✓ / tests ✓ 465 / build ✓ / uat – / billing –
+Milestone 1 — "UAT harness" — items: 12, 13, 14 (+ Verification Gate)
+Gate results (this milestone): typecheck – / lint – / tests – / build – / uat – / billing –
+Boot baseline (2026-07-02): typecheck ✓ / lint ✓ / tests ✓ 465 / build ✓ / uat – / billing –
 
 ## Checkpoint history
-- CP0 (boot, 2026-07-02): answers pending.
+- CP0 (boot, 2026-07-02): bar=public launch, cadence=marathon, focus=UAT harness (12–14), UAT depth=all+edge. Next CP: when blocked or after Milestone 4.
