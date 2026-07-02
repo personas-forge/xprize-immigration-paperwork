@@ -14,3 +14,10 @@
 - 2026-07-02 — Item 6: REMOVING the dead masthead buttons (voice intake exists nowhere in the codebase; "Open petition letter" targets the mock sample case pending the item-21 CP decision). Reversible.
 - 2026-07-02 — Item 7: Enterprise band HIDDEN unless NEXT_PUBLIC_ENTERPRISE_CONTACT is set (no more sales@example.com dead-end). Reversible.
 - 2026-07-02 — Item 22 second half NOT done: costOf keeps its light-tier fallback for unknown ops — a throw on the charge path would emit a disclaimer-less 500; the warn + underbill trade-off is documented in registry.ts.
+
+## CP1 (2026-07-02, after Milestone 4)
+- Item 5 filing honesty: SOFTEN marketing copy (landing/FAQ describe attorney workflow prep / pilot, not real USCIS filing) AND make in-product demo labeling more prominent.
+- Item 21 dashboard sample: KEEP the worked example, label it harder; dedupe the double real-cases render.
+- Item 15 deploy target: VERCEL (vercel.json + maxDuration on LLM routes; firebase.json still added so firestore.rules are deployable).
+- Milestone 5 = ship-blockers: items 5, 21, 15, 24 (minimal error visibility).
+- All auto-decisions to date presented at CP1 and not objected to.
