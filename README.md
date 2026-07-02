@@ -362,13 +362,34 @@ they cover.
 ## Building & deployment
 
 ```bash
-npm run build && npm run start
+npm run build && npm run start   # local production run
+npm run smoke:prod               # boots the build and probes /, health, 404, auth gating
 ```
 
-The app is designed for **Google Cloud Run** with Firestore and CMEK-encrypted
-Cloud Storage for the evidence vault. It also runs unmodified on Vercel —
-`VERCEL_URL` is honored when resolving `metadataBase` for OG share cards. Set
-`NEXT_PUBLIC_SITE_URL` to your canonical origin in production.
+**Primary target: Vercel** (`vercel.json` is checked in; the AI routes export
+`maxDuration = 120` for long generations). First deploy runbook:
+
+1. `vercel link` and import the repo (framework auto-detects Next.js).
+2. Set the env vars (see the table above / `.env.example`). The production
+   minimum: the three `NEXT_PUBLIC_FIREBASE_*` vars, `GEMINI_API_KEY` (or the
+   engine of choice), `POLAR_ACCESS_TOKEN` + `POLAR_WEBHOOK_SECRET` +
+   `POLAR_SERVER=production` + the five `POLAR_PRODUCT_*` ids,
+   `ATTORNEY_EMAILS`, and `NEXT_PUBLIC_SITE_URL`. For Firestore access set
+   `GOOGLE_APPLICATION_CREDENTIALS` via a service-account JSON (Vercel: store
+   the JSON in an env var and write it to a file at boot, or use workload
+   identity federation). Leave `TOKENS_BYPASS`/`NEXT_PUBLIC_DEV_AUTH` unset —
+   both are hard-gated out of production anyway.
+3. Deploy Firestore security rules + indexes (they do NOT ship with the app):
+   `npx firebase-tools deploy --only firestore` (uses `firebase.json`).
+4. Point the Polar webhook at `https://<domain>/api/polar/webhook` and verify a
+   sandbox purchase end-to-end before flipping `POLAR_SERVER=production`.
+5. Probe `https://<domain>/api/health` — it reports which subsystems are wired
+   (store driver, LLM engine, Polar, Firebase) without exposing secrets.
+
+Client-side crashes beacon to `/api/client-error` and appear as structured
+`kind:"client-error"` lines in the function logs. The app also runs on Google
+Cloud Run (Firestore + runtime service account); a container config is not
+checked in — Vercel is the supported path today.
 
 ## Documentation
 

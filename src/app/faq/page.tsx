@@ -35,7 +35,7 @@ const QA: { q: string; a: string }[] = [
   },
   {
     q: "Who reviews and signs the petition?",
-    a: "Your own attorney of record — the licensed U.S. immigration attorney you bring, or your firm's. They review every word in the drafting studio, request changes, and when it's ready they sign the I-129 and file it. The studio gives your attorney the review workflow (request changes, sign & file, record the USCIS decision); it does not act as your lawyer or supply one. We're a drafting tool, not a law firm — and nothing here is legal advice.",
+    a: "Your own attorney of record — the licensed U.S. immigration attorney you bring, or your firm's. They review every word in the drafting studio, request changes, and when it's ready they sign the I-129 and file it with USCIS themselves. The studio gives your attorney the review workflow (request changes, sign-off, receipt and decision tracking) — it records the filing but does not transmit anything to USCIS, and it does not act as your lawyer or supply one. We're a drafting tool, not a law firm — and nothing here is legal advice.",
   },
   {
     q: "What happens if USCIS issues a Request for Evidence (RFE)?",

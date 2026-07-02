@@ -13,3 +13,8 @@ import { forecastSpec } from "@/features/rfe/forecastOperation";
 export function POST(request: Request): Promise<NextResponse> {
   return executeAiOperation(request, forecastSpec);
 }
+
+// A charged generation can legitimately run past serverless defaults (per-tier
+// engine deadlines + bounded retries in src/lib/llm/engines.ts). On Vercel this
+// raises the function cap; lower-tier plans clamp it automatically.
+export const maxDuration = 120;

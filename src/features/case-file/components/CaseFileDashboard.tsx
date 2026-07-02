@@ -7,7 +7,6 @@ import { FieldGuidancePanel } from "@/features/guidance";
 import { type SavedCaseSummary } from "../types";
 import { caseStatusTone } from "../caseStatusTone";
 import { useCaseFileData } from "../useCaseFileData";
-import { CaseList } from "./CaseList";
 import { CriteriaTable } from "./CriteriaTable";
 import { Fact } from "./Fact";
 import { PetitionDraftCard, TasksCard } from "./SidePanels";
@@ -47,6 +46,21 @@ export function CaseFileDashboard({
         {/* The user's real, persisted cases (from the qualification flow). Shows
             an empty-state CTA when none exist yet. */}
         {cases.length > 0 ? <YourCasesCard cases={cases} /> : <EmptyCasesCallout />}
+
+        {/* Hard demarcation (CP1 #21): everything below is the worked SPECIMEN
+            case — one honest banner instead of per-panel captions a skimmer
+            misses. Real data lives only in "Your cases" above. */}
+        <div
+          role="note"
+          aria-label="Worked example notice"
+          className="flex flex-wrap items-center gap-3 rounded-control border border-dashed border-border-strong bg-surface-muted/60 px-4 py-3"
+        >
+          <Badge tone="warning">Worked example</Badge>
+          <span className="microprint" style={{ color: "var(--muted-strong)" }}>
+            Everything below is an illustrative specimen case — not your data.
+            Your real cases live under “Your cases” above.
+          </span>
+        </div>
 
         {/* Masthead — the case-file header card */}
         <Card className="relative overflow-hidden">
@@ -110,7 +124,7 @@ export function CaseFileDashboard({
           </div>
         </div>
 
-        <CaseList />
+
 
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone="success">Sample · 92% modeled likelihood</Badge>

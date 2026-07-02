@@ -137,3 +137,8 @@ export function POST(request: Request): Promise<NextResponse> {
     onPersistError: (input) => ({ caseId: input.caseId, version: null, saveFailed: true }),
   });
 }
+
+// A charged generation can legitimately run past serverless defaults (per-tier
+// engine deadlines + bounded retries in src/lib/llm/engines.ts). On Vercel this
+// raises the function cap; lower-tier plans clamp it automatically.
+export const maxDuration = 120;

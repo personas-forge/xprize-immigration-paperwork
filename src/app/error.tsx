@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui";
+import { reportClientError } from "@/lib/reportClientError";
 
 // Root error boundary — the branded catch for every segment WITHOUT its own
 // error.tsx (marketing pages, /qualify, /billing, /welcome, /c/[token], …;
@@ -17,6 +18,7 @@ export default function RootError({
 }) {
   useEffect(() => {
     console.error("[app] segment error:", error);
+    reportClientError("root", error);
   }, [error]);
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportClientError } from "@/lib/reportClientError";
 
 // Last-resort boundary: catches a throw in the ROOT LAYOUT itself, where the
 // app shell (fonts, tokens, chrome) may not exist — so this must render its
@@ -15,6 +16,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error("[app] root layout error:", error);
+    reportClientError("global", error);
   }, [error]);
 
   return (

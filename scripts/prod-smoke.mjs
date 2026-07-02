@@ -26,6 +26,19 @@ if (!existsSync(new URL("../.next/BUILD_ID", import.meta.url))) {
   process.exit(2);
 }
 
+// A lingering server from a previous run answers the health poll and every
+// probe — the smoke would silently test the WRONG build (or `next start`
+// dies on the occupied port with no useful output). Refuse loudly instead.
+try {
+  await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(1500) });
+  console.error(
+    `prod-smoke: something is already listening on ${BASE} — stop it or pass another port (node scripts/prod-smoke.mjs <port>)`,
+  );
+  process.exit(2);
+} catch {
+  /* connection refused = the port is free, proceed */
+}
+
 const server = spawn("npx", ["next", "start", "-p", String(PORT)], {
   stdio: ["ignore", "pipe", "pipe"],
   shell: process.platform === "win32",

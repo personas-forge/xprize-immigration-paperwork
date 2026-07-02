@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui";
+import { reportClientError } from "@/lib/reportClientError";
 
 // Route-level error boundary for the dashboard segment. Keeps the Atelier
 // voice (a calmly worded notice), logs the error for diagnostics, and offers
@@ -15,6 +16,7 @@ export default function DashboardError({
 }) {
   useEffect(() => {
     console.error("[dashboard] segment error:", error);
+    reportClientError("dashboard", error);
   }, [error]);
 
   return (

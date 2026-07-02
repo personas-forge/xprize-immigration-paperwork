@@ -400,7 +400,7 @@ const STEPS: [string, string, string][] = [
   ["I", "Qualify", "A 5-minute self-check maps your record onto the right criteria — O-1A, O-1B, or EB-1A. Free. Honest yes / no / maybe."],
   ["II", "Assemble", "Upload your CV and evidence. AI sorts each document by criterion and drafts the petition letter, section by section."],
   ["III", "Sign", "Your own attorney of record reviews every word, edits where judgment is needed, and signs — you own the filing."],
-  ["IV", "File", "Your attorney files with premium processing. Draft RFE responses in the studio if USCIS asks for more."],
+  ["IV", "File", "Your attorney signs off and files — the studio records the receipt and tracks the case. Draft RFE responses here if USCIS asks for more."],
 ];
 
 function Checkpoints() {
