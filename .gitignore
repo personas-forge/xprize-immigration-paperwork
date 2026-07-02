@@ -14,8 +14,13 @@ next-env.d.ts
 # Playwright E2E
 /test-results/
 /playwright-report/
+/playwright-report-uat/
 /blob-report/
 /playwright/.cache/
 
 # local PGlite store
 .pglite/
+
+# local QA/session scratch (screenshots, probe scripts, CI-run dumps)
+/.qa/
+/check_runs*.json

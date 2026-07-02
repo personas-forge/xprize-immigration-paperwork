@@ -1,4 +1,10 @@
-import "server-only";
+// Server-only module — runtime guard (assertServerOnly) instead of the
+// `server-only` package, which is unresolvable under the `tsx --test` runner.
+// Same convention as `@/lib/auth/session` / `@/lib/tokens/guard`; it's what
+// lets the transition semantics below be pinned against the real PGlite store
+// in reviews.test.ts.
+import { assertServerOnly } from "@/lib/serverOnlyGuard";
+assertServerOnly("@/lib/data/reviews");
 
 /**
  * Data layer — the attorney-review thread and case status transitions.

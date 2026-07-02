@@ -17,6 +17,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { dbDriver } from "@/lib/db/config";
 import { OPERATION_REGISTRY } from "./registry";
 
 export interface RateLimitResult {
@@ -244,14 +245,75 @@ export function isRateLimitEnabled(
  * hand-rolled blocks: same enable check, same {@link rateLimitKey} strategy, same
  * {@link tooManyRequestsResponse} shape.
  */
-export function enforceRateLimit(
+export async function enforceRateLimit(
   request: Request,
   scope: string,
   limit: number,
   disclaimer: string,
   userId?: string | null,
-): NextResponse | null {
+): Promise<NextResponse | null> {
   if (!isRateLimitEnabled()) return null;
-  const rl = checkRateLimit(rateLimitKey(request, scope, userId), limit);
+  const rl = await checkRateLimitShared(rateLimitKey(request, scope, userId), limit);
   return rl.ok ? null : tooManyRequestsResponse(rl, disclaimer);
+}
+
+/** The minimal shared-counter surface {@link checkRateLimitShared} consumes —
+ *  structurally the Store's `rateLimitHit`, kept local so this module's static
+ *  graph stays free of the store types (mirrors operation.ts's ChargeResult). */
+export interface SharedRateLimitStore {
+  rateLimitHit(key: string, resetAt: number): Promise<number>;
+}
+
+/** Window boundary ALIGNED to the epoch (not to the first hit) so every
+ *  instance derives the same `resetAt` for the same moment — the property that
+ *  makes the shared counter's doc-per-window keying work. */
+function windowResetAt(now: number, windowMs: number): number {
+  return (Math.floor(now / windowMs) + 1) * windowMs;
+}
+
+/** Resolve the shared counter for THIS deployment, or null for the in-memory
+ *  path. Only Firestore has the multi-instance drift the shared counter fixes
+ *  (serverless concurrency multiplies per-process caps); PGlite is
+ *  single-process by construction, so its in-memory window is already
+ *  authoritative and the extra hop would buy nothing. Lazy import keeps this
+ *  module's static graph store-free (it's imported by unit-tested modules). */
+async function sharedStore(): Promise<SharedRateLimitStore | null> {
+  if (dbDriver() !== "firestore") return null;
+  const { getStore } = await import("@/lib/db/store");
+  return (await getStore()) ?? null;
+}
+
+/**
+ * The multi-instance-safe twin of {@link checkRateLimit}: counts against the
+ * deployment's shared store when one exists (Firestore — one transactional
+ * counter per key+window), else the per-process memory window. FAIL-OPEN on a
+ * shared-store fault: the limiter protects model cost, and refusing paid
+ * traffic because a counter hiccuped would be the worse failure — the error is
+ * logged and the in-memory window still applies as a floor.
+ */
+export async function checkRateLimitShared(
+  key: string,
+  limit: number,
+  windowMs: number = RATE_WINDOW_MS,
+  now: number = Date.now(),
+  shared?: SharedRateLimitStore | null,
+): Promise<RateLimitResult> {
+  const store = shared === undefined ? await sharedStore() : shared;
+  if (store) {
+    try {
+      const resetAt = windowResetAt(now, windowMs);
+      const count = await store.rateLimitHit(key, resetAt);
+      return count <= limit
+        ? { ok: true, limit, remaining: Math.max(0, limit - count), retryAfterSec: 0 }
+        : {
+            ok: false,
+            limit,
+            remaining: 0,
+            retryAfterSec: Math.max(1, Math.ceil((resetAt - now) / 1000)),
+          };
+    } catch (err) {
+      console.error("[rate-limit] shared counter failed; falling back to in-memory", err);
+    }
+  }
+  return checkRateLimit(key, limit, windowMs, now);
 }

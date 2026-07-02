@@ -17,6 +17,6 @@ Git hooks enforce a subset automatically (husky, wired by `npm install`):
 - **pre-commit** → `eslint --fix` on staged files
 - **pre-push** → `npm run typecheck && npm test`
 
-Note: the full Playwright E2E suite now runs on PRs and nightly (not on every push to `main`) — run `npm run test:e2e` locally if your change touches the funnel.
+Note: the full Playwright E2E suite now runs on PRs and nightly (not on every push to `main`) — run `npm run e2e` locally if your change touches the funnel, and `npm run uat` (metered PGlite journeys, real billing assertions) if it touches auth, billing, or persistence.
 
 Fix red before committing — don't push red and let CI catch it. Bypass only for genuine WIP (`git commit --no-verify`) and never on a push to `main`.

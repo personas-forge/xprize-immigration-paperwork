@@ -53,3 +53,21 @@ export function finiteCents(
   if (opts.nonNegative && v < 0) return undefined;
   return v;
 }
+
+/** First finite cents amount among `keys` on `data`, else undefined — the
+ *  numeric twin of {@link pickStr}. NEEDED, not defensive: `validateEvent`
+ *  zod-parses deliveries into camelCase (`refundedAmount`, `totalAmount`), so a
+ *  raw snake_case read like `order.refunded_amount` is ALWAYS undefined on a
+ *  verified event — which silently killed the proportional-refund math and the
+ *  entire paid-order revenue relay until pinned by tests. */
+export function pickCents(
+  data: Record<string, unknown>,
+  keys: string[],
+  opts: { nonNegative?: boolean } = {},
+): number | undefined {
+  for (const k of keys) {
+    const v = finiteCents(data[k], opts);
+    if (v !== undefined) return v;
+  }
+  return undefined;
+}

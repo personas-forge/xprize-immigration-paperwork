@@ -57,7 +57,12 @@ export function isStoreConfigured(env: Env = process.env): boolean {
  * injectable for tests.
  */
 export function isMeteringEnforced(env: Env = process.env): boolean {
-  return env.TOKENS_BYPASS !== "1" && isStoreConfigured(env);
+  // TOKENS_BYPASS is a DEV convenience and is hard-gated out of production,
+  // like NEXT_PUBLIC_DEV_AUTH: a bypass flag accidentally left set on a real
+  // deployment must not turn the paid product free AND drop the auth gate the
+  // charge guard provides (metering off ⇒ AI routes run for anonymous callers).
+  const bypassed = env.TOKENS_BYPASS === "1" && env.NODE_ENV !== "production";
+  return !bypassed && isStoreConfigured(env);
 }
 
 /** Local PGlite data directory (created on first use). */

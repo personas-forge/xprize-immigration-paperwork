@@ -4,6 +4,7 @@ import { assertServerOnly } from "@/lib/serverOnlyGuard";
 assertServerOnly("@/lib/auth/session");
 
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { isFullyConsented } from "@/lib/auth/consent";
 import { SESSION_COOKIE } from "@/lib/firebase/config";
@@ -69,6 +70,12 @@ export function profileFieldsFromUser(user: AppUser): {
 /** Current user, or null. Dispatches by provider: dev-auth → Firebase. */
 export async function getUser(): Promise<AppUser | null> {
   if (isDevAuth()) {
+    // The Firebase branch below is per-request BECAUSE it reads cookies(); this
+    // branch reads nothing dynamic, so under `cacheComponents` Next would
+    // prerender an auth-gated page ONCE and bake a stale balance/case list into
+    // the cached shell (dev-auth only — production always takes the cookie
+    // branch). connection() restores the same per-request semantics here.
+    await connection();
     await ensureDevSeeded();
     return DEV_USER;
   }

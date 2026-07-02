@@ -27,6 +27,7 @@ import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth/session";
 import { evidence } from "@/lib/data/adapters/evidence";
 import { caseAccessFor } from "@/lib/data/adapters/access";
+import { type StoredDocument } from "./types";
 
 export async function removeDocument(
   caseId: string,
@@ -74,4 +75,31 @@ export async function refileDocument(
   );
   if (!result.ok) return;
   revalidatePath(`/dashboard/cases/${caseId}`);
+}
+
+/**
+ * Free persistence-only rescue for a document that was categorized + charged
+ * but failed to save (`saveFailed: true` from /api/evidence/categorize) — the
+ * vault twin of /api/draft/save and /api/rfe/save. Never charges and never
+ * re-categorizes: it re-attempts `addDocument` with the assessment the client
+ * already holds. Returns the persisted document (fresh server-assigned exhibit
+ * ordinal) or null — the caller keeps its optimistic entry on failure so the
+ * user's charged work stays visible either way.
+ */
+export async function rescueDocument(
+  caseId: string,
+  doc: { name: string; criterion: string; facts: readonly string[]; source: string },
+): Promise<{ ok: boolean; document: StoredDocument | null }> {
+  const user = await getUser();
+  if (!user) return { ok: false, document: null };
+  const result = await evidence.addDocument(caseAccessFor(user), {
+    caseId,
+    name: doc.name,
+    criterion: doc.criterion,
+    facts: [...doc.facts],
+    source: doc.source,
+  });
+  if (!result.ok) return { ok: false, document: null };
+  revalidatePath(`/dashboard/cases/${caseId}`);
+  return { ok: true, document: result.value };
 }

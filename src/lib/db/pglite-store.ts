@@ -171,11 +171,18 @@ interface Pglite extends Queryable {
   waitReady: Promise<unknown>;
 }
 
-let pgPromise: Promise<Pglite> | null = null;
+// One PGlite per PROCESS, pinned on globalThis — NOT a module-level variable.
+// In dev, Turbopack compiles each server entry (a page, a route handler) into
+// its own module graph with its own copy of this module; a module-local cache
+// would open one PGlite PER GRAPH on the same datadir. PGlite is a full
+// in-memory Postgres that only persists to the dir — two instances never see
+// each other's writes (an API-route debit is invisible to the dashboard's
+// balance read) and can corrupt the dir on concurrent flush.
+const globalPg = globalThis as { __immigrationPglitePromise?: Promise<Pglite> };
 
 async function open(): Promise<Pglite> {
-  if (!pgPromise) {
-    pgPromise = (async () => {
+  if (!globalPg.__immigrationPglitePromise) {
+    globalPg.__immigrationPglitePromise = (async () => {
       const { PGlite } = await import("@electric-sql/pglite");
       // CORE_DDL runs `create extension pgcrypto` (for gen_random_uuid()), which
       // PGlite only makes available when the contrib extension is loaded at
@@ -190,7 +197,7 @@ async function open(): Promise<Pglite> {
       return pg;
     })();
   }
-  return pgPromise;
+  return globalPg.__immigrationPglitePromise;
 }
 
 const num = (v: unknown): number => Number(v ?? 0);
@@ -476,6 +483,29 @@ export async function getPgliteStore(): Promise<Store> {
           [userId, amount, next],
         );
       });
+    },
+
+    async rateLimitHit(key, resetAt) {
+      // Single-process by construction (one PGlite owns the datadir), so an
+      // in-memory window IS the shared window — no table needed. Pinned on
+      // globalThis like the pg handle: Turbopack dev builds separate module
+      // graphs per entry, and a per-graph map would undercount across them.
+      const g = globalThis as {
+        __immigrationRlWindows?: Map<string, { resetAt: number; count: number }>;
+      };
+      const windows = (g.__immigrationRlWindows ??= new Map());
+      const cur = windows.get(key);
+      if (!cur || cur.resetAt !== resetAt) {
+        // Bound the map: drop elapsed windows before admitting a new key.
+        if (windows.size >= 10_000) {
+          const now = Date.now();
+          for (const [k, w] of windows) if (w.resetAt <= now) windows.delete(k);
+        }
+        windows.set(key, { resetAt, count: 1 });
+        return 1;
+      }
+      cur.count += 1;
+      return cur.count;
     },
 
     // ── Domain: cases + criteria ────────────────────────────────────────────

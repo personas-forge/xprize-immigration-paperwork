@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Newsreader, IBM_Plex_Mono } from "next/font/google";
 import { themeInitScript } from "@/components/ThemeToggle";
+import { HydrationMarker } from "@/components/HydrationMarker";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -123,6 +124,9 @@ export default function RootLayout({
         {/* Skip-link target — a real <main> landmark so screen-reader
             rotors and the skip link land on the document's main region. */}
         <main id="main">{children}</main>
+        {/* data-hydrated on <html> — the harnesses' "interactive now" signal
+            (server HTML is readable before it is clickable; see the module). */}
+        <HydrationMarker />
       </body>
     </html>
   );

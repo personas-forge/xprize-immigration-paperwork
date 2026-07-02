@@ -22,6 +22,8 @@ import {
   type VaultDocLike,
 } from "@/features/drafting";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
+import { costOf } from "@/lib/tokens/registry";
+import { useIdempotencyKeys } from "@/lib/idempotency";
 import {
   copyButtonLabel,
   copyDraftToClipboard,
@@ -136,6 +138,14 @@ export function DraftStudio({
   // Synchronous in-flight guard: a stale-closure `status` check can't stop two
   // clicks in the same render from both firing a paid POST. A ref can.
   const busyRef = useRef(false);
+  // Charge idempotency — one manager PER charged op (full draft, single-section
+  // regenerate, critique are distinct paid intents; sharing one would let a
+  // success in one rotate away the key another still needs for its retry).
+  // Retries reuse the key so the debit de-dupes; success rotates it. Lifecycle
+  // rationale in @/lib/idempotency.
+  const draftIdem = useIdempotencyKeys();
+  const sectionIdem = useIdempotencyKeys();
+  const critiqueIdem = useIdempotencyKeys();
 
   const payload = {
     petitioner: petitioner || "the beneficiary",
@@ -191,7 +201,13 @@ export function DraftStudio({
     try {
       const res = await fetch("/api/draft", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          // No fingerprint: the criteria/case are fixed for this studio
+          // instance, so the key only advances on success (each deliberate
+          // "Regenerate full draft" is a new paid intent).
+          "Idempotency-Key": draftIdem.current(),
+        },
         body: JSON.stringify(payload),
       });
       if (res.status === 402) {
@@ -215,6 +231,8 @@ export function DraftStudio({
       setVersion(v);
       setEditSaveState(v !== null ? "saved" : "idle");
       setStatus("done");
+      // Fulfilled — the next full draft is a new charge.
+      draftIdem.rotate();
     } catch {
       setError("Network error — please try again.");
       setStatus("error");
@@ -231,7 +249,12 @@ export function DraftStudio({
     try {
       const res = await fetch("/api/draft", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          // Fingerprint on the focus heading: retrying the SAME section reuses
+          // the key (debit de-dupes), switching sections is a new intent.
+          "Idempotency-Key": sectionIdem.current(heading),
+        },
         // Send the sections the user is CURRENTLY holding so the server merges the
         // regenerated section into THESE (preserving unsaved edits to other
         // sections), not into the last stored version.
@@ -262,6 +285,8 @@ export function DraftStudio({
       const v = numericVersion(data.version);
       setVersion(v);
       setEditSaveState(v !== null ? "saved" : "idle");
+      // Fulfilled — regenerating this same section again is a new charge.
+      sectionIdem.rotate();
     } catch {
       setRegenerationError(heading);
     } finally {
@@ -275,15 +300,21 @@ export function DraftStudio({
     busyRef.current = true;
     setCritiqueStatus("loading");
     try {
+      // The body doubles as the intent fingerprint: re-critiquing EDITED
+      // sections is a new intent, retrying the same ones reuses the key.
+      const critiquePayload = JSON.stringify({
+        sections,
+        classification,
+        petitioner: payload.petitioner,
+        caseId: resolvedCaseId,
+      });
       const res = await fetch("/api/draft/critique", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sections,
-          classification,
-          petitioner: payload.petitioner,
-          caseId: resolvedCaseId,
-        }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": critiqueIdem.current(critiquePayload),
+        },
+        body: critiquePayload,
       });
       if (res.status === 402) {
         setStatus("paywall");
@@ -297,6 +328,8 @@ export function DraftStudio({
       setCritiques(critiquesByHeading(data.critiques));
       setCritiqueScore(data.overallScore);
       setCritiqueStatus("idle");
+      // Fulfilled — a repeat review of the same draft is a new charge.
+      critiqueIdem.rotate();
     } catch {
       setCritiqueStatus("error");
     } finally {
@@ -446,7 +479,7 @@ export function DraftStudio({
                 Draft the petition
               </Button>
               <span className="microprint" style={{ color: "var(--muted)" }}>
-                Uses 12 tokens · attorney must review &amp; sign
+                Uses {costOf("draft")} tokens · attorney must review &amp; sign
               </span>
             </div>
             {status === "error" && error ? (

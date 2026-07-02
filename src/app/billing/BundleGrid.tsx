@@ -90,8 +90,11 @@ export function BundleGrid({ bundles }: { bundles: Bundle[] }) {
               }`}
             >
               {isBest ? (
-                <div className="absolute -top-3 left-5">
-                  <Stamp label="Best value" meta="most topped up" tone="seal" rotate={-4} />
+                // Top-RIGHT and metaless, matching the landing's pricing stamp:
+                // at left-5 the meta line printed straight over the card's
+                // "Bundle · prepaid" label (visual sweep, ship-blocker #2).
+                <div className="absolute -top-3 right-5">
+                  <Stamp label="Best value" tone="seal" rotate={-4} />
                 </div>
               ) : null}
 

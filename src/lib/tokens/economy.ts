@@ -93,6 +93,8 @@ export function featuredBundle(): Bundle | undefined {
 }
 
 // Enterprise = contact only (no self-serve): premium model tier, custom limits,
-// SSO, invoicing. Set the contact target per deployment.
-export const ENTERPRISE_CONTACT =
-  process.env.NEXT_PUBLIC_ENTERPRISE_CONTACT ?? "mailto:sales@example.com";
+// SSO, invoicing. Set the contact target per deployment — null (band hidden)
+// when unset, because the placeholder default this replaced
+// (mailto:sales@example.com) shipped a dead-end CTA on the billing page.
+export const ENTERPRISE_CONTACT: string | null =
+  process.env.NEXT_PUBLIC_ENTERPRISE_CONTACT || null;

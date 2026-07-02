@@ -51,7 +51,7 @@ export function LocalThemeToggle({
       type="button"
       onClick={onToggle}
       aria-label={dark ? "Switch to parchment theme" : "Switch to ink theme"}
-      className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[12.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted"
+      className="focus-ring inline-flex items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 font-mono text-[12.5px] uppercase tracking-document text-foreground transition-[background-color,border-color] hover:border-foreground hover:bg-surface-muted"
     >
       <span aria-hidden>{dark ? "☾" : "☼"}</span>
       {dark ? "Ink" : "Parchment"}

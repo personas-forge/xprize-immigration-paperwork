@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { costOf } from "@/lib/tokens/registry";
+import { useIdempotencyKeys } from "@/lib/idempotency";
 import { getForms } from "@/lib/data";
 import { type UscisForm } from "@/features/case-file/types";
 import { DISCLAIMER, MAX_FIELD, type GuidanceResponse } from "../guidance";
@@ -41,6 +42,10 @@ export function FieldGuidancePanel() {
   const fieldSelectId = useId();
   const formSelectId = useId();
   const situationId = useId();
+  // Charge idempotency: retrying the same form/field/situation reuses the key
+  // (the debit de-dupes); success or edited inputs rotate it. See
+  // @/lib/idempotency.
+  const idem = useIdempotencyKeys();
 
   // Load the form catalog through the data layer (mock today, API later).
   // A rejected fetch flips formsError so the panel shows a retryable alert
@@ -90,10 +95,16 @@ export function FieldGuidancePanel() {
     setError(null);
     setResult(null);
     try {
+      // The body doubles as the intent fingerprint: identical inputs (a retry)
+      // reuse the key; a changed form/field/situation rotates it.
+      const payload = JSON.stringify({ formId, fieldLabel, situation });
       const res = await fetch("/api/guidance", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ formId, fieldLabel, situation }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idem.current(payload),
+        },
+        body: payload,
       });
       // 402 → out of tokens. Show the paywall CTA (→ /billing) instead of a
       // generic error. The not-legal-advice disclaimer still renders here.
@@ -109,6 +120,8 @@ export function FieldGuidancePanel() {
       }
       setResult(data);
       setStatus("done");
+      // Fulfilled — re-asking the same question is a new charge.
+      idem.rotate();
     } catch {
       setError("Network error — please try again.");
       setStatus("error");

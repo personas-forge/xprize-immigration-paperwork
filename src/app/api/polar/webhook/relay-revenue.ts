@@ -7,7 +7,7 @@
 // credit path via `./polar-fields`, so the relay and route can't resolve the same
 // order's buyer / product / amount differently.
 
-import { finiteCents, productId, resolveUserId } from "./polar-fields";
+import { pickCents, pickStr, productId, resolveUserId } from "./polar-fields";
 
 /** Minimal shape of a signature-verified Polar webhook event the mapper reads. */
 export interface WebhookEvent {
@@ -43,9 +43,14 @@ function str(v: unknown): string | undefined {
 export function polarEventToRevenue(event: WebhookEvent): RevenueRelay | null {
   const d = event.data;
 
+  // All amount/id reads go through the duality-aware pickers: `validateEvent`
+  // zod-parses deliveries into camelCase (`totalAmount`, `subscriptionId`), so a
+  // raw snake_case read is ALWAYS undefined on a verified event — which silently
+  // returned null for every paid order (no revenue relayed) until pinned by tests.
   if (event.type === "order.paid") {
     const ext = orderId(d);
-    const cents = finiteCents(d.total_amount) ?? finiteCents(d.net_amount);
+    const cents =
+      pickCents(d, ["total_amount", "totalAmount"]) ?? pickCents(d, ["net_amount", "netAmount"]);
     if (!ext || cents == null) return null;
     return {
       externalId: ext,
@@ -53,16 +58,18 @@ export function polarEventToRevenue(event: WebhookEvent): RevenueRelay | null {
       productId: productId(d),
       amountUsd: cents / 100,
       currency: str(d.currency),
-      kind: str(d.subscription_id) ? "subscription" : "one_time",
-      ts: str(d.created_at),
+      kind: pickStr(d, "subscription_id", "subscriptionId") ? "subscription" : "one_time",
+      ts: str(d.created_at) ?? str(d.createdAt),
     };
   }
 
   if (event.type === "order.refunded" || event.type === "refund.created") {
-    // refund.created: data is a Refund {id, amount, order_id}; order.refunded: an Order {refunded_amount}.
+    // refund.created: data is a Refund {id, amount, order_id}; order.refunded: an Order {refundedAmount}.
     const ext =
-      (event.type === "refund.created" ? str(d.id) : undefined) ?? str(d.order_id) ?? orderId(d);
-    const cents = finiteCents(d.refunded_amount) ?? finiteCents(d.amount);
+      (event.type === "refund.created" ? str(d.id) : undefined) ??
+      pickStr(d, "order_id", "orderId") ??
+      orderId(d);
+    const cents = pickCents(d, ["refunded_amount", "refundedAmount", "amount"]);
     if (!ext || !cents) return null;
     return {
       externalId: ext,
@@ -70,7 +77,7 @@ export function polarEventToRevenue(event: WebhookEvent): RevenueRelay | null {
       amountUsd: cents / 100,
       currency: str(d.currency),
       kind: "refund",
-      ts: str(d.created_at),
+      ts: str(d.created_at) ?? str(d.createdAt),
     };
   }
 

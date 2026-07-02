@@ -25,7 +25,7 @@ import { DISCLAIMER } from "@/lib/result";
 
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const limited = enforceRateLimit(
+  const limited = await enforceRateLimit(
     request,
     "qualify_preview",
     PREVIEW_RATE_LIMIT,

@@ -1,0 +1,25 @@
+# Decisions log
+
+## CP0 — boot (2026-07-02)
+- Ship bar: **Public launch with real payments** (strictest gates)
+- Cadence: **Marathon** — check in only when blocked or every 4th milestone
+- First focus: **UAT harness first** (items 12–14)
+- UAT depth: **All journeys + edge cases** (hostile/edge persona is ship-blocking)
+
+## Auto-decided (pending user review at next CP)
+- 2026-07-02 — Created branch `ship-loop/readiness-2026-07-02` off main instead of asking: workspace memory records that main is release-automation-managed and local unpushed commits on main get reset away, so working on main risks losing the loop's work. Reversible (merge/rebase/PR later; user decides when/whether to push).
+- 2026-07-02 — Killed stale `next dev` (PID 4796, started 08:53 today) blocking all Playwright webServer boots (Next 16 singleton guard). Restartable via npm run dev.
+- 2026-07-02 — UAT runs on `next dev`, NOT a prod build: dev-auth is hard-gated to non-production (a safety property we must not weaken). Prod-build smoke will be a separate journey. Logged as permanent harness caveat in playwright.uat.config.ts.
+- 2026-07-02 — Fake-engine approach: CLAUDE_CLI_PATH → deterministic script rather than a test engine in prod code (zero prod test seams; exercises the real claude spawn path).
+- 2026-07-02 — Item 6: REMOVING the dead masthead buttons (voice intake exists nowhere in the codebase; "Open petition letter" targets the mock sample case pending the item-21 CP decision). Reversible.
+- 2026-07-02 — Item 7: Enterprise band HIDDEN unless NEXT_PUBLIC_ENTERPRISE_CONTACT is set (no more sales@example.com dead-end). Reversible.
+- 2026-07-02 — Item 22 second half NOT done: costOf keeps its light-tier fallback for unknown ops — a throw on the charge path would emit a disclaimer-less 500; the warn + underbill trade-off is documented in registry.ts.
+
+## CP1 (2026-07-02, after Milestone 4)
+- Item 5 filing honesty: SOFTEN marketing copy (landing/FAQ describe attorney workflow prep / pilot, not real USCIS filing) AND make in-product demo labeling more prominent.
+- Item 21 dashboard sample: KEEP the worked example, label it harder; dedupe the double real-cases render.
+- Item 15 deploy target: VERCEL (vercel.json + maxDuration on LLM routes; firebase.json still added so firestore.rules are deployable).
+- Milestone 5 = ship-blockers: items 5, 21, 15, 24 (minimal error visibility).
+- All auto-decisions to date presented at CP1 and not objected to.
+- 2026-07-02 (CP2 asked, user AFK — auto-decided on the recommended options, pending ratification): item 23 cert signing ACCEPTED for v1 (SHIP_REPORT limitation); UAT dev-server basis ACCEPTED with note; live Vercel deploy + Polar sandbox purchase → SHIP_REPORT runbook; NEXT = Ship Gate.
+- 2026-07-02 (final CP, user AFK) — Pushed branch + opened PR #121 per workspace memory ("push/PR promptly; main resets unpushed work"); ratification of CP2 decisions + next-loop choice left to the user.

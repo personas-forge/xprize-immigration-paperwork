@@ -48,3 +48,40 @@ test("productId / resolveUserId: still normalise the camel/snake duality via pic
   assert.equal(resolveUserId({ metadata: { userId: "u_meta" }, externalCustomerId: "u_ext" }), "u_meta");
   assert.equal(resolveUserId({ external_customer_id: "u_ext" }), "u_ext");
 });
+
+// pickCents — the numeric twin. validateEvent camelCases verified events, so
+// the clawback/revenue amounts MUST resolve through key duality; a raw
+// snake_case read is always undefined on a live event (the bug these pin).
+
+import { pickCents } from "./polar-fields";
+
+test("pickCents: resolves the camelCase spelling a verified event actually carries", () => {
+  assert.equal(pickCents({ refundedAmount: 250 }, ["refunded_amount", "refundedAmount"]), 250);
+});
+
+test("pickCents: snake_case (raw/unparsed payloads) still wins when present", () => {
+  assert.equal(
+    pickCents({ refunded_amount: 100, refundedAmount: 250 }, ["refunded_amount", "refundedAmount"]),
+    100,
+  );
+});
+
+test("pickCents: skips non-finite/non-number values and keeps scanning", () => {
+  assert.equal(
+    pickCents({ refunded_amount: "250", refundedAmount: 250 } as Record<string, unknown>, [
+      "refunded_amount",
+      "refundedAmount",
+    ]),
+    250,
+  );
+  assert.equal(pickCents({ amount: Number.NaN }, ["amount"]), undefined);
+});
+
+test("pickCents: nonNegative rejects a negative on the credit/clawback path", () => {
+  assert.equal(pickCents({ amount: -500 }, ["amount"], { nonNegative: true }), undefined);
+  assert.equal(pickCents({ amount: -500 }, ["amount"]), -500);
+});
+
+test("pickCents: zero is a real amount, not absence", () => {
+  assert.equal(pickCents({ refundedAmount: 0 }, ["refunded_amount", "refundedAmount"]), 0);
+});

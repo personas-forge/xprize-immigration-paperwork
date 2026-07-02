@@ -86,6 +86,19 @@ export function ConsentForm({
         <legend className="microprint mb-1" style={{ color: "var(--muted-strong)" }}>
           Consent &amp; agreements
         </legend>
+        {/* The documents being accepted must be READABLE from here — links sit
+            outside the <label>s so opening one can't toggle a checkbox. */}
+        <p className="font-sans text-[15px] text-muted-strong">
+          Read the{" "}
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="ink-link focus-ring">
+            Terms of Service
+          </a>{" "}
+          and the{" "}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="ink-link focus-ring">
+            Privacy Policy
+          </a>{" "}
+          (each opens in a new tab).
+        </p>
         <Checkbox
           name={CONSENT_FIELDS.terms}
           required

@@ -257,8 +257,8 @@ function SignAndFileAction({ caseId }: { caseId: string }) {
           Sign &amp; file with USCIS
         </Button>
         <p className="microprint" style={{ color: "var(--muted)" }}>
-          Signs the petition under your name and files it with USCIS — you&apos;ll
-          confirm first.
+          Signs the petition under your name and records the filing — the studio
+          does not transmit anything to USCIS. You&apos;ll confirm first.
         </p>
       </div>
     );
@@ -274,10 +274,11 @@ function SignAndFileAction({ caseId }: { caseId: string }) {
         Confirm — attorney of record
       </div>
       <p className="font-sans text-[15.5px] leading-snug text-foreground-soft">
-        You are about to <strong>sign this petition under your name and file it
-        with USCIS</strong>. The case moves to <strong>Filed</strong> and receives
-        a receipt number. Confirm only after you have reviewed the full draft and
-        exhibits — this is your attorney-of-record action.
+        You are about to <strong>sign this petition under your name and record it
+        as filed</strong>. The case moves to <strong>Filed</strong> and receives a
+        receipt number; the actual USCIS submission happens outside the studio
+        (nothing is transmitted from here). Confirm only after you have reviewed
+        the full draft and exhibits — this is your attorney-of-record action.
       </p>
       <ReviewActionForm action={attorneySignAndFile.bind(null, caseId)} className="space-y-3">
         <label className="block">
