@@ -3,7 +3,7 @@ import { validateEvent } from "@polar-sh/sdk/webhooks";
 import { credit } from "@/lib/tokens/ledger";
 import { bundleByKey, bundleByProductId } from "@/lib/tokens/economy";
 import { polarEventToRevenue, type WebhookEvent } from "./relay-revenue";
-import { finiteCents, pickStr, productId, resolveUserId } from "./polar-fields";
+import { pickCents, pickStr, productId, resolveUserId } from "./polar-fields";
 import { trackRevenue } from "@/lib/cost-telemetry";
 
 // Only the fields read DIRECTLY off the order cast. The buyer / product id /
@@ -13,11 +13,6 @@ import { trackRevenue } from "@/lib/cost-telemetry";
 type PolarOrder = {
   id: string;
   metadata?: Record<string, string>;
-  /** Refunded amount in minor units (cents). `order.refunded` carries
-   *  `refunded_amount`; `refund.created` carries `amount`. Used to claw back
-   *  PROPORTIONALLY rather than always reversing the full bundle. */
-  refunded_amount?: number;
-  amount?: number;
 };
 
 /** Resolve the credited bundle. The product id is the SIGNED, paid fact and is
@@ -112,18 +107,23 @@ export async function POST(request: NextRequest) {
       // Claw back PROPORTIONALLY to the refunded amount, not the whole bundle:
       // Polar supports PARTIAL refunds, so a $5 goodwill refund on the $150 Scale
       // bundle must reverse ~1,000 tokens, not all 30,000. refundedCents comes
-      // from the payload (order.refunded → refunded_amount; refund.created →
-      // amount); absent/zero falls back to a full-bundle reversal (a malformed
-      // payload — Polar always sends an amount) and is logged.
+      // from the payload (order.refunded → refunded/refundedAmount; refund.created
+      // → amount) via the duality-aware pickCents — validateEvent camelCases the
+      // verified event, so a raw `refunded_amount` read is ALWAYS undefined (that
+      // silently degraded every partial refund to a full-bundle clawback until
+      // UAT pinned it). Absent/zero still falls back to a full-bundle reversal
+      // (a malformed payload — Polar always sends an amount) and is logged.
       // DEDUP TRADE-OFF: the ref stays keyed on the ORIGINAL order id so a
       // re-delivered refund event (and the order.refunded/refund.created pair for
       // the same refund) can't double-debit. The cost is that a SECOND distinct
       // partial refund on the same order is deduped (not clawed back) — accepted
       // as the conservative choice over any risk of double-clawback; revisit with
       // per-refund keying if multi-partial-refund-per-order becomes common.
-      const refundedCents =
-        finiteCents(order.refunded_amount, { nonNegative: true }) ??
-        finiteCents(order.amount, { nonNegative: true });
+      const refundedCents = pickCents(
+        event.data,
+        ["refunded_amount", "refundedAmount", "amount"],
+        { nonNegative: true },
+      );
       let clawback = b.tokens;
       if (refundedCents && refundedCents > 0 && b.priceCents > 0) {
         clawback = Math.min(b.tokens, Math.round((b.tokens * refundedCents) / b.priceCents));
