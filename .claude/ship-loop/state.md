@@ -16,8 +16,9 @@
 - Milestone 7 ☑ COMPLETE (item 28 sweep + burn-down; commit b8545da) + Gate M7 all green: typecheck✓ lint✓ 511✓ build✓ uat 25/25✓ e2e 7/7✓ smoke 6/6✓.
 - Scorecard: 1🟢 2🟢 3🟢 4🟡 5🟡 6🟡 7🟢 8🟡 — remaining 🟡 are USER-GATED or accept-with-note: 4 (auth journeys on dev server — structural), 5 (live Polar sandbox purchase unverified), 6 (item 23 share-token signing decision; item 30 multi-instance limiter), 8 (live Vercel deploy unverified). Backlog open: 11 (deprioritized), 23, 30, 33, 34 (polish).
 - SHIP GATE PASSED (2026-07-02): two consecutive all-green gates (M7 + Gate #2: 511 tests, build, smoke 8/8, uat 25/25, e2e 7/7); /terms + /privacy shipped + linked + smoked; SHIP_REPORT.md committed (08c7b48). Verdict: READY, 3 launch conditions (counsel sign-off, live Vercel deploy probe, live Polar sandbox purchase).
-- Open backlog (non-blocking): 11 (deprioritized), 23 (accepted v1), 30 (multi-instance), 33/34 (polish).
-- NEXT ACTION: final checkpoint — ratify CP2 auto-decisions, decide push/PR (branch has ~35 unpushed commits; main is release-automation-managed), offer optional polish loop.
+- Milestone 8 "Polish" ☑ COMPLETE (33,34,11,30) + Gate M8 all green: typecheck✓ lint✓ 525 tests✓ build✓ smoke 8/8✓ uat 25/25✓ e2e 7/7✓. Commits 5c1085e (chart+numerals) + f52dca1 (shared limiter + webhook seam).
+- Backlog: ONLY #23 remains (unsigned share cert — accepted for v1 at CP2). Multi-instance limiter gap CLOSED (dim 6 note resolved).
+- NEXT ACTION: push branch (PR #121 updates), final wrap-up. Loop fully complete.
 
 ## Scorecard
 | # | Dimension | Score | Evidence (cmd → result, date) | Top gaps |
