@@ -17,6 +17,7 @@ import { type CriterionLineInput } from "@/features/drafting/criteria-text";
 import { ExhibitIndex } from "@/features/drafting/components/ExhibitIndex";
 import { isRelied, MIN_RFE, toRfeCriterion } from "@/features/rfe";
 import { costOf } from "@/lib/tokens/registry";
+import { useIdempotencyKeys } from "@/lib/idempotency";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
 
 // — RFE response studio ───────────────────────────────────────────────────────
@@ -78,6 +79,9 @@ export function RfeStudio({
   // Synchronous in-flight guard — see DraftStudio. A stale `status` closure can't
   // stop two same-render clicks from both firing a paid POST.
   const busyRef = useRef(false);
+  // Charge idempotency: retrying the same RFE text reuses the key (the debit
+  // de-dupes); success or an edited RFE rotates it. See @/lib/idempotency.
+  const idem = useIdempotencyKeys();
 
   // Exhibit index + live (Exhibit N) citation audit of the RFE response, the
   // same binding the responder uses to prompt (moonshot #21).
@@ -130,16 +134,22 @@ export function RfeStudio({
     setError(null);
     setSaveFailed(false);
     try {
+      // The body doubles as the intent fingerprint: same RFE text retried →
+      // same key; a rewritten RFE (or rescored criteria) → fresh key.
+      const payload = JSON.stringify({
+        caseId,
+        rfeText,
+        petitioner,
+        classification,
+        criteria: criteria.map(toRfeCriterion),
+      });
       const res = await fetch("/api/rfe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          caseId,
-          rfeText,
-          petitioner,
-          classification,
-          criteria: criteria.map(toRfeCriterion),
-        }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idem.current(payload),
+        },
+        body: payload,
       });
       if (res.status === 402) {
         setStatus("paywall");
@@ -156,6 +166,8 @@ export function RfeStudio({
       setSaveFailed(Boolean(data.saveFailed));
       setAdjudication(data.adjudication ?? null);
       setStatus("done");
+      // Fulfilled — "Regenerate response" on the same RFE is a new charge.
+      idem.rotate();
     } catch {
       setError("Network error — please try again.");
       setStatus("error");

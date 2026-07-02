@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { costOf } from "@/lib/tokens/registry";
+import { useIdempotencyKeys } from "@/lib/idempotency";
 import { DISCLAIMER } from "@/lib/result";
 import { type QualifyResult } from "../qualification";
 import { VISA_PACKS, isClassification, type Classification } from "../packs";
@@ -65,6 +66,10 @@ export function QualifyPanel() {
   // repeat or requestSubmit() from firing two concurrent /api/qualify calls
   // (each charges tokens and creates a separate case) before the re-render.
   const submitting = useRef(false);
+  // Charge idempotency: same inputs retried (network drop, error) reuse the
+  // key so the server de-dupes the debit; a success or edited inputs mint a
+  // fresh one (new paid intent). Lifecycle rationale in @/lib/idempotency.
+  const idem = useIdempotencyKeys();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -79,10 +84,16 @@ export function QualifyPanel() {
     setError(null);
     setResult(null);
     try {
+      // The body doubles as the intent fingerprint: identical inputs (a retry)
+      // reuse the key; edited inputs rotate it.
+      const payload = JSON.stringify({ name, profile, classification });
       const res = await fetch("/api/qualify", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, profile, classification }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idem.current(payload),
+        },
+        body: payload,
       });
       // 402 → out of tokens. Show the paywall CTA (→ /billing) instead of a
       // generic error. The not-legal-advice disclaimer still renders here.
@@ -98,6 +109,8 @@ export function QualifyPanel() {
       }
       setResult(data);
       setStatus("done");
+      // Fulfilled — a deliberate re-screen of the same inputs is a new charge.
+      idem.rotate();
     } catch {
       setError("Network error — please try again.");
       setStatus("error");

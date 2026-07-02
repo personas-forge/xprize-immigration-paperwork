@@ -15,6 +15,7 @@ import {
 import { type StoredDocument } from "@/features/evidence/types";
 import { type ModelSource } from "@/lib/llm/label";
 import { costOf } from "@/lib/tokens/registry";
+import { useIdempotencyKeys } from "@/lib/idempotency";
 import { formatExhibit, parseExhibitOrdinal } from "@/lib/exhibits";
 import { refileDocument, removeDocument, restoreDocument } from "../actions";
 
@@ -68,6 +69,10 @@ export function EvidenceVault({
   // concurrent add() calls (charged twice + duplicate exhibit). A ref flips
   // immediately, before any await.
   const submitting = useRef(false);
+  // Charge idempotency: retrying the same document reuses the key (the debit
+  // de-dupes); a saved doc or edited name/content rotates it. See
+  // @/lib/idempotency.
+  const idem = useIdempotencyKeys();
   // The most-recently removed document, kept so the removal can be UNDONE
   // (restore keeps its original exhibit ordinal). Cleared on undo or a new add.
   const [lastRemoved, setLastRemoved] = useState<DocumentView | null>(null);
@@ -89,10 +94,16 @@ export function EvidenceVault({
     setLastRemoved(null);
     setAnnounce("Categorizing the document…");
     try {
+      // The body doubles as the intent fingerprint: the same doc retried →
+      // same key; a different/edited doc → fresh key.
+      const payload = JSON.stringify({ caseId, name, content, classification });
       const res = await fetch("/api/evidence/categorize", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caseId, name, content, classification }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idem.current(payload),
+        },
+        body: payload,
       });
       if (res.status === 402) {
         setStatus("paywall");
@@ -135,6 +146,9 @@ export function EvidenceVault({
           "Categorized, but we couldn't save this to your case — it won't persist after a reload. Please try again.",
         );
       }
+      // Fulfilled — the next document (even a re-add of the same text) is a
+      // new charge.
+      idem.rotate();
       setName("");
       setContent("");
       setStatus("idle");

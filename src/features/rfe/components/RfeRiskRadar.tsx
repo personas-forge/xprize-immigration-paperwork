@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { DisclaimerStamp } from "@/components/legal";
 import { costOf } from "@/lib/tokens/registry";
+import { useIdempotencyKeys } from "@/lib/idempotency";
 import { type RfeChallenge, type RfeForecastResult } from "@/features/rfe";
 
 // — RFE Risk Radar (moonshot #20) ─────────────────────────────────────────────
@@ -51,16 +52,25 @@ export function RfeRiskRadar({
   const [challenges, setChallenges] = useState<RfeChallenge[]>([]);
   const [disclaimer, setDisclaimer] = useState("");
   const busy = useRef(false);
+  // Charge idempotency: the error-path "Try again" reuses the key (the debit
+  // de-dupes); a completed forecast rotates it. See @/lib/idempotency.
+  const idem = useIdempotencyKeys();
 
   async function forecast() {
     if (busy.current) return; // charges tokens
     busy.current = true;
     setStatus("loading");
     try {
+      // The body doubles as the intent fingerprint — the inputs are all props,
+      // so this only rotates if the parent re-screens the criteria under us.
+      const payload = JSON.stringify({ criteria, classification, petitioner, caseId });
       const res = await fetch("/api/rfe/forecast", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ criteria, classification, petitioner, caseId }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idem.current(payload),
+        },
+        body: payload,
       });
       if (res.status === 402) {
         onPaywall();
@@ -75,6 +85,8 @@ export function RfeRiskRadar({
       setChallenges(data.challenges);
       setDisclaimer(data.disclaimer);
       setStatus("done");
+      // Fulfilled — a repeat forecast is a new charge.
+      idem.rotate();
     } catch {
       setStatus("error");
     } finally {

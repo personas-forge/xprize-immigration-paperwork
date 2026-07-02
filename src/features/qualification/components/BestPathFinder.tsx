@@ -7,6 +7,7 @@ import { Rise } from "@/components/Motion";
 import { DisclaimerStamp } from "@/components/legal";
 import { type BestPathResult, type ProgramScore } from "../best-path";
 import { isModelSource } from "@/lib/llm/label";
+import { useIdempotencyKeys } from "@/lib/idempotency";
 import { SAMPLE_PROFILE, type QualifyPrefill } from "../prefill";
 
 // — Best-path finder (moonshot #7) ────────────────────────────────────────────
@@ -32,6 +33,10 @@ export function BestPathFinder({
   const [error, setError] = useState<string | null>(null);
 
   const busy = useRef(false);
+  // Charge idempotency for the paid best-path op: a retry of the same profile
+  // reuses the key (debit de-dupes); success or edited inputs rotate it. The
+  // keyless /preview fallback is free and needs none.
+  const idem = useIdempotencyKeys();
 
   async function find(e: React.FormEvent) {
     e.preventDefault();
@@ -49,16 +54,20 @@ export function BestPathFinder({
       // Prefer the model-backed comparison (authenticated — reads the whole
       // record); fall back to the keyless KEYWORD preview when signed out (401)
       // or out of tokens (402) so the funnel still works (UAT LLM-1).
+      const payload = JSON.stringify({ name, profile, classification: "O-1A" });
       let res = await fetch("/api/qualify/best-path", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, profile, classification: "O-1A" }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idem.current(payload),
+        },
+        body: payload,
       });
       if (res.status === 401 || res.status === 402) {
         res = await fetch("/api/qualify/preview/best-path", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, profile, classification: "O-1A" }),
+          body: payload,
         });
       }
       if (res.status === 429) {
@@ -74,6 +83,8 @@ export function BestPathFinder({
       }
       setResult(data);
       setStatus("done");
+      // Fulfilled (paid or preview) — a deliberate re-run is a new intent.
+      idem.rotate();
     } catch {
       setError("Network error — please try again.");
       setStatus("error");
