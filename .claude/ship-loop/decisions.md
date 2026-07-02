@@ -11,3 +11,6 @@
 - 2026-07-02 — Killed stale `next dev` (PID 4796, started 08:53 today) blocking all Playwright webServer boots (Next 16 singleton guard). Restartable via npm run dev.
 - 2026-07-02 — UAT runs on `next dev`, NOT a prod build: dev-auth is hard-gated to non-production (a safety property we must not weaken). Prod-build smoke will be a separate journey. Logged as permanent harness caveat in playwright.uat.config.ts.
 - 2026-07-02 — Fake-engine approach: CLAUDE_CLI_PATH → deterministic script rather than a test engine in prod code (zero prod test seams; exercises the real claude spawn path).
+- 2026-07-02 — Item 6: REMOVING the dead masthead buttons (voice intake exists nowhere in the codebase; "Open petition letter" targets the mock sample case pending the item-21 CP decision). Reversible.
+- 2026-07-02 — Item 7: Enterprise band HIDDEN unless NEXT_PUBLIC_ENTERPRISE_CONTACT is set (no more sales@example.com dead-end). Reversible.
+- 2026-07-02 — Item 22 second half NOT done: costOf keeps its light-tier fallback for unknown ops — a throw on the charge path would emit a disclaimer-less 500; the warn + underbill trade-off is documented in registry.ts.

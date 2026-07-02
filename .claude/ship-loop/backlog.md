@@ -4,7 +4,7 @@ Numbering is append-only and stable — never renumber (user decisions reference
 
 | # | S | Dim | Size | Item |
 |---|---|-----|------|------|
-| 1 | ☐ | 5-Billing | S | Client sends `Idempotency-Key` on every charged-op fetch (DraftStudio, RfeStudio, QualifyPanel, EvidenceVault, FieldGuidancePanel, RfeRiskRadar, critique) so the built server de-dupe engages; test pins it. Kills double-charge on retry/second-tab. |
+| 1 | ☑ | 5-Billing | S | Client sends `Idempotency-Key` on every charged-op fetch (DraftStudio, RfeStudio, QualifyPanel, EvidenceVault, FieldGuidancePanel, RfeRiskRadar, critique) so the built server de-dupe engages; test pins it. Kills double-charge on retry/second-tab. |
 | 2 | ☑ | 5-Billing | S | Reclaim tokens when a metered op serves the unconfigured-LLM mock (operation.ts step 5, getLlm()==null) — restore "a mock is never billed" invariant; unit test. |
 | 3 | ☑ | 5-Billing | S | `/api/checkout` 503s when Store unconfigured; webhook 500s when a paid order credits 0 tokens — closes money-taken-no-tokens hole. |
 | 4 | ☑ | 6-Sec | S | Hard-gate TOKENS_BYPASS to NODE_ENV!=="production"; add auth check on metered AI routes independent of metering free-pass. |
@@ -34,3 +34,5 @@ Numbering is append-only and stable — never renumber (user decisions reference
 | 28 | ☐ | 7-UX | M | Screenshot sweep key pages at 375px + 1440px, review vs UX checklist, burn down ship-blockers (dimension-7 evidence). |
 | 29 | ☐ | 8-Ops | S | Repo hygiene: fix `.claude/CLAUDE.md` stale `test:e2e` → `e2e`; untrack committed run artifacts (check_runs*.json, playwright-report/, test-results/, scripts/llm-eval/out/). |
 | 30 | ☐ | 6-Sec | L | Shared rate-limit store (Redis/Firestore) for multi-instance prod — in-memory caps multiply per instance. Defer unless target is multi-instance. |
+| 31 | ☐ | 4-UAT | S | Prod-build smoke: `next build`+`start`, hit / + one API route + /api/health (pre-flight requirement; auth journeys stay on the dev-server harness). |
+| 32 | ☐ | 4-UAT | M | Hostile/edge persona journeys (ship-blocking per CP0 UAT depth): logged-out probing of protected APIs/pages, oversized/invalid inputs, back-button mid-flow — expect graceful handling, never a charge. |

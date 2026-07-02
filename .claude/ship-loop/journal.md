@@ -7,3 +7,4 @@
 2026-07-02 ITEM 14 ☑ lifecycle journey 6 tests. GATE M1: typecheck ✓ lint ✓ tests ✓(477) build ✓ uat ✓(18/18) billing ✓(A2 5 ops, A3 sim-webhook). Milestone 1 COMPLETE. Scorecard: 4.UAT 🔴→🟡, 3.Tests+12. Milestone 2 = money correctness (1,2,3,4,9,22).
 2026-07-02 ITEMS 2,3,4,22 ☑ (commit ee718e0): reclaim-on-unconfigured-mock, checkout/webhook store guards, TOKENS_BYPASS prod hard-gate, UI costs from costOf.
 2026-07-02 ITEM 9 ☑ (commit 1d479c1): guard.ts → assertServerOnly + GuardDeps, 6-case charge matrix. Tests 485. Item 1 delegated to agent (in flight).
+2026-07-02 ITEM 1 ☑ client Idempotency-Key (agent-implemented, orchestrator-verified; commit a01b30f). GATE M2: typecheck ✓ lint ✓ tests ✓(492) build ✓ uat ✓(20/20). Milestone 2 COMPLETE. Scorecard: 5.Billing 🔴→🟡. Milestone 3 = ops/honest surfaces (16,17,18,29,6,7). Backlog +31,32.
