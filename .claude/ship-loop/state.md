@@ -5,8 +5,9 @@
 - Ship bar: public launch w/ real payments. Cadence: MARATHON (CP only when blocked or every 4th milestone). UAT depth: all journeys + edge cases.
 - Scorecard: 1.Build 🟢 2.Func 🔴 3.Tests 🟡 4.UAT 🔴 5.Billing 🔴 6.Sec 🟡 7.UX 🟡 8.Ops 🔴
 - Branch: ship-loop/readiness-2026-07-02 (main is release-automation-managed; never work on main).
-- Milestone 1 "UAT harness": item 12 ☐ (harness + signup→qualify→draft debit journey), 13 ☐ (paywall+purchase), 14 ☐ (vault/RFE/tracking/account journeys), then Verification Gate.
-- NEXT ACTION: item 12 — read playwright.config.ts + e2e/ + llm config/engines + devAuth/db config; design UAT server mode (PGlite, dev-auth, metering ON, deterministic fake LLM engine); implement.
+- Milestone 1 "UAT harness": item 12 ☑ (harness green: 4/4 journeys, exact debits + failure-reclaim), 13 ◐ (paywall+purchase), 14 ☐ (vault/RFE/tracking/account journeys), then Verification Gate.
+- UAT runs via `npm run uat` (playwright.uat.config.ts, fake claude CLI at e2e/uat/fake-claude.mjs).
+- NEXT ACTION: item 13 — read /api/polar/webhook route + BundleGrid paywall UI; write uat-billing.spec.ts (spend to insufficient → 402 paywall no-debit → signed simulated order.paid webhook credits 500 → op succeeds).
 
 ## Scorecard
 | # | Dimension | Score | Evidence (cmd → result, date) | Top gaps |

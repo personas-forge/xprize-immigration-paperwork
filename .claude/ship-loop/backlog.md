@@ -15,7 +15,7 @@ Numbering is append-only and stable — never renumber (user decisions reference
 | 9 | ☐ | 3-Tests | M | Unit tests for chargeForOperation guard matrix: bypass / no-store / no-auth-provider / unauth 401 / insufficient / charge+reclaim. |
 | 10 | ☐ | 3-Tests | L | Ledger tests against the real PGlite store: debit idempotency by ref, insufficient-balance refusal, credit idempotency by (reason,ref), signup-grant-once, clawback floor-at-0, balance_after correctness. |
 | 11 | ☐ | 3-Tests | M | Polar webhook route tests: bad signature 403, order.paid credits bundle, replay idempotent, refund proportional clawback, unresolvable paid order → 500 (retry). |
-| 12 | ☐ | 4-UAT | L | UAT harness: production build (`next build`+`start`) + PGlite + dev-auth + metering ON; first journey signup-grant → qualify → draft asserting exact debits (A2), tagged @uat. |
+| 12 | ☑ | 4-UAT | L | UAT harness (npm run uat): PGlite + dev-auth + metering ON + deterministic fake claude CLI; journey signup-grant→qualify→draft w/ exact debits + failure-reclaim (A2.1-3). Dev server, not prod build (dev-auth is prod-hard-gated — deviation logged); found+fixed 2 dev-mode app bugs (stale cacheComponents auth pages; per-graph PGlite duplication). |
 | 13 | ☐ | 4-UAT | M | Paywall + purchase journey (A3): zero balance → charged op blocked, no debit, CTA works → simulated order.paid webhook credits → op succeeds. |
 | 14 | ☐ | 4-UAT | M | Journeys: evidence vault (categorize/refile/delete), RFE studio, case tracking, account export/delete, onboarding consent. |
 | 15 | ☐ | 8-Ops | M | Deploy config for chosen target: Dockerfile + output:"standalone" (Cloud Run) or vercel.json; maxDuration on LLM routes; firebase.json so firestore.rules/indexes are deployable. |
