@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { ensureOnboarded, readBalance, PRICE, SIGNUP_GRANT } from "./helpers";
+import { gotoInteractive } from "./helpers";
 
 // @uat — New free user (persona B2): consent → signup grant → first qualify →
 // full petition draft, with A2 billing assertions on every charged op:
@@ -14,7 +15,7 @@ test.describe("@uat signup → qualify → draft", () => {
     expect(await readBalance(page)).toBe(SIGNUP_GRANT);
 
     // Re-visiting /welcome must not re-grant (grant is idempotent by design).
-    await page.goto("/welcome");
+    await gotoInteractive(page, "/welcome");
     expect(await readBalance(page)).toBe(SIGNUP_GRANT);
   });
 
@@ -22,7 +23,7 @@ test.describe("@uat signup → qualify → draft", () => {
     await ensureOnboarded(page);
     const before = await readBalance(page);
 
-    await page.goto("/qualify");
+    await gotoInteractive(page, "/qualify");
     await page.getByRole("button", { name: /I already know my visa/i }).click();
     await page.getByPlaceholder("e.g. Dr. Anya Krishnan").fill("UAT Developer");
     await page.getByRole("button", { name: "Use a sample" }).click();
@@ -54,7 +55,7 @@ test.describe("@uat signup → qualify → draft", () => {
     expect(caseHref, "qualify journey must have created a case").toBeTruthy();
     const before = await readBalance(page);
 
-    await page.goto(caseHref!);
+    await gotoInteractive(page, caseHref!);
     await page.getByRole("button", { name: "Draft the petition" }).click();
     await expect(page.getByRole("button", { name: "Regenerate full draft" })).toBeVisible({
       timeout: 60_000,
@@ -66,7 +67,7 @@ test.describe("@uat signup → qualify → draft", () => {
 
     // Value delivery + persistence: reload → the drafted letter is still there
     // (store-backed version, not component state).
-    await page.goto(caseHref!);
+    await gotoInteractive(page, caseHref!);
     await expect(page.getByRole("button", { name: "Regenerate full draft" })).toBeVisible();
     await expect(page.getByText("Introduction").first()).toBeVisible();
   });
@@ -77,7 +78,7 @@ test.describe("@uat signup → qualify → draft", () => {
     await ensureOnboarded(page);
     const before = await readBalance(page);
 
-    await page.goto("/qualify");
+    await gotoInteractive(page, "/qualify");
     await page.getByRole("button", { name: /I already know my visa/i }).click();
     await page.getByPlaceholder("e.g. Dr. Anya Krishnan").fill("UAT Failure");
     // The marker makes the fake CLI exit non-zero — a real engine outage. The

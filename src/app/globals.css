@@ -307,3 +307,19 @@ body {
   transform: scaleX(1);
   transform-origin: left center;
 }
+
+/* Slow-hydration reveal fallback (see Motion.tsx). framer SSRs reveal blocks
+   with inline opacity:0; if hydration hasn't stamped html[data-hydrated]
+   within ~1.2s, this animation (CSS animations override inline styles while
+   active; `forwards` keeps the final frame) fades the content in anyway, so a
+   slow network reads the page instead of blank parchment. Once hydration
+   lands, the selector stops matching and framer owns the reveals again. */
+@keyframes deferred-reveal {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+html:not([data-hydrated]) [data-reveal] {
+  animation: deferred-reveal 0.7s ease 1.2s forwards;
+}

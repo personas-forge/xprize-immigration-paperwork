@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { ensureOnboarded, readBalance, PRICE } from "./helpers";
+import { gotoInteractive } from "./helpers";
 
 // @uat — Paying user + attorney (personas B2): the full life of one case.
 // Vault categorization (1 token) with refile + soft-delete/undo, case tracking
@@ -42,7 +43,7 @@ test.describe("@uat case lifecycle: vault → review → filing → RFE → acco
     process.env.UAT_LIFECYCLE_CASE = `/dashboard/cases/${caseId}`;
     const before = await readBalance(page);
 
-    await page.goto(casePath());
+    await gotoInteractive(page, casePath());
     await expect(page.getByText("§ III — Evidence vault")).toBeVisible();
 
     const docName = "ICML 2024 Best Paper certificate";
@@ -64,7 +65,7 @@ test.describe("@uat case lifecycle: vault → review → filing → RFE → acco
     expect(await readBalance(page)).toBe(before - PRICE.categorize);
 
     // Refile to another criterion — no charge, document moves buckets.
-    await page.goto(casePath());
+    await gotoInteractive(page, casePath());
     await page.getByLabel(`Re-file ${docName}`).selectOption("Press");
     const pressBucket = page
       .locator("section, div")
@@ -89,11 +90,11 @@ test.describe("@uat case lifecycle: vault → review → filing → RFE → acco
   }) => {
     await ensureOnboarded(page);
 
-    await page.goto("/dashboard");
+    await gotoInteractive(page, "/dashboard");
     const caseLink = page.getByRole("link", { name: new RegExp(PETITIONER) }).first();
     await expect(caseLink).toBeVisible();
 
-    await page.goto(casePath());
+    await gotoInteractive(page, casePath());
     await expect(page.getByText("Roadmap · where your petition stands")).toBeVisible();
     for (const stage of ["Qualified", "Evidence", "Drafted", "Attorney review", "Decision"]) {
       await expect(page.getByText(stage, { exact: true }).first()).toBeVisible();
@@ -106,7 +107,7 @@ test.describe("@uat case lifecycle: vault → review → filing → RFE → acco
     await ensureOnboarded(page);
     const before = await readBalance(page);
 
-    await page.goto("/dashboard");
+    await gotoInteractive(page, "/dashboard");
     const situation = page.getByPlaceholder(/O-1A researcher with 6 papers/);
     await expect(situation).toBeVisible({ timeout: 30_000 });
     await situation.fill("O-1A researcher preparing the extraordinary-ability evidence section.");
@@ -125,7 +126,7 @@ test.describe("@uat case lifecycle: vault → review → filing → RFE → acco
     const before = await readBalance(page);
 
     // A draft must exist before sign & file (actions.ts pre-file gate).
-    await page.goto(casePath());
+    await gotoInteractive(page, casePath());
     await page.getByRole("button", { name: "Draft the petition" }).click();
     await expect(page.getByRole("button", { name: "Regenerate full draft" })).toBeVisible({
       timeout: 60_000,
@@ -133,12 +134,12 @@ test.describe("@uat case lifecycle: vault → review → filing → RFE → acco
     expect(await readBalance(page)).toBe(before - PRICE.draft);
 
     // Owner submits for attorney review.
-    await page.goto(casePath());
+    await gotoInteractive(page, casePath());
     await page.getByRole("button", { name: "Submit for attorney review" }).click();
     await expect(page.getByText("Submitted for review").first()).toBeVisible({ timeout: 30_000 });
 
     // The case surfaces in the attorney's review queue.
-    await page.goto("/dashboard/review");
+    await gotoInteractive(page, "/dashboard/review");
     await expect(page.getByText("§ — Awaiting review")).toBeVisible();
     await page.getByRole("link", { name: new RegExp(PETITIONER) }).first().click();
     await expect(page).toHaveURL(new RegExp(casePath().replaceAll("/", "\\/")));
@@ -164,7 +165,7 @@ test.describe("@uat case lifecycle: vault → review → filing → RFE → acco
     await ensureOnboarded(page);
     const before = await readBalance(page);
 
-    await page.goto(casePath());
+    await gotoInteractive(page, casePath());
     await expect(page.getByText("RFE response · attorney work product")).toBeVisible();
 
     await page
@@ -184,7 +185,7 @@ test.describe("@uat case lifecycle: vault → review → filing → RFE → acco
 
     // The attorney records the decision, closing the arc. (readBalance left the
     // browser on /dashboard — return to the case first.)
-    await page.goto(casePath());
+    await gotoInteractive(page, casePath());
     await page.locator('select[name="decision"]').selectOption("Approved");
     await page.getByRole("button", { name: "Record decision" }).click();
     await expect(page.getByText("This petition has been approved. 🎉")).toBeVisible({
@@ -231,7 +232,7 @@ test.describe("@uat case lifecycle: vault → review → filing → RFE → acco
     expect(exported).toContain(PETITIONER);
 
     // Marketing preference round-trip with a visible confirmation.
-    await page.goto("/dashboard/account");
+    await gotoInteractive(page, "/dashboard/account");
     const toggle = page.getByRole("button", { name: /Turn (on|off) marketing emails/ });
     const labelBefore = await toggle.innerText();
     await toggle.click();

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { ensureOnboarded, readBalance, PRICE } from "./helpers";
+import { gotoInteractive } from "./helpers";
 
 // @uat — Hostile/edge persona (billing-and-uat.md B2, ship-blocking per CP0):
 // oversized and malformed inputs, double-fire submits, and mid-generation
@@ -17,7 +18,7 @@ test.describe("@uat hostile user: bad input, double-fire, back-button", () => {
 
     // UI path: parse rejects BEFORE charge, so the panel shows the server's
     // human message and the balance is untouched.
-    await page.goto("/qualify");
+    await gotoInteractive(page, "/qualify");
     await page.getByRole("button", { name: /I already know my visa/i }).click();
     await page.getByPlaceholder(/Paste your CV highlights/).fill(oversized);
     await page.getByRole("button", { name: "Check my eligibility" }).click();
@@ -58,7 +59,7 @@ test.describe("@uat hostile user: bad input, double-fire, back-button", () => {
     await ensureOnboarded(page);
     const before = await readBalance(page);
 
-    await page.goto("/qualify");
+    await gotoInteractive(page, "/qualify");
     await page.getByRole("button", { name: /I already know my visa/i }).click();
     await page.getByPlaceholder("e.g. Dr. Anya Krishnan").fill("UAT Doubleclick");
     await page.getByRole("button", { name: "Use a sample" }).click();
@@ -86,14 +87,14 @@ test.describe("@uat hostile user: bad input, double-fire, back-button", () => {
     await ensureOnboarded(page);
     const before = await readBalance(page);
 
-    await page.goto("/qualify");
+    await gotoInteractive(page, "/qualify");
     await page.getByRole("button", { name: /I already know my visa/i }).click();
     await page.getByPlaceholder("e.g. Dr. Anya Krishnan").fill("UAT Backbutton");
     await page.getByRole("button", { name: "Use a sample" }).click();
     await page.getByRole("button", { name: "Check my eligibility" }).click();
     // Abandon the page while the request is in flight — the server finishes
     // regardless; the charge must land exactly once.
-    await page.goto("/billing");
+    await gotoInteractive(page, "/billing");
 
     // Poll until the debit is visible, then confirm it STAYS a single debit.
     await expect

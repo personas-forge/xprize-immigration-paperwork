@@ -67,9 +67,16 @@ export default function LoginPage() {
 
           <div className="relative z-10 flex flex-col gap-7 p-8">
             <div className="flex items-center justify-between">
-              <ChapterMark numeral="O-1" label="Atelier of Arrival" />
+              {/* U+2011 keeps "O‑1" from wrapping as "O-"/"1" at 375px. */}
+              <ChapterMark numeral="O‑1" label="Atelier of Arrival" />
               <ThemeToggle />
             </div>
+
+            {/* The card is deliberately chrome-free, but a dead-end with no way
+                back home fails the nav checklist — one quiet return link. */}
+            <Link href="/" className="ink-link microprint self-start focus-ring">
+              ← Back to home
+            </Link>
 
             <header className="space-y-3">
               <h1 className="display text-[clamp(2.1rem,7vw,3rem)] text-foreground">

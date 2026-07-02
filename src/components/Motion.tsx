@@ -3,6 +3,17 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { easeArrival, fadeUp } from "@/lib/motion";
 
+// SLOW-HYDRATION FALLBACK (visual sweep ship-blocker #1): framer's
+// `initial="hidden"` inlines `opacity:0` into the SSR markup, so before JS
+// hydrates every reveal-wrapped block is invisible — on a slow network the
+// marketing pages were blank parchment for seconds. The fix is NOT to swap
+// element types at hydration (a div→motion.div remount resets all child state
+// and races real clicks — it lost form state in testing); instead every
+// reveal element carries `data-reveal`, and globals.css force-reveals them by
+// CSS animation when `html[data-hydrated]` (set by HydrationMarker) hasn't
+// appeared within ~1.2s. Fast hydration never triggers it; no-JS/slow-JS
+// readers get the content; element identity never changes.
+
 // Thin, opinionated wrappers around framer-motion that (1) always honor
 // `prefers-reduced-motion` by returning a plain element, and (2) use
 // `whileInView` with the project-wide viewport margin so reveals fire just
@@ -43,6 +54,7 @@ export function Rise({
   return (
     <MotionTag
       className={className}
+      data-reveal
       initial="hidden"
       whileInView="show"
       viewport={inView}

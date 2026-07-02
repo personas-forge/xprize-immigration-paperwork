@@ -230,8 +230,11 @@ function Reveal({
   const reduce = useReducedMotion();
   if (reduce) return <div className={className}>{children}</div>;
   return (
+    // data-reveal: the slow-hydration CSS fallback force-reveals this if JS
+    // hasn't hydrated within ~1.2s — see Motion.tsx's module note.
     <motion.div
       className={className}
+      data-reveal
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.4 }}
@@ -251,7 +254,8 @@ function Arrival() {
       <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
         <div className="lg:col-span-6">
           <Reveal>
-            <Eyebrow>File №&nbsp;O1-241 · Form I-129 · O-1A / O-1B / EB-1A</Eyebrow>
+            {/* U+2011 non-breaking hyphens: "EB-1A" must never wrap as "EB-"/"1A". */}
+            <Eyebrow>File №&nbsp;O1-241 · Form I‑129 · O‑1A / O‑1B / EB‑1A</Eyebrow>
           </Reveal>
           <Reveal delay={0.08}>
             <h1 className="display mt-6 text-[clamp(2.5rem,4.8vw,4rem)] text-foreground">

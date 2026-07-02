@@ -21,6 +21,18 @@ export const PRICE = {
   guidance: 1,
 } as const;
 
+/**
+ * goto + wait for React hydration (html[data-hydrated], set by
+ * HydrationMarker). The reveal wrappers ship VISIBLE server HTML, so a page is
+ * readable before it is interactive — a click fired at `load` lands on inert
+ * markup and silently vanishes. Use this for any page the test will CLICK;
+ * plain page.goto is fine for read-only assertions (server-rendered text).
+ */
+export async function gotoInteractive(page: Page, path: string): Promise<void> {
+  await page.goto(path);
+  await page.waitForSelector("html[data-hydrated]", { state: "attached", timeout: 20_000 });
+}
+
 /** Read the current token balance off the dashboard BalancePill. Navigates. */
 export async function readBalance(page: Page): Promise<number> {
   await page.goto("/dashboard");
@@ -171,6 +183,8 @@ export function polarOrderEvent(
 export async function ensureOnboarded(page: Page): Promise<void> {
   await page.goto("/dashboard");
   if (!page.url().includes("/welcome")) return;
+  // The consent form is about to be interacted with — wait for hydration.
+  await page.waitForSelector("html[data-hydrated]", { state: "attached", timeout: 20_000 });
   await page.getByLabel("Full legal name").fill("UAT Developer");
   await page.getByRole("checkbox", { name: /Terms of Service/ }).check();
   await page.getByRole("checkbox", { name: /Privacy Policy/ }).check();

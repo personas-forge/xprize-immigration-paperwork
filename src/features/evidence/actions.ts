@@ -27,6 +27,7 @@ import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth/session";
 import { evidence } from "@/lib/data/adapters/evidence";
 import { caseAccessFor } from "@/lib/data/adapters/access";
+import { type StoredDocument } from "./types";
 
 export async function removeDocument(
   caseId: string,
@@ -88,7 +89,7 @@ export async function refileDocument(
 export async function rescueDocument(
   caseId: string,
   doc: { name: string; criterion: string; facts: readonly string[]; source: string },
-): Promise<{ ok: boolean; document: import("./types").StoredDocument | null }> {
+): Promise<{ ok: boolean; document: StoredDocument | null }> {
   const user = await getUser();
   if (!user) return { ok: false, document: null };
   const result = await evidence.addDocument(caseAccessFor(user), {

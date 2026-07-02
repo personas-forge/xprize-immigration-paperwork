@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { connection } from "next/server";
 import { PageFrame, ChapterMark, Seal } from "@/components/brand";
 import { Rise } from "@/components/Motion";
@@ -76,7 +77,8 @@ export default async function BillingPage({
 }) {
   await connection();
   const purchaseSuccess = (await searchParams).status === "success";
-  const user = isFirebaseConfigured() || isDevAuth() ? await getUser() : null;
+  const authAvailable = isFirebaseConfigured() || isDevAuth();
+  const user = authAvailable ? await getUser() : null;
   // "∞" when the token economy isn't enforced (the guard free-passes). Use the
   // canonical isMeteringEnforced() — NOT a raw DATABASE_URL read, which would
   // wrongly show "∞" on Firestore prod (no DATABASE_URL) while the guard charges.
@@ -84,6 +86,10 @@ export default async function BillingPage({
   const [balance, activity] = metered
     ? await Promise.all([getBalance(user!.id), getLedgerForUser(user!.id, 25)])
     : [null, [] as LedgerEntry[]];
+  // A SIGNED-OUT visitor on a real (auth-configured) deployment must not read
+  // "∞ tokens" next to the "150 free tokens" pitch (visual sweep #3) — that ∞
+  // is only honest in the keyless demo, where no one can sign in at all.
+  const signedOutOnRealAuth = authAvailable && user === null;
   const balanceLabel = balance === null ? "∞" : balance.toLocaleString();
 
   return (
@@ -115,17 +121,28 @@ export default async function BillingPage({
                 <div className="microprint" style={{ color: "var(--accent-dark)" }}>
                   Current balance
                 </div>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <span
-                    className="display text-[2.6rem] text-foreground"
-                    style={{ fontVariantNumeric: "tabular-nums" }}
-                  >
-                    {balanceLabel}
-                  </span>
-                  <span className="microprint" style={{ color: "var(--muted)" }}>
-                    tokens
-                  </span>
-                </div>
+                {signedOutOnRealAuth ? (
+                  <div className="mt-1">
+                    <Link href="/login" className="ink-link font-sans text-[19px] text-foreground focus-ring">
+                      Sign in to see your balance →
+                    </Link>
+                    <p className="microprint mt-1" style={{ color: "var(--muted)" }}>
+                      New accounts start with {FREE_SIGNUP_GRANT} free tokens.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span
+                      className="display text-[2.6rem] text-foreground"
+                      style={{ fontVariantNumeric: "tabular-nums" }}
+                    >
+                      {balanceLabel}
+                    </span>
+                    <span className="microprint" style={{ color: "var(--muted)" }}>
+                      tokens
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="text-accent-dark">
                 <Seal size={44} />

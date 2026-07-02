@@ -6,6 +6,7 @@ import {
   polarWebhookHeaders,
   PRICE,
 } from "./helpers";
+import { gotoInteractive } from "./helpers";
 
 // @uat — Engaged→paying user (billing-and-uat.md A3 + A4): exhaust the balance,
 // hit the paywall with NO debit, purchase via a signature-verified simulated
@@ -95,7 +96,7 @@ test.describe("@uat billing: paywall → purchase → refund", () => {
     }
     expect(await readBalance(page)).toBe(balance);
 
-    await page.goto("/qualify");
+    await gotoInteractive(page, "/qualify");
     await page.getByRole("button", { name: /I already know my visa/i }).click();
     await page.getByRole("button", { name: "Use a sample" }).click();
     await page.getByRole("button", { name: "Check my eligibility" }).click();

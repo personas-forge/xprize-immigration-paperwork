@@ -11,6 +11,9 @@ test("qualify → draft: clicking through triggers the LLM and renders output", 
   test.setTimeout(600_000);
 
   await page.goto("/qualify");
+  // Server HTML is readable before it is interactive (reveals ship visible);
+  // wait for the hydration marker so the clicks below land on live handlers.
+  await page.waitForSelector("html[data-hydrated]", { state: "attached", timeout: 20_000 });
   await expect(page.getByRole("heading", { name: /Do you/i })).toBeVisible();
 
   // /qualify now leads with the best-path finder; drop into the single-visa

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { ensureOnboarded, readBalance, PRICE } from "./helpers";
+import { gotoInteractive } from "./helpers";
 
 // @uat — Charge idempotency (A2 billing): every charged AI fetch carries an
 // `Idempotency-Key` the orchestrator folds into the ledger ref, so a retry of
@@ -14,7 +15,7 @@ const KEY_RE = /^[A-Za-z0-9_.:-]{1,200}$/;
 
 /** Drive the qualify panel to a submitted screening with the sample profile. */
 async function submitQualify(page: Page): Promise<void> {
-  await page.goto("/qualify");
+  await gotoInteractive(page, "/qualify");
   await page.getByRole("button", { name: /I already know my visa/i }).click();
   await page.getByPlaceholder("e.g. Dr. Anya Krishnan").fill("UAT Idempotency");
   await page.getByRole("button", { name: "Use a sample" }).click();
