@@ -13,7 +13,7 @@ Numbering is append-only and stable — never renumber (user decisions reference
 | 7 | ☑ | 2-Func | S | Enterprise CTA defaults to mailto:sales@example.com (economy.ts:98) — set real contact or hide the band until configured. |
 | 8 | ☑ | 5-Billing | M | Save-failure parity: RFE + categorize keep the charge but lose the artifact on persist-fail (drafts have free rescue) — add rescue route or auto-reclaim on saveFailed. |
 | 9 | ☑ | 3-Tests | M | Unit tests for chargeForOperation guard matrix: bypass / no-store / no-auth-provider / unauth 401 / insufficient / charge+reclaim. |
-| 10 | ☐ | 3-Tests | L | Ledger tests against the real PGlite store: debit idempotency by ref, insufficient-balance refusal, credit idempotency by (reason,ref), signup-grant-once, clawback floor-at-0, balance_after correctness. |
+| 10 | ☑ | 3-Tests | L | Ledger tests against the real PGlite store: debit idempotency by ref, insufficient-balance refusal, credit idempotency by (reason,ref), signup-grant-once, clawback floor-at-0, balance_after correctness. |
 | 11 | ☐ | 3-Tests | M | Polar webhook route tests: bad signature 403, order.paid credits bundle, replay idempotent, refund proportional clawback, unresolvable paid order → 500 (retry). |
 | 12 | ☑ | 4-UAT | L | UAT harness (npm run uat): PGlite + dev-auth + metering ON + deterministic fake claude CLI; journey signup-grant→qualify→draft w/ exact debits + failure-reclaim (A2.1-3). Dev server, not prod build (dev-auth is prod-hard-gated — deviation logged); found+fixed 2 dev-mode app bugs (stale cacheComponents auth pages; per-graph PGlite duplication). |
 | 13 | ☑ | 4-UAT | M | Paywall + purchase journey (uat-02-billing, 8 tests): 402 no-debit, UI paywall CTA, signed order.paid credit + idempotent replay, unblock, proportional refund clawback, forged-sig 403, unmapped-product 500, checkout-503. Found+fixed 2 PROD webhook bugs (camelCase reads: full-bundle over-clawback on partial refunds; revenue relay dead for all paid orders) + unit tests. Live Polar checkout/webhook still unverified (sandbox) — 🟡 note stands. |
@@ -30,7 +30,7 @@ Numbering is append-only and stable — never renumber (user decisions reference
 | 24 | ☑ | 8-Ops | M | Error visibility: root client boundary reports to a server endpoint; structured server error logging; wire the un-wired audit sink seam. |
 | 25 | ☑ | 6-Sec | S | categorize rate-limit keyed byUser (currently IP-only, evadable); document TRUSTED_PROXY_HOPS. |
 | 26 | ☑ | 2-Func | S | robots.ts; cross-link /visa/* programmatic-SEO pages from footer or /qualify (currently sitemap-only orphans). |
-| 27 | ☐ | 3-Tests | M | Tests for getUser session resolution (cookie/verify/dev-seed paths) + attorney sign/file transition actions (CAS, receipt validation). |
+| 27 | ☑ | 3-Tests | M | Tests for getUser session resolution (cookie/verify/dev-seed paths) + attorney sign/file transition actions (CAS, receipt validation). |
 | 28 | ☐ | 7-UX | M | Screenshot sweep key pages at 375px + 1440px, review vs UX checklist, burn down ship-blockers (dimension-7 evidence). |
 | 29 | ☑ | 8-Ops | S | Repo hygiene: fix `.claude/CLAUDE.md` stale `test:e2e` → `e2e`; untrack committed run artifacts (check_runs*.json, playwright-report/, test-results/, scripts/llm-eval/out/). |
 | 30 | ☐ | 6-Sec | L | Shared rate-limit store (Redis/Firestore) for multi-instance prod — in-memory caps multiply per instance. Defer unless target is multi-instance. |

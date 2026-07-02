@@ -12,3 +12,4 @@
 2026-07-02 GATE M4: typecheck ✓ lint ✓ tests ✓(492) build ✓ uat ✓(24/24) smoke:prod ✓(6/6). Items 19,20,25,26,31,32 ☑ (commit 4255356); item 23 resized S→M (client-side token mint) deferred to CP1. Milestone 4 COMPLETE → CP1.
 2026-07-02 GATE M5: all green (492 tests, smoke 6/6, uat 24/24). Items 5,15,21,24 ☑ (commit 73e7f0b). NO RED DIMENSIONS LEFT. M6 = test depth (10,27 agent; 8 me; 28 sweep).
 2026-07-02 ITEM 8 ☑ rescue parity RFE+vault (commit 8365f1e); uat 25/25. Awaiting test-depth agent (items 10+27).
+2026-07-02 ITEMS 10,27 ☑ (agent; commit d4fc147): +19 tests (511), real-PGlite money kernel incl. concurrency, CAS transitions, receipt validation. GATE M6: all green (511, build, uat 25/25). Milestone 6 COMPLETE. Scorecard: 3.Tests 🟡→🟢 (firestore-driver caveat noted). M7 = item 28 screenshot sweep (delegate), then CP2/ship-gate.
