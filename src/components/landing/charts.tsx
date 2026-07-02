@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import {
   ResponsiveContainer,
   RadarChart,
@@ -116,19 +117,49 @@ const FEATURED_BUNDLE = featuredBundle()!;
 const COST_DATA = [
   {
     name: "Law-firm packet",
+    // Compact twins for narrow viewports (derived from the same single
+    // sources, so they can't drift from the full-width strings).
+    shortName: "Law firm",
     value: FIRM_FEE.midpointUsd,
     label: `${FIRM_FEE.range} ${FIRM_FEE.verb}d`,
+    shortLabel: `$${Math.round(FIRM_FEE.lowUsd / 1000)}–${Math.round(FIRM_FEE.highUsd / 1000)}k`,
   },
   {
     name: `Your draft · ${FEATURED_BUNDLE.label} bundle`,
+    shortName: "Your draft",
     value: Math.round(FEATURED_BUNDLE.priceCents / 100),
     label: `${bundlePriceLabel(FEATURED_BUNDLE)} · ${FEATURED_BUNDLE.tokens.toLocaleString("en-US")} tokens`,
+    shortLabel: bundlePriceLabel(FEATURED_BUNDLE),
   },
 ];
+
+const NARROW_QUERY = "(max-width: 640px)";
+const narrowSubscribe = (cb: () => void) => {
+  const mq = window.matchMedia(NARROW_QUERY);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+};
+
+/** True below 640px. useSyncExternalStore (not setState-in-effect) so the lint
+ *  rule and hydration both stay happy; only read under ClientOnly. */
+function useNarrowViewport(): boolean {
+  return useSyncExternalStore(
+    narrowSubscribe,
+    () => window.matchMedia(NARROW_QUERY).matches,
+    () => false,
+  );
+}
 
 export function CostCompareBars({ height = 220 }: { height?: number }) {
   const P = useThemePalette();
   const fills = [P.seal, P.accentDark];
+  // At 375px the full-width geometry (150px category axis + 150px reserved for
+  // the value labels) consumed the whole plot area — axis and captions rendered
+  // but ZERO bars (visual sweep #4). Narrow viewports get compact twins of the
+  // same derived strings and a plot area that actually fits.
+  const narrow = useNarrowViewport();
+  const axisWidth = narrow ? 78 : 150;
+  const rightMargin = narrow ? 64 : 150;
   return (
     <ClientOnly fallback={<ChartSkeleton h={height} />}>
       <div style={{ width: "100%", height }}>
@@ -136,26 +167,26 @@ export function CostCompareBars({ height = 220 }: { height?: number }) {
           <BarChart
             data={COST_DATA}
             layout="vertical"
-            margin={{ top: 8, right: 150, bottom: 8, left: 8 }}
+            margin={{ top: 8, right: rightMargin, bottom: 8, left: 8 }}
             barCategoryGap={28}
           >
             <XAxis type="number" hide domain={[0, 13000]} />
             <YAxis
               type="category"
-              dataKey="name"
-              width={150}
+              dataKey={narrow ? "shortName" : "name"}
+              width={axisWidth}
               tickLine={false}
               axisLine={{ stroke: P.borderStrong }}
-              tick={{ fill: P.foregroundSoft, fontSize: 12, fontFamily: CHART_FONT }}
+              tick={{ fill: P.foregroundSoft, fontSize: narrow ? 11 : 12, fontFamily: CHART_FONT }}
             />
             <Bar dataKey="value" radius={[0, 3, 3, 0]} barSize={26} isAnimationActive animationDuration={1100} minPointSize={4}>
               {COST_DATA.map((d, i) => (
                 <Cell key={d.name} fill={fills[i]} />
               ))}
               <LabelList
-                dataKey="label"
+                dataKey={narrow ? "shortLabel" : "label"}
                 position="right"
-                style={{ fill: P.mutedStrong, fontSize: 12, fontFamily: CHART_FONT }}
+                style={{ fill: P.mutedStrong, fontSize: narrow ? 11 : 12, fontFamily: CHART_FONT }}
               />
             </Bar>
           </BarChart>

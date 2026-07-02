@@ -90,7 +90,7 @@ export default function FaqPage() {
 
       <section className="mx-auto max-w-3xl px-6 pb-10 pt-20">
         <Rise>
-          <ChapterMark numeral="IV" label="Frequently asked" />
+          <ChapterMark numeral="V" label="Frequently asked" />
           <h1 className="display mt-5 text-[clamp(2.4rem,6vw,4rem)]">
             What clients ask <em>before signing.</em>
           </h1>

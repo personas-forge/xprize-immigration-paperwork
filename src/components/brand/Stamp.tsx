@@ -59,6 +59,14 @@ export function Stamp({
 /**
  * Decorative section ribbon — a roman-numeral chapter mark above section
  * headings. Reads as "§ I — Title" with the section-symbol set in mono.
+ *
+ * NUMBERING SCHEME (the "one dossier" conceit — keep site chapters unique):
+ * the landing's sections are the canon (§I criteria, §II how it's built,
+ * §III your record, §IV token ledger); site pages continue it — /qualify=I
+ * (criteria screening), /billing=IV (token ledger), /faq=V, /validation=VI.
+ * Self-contained documents number themselves independently: the /visa SEO
+ * pages (internal I–III), the workspace (dashboard I … account VII), and the
+ * legal annexes (/terms, /privacy) which use a bare "§".
  */
 export function ChapterMark({
   numeral,
