@@ -11,7 +11,7 @@ Numbering is append-only and stable — never renumber (user decisions reference
 | 5 | ☑ | 2-Func | M | Filing honesty: attorneySignAndFile records DEMO receipt ("not actually filed") while landing/FAQ advertise real attorney filing w/ premium processing. Product decision: label in-product as pilot/demo OR change marketing copy. (CP decision) |
 | 6 | ☑ | 2-Func | S | Dead dashboard masthead buttons "Open petition letter" + "Voice intake transcript" (CaseFileDashboard.tsx:76-77) — wire or remove; voice intake exists nowhere. |
 | 7 | ☑ | 2-Func | S | Enterprise CTA defaults to mailto:sales@example.com (economy.ts:98) — set real contact or hide the band until configured. |
-| 8 | ☐ | 5-Billing | M | Save-failure parity: RFE + categorize keep the charge but lose the artifact on persist-fail (drafts have free rescue) — add rescue route or auto-reclaim on saveFailed. |
+| 8 | ☑ | 5-Billing | M | Save-failure parity: RFE + categorize keep the charge but lose the artifact on persist-fail (drafts have free rescue) — add rescue route or auto-reclaim on saveFailed. |
 | 9 | ☑ | 3-Tests | M | Unit tests for chargeForOperation guard matrix: bypass / no-store / no-auth-provider / unauth 401 / insufficient / charge+reclaim. |
 | 10 | ☐ | 3-Tests | L | Ledger tests against the real PGlite store: debit idempotency by ref, insufficient-balance refusal, credit idempotency by (reason,ref), signup-grant-once, clawback floor-at-0, balance_after correctness. |
 | 11 | ☐ | 3-Tests | M | Polar webhook route tests: bad signature 403, order.paid credits bundle, replay idempotent, refund proportional clawback, unresolvable paid order → 500 (retry). |
