@@ -71,6 +71,9 @@ export function RfeStudio({
   const [source, setSource] = useState<ModelSource>(initialSource);
   const [error, setError] = useState<string | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
+  // Free persistence-only rescue of a charged-but-unsaved response (the
+  // /api/rfe/save parity twin of the draft rescue). "saved" clears the alert.
+  const [saveRetry, setSaveRetry] = useState<"idle" | "saving" | "error">("idle");
   const [adjudication, setAdjudication] = useState<AdjudicationReport | null>(null);
   // Visible in-flight state — kept in lockstep with busyRef so the paid button
   // stays DISABLED for the whole charged call (not just while status==="loading"),
@@ -174,6 +177,27 @@ export function RfeStudio({
     } finally {
       busyRef.current = false;
       setBusy(false);
+    }
+  }
+
+  async function retrySave() {
+    if (saveRetry === "saving") return;
+    setSaveRetry("saving");
+    try {
+      const res = await fetch("/api/rfe/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseId, rfeText, sections, source }),
+      });
+      const data = (await res.json()) as { persisted?: boolean; error?: string };
+      if (!res.ok || !data.persisted) {
+        setSaveRetry("error");
+        return;
+      }
+      setSaveFailed(false);
+      setSaveRetry("idle");
+    } catch {
+      setSaveRetry("error");
     }
   }
 
@@ -303,16 +327,33 @@ export function RfeStudio({
             {saveFailed ? (
               <div
                 role="alert"
-                className="rounded-control border border-seal/50 bg-seal-soft/40 px-4 py-3 font-sans text-[15px] leading-snug text-foreground-soft"
+                className="space-y-2 rounded-control border border-seal/50 bg-seal-soft/40 px-4 py-3 font-sans text-[15px] leading-snug text-foreground-soft"
               >
-                <span className="font-mono text-[12px] uppercase tracking-document text-seal">
-                  Not saved
-                </span>
-                <span className="ml-2">
-                  This response was generated and charged, but it couldn’t be saved
-                  to your case history. Copy your text before leaving — a reload may
-                  not show it.
-                </span>
+                <div>
+                  <span className="font-mono text-[12px] uppercase tracking-document text-seal">
+                    Not saved
+                  </span>
+                  <span className="ml-2">
+                    This response was generated and charged, but it couldn’t be
+                    saved to your case history. Retry the save (free — it never
+                    regenerates or recharges), or copy your text before leaving.
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={retrySave}
+                    disabled={saveRetry === "saving"}
+                  >
+                    {saveRetry === "saving" ? "Saving…" : "Retry save"}
+                  </Button>
+                  {saveRetry === "error" ? (
+                    <span className="microprint" style={{ color: "var(--seal)" }}>
+                      Still couldn’t save — copy your text to be safe.
+                    </span>
+                  ) : null}
+                </div>
               </div>
             ) : null}
             {sections.map((s, i) => (

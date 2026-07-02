@@ -17,7 +17,7 @@ import { type ModelSource } from "@/lib/llm/label";
 import { costOf } from "@/lib/tokens/registry";
 import { useIdempotencyKeys } from "@/lib/idempotency";
 import { formatExhibit, parseExhibitOrdinal } from "@/lib/exhibits";
-import { refileDocument, removeDocument, restoreDocument } from "../actions";
+import { refileDocument, removeDocument, rescueDocument, restoreDocument } from "../actions";
 
 // — Evidence vault ────────────────────────────────────────────────────────────
 // Add a document (paste its text / describe it) → it's AI-categorized into the
@@ -76,6 +76,10 @@ export function EvidenceVault({
   // The most-recently removed document, kept so the removal can be UNDONE
   // (restore keeps its original exhibit ordinal). Cleared on undo or a new add.
   const [lastRemoved, setLastRemoved] = useState<DocumentView | null>(null);
+  // The charged-but-unsaved document behind the warning banner, so its save can
+  // be retried for FREE (rescueDocument — never re-categorizes or recharges).
+  const [unsavedDoc, setUnsavedDoc] = useState<DocumentView | null>(null);
+  const [rescueState, setRescueState] = useState<"idle" | "saving" | "error">("idle");
 
   const BUCKETS: readonly string[] = [...criteriaNames(classification), "Unsorted"];
   const summary = summarizeVault(documents, classification);
@@ -140,10 +144,13 @@ export function EvidenceVault({
       setAnnounce(`Document categorized under ${doc.criterion}, exhibit ${doc.exhibit}.`);
       // A case-backed save that failed: the categorization is shown, but warn
       // that it didn't persist (the user was charged) so it isn't mistaken for
-      // a saved exhibit that will vanish on reload.
+      // a saved exhibit that will vanish on reload. Keep the doc so its save
+      // can be retried for free.
       if (data.saveFailed) {
+        setUnsavedDoc(doc);
+        setRescueState("idle");
         setWarning(
-          "Categorized, but we couldn't save this to your case — it won't persist after a reload. Please try again.",
+          "Categorized, but we couldn't save this to your case — it won't persist after a reload.",
         );
       }
       // Fulfilled — the next document (even a re-add of the same text) is a
@@ -301,8 +308,46 @@ export function EvidenceVault({
             </div>
           ) : null}
           {warning ? (
-            <div role="status" className="rounded-control border border-warning/40 bg-warning-soft/50 px-3 py-2 font-sans text-[15px] text-warning">
-              {warning}
+            <div role="status" className="space-y-2 rounded-control border border-warning/40 bg-warning-soft/50 px-3 py-2 font-sans text-[15px] text-warning">
+              <div>{warning}</div>
+              {unsavedDoc ? (
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={rescueState === "saving"}
+                    onClick={async () => {
+                      if (rescueState === "saving") return;
+                      setRescueState("saving");
+                      // Free persistence retry — never re-categorizes/recharges.
+                      const rescued = await rescueDocument(caseId, {
+                        name: unsavedDoc.name,
+                        criterion: unsavedDoc.criterion,
+                        facts: unsavedDoc.facts,
+                        source: String(unsavedDoc.source),
+                      });
+                      if (rescued.ok && rescued.document) {
+                        // Swap the optimistic entry for the persisted row (the
+                        // server assigned the real exhibit ordinal).
+                        const saved = rescued.document;
+                        setDocuments((prev) =>
+                          prev.map((d) => (d.id === unsavedDoc.id ? saved : d)),
+                        );
+                        setUnsavedDoc(null);
+                        setWarning(null);
+                        setRescueState("idle");
+                      } else {
+                        setRescueState("error");
+                      }
+                    }}
+                  >
+                    {rescueState === "saving" ? "Saving…" : "Retry save (free)"}
+                  </Button>
+                  {rescueState === "error" ? (
+                    <span className="microprint">Still couldn’t save — try again shortly.</span>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
           {status === "paywall" ? (

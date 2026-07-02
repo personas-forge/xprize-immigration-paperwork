@@ -192,6 +192,32 @@ test.describe("@uat case lifecycle: vault → review → filing → RFE → acco
     });
   });
 
+  test("the RFE save-rescue endpoint persists for free (charged-but-unsaved parity)", async ({
+    page,
+  }) => {
+    await ensureOnboarded(page);
+    const before = await readBalance(page);
+    const caseId = casePath().split("/").pop()!;
+
+    const res = await page.request.post("/api/rfe/save", {
+      data: {
+        caseId,
+        rfeText: "Rescue-path check: the notice text the response answers.",
+        sections: [
+          { heading: "Response to Request for Evidence", body: "Re-saved after a simulated save failure." },
+        ],
+        source: "claude",
+      },
+    });
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body.persisted).toBe(true);
+    expect(typeof body.version).toBe("number");
+
+    // The rescue is persistence-only: no charge, ever.
+    expect(await readBalance(page)).toBe(before);
+  });
+
   test("account: export carries the user's data; preferences toggle; delete demands the exact phrase", async ({
     page,
   }) => {
