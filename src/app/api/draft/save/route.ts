@@ -59,7 +59,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   // Same keying strategy as /api/draft but its own bucket name, so rescue
   // retries can't be starved by (or starve) paid generate calls. Reuses the
   // draft limit config — saving is strictly cheaper than generating.
-  const limited = enforceRateLimit(
+  const limited = await enforceRateLimit(
     request,
     "draft_save",
     RATE_LIMITS.draft,

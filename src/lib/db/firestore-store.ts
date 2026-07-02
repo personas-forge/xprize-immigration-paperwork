@@ -365,6 +365,29 @@ export const firestoreStore: Store = {
     });
   },
 
+  async rateLimitHit(key, resetAt) {
+    const fs = adminDb();
+    // One doc per (key, window): the id embeds the window boundary, so every
+    // instance increments the same counter without cross-window reads;
+    // base64url keeps arbitrary key bytes (IPv6 colons, scope names) valid as
+    // a doc id. `expires_at` supports a Firestore TTL policy for cleanup —
+    // harmless if none is configured (stale docs are never read again).
+    const id = `${Buffer.from(key).toString("base64url")}_${resetAt}`;
+    const ref = fs.collection(col("rate_limits")).doc(id);
+    return fs.runTransaction(async (t) => {
+      const snap = await t.get(ref);
+      const prior = Number(snap.exists ? snap.get("count") : 0);
+      const count = (Number.isFinite(prior) ? prior : 0) + 1;
+      t.set(ref, {
+        key,
+        count,
+        reset_at: resetAt,
+        expires_at: new Date(resetAt + 60 * 60 * 1000),
+      });
+      return count;
+    });
+  },
+
   // ── Domain: cases + criteria ──────────────────────────────────────────────
   async createCaseWithCriteria(input: CreateCaseInput): Promise<CreatedCase> {
     const fs = adminDb();

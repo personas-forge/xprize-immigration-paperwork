@@ -60,7 +60,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   // Own bucket so rescue retries can't be starved by (or starve) paid
   // generate calls; reuses the rfe limit config — saving is strictly cheaper.
-  const limited = enforceRateLimit(request, "rfe_save", RATE_LIMITS.rfe, DISCLAIMER, user?.id);
+  const limited = await enforceRateLimit(request, "rfe_save", RATE_LIMITS.rfe, DISCLAIMER, user?.id);
   if (limited) return limited;
 
   const saved = await petitions.saveRfeResponse(

@@ -13,10 +13,11 @@ import type { GenerateOptions } from "@/lib/llm/client";
 import type { AdjudicationReport } from "@/lib/llm/adjudication-gates";
 import {
   RATE_LIMITS,
-  checkRateLimit,
+  checkRateLimitShared,
   isRateLimitEnabled,
   rateLimitKey,
   tooManyRequestsResponse,
+  type RateLimitResult,
 } from "@/lib/tokens/rate-limit";
 
 /**
@@ -188,7 +189,8 @@ export interface AiOperationDeps {
   getLlm: (opts?: { requiresImages?: boolean }) => OperationLlm | null;
   resolveUser: () => Promise<AuthUser | null>;
   rateLimit: {
-    check: typeof checkRateLimit;
+    /** Sync (unit fakes) or async (the shared multi-instance counter). */
+    check: (key: string, limit: number) => RateLimitResult | Promise<RateLimitResult>;
     key: typeof rateLimitKey;
     enabled: typeof isRateLimitEnabled;
     limits: typeof RATE_LIMITS;
@@ -245,7 +247,9 @@ async function defaultDeps(): Promise<AiOperationDeps> {
     getLlm: (opts) => getLlm(opts) as OperationLlm | null,
     resolveUser: () => getUser() as Promise<AuthUser | null>,
     rateLimit: {
-      check: checkRateLimit,
+      // The shared-aware checker: Firestore deployments count in one
+      // transactional window per key (serverless-safe); others keep memory.
+      check: (key, limit) => checkRateLimitShared(key, limit),
       key: rateLimitKey,
       enabled: isRateLimitEnabled,
       limits: RATE_LIMITS,
@@ -304,7 +308,7 @@ export async function executeAiOperation<TInput, TOutput>(
     // NOT per-IP — so a spoofed x-forwarded-for can't fan out the bucket map and
     // the "user-keying stops IP-rotation evasion" guarantee actually holds.
     const keyUser = byUser ? ((await resolveUser())?.id ?? "anon") : undefined;
-    const rl = d.rateLimit.check(
+    const rl = await d.rateLimit.check(
       d.rateLimit.key(request, scope, keyUser),
       d.rateLimit.limits[bucket],
     );

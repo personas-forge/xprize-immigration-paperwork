@@ -294,6 +294,15 @@ export interface Store {
   ): Promise<number>;
   /** One-time signup grant, idempotent per user. */
   grantSignupTokens(userId: string, amount: number): Promise<void>;
+  /** Shared fixed-window rate-limit hit: record one hit against `key` for the
+   *  window ending at `resetAt` (epoch ms, window-aligned so every instance
+   *  agrees on the boundary) and return the window's running count INCLUDING
+   *  this hit. This is what makes the limiter hold under serverless /
+   *  multi-instance deployments, where per-process memory multiplies the
+   *  effective cap by the instance count. Firestore: transactional increment;
+   *  PGlite: an in-process window is authoritative by construction (single
+   *  process owns the datadir). */
+  rateLimitHit(key: string, resetAt: number): Promise<number>;
 
   // ── Domain: cases + criteria ──────────────────────────────────────────────
   /** Persist a new case + its scored criteria (atomic single write). */

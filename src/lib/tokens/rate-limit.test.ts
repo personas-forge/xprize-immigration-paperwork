@@ -75,10 +75,10 @@ test("enforceRateLimit: null under the cap, then a 429 carrying the disclaimer",
   // Unique scope so this exercises a fresh bucket in the module-global store.
   const req = new Request("http://x", { headers: { "x-forwarded-for": "7.7.7.7" } });
   const scope = "test_enforce_facade";
-  assert.equal(enforceRateLimit(req, scope, 2, "DISC"), null, "1st call proceeds");
-  assert.equal(enforceRateLimit(req, scope, 2, "DISC"), null, "2nd call proceeds");
+  assert.equal(await enforceRateLimit(req, scope, 2, "DISC"), null, "1st call proceeds");
+  assert.equal(await enforceRateLimit(req, scope, 2, "DISC"), null, "2nd call proceeds");
 
-  const blocked = enforceRateLimit(req, scope, 2, "DISC");
+  const blocked = await enforceRateLimit(req, scope, 2, "DISC");
   assert.ok(blocked, "3rd call blocked");
   assert.equal(blocked!.status, 429);
   assert.equal(blocked!.headers.get("Retry-After") !== null, true);
@@ -87,17 +87,76 @@ test("enforceRateLimit: null under the cap, then a 429 carrying the disclaimer",
   assert.equal(body.disclaimer, "DISC", "the caller-supplied disclaimer is on the 429");
 });
 
-test("enforceRateLimit: short-circuits to null when RATE_LIMIT_DISABLED=1", () => {
+test("enforceRateLimit: short-circuits to null when RATE_LIMIT_DISABLED=1", async () => {
   const prev = process.env.RATE_LIMIT_DISABLED;
   process.env.RATE_LIMIT_DISABLED = "1";
   try {
     const req = new Request("http://x", { headers: { "x-forwarded-for": "7.7.7.8" } });
     // Even past the cap, a disabled limiter never blocks.
     for (let i = 0; i < 5; i++) {
-      assert.equal(enforceRateLimit(req, "test_disabled_scope", 1, "DISC"), null);
+      assert.equal(await enforceRateLimit(req, "test_disabled_scope", 1, "DISC"), null);
     }
   } finally {
     if (prev === undefined) delete process.env.RATE_LIMIT_DISABLED;
     else process.env.RATE_LIMIT_DISABLED = prev;
   }
+});
+
+// — Shared (multi-instance) checker ——————————————————————————————————————————
+
+import { checkRateLimitShared, type SharedRateLimitStore } from "./rate-limit";
+
+/** Hand-rolled shared counter — deterministic stand-in for the Store method. */
+function fakeShared(): SharedRateLimitStore & { keys: string[] } {
+  const counts = new Map<string, number>();
+  const keys: string[] = [];
+  return {
+    keys,
+    async rateLimitHit(key, resetAt) {
+      const k = `${key}@${resetAt}`;
+      keys.push(k);
+      const next = (counts.get(k) ?? 0) + 1;
+      counts.set(k, next);
+      return next;
+    },
+  };
+}
+
+test("shared checker: counts against the shared store and refuses past the limit", async () => {
+  const shared = fakeShared();
+  for (let i = 0; i < 2; i++) {
+    const r = await checkRateLimitShared("k", 2, 1000, 100, shared);
+    assert.equal(r.ok, true, `hit ${i + 1} allowed`);
+  }
+  const blocked = await checkRateLimitShared("k", 2, 1000, 100, shared);
+  assert.equal(blocked.ok, false);
+  assert.ok(blocked.retryAfterSec >= 1, "Retry-After derives from the window boundary");
+});
+
+test("shared checker: window boundary is epoch-aligned, so all instances agree", async () => {
+  const shared = fakeShared();
+  // now=100 and now=900 fall in the same [0,1000) window → same counter key;
+  // now=1100 starts the next window → fresh counter.
+  await checkRateLimitShared("k", 5, 1000, 100, shared);
+  await checkRateLimitShared("k", 5, 1000, 900, shared);
+  await checkRateLimitShared("k", 5, 1000, 1100, shared);
+  assert.deepEqual(shared.keys, ["k@1000", "k@1000", "k@2000"]);
+});
+
+test("shared checker: FAILS OPEN to the in-memory window when the store throws", async () => {
+  const broken: SharedRateLimitStore = {
+    rateLimitHit: async () => {
+      throw new Error("counter outage");
+    },
+  };
+  // The limiter protects model cost; refusing paid traffic on a counter
+  // hiccup would be the worse failure. The in-memory floor still applies.
+  const r = await checkRateLimitShared(`fail-open-${Date.now()}`, 3, 1000, Date.now(), broken);
+  assert.equal(r.ok, true);
+});
+
+test("shared checker: null shared store = the plain in-memory behavior", async () => {
+  const key = `mem-${Date.now()}`;
+  assert.equal((await checkRateLimitShared(key, 1, 1000, 0, null)).ok, true);
+  assert.equal((await checkRateLimitShared(key, 1, 1000, 1, null)).ok, false);
 });

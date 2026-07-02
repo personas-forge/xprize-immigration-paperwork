@@ -485,6 +485,29 @@ export async function getPgliteStore(): Promise<Store> {
       });
     },
 
+    async rateLimitHit(key, resetAt) {
+      // Single-process by construction (one PGlite owns the datadir), so an
+      // in-memory window IS the shared window — no table needed. Pinned on
+      // globalThis like the pg handle: Turbopack dev builds separate module
+      // graphs per entry, and a per-graph map would undercount across them.
+      const g = globalThis as {
+        __immigrationRlWindows?: Map<string, { resetAt: number; count: number }>;
+      };
+      const windows = (g.__immigrationRlWindows ??= new Map());
+      const cur = windows.get(key);
+      if (!cur || cur.resetAt !== resetAt) {
+        // Bound the map: drop elapsed windows before admitting a new key.
+        if (windows.size >= 10_000) {
+          const now = Date.now();
+          for (const [k, w] of windows) if (w.resetAt <= now) windows.delete(k);
+        }
+        windows.set(key, { resetAt, count: 1 });
+        return 1;
+      }
+      cur.count += 1;
+      return cur.count;
+    },
+
     // ── Domain: cases + criteria ────────────────────────────────────────────
     async createCaseWithCriteria(input) {
       return pg.transaction(async (tx) => {

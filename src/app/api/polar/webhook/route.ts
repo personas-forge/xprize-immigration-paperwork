@@ -3,9 +3,8 @@ import { validateEvent } from "@polar-sh/sdk/webhooks";
 import { isStoreConfigured } from "@/lib/db/config";
 import { credit } from "@/lib/tokens/ledger";
 import { bundleByKey, bundleByProductId } from "@/lib/tokens/economy";
-import { polarEventToRevenue, type WebhookEvent } from "./relay-revenue";
+import { polarEventToRevenue, type RevenueRelay, type WebhookEvent } from "./relay-revenue";
 import { pickCents, pickStr, productId, resolveUserId } from "./polar-fields";
-import { trackRevenue } from "@/lib/cost-telemetry";
 
 // Only the fields read DIRECTLY off the order cast. The buyer / product id /
 // original-order-id (incl. their camel/snake duality) are resolved through the
@@ -33,15 +32,52 @@ function resolveBundle(order: PolarOrder, productId: string | undefined) {
   return byProduct ?? byMeta;
 }
 
+/** Injectable infra for the unit tests — production callers omit it. The
+ *  revenue relay is the one dep that must stay a LAZY import (cost-telemetry's
+ *  static `server-only` import is unresolvable under the tsx test runner); the
+ *  rest are unit-safe and double as the defaults. Mirrors the `GuardDeps`
+ *  convention in `@/lib/tokens/guard`. */
+export interface WebhookDeps {
+  /** Signature verification. The SDK returns its own event union; the handler
+   *  only reads the `{ type, data }` shape, so the default wiring narrows once
+   *  here instead of casting at the call site. */
+  validateEvent: (body: string, headers: Record<string, string>, secret: string) => WebhookEvent;
+  credit: typeof credit;
+  trackRevenue: (revenue: RevenueRelay) => Promise<void>;
+  storeConfigured: typeof isStoreConfigured;
+}
+
+let cachedDefaults: WebhookDeps | null = null;
+async function defaultDeps(): Promise<WebhookDeps> {
+  if (!cachedDefaults) {
+    const { trackRevenue } = await import("@/lib/cost-telemetry");
+    cachedDefaults = {
+      // Verify the SDK's webhook-validation signature/shape for your version.
+      validateEvent: validateEvent as unknown as WebhookDeps["validateEvent"],
+      credit,
+      trackRevenue,
+      storeConfigured: isStoreConfigured,
+    };
+  }
+  return cachedDefaults;
+}
+
 // Polar -> us. On a paid one-time order, credit the buyer's token balance.
 // Idempotent: credit() de-dupes by the Polar order id.
 export async function POST(request: NextRequest) {
+  return handleWebhook(request);
+}
+
+/** The unit-testable handler POST delegates to (a second POST param would be
+ *  taken by Next's `{ params }` context, so the seam lives one level down). */
+export async function handleWebhook(request: NextRequest, deps?: WebhookDeps): Promise<Response> {
   const secret = process.env.POLAR_WEBHOOK_SECRET;
   if (!secret) return new Response("billing not configured", { status: 503 });
+  const d = deps ?? (await defaultDeps());
   // No store ⇒ credit() silently returns without minting, and a paid order
   // would be 200-acked as credited. 503 instead so Polar retries until the
   // deployment is fixed — a captured payment must never be dropped unminted.
-  if (!isStoreConfigured()) {
+  if (!d.storeConfigured()) {
     console.error("[polar webhook] store not configured — refusing delivery so Polar retries");
     return new Response("store not configured", { status: 503 });
   }
@@ -51,8 +87,7 @@ export async function POST(request: NextRequest) {
 
   let event: WebhookEvent;
   try {
-    // Verify the SDK's webhook-validation signature/shape for your version.
-    event = validateEvent(body, headers, secret) as unknown as typeof event;
+    event = d.validateEvent(body, headers, secret);
   } catch {
     return new Response("invalid signature", { status: 403 });
   }
@@ -72,7 +107,7 @@ export async function POST(request: NextRequest) {
     const b = resolveBundle(order, product);
 
     if (userId && b) {
-      await credit(userId, b.tokens, "purchase", order.id, { bundle: b.key });
+      await d.credit(userId, b.tokens, "purchase", order.id, { bundle: b.key });
     } else {
       // A captured payment we cannot credit (missing metadata.userId or an
       // unmapped product) must NOT be silently dropped with a 200 — that
@@ -142,7 +177,7 @@ export async function POST(request: NextRequest) {
         );
       }
       if (clawback > 0) {
-        await credit(userId, -clawback, "refund", `refund:${originalOrderId}`, { bundle: b.key });
+        await d.credit(userId, -clawback, "refund", `refund:${originalOrderId}`, { bundle: b.key });
       }
     } else {
       // An unresolvable refund (lost metadata.userId / unmapped product / no
@@ -159,9 +194,16 @@ export async function POST(request: NextRequest) {
 
   // Pattern 3: relay the settled order/refund to LightTrack as revenue (profit/margin). We already
   // verified the signature above, so no secret is shared with LightTrack — it trusts this project-keyed
-  // relay. Best-effort: trackRevenue swallows its own errors, so Polar still gets its 200 regardless.
+  // relay. Best-effort: trackRevenue swallows its own errors, and the catch makes the 200-ack
+  // independent of that contract — telemetry must never make Polar re-deliver a credited order.
   const revenue = polarEventToRevenue(event);
-  if (revenue) await trackRevenue(revenue);
+  if (revenue) {
+    try {
+      await d.trackRevenue(revenue);
+    } catch {
+      // swallowed: revenue relay is observability, not money movement
+    }
+  }
 
   return new Response("ok", { status: 200 });
 }
