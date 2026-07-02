@@ -17,6 +17,10 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
+  // The UAT journeys live under e2e/uat with their OWN config (metered PGlite
+  // server, fake engine — playwright.uat.config.ts / `npm run uat`); under this
+  // keyless config they would run against the wrong server.
+  testIgnore: "uat/**",
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
