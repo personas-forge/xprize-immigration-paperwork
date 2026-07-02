@@ -127,6 +127,12 @@ export function SiteFooter() {
           <Link className="ink-link" href="/dashboard">
             Live case file
           </Link>
+          <Link className="ink-link" href="/terms">
+            Terms
+          </Link>
+          <Link className="ink-link" href="/privacy">
+            Privacy
+          </Link>
         </div>
       </div>
       {/* On-site entry into the visa-guide matrix — these pages were

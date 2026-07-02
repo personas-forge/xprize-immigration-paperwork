@@ -124,6 +124,15 @@ try {
     const res = await fetch(`${BASE}/api/me/export`);
     check("GET /api/me/export (unauthenticated) → 401", res.status === 401, `status=${res.status}`);
   }
+  for (const legal of ["/terms", "/privacy"]) {
+    const res = await fetch(`${BASE}${legal}`);
+    const html = await res.text();
+    check(
+      `GET ${legal} serves the legal page`,
+      res.status === 200 && /pending review by counsel/i.test(html),
+      `status=${res.status}`,
+    );
+  }
   {
     const res = await fetch(`${BASE}/api/qualify/preview`, {
       method: "POST",
