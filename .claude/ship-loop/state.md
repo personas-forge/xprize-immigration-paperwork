@@ -11,10 +11,10 @@
 - Milestone 3 "Ops & honest surfaces" ☑ COMPLETE (6,7,16,17,18,29) + Gate M3 green: typecheck✓ lint✓ 492✓ build✓ uat 20/20✓; /api/health + branded 404 verified live.
 - Milestone 4 ☑ COMPLETE (19,20,25,26,31,32; 23 resized S→M and deferred to CP1) + Gate M4 green: typecheck✓ lint✓ 492✓ build✓ uat 24/24✓ smoke:prod 6/6✓.
 - Scorecard now: 1🟢 2🔴(awaits #5/#21 decisions) 3🟡 4🟡 5🟡 6🟡 7🟡 8🔴(awaits #15 deploy).
-- Milestone 5 "Ship-blockers" ☑ COMPLETE (5,21,15,24; commit 73e7f0b) + Gate M5 green: typecheck✓ lint✓ 492✓ build✓ smoke 6/6✓ uat 24/24✓.
-- Scorecard: NO 🔴 LEFT — 1🟢 2🟡 3🟡 4🟡 5🟡 6🟡 7🟡 8🟡. CP2 due when blocked or after M8.
-- Milestone 6 "Test depth + polish": 10 ☐ + 27 ☐ (delegated to agent: PGlite ledger tests, session/review-action tests), 8 ☐ (RFE/categorize save-fail rescue parity — me), 28 ☐ (screenshot sweep), 11 deprioritized (webhook behaviors already UAT-pinned e2e; unit seam would need injection refactor).
-- NEXT ACTION: launch test-depth agent (items 10+27), then implement item 8 (extend /api/draft/save-style rescue or auto-reclaim on saveFailed for RFE + categorize).
+- Milestones 5+6 ☑ COMPLETE (5,21,15,24,8,10,27) + Gate M6 green: typecheck✓ lint✓ 511 tests✓ build✓ uat 25/25✓ smoke 6/6✓.
+- Scorecard: 1🟢 2🟡 3🟢 4🟡 5🟡 6🟡 7🟡 8🟡. Yellows are mostly USER-GATED for ship: 4 (dev-server deviation — accept w/ note?), 5 (live Polar sandbox purchase), 8 (live Vercel deploy), 6 (item 23 cert signing decision), 7 (item 28 sweep pending), 2 (final content review).
+- Milestone 7 "Visual sweep": item 28 — screenshot key pages 375px+1440px, review vs scorecard §7 checklist, burn down ship-blockers. Then CP2 (ship-gate trajectory: which 🟡s to accept-with-note vs fix; live-deploy + sandbox-purchase are user-side).
+- NEXT ACTION: delegate item 28 sweep to an agent (script screenshots + visual review + issue list), then fix ship-blocking findings, then CP2.
 
 ## Scorecard
 | # | Dimension | Score | Evidence (cmd → result, date) | Top gaps |

@@ -13,3 +13,4 @@
 2026-07-02 GATE M5: all green (492 tests, smoke 6/6, uat 24/24). Items 5,15,21,24 ☑ (commit 73e7f0b). NO RED DIMENSIONS LEFT. M6 = test depth (10,27 agent; 8 me; 28 sweep).
 2026-07-02 ITEM 8 ☑ rescue parity RFE+vault (commit 8365f1e); uat 25/25. Awaiting test-depth agent (items 10+27).
 2026-07-02 ITEMS 10,27 ☑ (agent; commit d4fc147): +19 tests (511), real-PGlite money kernel incl. concurrency, CAS transitions, receipt validation. GATE M6: all green (511, build, uat 25/25). Milestone 6 COMPLETE. Scorecard: 3.Tests 🟡→🟢 (firestore-driver caveat noted). M7 = item 28 screenshot sweep (delegate), then CP2/ship-gate.
+2026-07-02 ITEM 28 ☑ sweep + burn-down (commit b8545da): 3 ship-blockers fixed (slow-hydration CSS reveal — first remount approach REVERTED after UAT caught state-loss race; billing stamp; signed-out ∞); polish 5,6,8 fixed; 4,7 filed as items 33,34. GATE M7 all green: 511, uat 25/25, e2e 7/7, smoke 6/6. Milestone 7 COMPLETE → CP2.

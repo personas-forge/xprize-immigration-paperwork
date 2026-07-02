@@ -31,8 +31,10 @@ Numbering is append-only and stable — never renumber (user decisions reference
 | 25 | ☑ | 6-Sec | S | categorize rate-limit keyed byUser (currently IP-only, evadable); document TRUSTED_PROXY_HOPS. |
 | 26 | ☑ | 2-Func | S | robots.ts; cross-link /visa/* programmatic-SEO pages from footer or /qualify (currently sitemap-only orphans). |
 | 27 | ☑ | 3-Tests | M | Tests for getUser session resolution (cookie/verify/dev-seed paths) + attorney sign/file transition actions (CAS, receipt validation). |
-| 28 | ☐ | 7-UX | M | Screenshot sweep key pages at 375px + 1440px, review vs UX checklist, burn down ship-blockers (dimension-7 evidence). |
+| 28 | ☑ | 7-UX | M | Screenshot sweep key pages at 375px + 1440px, review vs UX checklist, burn down ship-blockers (dimension-7 evidence). |
 | 29 | ☑ | 8-Ops | S | Repo hygiene: fix `.claude/CLAUDE.md` stale `test:e2e` → `e2e`; untrack committed run artifacts (check_runs*.json, playwright-report/, test-results/, scripts/llm-eval/out/). |
 | 30 | ☐ | 6-Sec | L | Shared rate-limit store (Redis/Firestore) for multi-instance prod — in-memory caps multiply per instance. Defer unless target is multi-instance. |
 | 31 | ☑ | 4-UAT | S | Prod-build smoke: `next build`+`start`, hit / + one API route + /api/health (pre-flight requirement; auth journeys stay on the dev-server harness). |
 | 32 | ☑ | 4-UAT | M | Hostile/edge persona journeys (ship-blocking per CP0 UAT depth): logged-out probing of protected APIs/pages, oversized/invalid inputs, back-button mid-flow — expect graceful handling, never a charge. |
+| 33 | ☐ | 7-UX | S | Landing fee-comparison bar chart renders empty at 375px (labels+axis only, no bars) — Recharts plot area collapses after long category labels. Polish (caption carries the meaning). |
+| 34 | ☐ | 7-UX | S | Chapter numeral system inconsistent across pages (/qualify=§I, /billing=§IV, /faq=§IV, /validation=§VI) — duplicates break the one-document conceit. Polish. |
