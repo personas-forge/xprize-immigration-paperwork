@@ -5,9 +5,9 @@
 - Ship bar: public launch w/ real payments. Cadence: MARATHON (CP only when blocked or every 4th milestone). UAT depth: all journeys + edge cases.
 - Scorecard: 1.Build 🟢 2.Func 🔴 3.Tests 🟡 4.UAT 🔴 5.Billing 🔴 6.Sec 🟡 7.UX 🟡 8.Ops 🔴
 - Branch: ship-loop/readiness-2026-07-02 (main is release-automation-managed; never work on main).
-- Milestone 1 "UAT harness": item 12 ☑ (harness green: 4/4 journeys, exact debits + failure-reclaim), 13 ◐ (paywall+purchase), 14 ☐ (vault/RFE/tracking/account journeys), then Verification Gate.
-- UAT runs via `npm run uat` (playwright.uat.config.ts, fake claude CLI at e2e/uat/fake-claude.mjs).
-- NEXT ACTION: item 13 — read /api/polar/webhook route + BundleGrid paywall UI; write uat-billing.spec.ts (spend to insufficient → 402 paywall no-debit → signed simulated order.paid webhook credits 500 → op succeeds).
+- Milestone 1 "UAT harness": item 12 ☑, 13 ☑ (billing journey 8/8; fixed 2 prod webhook bugs — camelCase reads killed proportional clawback + revenue relay), 14 ◐ (vault/RFE/tracking/account journeys), then Verification Gate.
+- UAT runs via `npm run uat` (12/12 green, 46s). Fake claude CLI at e2e/uat/fake-claude.mjs; ordered journey chain uat-01, uat-02, …
+- NEXT ACTION: item 14 — journeys: evidence vault (categorize 1 token, refile, soft-delete), case tracking (roadmap/status), account (export JSON, marketing pref), attorney review (submit→sign/file stub→RFE studio). Then Phase 3 Verification Gate.
 
 ## Scorecard
 | # | Dimension | Score | Evidence (cmd → result, date) | Top gaps |
