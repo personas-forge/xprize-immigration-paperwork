@@ -10,3 +10,4 @@
 2026-07-02 ITEM 1 ☑ client Idempotency-Key (agent-implemented, orchestrator-verified; commit a01b30f). GATE M2: typecheck ✓ lint ✓ tests ✓(492) build ✓ uat ✓(20/20). Milestone 2 COMPLETE. Scorecard: 5.Billing 🔴→🟡. Milestone 3 = ops/honest surfaces (16,17,18,29,6,7). Backlog +31,32.
 2026-07-02 GATE M3: typecheck ✓ lint ✓ tests ✓(492) build ✓ uat ✓(20/20). Items 6,7,16,17,18,29 ☑ (commit 74c5109). Health+404 verified live. Milestone 3 COMPLETE. M4 = 19,20,26,31,32,23,25 then CP1.
 2026-07-02 GATE M4: typecheck ✓ lint ✓ tests ✓(492) build ✓ uat ✓(24/24) smoke:prod ✓(6/6). Items 19,20,25,26,31,32 ☑ (commit 4255356); item 23 resized S→M (client-side token mint) deferred to CP1. Milestone 4 COMPLETE → CP1.
+2026-07-02 GATE M5: all green (492 tests, smoke 6/6, uat 24/24). Items 5,15,21,24 ☑ (commit 73e7f0b). NO RED DIMENSIONS LEFT. M6 = test depth (10,27 agent; 8 me; 28 sweep).
