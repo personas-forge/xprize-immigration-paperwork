@@ -22,6 +22,7 @@ import {
   type VaultDocLike,
 } from "@/features/drafting";
 import { isModelSource, sourceLabel, type ModelSource } from "@/lib/llm/label";
+import { costOf } from "@/lib/tokens/registry";
 import {
   copyButtonLabel,
   copyDraftToClipboard,
@@ -446,7 +447,7 @@ export function DraftStudio({
                 Draft the petition
               </Button>
               <span className="microprint" style={{ color: "var(--muted)" }}>
-                Uses 12 tokens · attorney must review &amp; sign
+                Uses {costOf("draft")} tokens · attorney must review &amp; sign
               </span>
             </div>
             {status === "error" && error ? (

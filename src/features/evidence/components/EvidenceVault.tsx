@@ -14,6 +14,7 @@ import {
 } from "@/features/evidence";
 import { type StoredDocument } from "@/features/evidence/types";
 import { type ModelSource } from "@/lib/llm/label";
+import { costOf } from "@/lib/tokens/registry";
 import { formatExhibit, parseExhibitOrdinal } from "@/lib/exhibits";
 import { refileDocument, removeDocument, restoreDocument } from "../actions";
 
@@ -276,7 +277,8 @@ export function EvidenceVault({
               {status === "adding" ? "Categorizing…" : "Add & categorize"}
             </Button>
             <span className="microprint" style={{ color: "var(--muted)" }}>
-              Uses 1 token · PDF/image OCR via Document AI is coming
+              Uses {costOf("categorize")} token{costOf("categorize") === 1 ? "" : "s"} · PDF/image
+              OCR via Document AI is coming
             </span>
           </div>
           {status === "error" && error ? (

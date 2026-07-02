@@ -1,11 +1,17 @@
 import { type NextRequest } from "next/server";
 import { getUser } from "@/lib/auth/session";
 import { isPolarConfigured, polar } from "@/lib/polar/client";
+import { isStoreConfigured } from "@/lib/db/config";
 import { bundleByKey } from "@/lib/tokens/economy";
 
 // Creates a Polar checkout for a token bundle and returns its URL.
 export async function POST(request: NextRequest) {
-  if (!isPolarConfigured()) {
+  // BOTH halves of the purchase must be configured before we take money: Polar
+  // (to charge the card) AND a store (to mint the tokens). Polar-without-store
+  // captures a real payment whose credit has nowhere to land — the webhook
+  // would 503 and the customer would be paid-but-tokenless until an operator
+  // intervenes. Refuse up front instead.
+  if (!isPolarConfigured() || !isStoreConfigured()) {
     return Response.json({ error: "billing_not_configured" }, { status: 503 });
   }
   const user = await getUser();

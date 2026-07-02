@@ -3,7 +3,7 @@ import { requireOnboardedUser } from "@/lib/auth/session";
 import { canReviewQueue } from "@/lib/auth/roles";
 import { getBalance } from "@/lib/tokens/ledger";
 import { petitions } from "@/lib/data/adapters/petition";
-import { isStoreConfigured } from "@/lib/db/config";
+import { isMeteringEnforced, isStoreConfigured } from "@/lib/db/config";
 import { type SavedCaseSummary } from "@/features/case-file/types";
 
 // Node runtime — getBalance() / requireOnboardedUser() read the Store.
@@ -14,7 +14,9 @@ export default async function DashboardPage() {
   // PERSISTENCE exists (dev-auth or Firebase). Only the balance pill depends on the
   // economy actually being enforced — it reads "∞" (null) under bypass / no store.
   const storeConfigured = isStoreConfigured();
-  const economyEnforced = storeConfigured && process.env.TOKENS_BYPASS !== "1";
+  // The canonical predicate (NOT an ad-hoc TOKENS_BYPASS read): the charge
+  // guard and this pill must agree, including the prod hard-gate on the bypass.
+  const economyEnforced = isMeteringEnforced();
   let balance: number | null = null;
   let cases: SavedCaseSummary[] = [];
   let showReviewQueue = false;

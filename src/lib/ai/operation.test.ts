@@ -193,6 +193,26 @@ test("model throw → reclaim + mock labelled source:mock, still 200", async () 
 });
 
 // ---------------------------------------------------------------------------
+// 6b. NO engine configured on a METERED request → reclaim + mock. A deployment
+//     with a store + auth but a missing/rotated LLM key must not sell the
+//     deterministic template at full price ("a mock is never billed"). In the
+//     keyless build the charge is a free pass, so the reclaim is a no-op there.
+// ---------------------------------------------------------------------------
+test("no engine (getLlm null) on a metered request → reclaim + mock, still 200", async () => {
+  const spy = chargeSpy({ ok: true, cost: 1, balance: 9, reclaim: async () => {} });
+  const res = await executeAiOperation(
+    jsonRequest({ text: "hi" }),
+    baseSpec(),
+    deps({ charge: spy.charge, getLlm: () => null }),
+  );
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.result, "MOCK_OUTPUT");
+  assert.equal(body.source, "mock");
+  assert.equal(spy.calls.reclaimed, 1, "an unconfigured-engine mock must not keep the charge");
+});
+
+// ---------------------------------------------------------------------------
 // 7. guard returns null (unusable output) → reclaim + mock + source:"mock"
 // ---------------------------------------------------------------------------
 test("unusable model output (guard null) → reclaim + mock", async () => {
@@ -338,9 +358,13 @@ test("happy path → model output with source = engine name, no reclaim", async 
 });
 
 // ---------------------------------------------------------------------------
-// 9. no engine configured → mock WITHOUT reclaim (legitimate keyless result)
+// 9. no engine configured → mock WITH reclaim. (Contract REVERSED 2026-07-02:
+//    the old "keyless mock keeps the charge" pin conflated keyless — where the
+//    charge is a free pass and reclaim is a no-op — with a METERED deployment
+//    missing its LLM key, which was billing full price for template output.
+//    See test 6b; this test pins the same invariant from the old test's seat.)
 // ---------------------------------------------------------------------------
-test("no engine → deterministic mock, charge kept (no reclaim)", async () => {
+test("no engine → deterministic mock and the charge is reclaimed", async () => {
   const spy = chargeSpy({ ok: true, cost: 1, balance: 9, reclaim: async () => {} });
   const res = await executeAiOperation(
     jsonRequest({ text: "hi" }),
@@ -349,7 +373,7 @@ test("no engine → deterministic mock, charge kept (no reclaim)", async () => {
   );
   const body = await res.json();
   assert.equal(body.source, "mock");
-  assert.equal(spy.calls.reclaimed, 0, "keyless mock is not a refund case");
+  assert.equal(spy.calls.reclaimed, 1, "a mock served on a real charge must refund it");
 });
 
 // ---------------------------------------------------------------------------

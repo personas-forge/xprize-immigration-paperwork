@@ -113,6 +113,25 @@ test("isMeteringEnforced: TOKENS_BYPASS=1 forces a free pass even with a store",
   );
 });
 
+test("isMeteringEnforced: TOKENS_BYPASS is hard-gated out of production", () => {
+  // A bypass flag accidentally left set on a real deployment must not turn the
+  // paid product free (and with it, drop the charge guard's auth gate) — the
+  // same NODE_ENV hard-gate contract as NEXT_PUBLIC_DEV_AUTH.
+  assert.equal(
+    isMeteringEnforced({
+      TOKENS_BYPASS: "1",
+      NODE_ENV: "production",
+      FIRESTORE_PROJECT_ID: "p",
+    }),
+    true,
+  );
+  // Outside production the dev bypass keeps working.
+  assert.equal(
+    isMeteringEnforced({ TOKENS_BYPASS: "1", NODE_ENV: "test", DB_DRIVER: "pglite" }),
+    false,
+  );
+});
+
 test("isMeteringEnforced: no store configured → free pass (keyless build/dev)", () => {
   assert.equal(isMeteringEnforced({ TOKENS_BYPASS: "" }), false);
   assert.equal(isMeteringEnforced({}), false);

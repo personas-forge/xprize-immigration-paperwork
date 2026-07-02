@@ -367,6 +367,13 @@ export async function executeAiOperation<TInput, TOutput>(
   };
   try {
     if (!llm) {
+      // No engine configured. In the keyless build the charge was a free pass
+      // (reclaim is a no-op), but when metering IS enforced this is a
+      // misconfigured deployment (store + auth present, LLM key absent/rotated)
+      // — serving the deterministic template at full price would violate the
+      // "a mock is never billed" invariant every other mock path upholds.
+      // Reclaim first, then serve the honest mock.
+      await reclaim();
       output = spec.mock(input);
       source = "mock";
     } else {

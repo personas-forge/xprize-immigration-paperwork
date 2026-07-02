@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { validateEvent } from "@polar-sh/sdk/webhooks";
+import { isStoreConfigured } from "@/lib/db/config";
 import { credit } from "@/lib/tokens/ledger";
 import { bundleByKey, bundleByProductId } from "@/lib/tokens/economy";
 import { polarEventToRevenue, type WebhookEvent } from "./relay-revenue";
@@ -37,6 +38,13 @@ function resolveBundle(order: PolarOrder, productId: string | undefined) {
 export async function POST(request: NextRequest) {
   const secret = process.env.POLAR_WEBHOOK_SECRET;
   if (!secret) return new Response("billing not configured", { status: 503 });
+  // No store ⇒ credit() silently returns without minting, and a paid order
+  // would be 200-acked as credited. 503 instead so Polar retries until the
+  // deployment is fixed — a captured payment must never be dropped unminted.
+  if (!isStoreConfigured()) {
+    console.error("[polar webhook] store not configured — refusing delivery so Polar retries");
+    return new Response("store not configured", { status: 503 });
+  }
 
   const body = await request.text();
   const headers = Object.fromEntries(request.headers.entries());
