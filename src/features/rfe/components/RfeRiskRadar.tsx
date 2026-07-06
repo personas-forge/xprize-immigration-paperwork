@@ -171,7 +171,7 @@ export function RfeRiskRadar({
                         disabled={reinforcing !== null}
                       >
                         {reinforcing === c.criterion ? "Reinforcing…" : "Reinforce this section"}
-                        <span className="ml-2 rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-accent-dark">
+                        <span className="ml-2 rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-accent-text">
                           {costOf("draft_section")} tokens
                         </span>
                       </Button>

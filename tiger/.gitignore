@@ -1,0 +1,4 @@
+# Transient capture dirs from live Lens-2 / Lens-3 runs (raw model outputs, large).
+# Session notes + call-site/character/model rollups ARE committed (the durable vault).
+captures/
+*.tmp

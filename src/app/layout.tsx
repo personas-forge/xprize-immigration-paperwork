@@ -45,9 +45,17 @@ const siteUrl = SITE_URL;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: siteTitle,
+  title: {
+    default: siteTitle,
+    // Child routes set a short plain-string title (e.g. "Sign in") and this
+    // appends the brand — single-sourced so no page has to repeat the suffix
+    // (and none can drift from it). Matches the " — Brand" separator already
+    // used throughout the app's own titles.
+    template: "%s — Immigration Concierge",
+  },
   description: siteDescription,
-  manifest: "/manifest.webmanifest",
+  // manifest field removed — src/app/manifest.ts is now auto-detected and
+  // served at /manifest.webmanifest by the App Router convention.
   applicationName: "Immigration Concierge",
   icons: {
     icon: [

@@ -64,12 +64,13 @@ export function CriterionPrimerButton({ criterionName }: { criterionName: string
         aria-haspopup="dialog"
         onClick={() => setOpen((v) => !v)}
         className={[
-          "ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full",
+          // 24x24 min touch target (WCAG 2.5.8) — was h-4 w-4 (16x16px).
+          "ml-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full",
           "border text-[12px] font-semibold leading-none",
           "transition-colors duration-150",
           open
-            ? "border-accent-dark bg-accent-dark/10 text-accent-dark"
-            : "border-rule text-muted hover:border-accent-dark hover:text-accent-dark",
+            ? "border-accent-dark bg-accent-dark/10 text-accent-text"
+            : "border-rule text-muted hover:border-accent-dark hover:text-accent-text",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark focus-visible:ring-offset-1 focus-visible:ring-offset-background",
         ].join(" ")}
       >
@@ -94,7 +95,8 @@ export function CriterionPrimerButton({ criterionName }: { criterionName: string
             type="button"
             aria-label="Close primer"
             onClick={() => setOpen(false)}
-            className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded text-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark"
+            // 24x24 min touch target (WCAG 2.5.8) — was h-5 w-5 (20x20px).
+            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded text-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark"
           >
             ×
           </button>

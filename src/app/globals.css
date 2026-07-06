@@ -25,7 +25,12 @@
 
   /* — Brand accent spectrum — */
   --accent: #b8893a;            /* gold-leaf, used sparingly */
-  --accent-dark: #8e6829;
+  /* #765622 clears WCAG AA 4.5:1 as small badge/chip text on its own
+     --accent-soft wash (Badge "accent" tone, DraftStudio/RfeRiskRadar count
+     pills) — the previous #8e6829 measured 3.47:1 worst case. Matches the
+     identical fix in features/dashboard/themes.ts (see
+     themes.contrast.test.ts); this global token had drifted out of sync. */
+  --accent-dark: #765622;
   --accent-soft: #f4e6c2;
   --accent-foreground: #1a1206;
 
@@ -34,7 +39,10 @@
 
   --success: #4e6b3c;           /* moss approval */
   --success-soft: #e6ead4;
-  --warning: #a06410;           /* tan caution */
+  /* #8e580e clears WCAG AA 4.5:1 as Badge/status text on --warning-soft (and
+     every plain surface) — the previous #a06410 measured 3.73:1 worst case.
+     Matches the identical fix in themes.ts (see themes.contrast.test.ts). */
+  --warning: #8e580e;           /* tan caution */
   --warning-soft: #f4e2c0;
   --danger: #7d2a2e;            /* same as seal */
   --danger-soft: #ecd3cf;
@@ -62,22 +70,44 @@
 
   --foreground: #f3ead6;
   --foreground-soft: #ddd0ac;
-  --muted: #95876a;
+  /* #a89a7e is the darkest shade of this warm-khaki hue that holds WCAG AA
+     4.5:1 for normal text on every ink surface — the binding pair is
+     --surface-elevated #1a3245 (4.78:1; the previous #95876a sat at 3.75:1
+     there and 4.44:1 on --surface). Matches the identical, already-audited
+     fix in features/dashboard/themes.ts (see themes.contrast.test.ts) —
+     this global token had drifted out of sync with it. */
+  --muted: #a89a7e;
   --muted-strong: #b7a988;
 
+  /* --accent-dark is intentionally NOT nudged here even though it measures
+     3.26:1 (worst case) as small badge/chip text on the translucent
+     bg-accent-soft / bg-accent/15 washes — the lightening needed to clear
+     4.5:1 (~#cea662) would land it visually on top of --accent (#d4a554),
+     erasing the accent/accent-dark distinction the two sibling tokens exist
+     to carry. Flagged for a human design decision instead of silently
+     fixed; matches the identical flag in features/dashboard/themes.ts. */
   --accent: #d4a554;
   --accent-dark: #b8893a;
   --accent-soft: rgba(212, 165, 84, 0.14);
   --accent-foreground: #0c1a25;
 
-  --seal: #c75b60;
+  /* #d88d90 clears WCAG AA 4.5:1 as text on its own --seal-soft wash (the
+     previous #c75b60 measured 2.83:1 worst case, on --surface-elevated) —
+     also covers the "seal" Button variant (text-background on bg-seal),
+     which only improves (6.83:1). Matches the identical fix in themes.ts
+     (see themes.contrast.test.ts). */
+  --seal: #d88d90;
   --seal-soft: rgba(199, 91, 96, 0.14);
 
   --success: #9fc080;
   --success-soft: rgba(159, 192, 128, 0.14);
-  --warning: #d99947;
+  /* #da9d4d clears WCAG AA 4.5:1 as Badge/status text on --warning-soft (the
+     previous #d99947 measured 4.36:1 worst case). Matches themes.ts. */
+  --warning: #da9d4d;
   --warning-soft: rgba(217, 153, 71, 0.14);
-  --danger: #d96b6f;
+  /* #e28c8f clears WCAG AA 4.5:1 as Badge/alert text on --danger-soft (the
+     previous #d96b6f measured 3.38:1 worst case). Matches themes.ts. */
+  --danger: #e28c8f;
   --danger-soft: rgba(217, 107, 111, 0.14);
 }
 
@@ -218,9 +248,11 @@ body {
   color: var(--accent-foreground);
 }
 :focus-visible {
-  /* Rings on --accent-dark (4.2:1 light / 5.6:1 dark), NOT the 2.63:1 gold-leaf
+  /* Rings on --accent-dark (5.6:1 light / 5.6:1 dark), NOT the 2.63:1 gold-leaf
      --accent — one ring contract with the Button standard + the .focus-ring class
-     below (was --accent, which contradicted them; WCAG 1.4.11 non-text minimum). */
+     below (was --accent, which contradicted them; WCAG 1.4.11 non-text minimum).
+     Light-theme ratio rose from 4.2:1 after --accent-dark was darkened for the
+     Badge/chip text fix above; still clears the 3:1 non-text minimum either way. */
   outline: 2px solid var(--accent-dark);
   outline-offset: 3px;
   border-radius: 1px;

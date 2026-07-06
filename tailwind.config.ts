@@ -24,6 +24,9 @@ export default {
         accent: {
           DEFAULT: "var(--accent)",
           dark: "var(--accent-dark)",
+          // Badge/chip-TEXT split off from --accent-dark — see
+          // src/features/dashboard/themes.ts for why it's a separate token.
+          text: "var(--accent-text)",
           soft: "var(--accent-soft)",
           foreground: "var(--accent-foreground)",
         },

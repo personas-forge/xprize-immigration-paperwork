@@ -6,7 +6,7 @@ import { FaqEntry } from "@/components/FaqEntry";
 import { SiteHeader, SiteFooter } from "@/components/SiteChrome";
 
 export const metadata: Metadata = {
-  title: "Frequently asked — Immigration Concierge",
+  title: "Frequently asked",
   description:
     "What the AI drafting tool does, who reviews and signs (your own attorney of record), token pricing, RFE handling, accuracy, refunds, and data security. A drafting tool, not a law firm — never legal advice.",
 };

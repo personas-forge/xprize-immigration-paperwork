@@ -21,7 +21,7 @@ import {
 } from "@/features/qualification";
 
 export const metadata: Metadata = {
-  title: "Validation & sources — Immigration Concierge",
+  title: "Validation & sources",
   description:
     "How each visa program and compliance claim is validated against primary legal sources — status, citations, and review dates. Not legal advice.",
 };

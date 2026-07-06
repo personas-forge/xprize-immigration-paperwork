@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { DisclaimerStamp, CitationNote, AdjudicationBadge } from "@/components/legal";
@@ -115,6 +115,10 @@ export function DraftStudio({
   const [error, setError] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState<string | null>(null);
   const [regenerationError, setRegenerationError] = useState<string | null>(null);
+  // Stable prefix so each section's regeneration-error id (built per-map-index
+  // below, since sections are a runtime list — hooks can't be called in a loop)
+  // stays unique even with multiple DraftStudio instances on one page.
+  const sectionErrorIdPrefix = useId();
   const [saveFailed, setSaveFailed] = useState(false);
   const [adjudication, setAdjudication] = useState<AdjudicationReport | null>(null);
   // Adjudicator redline (moonshot #19): per-heading critique + overall score.
@@ -624,7 +628,8 @@ export function DraftStudio({
                     type="button"
                     onClick={() => regenerate(s.heading)}
                     disabled={regenerating !== null}
-                    className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground disabled:opacity-50 focus-ring"
+                    // py-1 brings the tap target to ~24px tall (WCAG 2.5.8).
+                    className="inline-flex items-center gap-1.5 py-1 font-mono text-[12px] uppercase tracking-document text-accent-dark transition-colors hover:text-foreground disabled:opacity-50 focus-ring"
                   >
                     <svg
                       width="11"
@@ -643,7 +648,7 @@ export function DraftStudio({
                     </svg>
                     {regenerating === s.heading ? "Regenerating…" : "Regenerate"}
                     {regenerating !== s.heading ? (
-                      <span className="rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-accent-dark">
+                      <span className="rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-accent-text">
                         5
                       </span>
                     ) : null}
@@ -651,6 +656,7 @@ export function DraftStudio({
                 </div>
                 {regenerationError === s.heading ? (
                   <div
+                    id={`${sectionErrorIdPrefix}-section-error-${i}`}
                     role="alert"
                     className="mb-2 rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[14px] text-danger"
                   >
@@ -661,6 +667,13 @@ export function DraftStudio({
                   value={s.body}
                   onChange={(e) => editBody(s.heading, e.target.value)}
                   rows={Math.max(3, Math.ceil(s.body.length / 90))}
+                  aria-label={`Draft section — ${s.heading}`}
+                  aria-invalid={regenerationError === s.heading}
+                  aria-describedby={
+                    regenerationError === s.heading
+                      ? `${sectionErrorIdPrefix}-section-error-${i}`
+                      : undefined
+                  }
                   className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-[1.7] text-foreground-soft focus-ring"
                 />
                 {critiques[s.heading] && critiques[s.heading].score < WEAK_SECTION_SCORE ? (
@@ -688,7 +701,7 @@ export function DraftStudio({
                 disabled={critiqueStatus === "loading" || regenerating !== null}
               >
                 {critiqueStatus === "loading" ? "Reviewing…" : "Adjudicator review"}
-                <span className="ml-2 rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-accent-dark">
+                <span className="ml-2 rounded-full bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] tracking-normal text-accent-text">
                   5
                 </span>
               </Button>

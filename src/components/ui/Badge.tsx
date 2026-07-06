@@ -13,7 +13,7 @@ export type BadgeTone =
 // rectilinear chip with letterspacing reads like a stamp register entry.
 const toneClass: Record<BadgeTone, string> = {
   neutral: "bg-surface-muted text-muted-strong border-border-strong",
-  accent: "bg-accent-soft text-accent-dark border-accent/40",
+  accent: "bg-accent-soft text-accent-text border-accent/40",
   success: "bg-success-soft text-success border-success/40",
   warning: "bg-warning-soft text-warning border-warning/40",
   danger: "bg-danger-soft text-danger border-danger/40",

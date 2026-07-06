@@ -50,7 +50,7 @@ function resolve(
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
   const { classification: cSlug, profession: pSlug } = await params;
   const resolved = resolve(cSlug, pSlug);
-  if (!resolved) return { title: "Not found" };
+  if (!resolved) return { title: { absolute: "Not found" } };
   const { classification, profession } = resolved;
   const title = `${classification} visa for ${profession.label} — eligibility & criteria`;
   const description =
@@ -59,7 +59,11 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     `evidence examples, and a free instant eligibility screening. Informational, not legal advice.`;
   const canonical = `/visa/${classification.toLowerCase()}/${profession.slug}`;
   return {
-    title,
+    // absolute: this keyword-tuned SEO title is deliberately self-contained;
+    // the root layout's title template must not append the brand suffix to
+    // it (would also change the existing rendered <title> now that a
+    // template exists).
+    title: { absolute: title },
     description,
     alternates: { canonical },
     openGraph: { title, description, url: canonical, type: "article" },

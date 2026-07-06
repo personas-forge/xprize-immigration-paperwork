@@ -6,7 +6,7 @@ import { CONSENT_DISCLAIMER } from "@/lib/result";
 import { FREE_SIGNUP_GRANT } from "@/lib/tokens/economy";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Immigration Concierge",
+  title: "Terms of Service",
   description:
     "The terms under which Immigration Concierge provides AI-assisted petition drafting tools. A drafting tool, not a law firm; never legal advice.",
 };

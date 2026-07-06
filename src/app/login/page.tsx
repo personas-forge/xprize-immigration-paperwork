@@ -74,7 +74,9 @@ export default function LoginPage() {
 
             {/* The card is deliberately chrome-free, but a dead-end with no way
                 back home fails the nav checklist — one quiet return link. */}
-            <Link href="/" className="ink-link microprint self-start focus-ring">
+            {/* py-1 brings the tap target to ~24px tall (WCAG 2.5.8) — the
+                microprint text alone was ~19px. */}
+            <Link href="/" className="ink-link microprint self-start py-1 focus-ring">
               ← Back to home
             </Link>
 

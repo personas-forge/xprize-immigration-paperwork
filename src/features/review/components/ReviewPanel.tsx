@@ -123,14 +123,18 @@ export function ReviewPanel({
 
         {inDrafting && isOwner ? (
           <ReviewActionForm action={submitForReview.bind(null, caseId)} className="space-y-2">
-            <SubmitButton variant="seal" pendingLabel="Submitting…">
-              Submit for attorney review
-            </SubmitButton>
-            <p className="microprint" style={{ color: "var(--muted)" }}>
-              {hasDraft
-                ? "Sends your drafted petition to the attorney of record."
-                : "Tip: generate a petition draft above before submitting."}
-            </p>
+            {() => (
+              <>
+                <SubmitButton variant="seal" pendingLabel="Submitting…">
+                  Submit for attorney review
+                </SubmitButton>
+                <p className="microprint" style={{ color: "var(--muted)" }}>
+                  {hasDraft
+                    ? "Sends your drafted petition to the attorney of record."
+                    : "Tip: generate a petition draft above before submitting."}
+                </p>
+              </>
+            )}
           </ReviewActionForm>
         ) : null}
 
@@ -150,15 +154,22 @@ export function ReviewPanel({
             </div>
             <SignAndFileAction caseId={caseId} />
             <ReviewActionForm action={attorneyRequestChanges.bind(null, caseId)} className="space-y-2">
-              <textarea
-                name="feedback"
-                rows={3}
-                placeholder="Required changes for the applicant…"
-                className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
-              />
-              <SubmitButton variant="secondary" pendingLabel="Returning…">
-                Return with changes
-              </SubmitButton>
+              {({ invalid, errorId }) => (
+                <>
+                  <textarea
+                    name="feedback"
+                    rows={3}
+                    placeholder="Required changes for the applicant…"
+                    aria-label="Required changes for the applicant"
+                    aria-invalid={invalid}
+                    aria-describedby={invalid ? errorId : undefined}
+                    className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
+                  />
+                  <SubmitButton variant="secondary" pendingLabel="Returning…">
+                    Return with changes
+                  </SubmitButton>
+                </>
+              )}
             </ReviewActionForm>
           </div>
         ) : null}
@@ -168,22 +179,28 @@ export function ReviewPanel({
             action={attorneyRecordDecision.bind(null, caseId)}
             className="flex flex-wrap items-end gap-3 rounded-control border border-seal/30 bg-seal-soft/20 px-5 py-4"
           >
-            <label className="block">
-              <span className="microprint">USCIS decision</span>
-              <select
-                name="decision"
-                className="mt-1.5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-ring"
-              >
-                {USCIS_DECISIONS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <SubmitButton variant="secondary" pendingLabel="Recording…">
-              Record decision
-            </SubmitButton>
+            {({ invalid, errorId }) => (
+              <>
+                <label className="block">
+                  <span className="microprint">USCIS decision</span>
+                  <select
+                    name="decision"
+                    aria-invalid={invalid}
+                    aria-describedby={invalid ? errorId : undefined}
+                    className="mt-1.5 rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-ring"
+                  >
+                    {USCIS_DECISIONS.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <SubmitButton variant="secondary" pendingLabel="Recording…">
+                  Record decision
+                </SubmitButton>
+              </>
+            )}
           </ReviewActionForm>
         ) : null}
 
@@ -225,15 +242,22 @@ export function ReviewPanel({
         {/* — Add note (owner or attorney) ───────────────────────────────── */}
         {isOwner || isAttorney ? (
           <ReviewActionForm action={addReviewNote.bind(null, caseId)} className="space-y-2">
-            <textarea
-              name="body"
-              rows={2}
-              placeholder="Add a note to the thread…"
-              className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
-            />
-            <SubmitButton variant="ghost" size="sm" pendingLabel="Adding…">
-              Add note
-            </SubmitButton>
+            {({ invalid, errorId }) => (
+              <>
+                <textarea
+                  name="body"
+                  rows={2}
+                  placeholder="Add a note to the thread…"
+                  aria-label="Add a note to the thread"
+                  aria-invalid={invalid}
+                  aria-describedby={invalid ? errorId : undefined}
+                  className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
+                />
+                <SubmitButton variant="ghost" size="sm" pendingLabel="Adding…">
+                  Add note
+                </SubmitButton>
+              </>
+            )}
           </ReviewActionForm>
         ) : null}
       </CardBody>
@@ -281,28 +305,34 @@ function SignAndFileAction({ caseId }: { caseId: string }) {
         the full draft and exhibits — this is your attorney-of-record action.
       </p>
       <ReviewActionForm action={attorneySignAndFile.bind(null, caseId)} className="space-y-3">
-        <label className="block">
-          <span className="microprint">USCIS receipt number (optional)</span>
-          <input
-            name="receiptNumber"
-            type="text"
-            inputMode="text"
-            placeholder="e.g. EAC2412345678 — leave blank to record a demo receipt"
-            className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-mono text-[15px] tracking-document text-foreground placeholder:text-muted focus-ring"
-          />
-          <span className="microprint mt-1 block" style={{ color: "var(--muted)" }}>
-            Real USCIS filing isn&apos;t wired yet — enter the actual receipt if you
-            filed outside the app, or leave blank for a clearly-labelled demo.
-          </span>
-        </label>
-        <div className="flex flex-wrap items-center gap-3">
-          <SubmitButton variant="seal" pendingLabel="Recording filing…">
-            Confirm — sign &amp; file
-          </SubmitButton>
-          <Button type="button" variant="secondary" onClick={() => setConfirming(false)}>
-            Cancel
-          </Button>
-        </div>
+        {({ invalid, errorId }) => (
+          <>
+            <label className="block">
+              <span className="microprint">USCIS receipt number (optional)</span>
+              <input
+                name="receiptNumber"
+                type="text"
+                inputMode="text"
+                placeholder="e.g. EAC2412345678 — leave blank to record a demo receipt"
+                aria-invalid={invalid}
+                aria-describedby={invalid ? errorId : undefined}
+                className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-mono text-[15px] tracking-document text-foreground placeholder:text-muted focus-ring"
+              />
+              <span className="microprint mt-1 block" style={{ color: "var(--muted)" }}>
+                Real USCIS filing isn&apos;t wired yet — enter the actual receipt if you
+                filed outside the app, or leave blank for a clearly-labelled demo.
+              </span>
+            </label>
+            <div className="flex flex-wrap items-center gap-3">
+              <SubmitButton variant="seal" pendingLabel="Recording filing…">
+                Confirm — sign &amp; file
+              </SubmitButton>
+              <Button type="button" variant="secondary" onClick={() => setConfirming(false)}>
+                Cancel
+              </Button>
+            </div>
+          </>
+        )}
       </ReviewActionForm>
     </div>
   );

@@ -29,13 +29,17 @@ interface PageParams {
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
   const { token } = await params;
   const snap = decodeSnapshot(token);
-  if (!snap) return { title: "Certificate not found" };
+  if (!snap) return { title: { absolute: "Certificate not found" } };
   const title = `${snap.name} — ${snap.likelihood}% likely to qualify for the ${snap.classification}`;
   const description = `A Certificate of Extraordinary Ability: ${snapshotQualifying(snap)} of ${
     packFor(snap.classification).criteria.length
   } ${snap.classification} criteria supported. Run your own free screening.`;
   return {
-    title,
+    // absolute: this personalized certificate title is the whole point of the
+    // share card — the root layout's "%s — Immigration Concierge" template
+    // must not append the brand suffix to it (would also change the existing
+    // rendered <title> now that a template exists).
+    title: { absolute: title },
     description,
     openGraph: { title, description, type: "profile" },
     twitter: { card: "summary_large_image", title, description },
