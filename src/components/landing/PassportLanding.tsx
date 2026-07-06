@@ -51,7 +51,7 @@ export function PassportLanding() {
   const progress = index / (SECTIONS.length - 1);
 
   return (
-    <div className="relative h-screen overflow-hidden bg-background text-foreground">
+    <div className="relative h-dvh overflow-hidden bg-background text-foreground">
       {/* atmospheric corner rosettes */}
       <div
         aria-hidden
@@ -71,7 +71,7 @@ export function PassportLanding() {
 
       <div
         ref={rootRef}
-        className="relative z-10 h-screen overflow-y-scroll lg:snap-y lg:snap-mandatory motion-safe:scroll-smooth [scrollbar-width:thin]"
+        className="relative z-10 h-dvh overflow-y-scroll lg:snap-y lg:snap-mandatory motion-safe:scroll-smooth [scrollbar-width:thin]"
       >
         <Arrival />
         <Criteria />
@@ -90,7 +90,7 @@ function PassportNav({ active, progress }: { active: string; progress: number })
   return (
     <nav
       aria-label="Page sections"
-      className="fixed left-0 top-0 z-30 hidden h-screen w-24 flex-col items-center justify-center lg:flex"
+      className="fixed left-0 top-0 z-30 hidden h-dvh w-24 flex-col items-center justify-center lg:flex"
     >
       {/* route line — dashed track + gold progress fill */}
       <div aria-hidden className="absolute inset-y-24 left-1/2 w-px -translate-x-1/2">
@@ -199,7 +199,7 @@ function Section({
   return (
     <section
       id={id}
-      className={`relative flex min-h-screen w-full flex-col px-6 py-24 lg:snap-start lg:snap-always lg:pl-32 lg:pr-12 ${
+      className={`relative flex min-h-dvh w-full flex-col px-6 py-24 lg:snap-start lg:snap-always lg:pl-32 lg:pr-12 ${
         align === "start" ? "justify-start" : "justify-center"
       } ${className}`}
     >

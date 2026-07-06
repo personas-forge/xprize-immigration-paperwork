@@ -41,7 +41,13 @@ export const INK_PALETTE: Palette = {
   rule: "rgba(243,234,214,0.16)",
   foreground: "#f3ead6",
   foregroundSoft: "#ddd0ac",
-  muted: "#95876a",
+  // #a89a7e — kept in sync with the ink --muted fix in globals.css /
+  // features/dashboard/themes.ts (see themes.contrast.test.ts); this file
+  // had drifted and still carried the pre-fix #95876a (3.75:1, fails WCAG
+  // AA 4.5:1 on --surface-elevated). Currently unused as a text fill in
+  // charts.tsx (only mutedStrong is), but exported as part of Palette so a
+  // future chart reading it wouldn't silently inherit a contrast failure.
+  muted: "#a89a7e",
   mutedStrong: "#b7a988",
   accent: "#d4a554",
   accentDark: "#b8893a",

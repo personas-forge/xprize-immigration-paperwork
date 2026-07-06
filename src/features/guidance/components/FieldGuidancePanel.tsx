@@ -42,6 +42,7 @@ export function FieldGuidancePanel() {
   const fieldSelectId = useId();
   const formSelectId = useId();
   const situationId = useId();
+  const errorId = useId();
   // Charge idempotency: retrying the same form/field/situation reuses the key
   // (the debit de-dupes); success or edited inputs rotate it. See
   // @/lib/idempotency.
@@ -75,6 +76,11 @@ export function FieldGuidancePanel() {
     setFormsError(false);
     setFormsAttempt((n) => n + 1);
   }
+
+  // The three fields below are validated together (see onSubmit) against the
+  // single shared error banner (#errorId) — no per-field message exists, so
+  // all three point aria-invalid/aria-describedby at the same banner.
+  const invalid = status === "error";
 
   const activeForm = forms?.find((f) => f.number === formId) ?? null;
 
@@ -158,6 +164,8 @@ export function FieldGuidancePanel() {
                   id={formSelectId}
                   value={formId}
                   onChange={(e) => onFormChange(e.target.value)}
+                  aria-invalid={invalid}
+                  aria-describedby={invalid ? errorId : undefined}
                   className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-ring"
                 >
                   {forms.map((f) => (
@@ -174,6 +182,8 @@ export function FieldGuidancePanel() {
                   id={fieldSelectId}
                   value={fieldLabel}
                   onChange={(e) => setFieldLabel(e.target.value)}
+                  aria-invalid={invalid}
+                  aria-describedby={invalid ? errorId : undefined}
                   className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground focus-ring"
                 >
                   {(activeForm?.commonFields ?? []).map((field) => (
@@ -200,6 +210,8 @@ export function FieldGuidancePanel() {
                 rows={3}
                 maxLength={MAX_FIELD}
                 placeholder="e.g. I'm an O-1A researcher with 6 papers and a granted patent…"
+                aria-invalid={invalid}
+                aria-describedby={invalid ? errorId : undefined}
                 className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
               />
             </label>
@@ -243,6 +255,7 @@ export function FieldGuidancePanel() {
                 even when the request failed (guidance #3). */}
             <DisclaimerStamp text={DISCLAIMER} />
             <div
+              id={errorId}
               role="alert"
               className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[15px] text-danger"
             >

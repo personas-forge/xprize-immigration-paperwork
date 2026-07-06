@@ -32,27 +32,29 @@ export function SiteHeader() {
         </div>
         {/* ≥md: the full inline nav (five links + toggle never fit at 375px). */}
         <nav className="hidden flex-nowrap items-center gap-5 font-mono text-[13px] uppercase tracking-document text-muted-strong md:flex">
+          {/* py-1 on each plain nav link brings the tap target to ~24px tall
+              (WCAG 2.5.8 min) — the text alone (13px) was ~21.5px. */}
           <Link
             href="/dashboard"
-            className="ink-link whitespace-nowrap focus-ring"
+            className="ink-link whitespace-nowrap py-1 focus-ring"
           >
             Live case file
           </Link>
           <Link
             href="/billing"
-            className="ink-link whitespace-nowrap focus-ring"
+            className="ink-link whitespace-nowrap py-1 focus-ring"
           >
             Pricing
           </Link>
           <Link
             href="/dashboard/account"
-            className="ink-link whitespace-nowrap focus-ring"
+            className="ink-link whitespace-nowrap py-1 focus-ring"
           >
             Account
           </Link>
           <Link
             href="/login"
-            className="ink-link whitespace-nowrap focus-ring"
+            className="ink-link whitespace-nowrap py-1 focus-ring"
           >
             Sign in
           </Link>
@@ -112,25 +114,27 @@ export function SiteFooter() {
           © Immigration Concierge · XPrize hackathon · 90-day MVP
         </div>
         <div className="microprint flex flex-wrap items-center gap-4">
-          <Link className="ink-link" href="/#checkpoints">
+          {/* py-1 brings each link's tap target to ~24px tall (WCAG 2.5.8) —
+              microprint text alone (11.5px) was ~19px. */}
+          <Link className="ink-link py-1" href="/#checkpoints">
             How it works
           </Link>
-          <Link className="ink-link" href="/billing">
+          <Link className="ink-link py-1" href="/billing">
             Pricing
           </Link>
-          <Link className="ink-link" href="/faq">
+          <Link className="ink-link py-1" href="/faq">
             FAQ
           </Link>
-          <Link className="ink-link" href="/validation">
+          <Link className="ink-link py-1" href="/validation">
             Validation
           </Link>
-          <Link className="ink-link" href="/dashboard">
+          <Link className="ink-link py-1" href="/dashboard">
             Live case file
           </Link>
-          <Link className="ink-link" href="/terms">
+          <Link className="ink-link py-1" href="/terms">
             Terms
           </Link>
-          <Link className="ink-link" href="/privacy">
+          <Link className="ink-link py-1" href="/privacy">
             Privacy
           </Link>
         </div>
@@ -140,19 +144,19 @@ export function SiteFooter() {
       <div className="mx-auto max-w-6xl px-8 pb-8">
         <div className="microprint flex flex-wrap items-center gap-4" style={{ color: "var(--muted)" }}>
           <span>Visa guides:</span>
-          <Link className="ink-link" href="/visa/o-1a/software-engineer">
+          <Link className="ink-link py-1" href="/visa/o-1a/software-engineer">
             O-1A · Software engineer
           </Link>
-          <Link className="ink-link" href="/visa/o-1a/researcher">
+          <Link className="ink-link py-1" href="/visa/o-1a/researcher">
             O-1A · Researcher
           </Link>
-          <Link className="ink-link" href="/visa/o-1a/founder">
+          <Link className="ink-link py-1" href="/visa/o-1a/founder">
             O-1A · Founder
           </Link>
-          <Link className="ink-link" href="/visa/o-1b/artist">
+          <Link className="ink-link py-1" href="/visa/o-1b/artist">
             O-1B · Artist
           </Link>
-          <Link className="ink-link" href="/visa/eb-1a/researcher">
+          <Link className="ink-link py-1" href="/visa/eb-1a/researcher">
             EB-1A · Researcher
           </Link>
         </div>

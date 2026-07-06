@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useId, useState } from "react";
 import { Button } from "@/components/ui";
 import { deleteAccount, type DeleteAccountState } from "./actions";
 
@@ -15,6 +15,7 @@ export function DeleteAccountForm() {
     deleteAccount,
     {},
   );
+  const errorId = useId();
 
   if (!revealed) {
     return (
@@ -52,11 +53,14 @@ export function DeleteAccountForm() {
           type="text"
           autoComplete="off"
           placeholder="delete my account"
+          aria-invalid={Boolean(state.error)}
+          aria-describedby={state.error ? errorId : undefined}
           className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-ring"
         />
       </label>
       {state.error ? (
         <div
+          id={errorId}
           role="alert"
           className="rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[14.5px] text-danger"
         >

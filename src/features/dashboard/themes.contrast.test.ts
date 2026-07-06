@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { parchment, ink } from "./themes";
+import { type Theme } from "./ThemeScope";
 
 // Programmatic WCAG AA contrast audit over the dashboard theme tokens.
 // Runs under `npm test` (and therefore in CI on every PR) and FAILS on any
@@ -25,6 +26,25 @@ function contrastRatio(a: string, b: string): number {
   const lb = relativeLuminance(b);
   const [hi, lo] = la >= lb ? [la, lb] : [lb, la];
   return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Alpha-composite an rgba(...)/#rrggbb color over an opaque #rrggbb backing. */
+function compositeOver(fg: string, backing: string): string {
+  if (/^#[0-9a-f]{6}$/i.test(fg)) return fg;
+  const m = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+))?\)$/i.exec(fg);
+  if (!m) throw new Error(`expected rgba(...) or #rrggbb, got: ${fg}`);
+  const [r, g, b] = [+m[1], +m[2], +m[3]];
+  const a = m[4] !== undefined ? +m[4] : 1;
+  const bm = /^#([0-9a-f]{6})$/i.exec(backing);
+  if (!bm) throw new Error(`expected #rrggbb backing, got: ${backing}`);
+  const [br, bg, bb] = [0, 2, 4].map((i) => parseInt(bm[1].slice(i, i + 2), 16));
+  const mix = (fc: number, bc: number) => Math.round(fc * a + bc * (1 - a));
+  return (
+    "#" +
+    [mix(r, br), mix(g, bg), mix(b, bb)]
+      .map((c) => c.toString(16).padStart(2, "0"))
+      .join("")
+  );
 }
 
 const AA_NORMAL_TEXT = 4.5;
@@ -100,4 +120,151 @@ test("ink --muted stays visually subordinate to --muted-strong", () => {
     contrastRatio(ink["--muted"], surface) <
       contrastRatio(ink["--muted-strong"], surface),
   );
+});
+
+// ── Brand/semantic tokens as real rendered text ─────────────────────────────
+// The TEXT_TOKENS x SURFACE_TOKENS grid above only covers the general body
+// tokens (foreground/muted). Site-wide, --seal/--danger/--warning also render
+// as small TEXT — Button's "seal" variant and Badge's success/warning/danger
+// tones — on top of their own (sometimes translucent, in ink) "-soft" wash
+// tokens. (Badge's accent tone and the count-pill chips in DraftStudio/
+// RfeRiskRadar/CriterionPrimerButton render --accent-text instead — see the
+// --accent-text section further down.) This section audits those pairs with
+// the SAME worst-case-over-every-surface methodology, compositing the alpha
+// washes over each opaque surface first.
+
+/** Worst (lowest) contrast ratio of `textHex` against `bgToken` composited
+ *  over every surface in the theme — the surface a card/badge might sit on
+ *  isn't fixed, so the audit must hold on all of them. */
+function worstRatioOverSurfaces(theme: Theme, textHex: string, bgToken: string): number {
+  return Math.min(
+    ...SURFACE_TOKENS.map((s) => contrastRatio(textHex, compositeOver(bgToken, theme[s]))),
+  );
+}
+
+test("contrast helpers are calibrated (positive controls, part 2)", () => {
+  // The pre-fix ink --seal/--danger/--warning MUST be flagged as failing on
+  // their own soft-wash tokens — proves the audit below detects real
+  // violations, not just passes vacuously.
+  assert.ok(worstRatioOverSurfaces(ink, "#c75b60", ink["--seal-soft"]) < AA_NORMAL_TEXT);
+  assert.ok(worstRatioOverSurfaces(ink, "#d96b6f", ink["--danger-soft"]) < AA_NORMAL_TEXT);
+  assert.ok(worstRatioOverSurfaces(ink, "#d99947", ink["--warning-soft"]) < AA_NORMAL_TEXT);
+  assert.ok(worstRatioOverSurfaces(parchment, "#a06410", parchment["--warning-soft"]) < AA_NORMAL_TEXT);
+  // Ink's --accent-dark (#b8893a, unchanged — it keeps its other, non-badge
+  // roles) MUST still measure as failing when used as badge/chip TEXT on
+  // bg-accent/15 — this is the exact 3.26:1 Phase-2 finding that motivated
+  // splitting --accent-text off as its own token below, rather than nudging
+  // --accent-dark itself (which would collide with --accent).
+  assert.ok(
+    worstRatioOverSurfaces(ink, ink["--accent-dark"], withAlpha(ink["--accent"], 0.15)) < AA_NORMAL_TEXT,
+  );
+});
+
+for (const [themeName, theme] of Object.entries(THEMES)) {
+  test(`${themeName}: Button "seal" variant (text-background on bg-seal) meets 4.5:1`, () => {
+    const ratio = contrastRatio(theme["--background"], theme["--seal"]);
+    assert.ok(
+      ratio >= AA_NORMAL_TEXT,
+      `text-background (${theme["--background"]}) on bg-seal (${theme["--seal"]}) = ${ratio.toFixed(2)}:1 < ${AA_NORMAL_TEXT}:1`,
+    );
+  });
+
+  // Badge tones (seal/success/warning/danger) render TEXT_TOKEN-less brand
+  // colors directly as text on their matching "-soft" background, on
+  // whichever surface the badge/alert/chip is placed on. --accent-dark is
+  // DELIBERATELY excluded from this enforced matrix — in its OTHER
+  // (larger-text / fill / decorative) roles it isn't held to 4.5:1, and its
+  // small-badge-TEXT role was split off into a dedicated --accent-text token
+  // instead (see themes.ts and the --accent-text tests below).
+  const BADGE_SOFT_PAIRS = [
+    ["--seal", "--seal-soft"],
+    ["--success", "--success-soft"],
+    ["--warning", "--warning-soft"],
+    ["--danger", "--danger-soft"],
+  ] as const;
+
+  for (const [textToken, softToken] of BADGE_SOFT_PAIRS) {
+    test(`${themeName}: ${textToken} on its own ${softToken} wash meets 4.5:1 on every surface`, () => {
+      const ratio = worstRatioOverSurfaces(theme, theme[textToken], theme[softToken]);
+      assert.ok(
+        ratio >= AA_NORMAL_TEXT,
+        `${textToken} (${theme[textToken]}) worst-case on ${softToken} (${theme[softToken]}) = ${ratio.toFixed(2)}:1 < ${AA_NORMAL_TEXT}:1`,
+      );
+    });
+  }
+}
+
+/** hex + Tailwind-style opacity modifier (e.g. bg-accent/15) as an rgba(...) string. */
+function withAlpha(hex: string, alpha: number): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) throw new Error(`expected #rrggbb, got: ${hex}`);
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+test("parchment: --accent-dark badge/chip text meets 4.5:1 (accent-soft, bg-accent/15, bg-accent-dark/10)", () => {
+  // Historical/legacy check: parchment's --accent-dark itself already clears
+  // 4.5:1 in this role (no sibling-collision risk there — darkening moves it
+  // further from --accent, not closer), which is why parchment's
+  // --accent-text simply mirrors --accent-dark's value (see themes.ts).
+  // Actual badge/chip components now render --accent-text, not --accent-dark
+  // directly — see the "--accent-text badge/chip text" tests below for the
+  // token that is actually enforced site-wide.
+  const cases: Array<[string, string]> = [
+    ["--accent-soft", parchment["--accent-soft"]],
+    ["bg-accent/15", withAlpha(parchment["--accent"], 0.15)],
+    ["bg-accent-dark/10", withAlpha(parchment["--accent-dark"], 0.1)],
+  ];
+  for (const [label, bg] of cases) {
+    const ratio = worstRatioOverSurfaces(parchment, parchment["--accent-dark"], bg);
+    assert.ok(
+      ratio >= AA_NORMAL_TEXT,
+      `--accent-dark on ${label} worst-case = ${ratio.toFixed(2)}:1 < ${AA_NORMAL_TEXT}:1`,
+    );
+  }
+});
+
+// ── --accent-text: the badge/chip TEXT split off from --accent-dark ────────
+// Phase 2 found ink's --accent-dark measuring 3.26:1 (worst case) as small
+// badge/chip TEXT — Badge.tsx "accent" tone, DraftStudio/RfeRiskRadar count
+// pills, CriterionPrimerButton's active state — on the translucent
+// --accent-soft / bg-accent/15 / bg-accent-dark/10 washes those components
+// use. It can't simply be lightened to clear 4.5:1 there (~#cea662) without
+// visually colliding with sibling --accent (#d4a554). --accent-text is a
+// separate token, tuned to its own lightness/chroma point, used ONLY for
+// that small-badge/chip-TEXT role in both themes — --accent and
+// --accent-dark keep every other (larger-text / fill / decorative) role
+// unchanged.
+for (const [themeName, theme] of Object.entries(THEMES)) {
+  test(`${themeName}: --accent-text badge/chip text meets 4.5:1 (accent-soft, bg-accent/15, bg-accent-dark/10)`, () => {
+    const cases: Array<[string, string]> = [
+      ["--accent-soft", theme["--accent-soft"]],
+      ["bg-accent/15", withAlpha(theme["--accent"], 0.15)],
+      ["bg-accent-dark/10", withAlpha(theme["--accent-dark"], 0.1)],
+    ];
+    for (const [label, bg] of cases) {
+      const ratio = worstRatioOverSurfaces(theme, theme["--accent-text"], bg);
+      assert.ok(
+        ratio >= AA_NORMAL_TEXT,
+        `${themeName} --accent-text on ${label} worst-case = ${ratio.toFixed(2)}:1 < ${AA_NORMAL_TEXT}:1`,
+      );
+    }
+  });
+
+  test(`${themeName}: --accent-text doesn't collide with --accent`, () => {
+    // The whole point of splitting this token out is that it doesn't read as
+    // the same color as --accent — guard against a future edit quietly
+    // re-merging it with the token it exists to stay distinct from.
+    assert.notEqual(theme["--accent-text"].toLowerCase(), theme["--accent"].toLowerCase());
+  });
+}
+
+test("ink: --accent-text doesn't collide with --accent-dark either", () => {
+  // In parchment, --accent-text intentionally mirrors --accent-dark (which
+  // already clears 4.5:1 in this role there — see the legacy test above), so
+  // that equality is by design and isn't asserted against. In ink, though,
+  // --accent-dark is the token --accent-text was split OFF of specifically
+  // because --accent-dark fails 4.5:1 as badge/chip text — so the two must
+  // stay visibly distinct there.
+  assert.notEqual(ink["--accent-text"].toLowerCase(), ink["--accent-dark"].toLowerCase());
 });

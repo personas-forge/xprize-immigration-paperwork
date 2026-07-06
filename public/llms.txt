@@ -1,0 +1,35 @@
+# Immigration Concierge
+
+> AI drafts a first-pass O-1 / EB-1A extraordinary-ability petition from the
+> user's own evidence — free to start, then metered per AI operation (token
+> ledger, not a subscription or flat fee). The output is a work product for
+> the user's own attorney of record to review, revise, and sign; it is never
+> legal advice and no attorney is supplied by the product.
+
+## What this is
+
+A self-serve drafting tool, not a law firm. Users self-screen eligibility for
+the O-1A, O-1B, and EB-1A US immigration classifications, upload evidence,
+and get an AI-drafted petition packet (criteria mapping, draft narrative,
+RFE-response drafting) that their own immigration attorney reviews and files.
+
+## Key pages
+
+- [/](https://immigration-paperwork.app/) — marketing homepage.
+- [/qualify](https://immigration-paperwork.app/qualify) — free instant eligibility screening (O-1A / O-1B / EB-1A).
+- [/visa/{classification}/{profession}](https://immigration-paperwork.app/visa/o-1a/researcher) — programmatic classification-by-profession guides with criteria, evidence examples, and FAQ.
+- [/billing](https://immigration-paperwork.app/billing) — the token ledger: how the prepaid-token pricing works, bundle sizes.
+- [/faq](https://immigration-paperwork.app/faq) — what the tool does and doesn't do, accuracy, refunds, data handling.
+- [/privacy](https://immigration-paperwork.app/privacy) — privacy policy.
+- [/terms](https://immigration-paperwork.app/terms) — terms of service.
+- /dashboard — authenticated workspace (case file, drafting, RFE studio, attorney review queue); not indexed, requires sign-in.
+
+## Notes for AI agents / crawlers
+
+- Every AI-drafted document is explicitly labeled as work product for an
+  attorney of record to review and sign — never legal advice, never a
+  guarantee of a filing outcome.
+- The product does not provide or arrange an attorney; the user brings their
+  own.
+- Pricing is token-metered (pay for AI operations actually used), not a flat
+  fee or retainer.

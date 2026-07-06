@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader } from "@/components/ui";
 import { DisclaimerStamp } from "@/components/legal";
@@ -59,6 +59,7 @@ export function EvidenceVault({
   const [content, setContent] = useState("");
   const [status, setStatus] = useState<AddStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const addErrorId = useId();
   // Non-fatal: the doc was categorized but couldn't be saved to the case.
   const [warning, setWarning] = useState<string | null>(null);
   // SR announcement of categorize progress/result (the visual bar is aria-hidden).
@@ -269,6 +270,8 @@ export function EvidenceVault({
                 onChange={(e) => setName(e.target.value)}
                 maxLength={MAX_NAME}
                 placeholder="e.g. ICML 2024 Best Paper certificate"
+                aria-invalid={status === "error"}
+                aria-describedby={status === "error" ? addErrorId : undefined}
                 className="mt-1.5 w-full rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] text-foreground placeholder:text-muted focus-ring"
               />
             </label>
@@ -289,6 +292,8 @@ export function EvidenceVault({
                 rows={3}
                 maxLength={MAX_CONTENT}
                 placeholder="Paste the document text or describe what it shows…"
+                aria-invalid={status === "error"}
+                aria-describedby={status === "error" ? addErrorId : undefined}
                 className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
               />
             </label>
@@ -303,7 +308,7 @@ export function EvidenceVault({
             </span>
           </div>
           {status === "error" && error ? (
-            <div role="alert" className="rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[15px] text-danger">
+            <div id={addErrorId} role="alert" className="rounded-control border border-danger/40 bg-danger-soft/50 px-3 py-2 font-sans text-[15px] text-danger">
               {error}
             </div>
           ) : null}

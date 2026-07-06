@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { DisclaimerStamp, CitationNote, AdjudicationBadge } from "@/components/legal";
@@ -70,6 +70,7 @@ export function RfeStudio({
   const [sections, setSections] = useState<DraftSection[]>(initialSections ?? []);
   const [source, setSource] = useState<ModelSource>(initialSource);
   const [error, setError] = useState<string | null>(null);
+  const rfeErrorId = useId();
   const [saveFailed, setSaveFailed] = useState(false);
   // Free persistence-only rescue of a charged-but-unsaved response (the
   // /api/rfe/save parity twin of the draft rescue). "saved" clears the alert.
@@ -229,6 +230,8 @@ export function RfeStudio({
             onChange={(e) => setRfeText(e.target.value)}
             rows={4}
             placeholder="The evidence does not establish that the beneficiary satisfies…"
+            aria-invalid={status === "error"}
+            aria-describedby={status === "error" ? rfeErrorId : undefined}
             className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
           />
         </label>
@@ -272,6 +275,7 @@ export function RfeStudio({
 
         {status === "error" && error ? (
           <div
+            id={rfeErrorId}
             role="alert"
             className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[15px] text-danger"
           >
@@ -368,6 +372,7 @@ export function RfeStudio({
                   value={s.body}
                   onChange={(e) => editBody(i, e.target.value)}
                   rows={Math.max(3, Math.ceil(s.body.length / 90))}
+                  aria-label={`RFE response — ${s.heading}`}
                   className="w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[15.5px] leading-[1.7] text-foreground-soft focus-ring"
                 />
               </div>

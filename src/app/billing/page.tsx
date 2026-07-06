@@ -15,7 +15,7 @@ import { BundleGrid } from "./BundleGrid";
 import { PurchaseToast } from "./PurchaseToast";
 
 export const metadata: Metadata = {
-  title: "Token ledger — Immigration Concierge",
+  title: "Token ledger",
   description:
     "Prepaid tokens fund the AI drafting tools — qualification, petition drafting, evidence categorization, RFE responses. Top up with a bundle — bigger bundles cost less per token. Enterprise is contact-only.",
 };

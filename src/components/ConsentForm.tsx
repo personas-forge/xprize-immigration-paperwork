@@ -9,7 +9,7 @@
 // SENSITIVE PRODUCT: the UPL / not-legal-advice / attorney-of-record disclaimer
 // renders prominently near sign-up via the shared DisclaimerStamp component.
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useId, useRef } from "react";
 import { submitConsent, type ConsentState } from "@/app/welcome/actions";
 import { CONSENT_FIELDS } from "@/lib/auth/consent";
 import { CONSENT_DISCLAIMER } from "@/lib/result";
@@ -39,6 +39,12 @@ export function ConsentForm({
   useEffect(() => {
     if (state.error) submittedRef.current = false;
   }, [state.error]);
+
+  // The single shared error can be caused by full_name OR either required
+  // checkbox (see @/app/welcome/actions) — no per-field message exists, so
+  // all three point aria-invalid/aria-describedby at the one banner.
+  const errorId = useId();
+  const invalid = Boolean(state.error);
 
   return (
     <form
@@ -71,6 +77,8 @@ export function ConsentForm({
           name={CONSENT_FIELDS.fullName}
           defaultValue={defaultName}
           required
+          aria-invalid={invalid}
+          aria-describedby={invalid ? errorId : undefined}
           className="w-full rounded-control border border-border-strong bg-surface px-3.5 py-2.5 font-sans text-[17px] text-foreground placeholder:text-muted focus-visible:border-accent-dark focus-ring"
         />
         {email && (
@@ -103,11 +111,15 @@ export function ConsentForm({
           name={CONSENT_FIELDS.terms}
           required
           label="I accept the Terms of Service."
+          invalid={invalid}
+          describedBy={invalid ? errorId : undefined}
         />
         <Checkbox
           name={CONSENT_FIELDS.privacy}
           required
           label="I have read and accept the Privacy Policy."
+          invalid={invalid}
+          describedBy={invalid ? errorId : undefined}
         />
         <Checkbox
           name={CONSENT_FIELDS.marketing}
@@ -117,6 +129,7 @@ export function ConsentForm({
 
       {state.error && (
         <p
+          id={errorId}
           role="alert"
           className="rounded-control border border-seal/40 bg-seal-soft/50 px-3.5 py-2.5 font-sans text-[15px] text-seal"
         >
@@ -140,10 +153,14 @@ function Checkbox({
   name,
   label,
   required,
+  invalid,
+  describedBy,
 }: {
   name: string;
   label: string;
   required?: boolean;
+  invalid?: boolean;
+  describedBy?: string;
 }) {
   return (
     <label className="flex items-start gap-3 font-sans text-[16px] text-foreground-soft">
@@ -152,6 +169,8 @@ function Checkbox({
         name={name}
         required={required}
         aria-required={required}
+        aria-invalid={invalid}
+        aria-describedby={describedBy}
         className="mt-1 h-4 w-4 shrink-0 rounded-[2px] border-border-strong text-accent-dark accent-[color:var(--accent-dark)] focus-ring"
       />
       <span className="leading-snug">

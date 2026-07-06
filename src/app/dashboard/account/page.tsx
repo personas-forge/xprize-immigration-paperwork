@@ -10,7 +10,7 @@ import { DeleteAccountForm } from "./DeleteAccountForm";
 import { MarketingPreferenceForm } from "./MarketingPreferenceForm";
 
 export const metadata: Metadata = {
-  title: "Account & data — Immigration Concierge",
+  title: "Account & data",
   description: "Manage your account: download a copy of your data or delete your account.",
 };
 

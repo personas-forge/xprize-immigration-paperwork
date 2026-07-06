@@ -40,7 +40,9 @@ export function PurchaseToast() {
         type="button"
         onClick={() => setShow(false)}
         aria-label="Dismiss"
-        className="shrink-0 font-mono text-[13px] uppercase tracking-document text-muted-strong transition-colors hover:text-foreground focus-ring"
+        // py-1 brings the hit target to ~24px min (WCAG 2.5.8) — was text-only,
+        // ~21.5px tall.
+        className="shrink-0 rounded-control px-1 py-1 font-mono text-[13px] uppercase tracking-document text-muted-strong transition-colors hover:text-foreground focus-ring"
       >
         Dismiss
       </button>

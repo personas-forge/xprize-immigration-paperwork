@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton } from "@/components/ui";
 import { Seal, Guilloche } from "@/components/brand";
@@ -38,6 +38,7 @@ export function InstantVerdict({
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<QualifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const errorId = useId();
 
   const busy = useRef(false);
 
@@ -131,6 +132,8 @@ export function InstantVerdict({
                 onChange={(e) => setProfile(e.target.value)}
                 rows={6}
                 placeholder="Paste your CV highlights or describe your achievements in plain language…"
+                aria-invalid={status === "error"}
+                aria-describedby={status === "error" ? errorId : undefined}
                 className="mt-1.5 w-full resize-y rounded-control border border-border-strong bg-surface px-3 py-2 font-sans text-[16px] leading-relaxed text-foreground placeholder:text-muted focus-ring"
               />
               <div className="mt-1 flex justify-end">
@@ -154,7 +157,8 @@ export function InstantVerdict({
               <button
                 type="button"
                 onClick={() => setProfile(SAMPLE_PROFILE)}
-                className="font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-ring"
+                // py-1 brings the tap target to ~24px tall (WCAG 2.5.8).
+                className="py-1 font-mono text-[13px] uppercase tracking-document text-muted-strong underline-offset-2 hover:underline focus-ring"
               >
                 Use a sample
               </button>
@@ -170,6 +174,7 @@ export function InstantVerdict({
 
       {status === "error" && error ? (
         <div
+          id={errorId}
           role="alert"
           className="rounded-control border border-danger/40 bg-danger-soft/50 px-4 py-3 font-sans text-[15px] text-danger"
         >

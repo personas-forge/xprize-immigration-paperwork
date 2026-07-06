@@ -64,6 +64,11 @@ export function ReviewQueueView({
       <div className="px-8 py-10">
         <div className="mx-auto max-w-5xl space-y-8">
           <div className="flex items-center justify-between">
+            {/* This route had no <h1> — ChapterMark is a decorative chapter
+                marker, not a heading element. sr-only keeps the existing
+                visual design untouched while giving the page a real,
+                document-outline-correct top-level heading. */}
+            <h1 className="sr-only">Attorney review queue</h1>
             <ChapterMark numeral="V" label="Attorney review queue" />
             <Link
               href="/dashboard"

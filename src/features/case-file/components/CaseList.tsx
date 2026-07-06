@@ -164,12 +164,14 @@ export function CaseList() {
         </div>
 
         <div className="flex items-center justify-between print:hidden">
+          {/* py-1 brings each button's tap target to ~24px tall (WCAG 2.5.8)
+              — microprint text alone was ~19px. */}
           <button
             type="button"
             onClick={() =>
               setQuery({ sortDir: query.sortDir === "asc" ? "desc" : "asc" })
             }
-            className="microprint inline-flex items-center gap-1.5 text-muted-strong hover:text-foreground"
+            className="microprint inline-flex items-center gap-1.5 py-1 text-muted-strong hover:text-foreground"
             aria-label="Toggle sort direction"
           >
             {query.sortDir === "asc" ? "Ascending ↑" : "Descending ↓"}
@@ -178,7 +180,7 @@ export function CaseList() {
             <button
               type="button"
               onClick={reset}
-              className="microprint text-muted-strong hover:text-foreground"
+              className="microprint py-1 text-muted-strong hover:text-foreground"
             >
               Clear filters ×
             </button>

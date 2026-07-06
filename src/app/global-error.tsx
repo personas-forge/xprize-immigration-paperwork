@@ -41,7 +41,11 @@ export default function GlobalError({
               fontSize: "12px",
               letterSpacing: "0.32em",
               textTransform: "uppercase",
-              color: "#8a6d3b",
+              // #846939 (darkened from #8a6d3b, same hue) clears WCAG AA
+              // 4.5:1 on this page's #f5efe2 background — the original
+              // measured 4.23:1. This page can't use CSS tokens (root-layout
+              // error boundary, see file header), so the fix is inline.
+              color: "#846939",
             }}
           >
             § — Temporarily unavailable

@@ -3,7 +3,7 @@ import { PageFrame, ChapterMark } from "@/components/brand";
 import { SiteHeader, SiteFooter } from "@/components/SiteChrome";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Immigration Concierge",
+  title: "Privacy Policy",
   description:
     "What Immigration Concierge collects, how case data is processed, and the export/delete rights built into the product.",
 };
